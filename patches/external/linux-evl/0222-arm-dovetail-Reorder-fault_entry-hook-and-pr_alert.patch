@@ -1,0 +1,31 @@
+From 77654f6be351e70c159acb928574d3831817f842 Mon Sep 17 00:00:00 2001
+From: Jan Kiszka <jan.kiszka@siemens.com>
+Date: Wed, 28 May 2025 09:52:02 +0200
+Subject: [PATCH 0222/1010] arm: dovetail: Reorder fault_entry hook and
+ pr_alert
+
+Merge fallout - align with newer kernels.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/arm/mm/fault.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index a8dd9254fc..7775c5fda3 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -652,9 +652,8 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ 	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
+ 		return;
+ 
+-	pr_alert("8<--- cut here ---\n");
+-
+ 	irqflags = fault_entry(ARM_TRAP_PABT, regs);
++	pr_alert("8<--- cut here ---\n");
+ 	pr_alert("Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
+ 		inf->name, ifsr, addr);
+ 
+-- 
+2.30.2
+

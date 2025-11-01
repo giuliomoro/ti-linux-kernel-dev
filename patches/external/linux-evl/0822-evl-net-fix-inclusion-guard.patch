@@ -1,0 +1,34 @@
+From 712e6700333240e932cdb1058ca3878fa0e8f876 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 19 Nov 2022 09:41:52 +0100
+Subject: [PATCH 0822/1010] evl/net: fix inclusion guard
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/asm-generic/evl/netdevice.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
+index b83bd9a8d3..7f6bfad4fb 100644
+--- a/include/asm-generic/evl/netdevice.h
++++ b/include/asm-generic/evl/netdevice.h
+@@ -2,7 +2,7 @@
+ #ifndef _ASM_GENERIC_EVL_NETDEVICE_H
+ #define _ASM_GENERIC_EVL_NETDEVICE_H
+ 
+-#ifdef CONFIG_EVL
++#ifdef CONFIG_EVL_NET
+ 
+ #include <linux/list.h>
+ #include <evl/wait.h>
+@@ -49,6 +49,6 @@ struct oob_netdev_state {
+ struct oob_netdev_state {
+ };
+ 
+-#endif	/* !CONFIG_EVL */
++#endif	/* !CONFIG_EVL_NET */
+ 
+ #endif /* !_ASM_GENERIC_EVL_NETDEVICE_H */
+-- 
+2.30.2
+

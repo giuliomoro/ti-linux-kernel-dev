@@ -1,0 +1,112 @@
+From 98fd0aab342389782d78a6b27720252075970c92 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 4 Jul 2021 18:36:00 +0200
+Subject: [PATCH 0742/1010] evl/wait: export wait channel of threads to /sys,
+ ftrace
+
+Knowing which synchronization object a thread sleeps on may be quite
+helpful while debugging. Export this information as a thread device
+attribute to /sys. Add it to the relevant tracepoints as well.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h        |  1 +
+ include/trace/events/evl.h |  5 ++++-
+ kernel/evl/thread.c        | 34 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index de7bccd1ae..faa3ee3e4a 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -107,6 +107,7 @@ struct evl_kmutex {
+ 				.reorder_wait = evl_reorder_mutex_wait,	\
+ 				.follow_depend = evl_follow_mutex_depend, \
+ 				.wait_list = LIST_HEAD_INIT((__name).mutex.wchan.wait_list), \
++				.name = ##__name,			\
+ 			},						\
+ 		},							\
+ 		.fastlock = ATOMIC_INIT(0),				\
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 70fc498675..acb254cde0 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -351,6 +351,7 @@ TRACE_EVENT(evl_sleep_on,
+ 		__field(ktime_t, timeout)
+ 		__field(enum evl_tmode, timeout_mode)
+ 		__field(struct evl_wait_channel *, wchan)
++		__string(wchan_name, wchan->name)
+ 		__string(clock_name, clock ? clock->name : "none")
+ 	),
+ 
+@@ -360,12 +361,14 @@ TRACE_EVENT(evl_sleep_on,
+ 		__entry->timeout_mode = timeout_mode;
+ 		__entry->wchan = wchan;
+ 		__assign_str(clock_name, clock ? clock->name : "none");
++		__assign_str(wchan_name, wchan->name);
+ 	),
+ 
+-	TP_printk("pid=%d timeout=%Lu timeout_mode=%d clock=%s wchan=%p",
++	TP_printk("pid=%d timeout=%Lu timeout_mode=%d clock=%s wchan=%s(%p)",
+ 		  __entry->pid,
+ 		  ktime_to_ns(__entry->timeout), __entry->timeout_mode,
+ 		  __get_str(clock_name),
++		  __get_str(wchan_name),
+ 		  __entry->wchan)
+ );
+ 
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 5926cdd612..4d176c1577 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2716,6 +2716,39 @@ static ssize_t observable_show(struct device *dev,
+ }
+ static DEVICE_ATTR_RO(observable);
+ 
++static ssize_t wchan_show(struct device *dev,
++			struct device_attribute *attr,
++			char *buf)
++{
++	struct evl_wait_channel *wchan;
++	struct evl_thread *thread;
++	unsigned long flags;
++	ssize_t ret;
++
++	/*
++	 * Reading the wait channel is a sensitive operation:
++	 * safety-wise, and performance-wise since this locks the
++	 * thread scheduling state and disables interrupts in the
++	 * process. Reserve this to authorized users.
++	 */
++	if (!evl_may_access_factory(&evl_thread_factory))
++		return -EPERM;
++
++	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
++
++	raw_spin_lock_irqsave(&thread->lock, flags);
++	wchan = thread->wchan;
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", wchan ? wchan->name : "none");
++	raw_spin_unlock_irqrestore(&thread->lock, flags);
++
++	evl_put_element(&thread->element);
++
++	return ret;
++}
++static DEVICE_ATTR_RO(wchan);
++
+ static struct attribute *thread_attrs[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_sched.attr,
+@@ -2723,6 +2756,7 @@ static struct attribute *thread_attrs[] = {
+ 	&dev_attr_stats.attr,
+ 	&dev_attr_pid.attr,
+ 	&dev_attr_observable.attr,
++	&dev_attr_wchan.attr,
+ 	NULL,
+ };
+ ATTRIBUTE_GROUPS(thread);
+-- 
+2.30.2
+

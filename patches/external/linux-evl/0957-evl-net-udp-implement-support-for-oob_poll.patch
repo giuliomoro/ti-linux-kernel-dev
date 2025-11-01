@@ -1,0 +1,46 @@
+From 91b1ee2746ae6df34636c81aa67a7555317785a3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 6 May 2025 15:46:45 +0200
+Subject: [PATCH 0957/1010] evl/net: udp: implement support for oob_poll()
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/ipv4/udp.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index 6d60865ba7..48cec3ab3e 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -601,6 +601,28 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ static __poll_t poll_udp(struct evl_socket *esk,
+ 			struct oob_poll_wait *wait)
+ {
++	struct evl_net_udp_receiver *e;
++	__poll_t ret = 0;
++
++	/* Enqueue, then test. */
++	evl_poll_watch(&esk->poll_head, wait, NULL);
++
++	rcu_read_lock();
++
++	/*
++	 * We might have lingering timestamps to consume, check this
++	 * unconditionally, regardless of the presence of a receiver
++	 * queue.
++	 */
++	e = READ_ONCE(esk->u.ip.udp.receiver);
++	if (__evl_test_socket_iots(esk) || (e && !list_empty(&e->queue)))
++		ret = POLLIN|POLLRDNORM;
++
++	rcu_read_unlock();
++
++	/* FIXME: Assume we can always TX, which is too optimistic. */
++	ret |= POLLOUT|POLLWRNORM;
++
+ 	return 0;
+ }
+ 
+-- 
+2.30.2
+

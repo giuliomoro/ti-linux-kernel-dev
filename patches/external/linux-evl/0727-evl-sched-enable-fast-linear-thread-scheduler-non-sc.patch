@@ -1,0 +1,403 @@
+From 4244f7fff9b5fb95f3ec7d23b9df1cfcc8b2d262 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 6 Feb 2021 16:19:37 +0100
+Subject: [PATCH 0727/1010] evl/sched: enable fast linear thread scheduler
+ (non-scalable)
+
+For applications with only few runnable tasks at any point in time, a
+linear queue ordering the latter for scheduling delivers better
+performance on low-end systems due to smaller CPU cache footprints,
+compared to the multi-level queue used by the scalable scheduler.
+
+Allow users to select between lightning-fast and scalable scheduler
+implementation depending on the runtime profile of the application.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch evl/master
+# Your branch is ahead of 'origin/evl/master' by 2 commits.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   include/evl/sched.h
+#	modified:   include/evl/sched/queue.h
+#	modified:   include/evl/sched/tp.h
+#	modified:   include/evl/sched/weak.h
+#	modified:   kernel/evl/Kconfig
+#	modified:   kernel/evl/sched/core.c
+#
+# Untracked files:
+#	include/trace/events/mm.h
+#
+---
+ include/evl/sched.h       |  2 +-
+ include/evl/sched/queue.h | 81 +++++++++++++++++++++++++++--------
+ include/evl/sched/tp.h    |  2 +-
+ include/evl/sched/weak.h  |  7 +--
+ kernel/evl/Kconfig        | 13 ++++++
+ kernel/evl/sched/core.c   | 89 ++++++++++++++++++++++++---------------
+ 6 files changed, 135 insertions(+), 59 deletions(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index a6ade43eea..232be199b7 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -59,7 +59,7 @@
+ #define RQ_TSTOPPED	0x00000800
+ 
+ struct evl_sched_fifo {
+-	struct evl_multilevel_queue runnable;
++	struct evl_sched_queue runnable;
+ };
+ 
+ struct evl_rq {
+diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
+index ee2d1a563a..93c874d249 100644
+--- a/include/evl/sched/queue.h
++++ b/include/evl/sched/queue.h
+@@ -23,42 +23,45 @@
+ #define EVL_CORE_MAX_PRIO  (MAX_RT_PRIO + 1)
+ #define EVL_CORE_NR_PRIO   (EVL_CORE_MAX_PRIO - EVL_CORE_MIN_PRIO + 1)
+ 
+-#define EVL_MLQ_LEVELS		 EVL_CORE_NR_PRIO
+-
+ #define EVL_CLASS_WEIGHT_FACTOR	 1024
+ 
++#ifdef CONFIG_EVL_SCHED_SCALABLE
++
++#define EVL_MLQ_LEVELS		 EVL_CORE_NR_PRIO
++
+ #if EVL_CORE_NR_PRIO > EVL_CLASS_WEIGHT_FACTOR ||	\
+ 	EVL_CORE_NR_PRIO > EVL_MLQ_LEVELS
+ #error "EVL_MLQ_LEVELS is too low"
+ #endif
+ 
+-struct evl_multilevel_queue {
++struct evl_sched_queue {
+ 	int elems;
+ 	DECLARE_BITMAP(prio_map, EVL_MLQ_LEVELS);
+ 	struct list_head heads[EVL_MLQ_LEVELS];
+ };
+ 
+-struct evl_thread;
++void evl_init_schedq(struct evl_sched_queue *q);
+ 
+-void evl_init_schedq(struct evl_multilevel_queue *q);
+-
+-struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q);
++struct evl_thread *__evl_get_schedq(struct evl_sched_queue *q);
+ 
+ static __always_inline
+-int evl_schedq_is_empty(struct evl_multilevel_queue *q)
++struct evl_thread *evl_get_schedq(struct evl_sched_queue *q)
+ {
+-	return q->elems == 0;
++	if (!q->elems)
++		return NULL;
++
++	return __evl_get_schedq(q);
+ }
+ 
+ static __always_inline
+-int evl_get_schedq_weight(struct evl_multilevel_queue *q)
++int evl_get_schedq_weight(struct evl_sched_queue *q)
+ {
+ 	/* Highest priorities are mapped to lowest array elements. */
+ 	return find_first_bit(q->prio_map, EVL_MLQ_LEVELS);
+ }
+ 
+ static __always_inline
+-int get_qindex(struct evl_multilevel_queue *q, int prio)
++int get_qindex(struct evl_sched_queue *q, int prio)
+ {
+ 	/*
+ 	 * find_first_bit() is used to scan the bitmap, so the lower
+@@ -68,7 +71,7 @@ int get_qindex(struct evl_multilevel_queue *q, int prio)
+ }
+ 
+ static __always_inline
+-struct list_head *add_q(struct evl_multilevel_queue *q, int prio)
++struct list_head *add_q(struct evl_sched_queue *q, int prio)
+ {
+ 	struct list_head *head;
+ 	int idx;
+@@ -85,7 +88,7 @@ struct list_head *add_q(struct evl_multilevel_queue *q, int prio)
+ }
+ 
+ static __always_inline
+-void evl_add_schedq(struct evl_multilevel_queue *q,
++void evl_add_schedq(struct evl_sched_queue *q,
+ 		struct evl_thread *thread)
+ {
+ 	struct list_head *head = add_q(q, thread->cprio);
+@@ -93,7 +96,7 @@ void evl_add_schedq(struct evl_multilevel_queue *q,
+ }
+ 
+ static __always_inline
+-void evl_add_schedq_tail(struct evl_multilevel_queue *q,
++void evl_add_schedq_tail(struct evl_sched_queue *q,
+ 			struct evl_thread *thread)
+ {
+ 	struct list_head *head = add_q(q, thread->cprio);
+@@ -101,7 +104,7 @@ void evl_add_schedq_tail(struct evl_multilevel_queue *q,
+ }
+ 
+ static __always_inline
+-void __evl_del_schedq(struct evl_multilevel_queue *q,
++void __evl_del_schedq(struct evl_sched_queue *q,
+ 		struct list_head *entry, int idx)
+ {
+ 	struct list_head *head = q->heads + idx;
+@@ -114,10 +117,54 @@ void __evl_del_schedq(struct evl_multilevel_queue *q,
+ }
+ 
+ static __always_inline
+-void evl_del_schedq(struct evl_multilevel_queue *q,
+-	struct evl_thread *thread)
++void evl_del_schedq(struct evl_sched_queue *q,
++		struct evl_thread *thread)
+ {
+ 	__evl_del_schedq(q, &thread->rq_next, get_qindex(q, thread->cprio));
+ }
+ 
++#else /* !CONFIG_EVL_SCHED_SCALABLE */
++
++struct evl_sched_queue {
++	struct list_head head;
++};
++
++static __always_inline
++void evl_init_schedq(struct evl_sched_queue *q)
++{
++	INIT_LIST_HEAD(&q->head);
++}
++
++static __always_inline
++struct evl_thread *evl_get_schedq(struct evl_sched_queue *q)
++{
++	if (list_empty(&q->head))
++		return NULL;
++
++	return list_get_entry(&q->head, struct evl_thread, rq_next);
++}
++
++static __always_inline
++void evl_add_schedq(struct evl_sched_queue *q,
++		struct evl_thread *thread)
++{
++	list_add_prilf(thread, &q->head, cprio, rq_next);
++}
++
++static __always_inline
++void evl_add_schedq_tail(struct evl_sched_queue *q,
++			struct evl_thread *thread)
++{
++	list_add_priff(thread, &q->head, cprio, rq_next);
++}
++
++static __always_inline
++void evl_del_schedq(struct evl_sched_queue *q,
++		struct evl_thread *thread)
++{
++	list_del(&thread->rq_next);
++}
++
++#endif /* CONFIG_EVL_SCHED_SCALABLE */
++
+ #endif /* !_EVL_SCHED_QUEUE_H */
+diff --git a/include/evl/sched/tp.h b/include/evl/sched/tp.h
+index 0e1b0404ab..00db7845e8 100644
+--- a/include/evl/sched/tp.h
++++ b/include/evl/sched/tp.h
+@@ -34,7 +34,7 @@ struct evl_tp_schedule {
+ 
+ struct evl_sched_tp {
+ 	struct evl_tp_rq {
+-		struct evl_multilevel_queue runnable;
++		struct evl_sched_queue runnable;
+ 	} partitions[CONFIG_EVL_SCHED_TP_NR_PART];
+ 	struct evl_tp_rq idle;
+ 	struct evl_tp_rq *tps;
+diff --git a/include/evl/sched/weak.h b/include/evl/sched/weak.h
+index 198654eeac..60cc4ef96d 100644
+--- a/include/evl/sched/weak.h
++++ b/include/evl/sched/weak.h
+@@ -16,15 +16,10 @@
+ #define EVL_WEAK_MAX_PRIO  99
+ #define EVL_WEAK_NR_PRIO   (EVL_WEAK_MAX_PRIO - EVL_WEAK_MIN_PRIO + 1)
+ 
+-#if EVL_WEAK_NR_PRIO > EVL_CLASS_WEIGHT_FACTOR ||	\
+-	EVL_WEAK_NR_PRIO > EVL_MLQ_LEVELS
+-#error "WEAK class has too many priority levels"
+-#endif
+-
+ extern struct evl_sched_class evl_sched_weak;
+ 
+ struct evl_sched_weak {
+-	struct evl_multilevel_queue runnable;
++	struct evl_sched_queue runnable;
+ };
+ 
+ static inline int evl_weak_init_thread(struct evl_thread *thread)
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index bbac32c394..196138db2c 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -60,6 +60,19 @@ config EVL_TIMER_RBTREE
+ 
+ endchoice
+ 
++config EVL_SCHED_SCALABLE
++	bool "O(1) scheduler"
++	help
++	This option causes a multi-level priority queue to be used in
++	the core scheduler, so that it operates in constant-time
++	regardless of the number of _concurrently runnable_ threads
++	(which is normally significantly lower than the total number
++	of threads existing in the system).
++
++	Its use is recommended for large multi-threaded systems
++	involving more than 10 of such threads; otherwise, the basic
++	linear method usually performs better latency-wise.
++
+ config EVL_RUNSTATS
+ 	bool "Collect runtime statistics"
+ 	default y
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index a129cb7490..c73e0fc60a 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -620,7 +620,9 @@ void evl_protect_thread_priority(struct evl_thread *thread, int prio)
+ 	raw_spin_unlock(&thread->rq->lock);
+ }
+ 
+-void evl_init_schedq(struct evl_multilevel_queue *q)
++#ifdef CONFIG_EVL_SCHED_SCALABLE
++
++void evl_init_schedq(struct evl_sched_queue *q)
+ {
+ 	int prio;
+ 
+@@ -631,15 +633,12 @@ void evl_init_schedq(struct evl_multilevel_queue *q)
+ 		INIT_LIST_HEAD(q->heads + prio);
+ }
+ 
+-struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)
++struct evl_thread *__evl_get_schedq(struct evl_sched_queue *q)
+ {
+ 	struct evl_thread *thread;
+ 	struct list_head *head;
+ 	int idx;
+ 
+-	if (evl_schedq_is_empty(q))
+-		return NULL;
+-
+ 	idx = evl_get_schedq_weight(q);
+ 	head = q->heads + idx;
+ 	thread = list_first_entry(head, struct evl_thread, rq_next);
+@@ -648,41 +647,14 @@ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)
+ 	return thread;
+ }
+ 
+-static inline void enter_inband(struct evl_thread *root)
+-{
+-#ifdef CONFIG_EVL_WATCHDOG
+-	evl_stop_timer(&evl_thread_rq(root)->wdtimer);
+-#endif
+-}
+-
+-static inline void leave_inband(struct evl_thread *root)
+-{
+-#ifdef CONFIG_EVL_WATCHDOG
+-	evl_start_timer(&evl_thread_rq(root)->wdtimer,
+-			evl_abs_timeout(&evl_thread_rq(root)->wdtimer,
+-					get_watchdog_timeout()),
+-			EVL_INFINITE);
+-#endif
+-}
+-
+-/* oob stalled. */
+-static irqreturn_t oob_reschedule_interrupt(int irq, void *dev_id)
+-{
+-	trace_evl_reschedule_ipi(this_evl_rq());
+-
+-	/* Will reschedule from evl_exit_irq(). */
+-
+-	return IRQ_HANDLED;
+-}
+-
+ static struct evl_thread *lookup_fifo_class(struct evl_rq *rq)
+ {
+-	struct evl_multilevel_queue *q = &rq->fifo.runnable;
++	struct evl_sched_queue *q = &rq->fifo.runnable;
+ 	struct evl_thread *thread;
+ 	struct list_head *head;
+ 	int idx;
+ 
+-	if (evl_schedq_is_empty(q))
++	if (!q->elems)
+ 		return NULL;
+ 
+ 	/*
+@@ -708,6 +680,55 @@ static struct evl_thread *lookup_fifo_class(struct evl_rq *rq)
+ 	return thread;
+ }
+ 
++#else /* !CONFIG_EVL_SCHED_SCALABLE */
++
++static __always_inline
++struct evl_thread *lookup_fifo_class(struct evl_rq *rq)
++{
++	struct evl_sched_queue *q = &rq->fifo.runnable;
++	struct evl_thread *thread = NULL;
++
++	if (list_empty(&q->head))
++		return NULL;
++
++	thread = list_first_entry(&q->head, struct evl_thread, rq_next);
++	if (unlikely(thread->sched_class != &evl_sched_fifo))
++		return thread->sched_class->sched_pick(rq);
++
++	evl_del_schedq(q, thread);
++
++	return thread;
++}
++
++#endif /* CONFIG_EVL_SCHED_SCALABLE */
++
++static inline void enter_inband(struct evl_thread *root)
++{
++#ifdef CONFIG_EVL_WATCHDOG
++	evl_stop_timer(&evl_thread_rq(root)->wdtimer);
++#endif
++}
++
++static inline void leave_inband(struct evl_thread *root)
++{
++#ifdef CONFIG_EVL_WATCHDOG
++	evl_start_timer(&evl_thread_rq(root)->wdtimer,
++			evl_abs_timeout(&evl_thread_rq(root)->wdtimer,
++					get_watchdog_timeout()),
++			EVL_INFINITE);
++#endif
++}
++
++/* oob stalled. */
++static irqreturn_t oob_reschedule_interrupt(int irq, void *dev_id)
++{
++	trace_evl_reschedule_ipi(this_evl_rq());
++
++	/* Will reschedule from evl_exit_irq(). */
++
++	return IRQ_HANDLED;
++}
++
+ static inline void set_next_running(struct evl_rq *rq,
+ 				struct evl_thread *next)
+ {
+-- 
+2.30.2
+

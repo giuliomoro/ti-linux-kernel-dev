@@ -1,0 +1,67 @@
+From 4a5fe5e79e2e109d07abc2e9203789959e0c0db3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 21 Apr 2020 19:34:48 +0200
+Subject: [PATCH 0644/1010] evl/syscall: dump syscall symbolic name upon EPERM
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/syscall.c | 21 +++++++++++++++------
+ 1 file changed, 15 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index 4c6f2bcb66..4b90f21136 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -124,6 +124,15 @@ static const evl_syshand evl_systbl[] = {
+ 	   __EVL_CALL_ENTRY(ioctl),
+ };
+ 
++#define __EVL_CALL_NAME(__name)  \
++	[sys_evl_ ## __name] = #__name
++
++static const char *evl_sysnames[] = {
++	   __EVL_CALL_NAME(read),
++	   __EVL_CALL_NAME(write),
++	   __EVL_CALL_NAME(ioctl),
++};
++
+ #define SYSCALL_PROPAGATE   0
+ #define SYSCALL_STOP        1
+ 
+@@ -258,19 +267,19 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 		goto do_inband;
+ 
+ 	nr = oob_syscall_nr(regs);
++	if (nr >= ARRAY_SIZE(evl_systbl))
++		goto bad_syscall;
++
+ 	curr = evl_current();
+ 	if (curr == NULL || !cap_raised(current_cap(), CAP_SYS_NICE)) {
+ 		if (EVL_DEBUG(CORE))
+ 			printk(EVL_WARNING
+-				"OOB syscall <%d> denied to %s[%d]\n",
+-				nr, current->comm, task_pid_nr(current));
++				"syscall <oob_%s> denied to %s[%d]\n",
++				evl_sysnames[nr], current->comm, task_pid_nr(current));
+ 		set_oob_error(regs, -EPERM);
+ 		return SYSCALL_STOP;
+ 	}
+ 
+-	if (nr >= ARRAY_SIZE(evl_systbl))
+-		goto bad_syscall;
+-
+ 	/*
+ 	 * If the syscall originates from in-band context, hand it
+ 	 * over to handle_inband_syscall() where the caller would be
+@@ -323,7 +332,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 	}
+ 
+ bad_syscall:
+-	printk(EVL_WARNING "bad OOB syscall <%#x>\n", nr);
++	printk(EVL_WARNING "invalid out-of-band syscall <%#x>\n", nr);
+ 
+ 	set_oob_error(regs, -ENOSYS);
+ 
+-- 
+2.30.2
+

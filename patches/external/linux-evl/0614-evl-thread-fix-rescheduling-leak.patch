@@ -1,0 +1,25 @@
+From fdd3d0512a3015de171d35714013777aead734aa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 17 Feb 2020 11:24:43 +0100
+Subject: [PATCH 0614/1010] evl/thread: fix rescheduling leak
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 04d5874a47..a7242d558e 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1575,6 +1575,7 @@ static void handle_migration_event(struct dovetail_migration_data *d)
+ 	 */
+ 	if (thread->state & (EVL_THREAD_BLOCK_BITS & ~T_INBAND)) {
+ 		evl_kick_thread(thread, 0);
++		evl_schedule();
+ 		if (thread->state & T_USER)
+ 			dovetail_request_ucall(thread->altsched.task);
+ 	}
+-- 
+2.30.2
+

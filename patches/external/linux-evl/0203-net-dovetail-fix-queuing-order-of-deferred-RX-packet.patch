@@ -1,0 +1,27 @@
+From 45540374b5834626e37ae3d07f2e3e2929c9d87c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 23 Apr 2025 12:29:27 +0200
+Subject: [PATCH 0203/1010] net: dovetail: fix queuing order of deferred RX
+ packets
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 383aec6c0b..a09eebc3ab 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5070,7 +5070,7 @@ bool netif_receive_oob(struct sk_buff *skb)
+ 		if (net_running_oob()) {
+ 			raw_spin_lock_irqsave(&sd->inband_rx_lock, flags);
+ 			kick_softirq = list_empty(&sd->inband_rx_list);
+-			list_add(&skb->list, &sd->inband_rx_list);
++			list_add_tail(&skb->list, &sd->inband_rx_list);
+ 			raw_spin_unlock_irqrestore(&sd->inband_rx_lock, flags);
+ 			if (kick_softirq)
+ 				irq_work_queue(&sd->inband_rx_work);
+-- 
+2.30.2
+

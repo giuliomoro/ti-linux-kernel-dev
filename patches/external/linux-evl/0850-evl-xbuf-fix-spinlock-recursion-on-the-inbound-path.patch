@@ -1,0 +1,39 @@
+From a57d9a2a8e48f7ca31a7ae1447e30415ff2d74bc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 23 Aug 2023 10:07:11 +0200
+Subject: [PATCH 0850/1010] evl/xbuf: fix spinlock recursion on the inbound
+ path
+
+A thread calling do_xbuf_read() from the inband stage must make sure
+to drop the xbuf descriptor lock before it might be scheduled out, as
+a result of signaling a new poll status to the oob side. Failing to do
+so would allow a waiter on the oob stage to preempt the caller,
+causing a deadlock in an attempt to grab the same lock.
+
+Use the _nosched variant when posting the related flag, we'll
+reschedule right after once the lock is dropped and irqs are turned on
+again, before leaving the routine.
+
+See https://lore.kernel.org/xenomai/PH1P110MB105005EB4439ACFDCAA9C0F2E21FA@PH1P110MB1050.NAMP110.PROD.OUTLOOK.COM/
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/xbuf.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index 2dc86667ec..05423fe876 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -365,7 +365,7 @@ static void inbound_signal_output(struct xbuf_ring *ring, bool sigpoll)
+ 	if (sigpoll)
+ 		evl_signal_poll_events(&xbuf->poll_head, POLLOUT|POLLWRNORM);
+ 
+-	evl_raise_flag(&xbuf->ibnd.o_event);
++	evl_raise_flag_nosched(&xbuf->ibnd.o_event);
+ }
+ 
+ static ssize_t xbuf_read(struct file *filp, char __user *u_buf,
+-- 
+2.30.2
+

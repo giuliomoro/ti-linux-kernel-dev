@@ -1,0 +1,32 @@
+From 03fdb78855d54f50232077ffc9ff253b69208010 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 15 Jun 2020 12:30:14 +0200
+Subject: [PATCH 0668/1010] evl/flags: add non-destructive evl_peek_flag()
+
+We need a way to peek at a flag state without clearing it if set.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/flag.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/evl/flag.h b/include/evl/flag.h
+index afebf811a0..7f59406e89 100644
+--- a/include/evl/flag.h
++++ b/include/evl/flag.h
+@@ -34,6 +34,12 @@ static inline void evl_destroy_flag(struct evl_flag *wf)
+ 	evl_destroy_wait(&wf->wait);
+ }
+ 
++static inline bool evl_peek_flag(struct evl_flag *wf)
++{
++	smp_wmb();
++	return wf->raised;
++}
++
+ static inline bool evl_read_flag(struct evl_flag *wf)
+ {
+ 	if (wf->raised) {
+-- 
+2.30.2
+

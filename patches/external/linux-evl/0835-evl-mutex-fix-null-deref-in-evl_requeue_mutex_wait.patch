@@ -1,0 +1,81 @@
+From 4b7ae1b2d3a217776fa0b13180a99bfbbc7c2e23 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 2 Dec 2022 18:33:24 +0100
+Subject: [PATCH 0835/1010] evl/mutex: fix null deref in
+ evl_requeue_mutex_wait()
+
+__evl_unlock_mutex() may run concurrently to a lock chain walk, which
+would drop the ownership of the mutex, setting its owner field to
+NULL.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 16750fd193..64f0808f04 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -727,14 +727,6 @@ bool evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 	assert_hard_lock(&wchan->lock);
+ 	assert_hard_lock(&waiter->lock);
+ 
+-	/*
+-	 * To prevent ABBA, we may drop the waiter lock prior to
+-	 * reacquiring it in a double locking sequence along with
+-	 * wchan->owner->lock which we need to requeue the booster.
+-	 */
+-	raw_spin_unlock(&waiter->lock);
+-	evl_double_thread_lock(waiter, owner);
+-
+ 	/*
+ 	 * Make sure the waiter did not abort wait on wchan while
+ 	 * unlocked; this might happen since evl_wakeup_thread() would
+@@ -746,14 +738,30 @@ bool evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 	 * We have been holding wchan->lock across the unlocked
+ 	 * section, so we know that wchan did not go stale though.
+ 	 */
+-	if (waiter->wchan != wchan) {
+-		ret = false;
+-		goto out;
++	if (waiter->wchan != wchan)
++		return false;
++
++	/*
++	 * __evl_unlock_mutex() may run concurrently to us, dropping
++	 * ownership. Make sure we still have an owner.
++	 */
++	if (owner == NULL) {
++		list_del(&waiter->wait_next);
++		list_add_priff(waiter, &wchan->wait_list, wprio, wait_next);
++		return false;
+ 	}
+ 
++	/*
++	 * To prevent ABBA, we may drop the waiter lock prior to
++	 * reacquiring it in a double locking sequence along with
++	 * wchan->owner->lock which we need to requeue the booster.
++	 */
++	raw_spin_unlock(&waiter->lock);
++	evl_double_thread_lock(waiter, owner);
++
+ 	/*
+ 	 * Reorder the wait list according to the (updated) priority
+-	 * of the waiter.
++	 * of the waiter, then requeue the booster accordingly.
+ 	 */
+ 	list_del(&waiter->wait_next);
+ 	list_add_priff(waiter, &wchan->wait_list, wprio, wait_next);
+@@ -766,7 +774,7 @@ bool evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 			enqueue_booster(mutex, top_waiter);
+ 		}
+ 	}
+-out:
++
+ 	raw_spin_unlock(&owner->lock);
+ 
+ 	return ret;
+-- 
+2.30.2
+

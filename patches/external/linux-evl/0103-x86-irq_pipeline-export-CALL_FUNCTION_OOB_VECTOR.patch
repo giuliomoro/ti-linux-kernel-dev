@@ -1,0 +1,99 @@
+From 1672741cf925e55109a0623197d1f6eafb703aec Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 17 Sep 2023 11:36:26 +0200
+Subject: [PATCH 0103/1010] x86: irq_pipeline: export CALL_FUNCTION_OOB_VECTOR
+
+An interrupt vector to trigger function calls on remote CPUs via IPIs.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/x86/include/asm/idtentry.h     | 3 ++-
+ arch/x86/include/asm/irq_pipeline.h | 1 +
+ arch/x86/include/asm/irq_vectors.h  | 3 ++-
+ arch/x86/kernel/idt.c               | 3 ++-
+ arch/x86/kernel/irq_pipeline.c      | 6 +++++-
+ 5 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/idtentry.h b/arch/x86/include/asm/idtentry.h
+index a7e62a4053..69d145600e 100644
+--- a/arch/x86/include/asm/idtentry.h
++++ b/arch/x86/include/asm/idtentry.h
+@@ -748,8 +748,9 @@ DECLARE_IDTENTRY_SYSVEC_PIPELINED(REBOOT_VECTOR,		sysvec_reboot);
+ DECLARE_IDTENTRY_SYSVEC_PIPELINED(CALL_FUNCTION_SINGLE_VECTOR,	sysvec_call_function_single);
+ DECLARE_IDTENTRY_SYSVEC_PIPELINED(CALL_FUNCTION_VECTOR,		sysvec_call_function);
+ #ifdef CONFIG_IRQ_PIPELINE
+-DECLARE_IDTENTRY_SYSVEC(RESCHEDULE_OOB_VECTOR,		sysvec_reschedule_oob_ipi);
+ DECLARE_IDTENTRY_SYSVEC(TIMER_OOB_VECTOR,		sysvec_timer_oob_ipi);
++DECLARE_IDTENTRY_SYSVEC(RESCHEDULE_OOB_VECTOR,		sysvec_reschedule_oob_ipi);
++DECLARE_IDTENTRY_SYSVEC(CALL_FUNCTION_OOB_VECTOR,       sysvec_call_function_oob_ipi);
+ #endif
+ #else
+ # define fred_sysvec_reschedule_ipi			NULL
+diff --git a/arch/x86/include/asm/irq_pipeline.h b/arch/x86/include/asm/irq_pipeline.h
+index fc6e0ce246..a2e1bc8656 100644
+--- a/arch/x86/include/asm/irq_pipeline.h
++++ b/arch/x86/include/asm/irq_pipeline.h
+@@ -15,6 +15,7 @@
+ #define FIRST_SYSTEM_IRQ	NR_IRQS
+ #define TIMER_OOB_IPI		apicm_vector_irq(TIMER_OOB_VECTOR)
+ #define RESCHEDULE_OOB_IPI	apicm_vector_irq(RESCHEDULE_OOB_VECTOR)
++#define CALL_FUNCTION_OOB_IPI	apicm_vector_irq(CALL_FUNCTION_OOB_VECTOR)
+ #define apicm_irq_vector(__irq) ((__irq) - FIRST_SYSTEM_IRQ + FIRST_SYSTEM_VECTOR)
+ #define apicm_vector_irq(__vec) ((__vec) - FIRST_SYSTEM_VECTOR + FIRST_SYSTEM_IRQ)
+ 
+diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
+index 382ecc9256..5de115a8db 100644
+--- a/arch/x86/include/asm/irq_vectors.h
++++ b/arch/x86/include/asm/irq_vectors.h
+@@ -109,7 +109,8 @@
+ #ifdef CONFIG_IRQ_PIPELINE
+ #define TIMER_OOB_VECTOR		0xeb
+ #define RESCHEDULE_OOB_VECTOR		0xea
+-#define FIRST_SYSTEM_APIC_VECTOR	RESCHEDULE_OOB_VECTOR
++#define CALL_FUNCTION_OOB_VECTOR	0xe9
++#define FIRST_SYSTEM_APIC_VECTOR	CALL_FUNCTION_OOB_VECTOR
+ #define NR_APIC_VECTORS	        	(NR_VECTORS - FIRST_SYSTEM_VECTOR)
+ #else
+ #define FIRST_SYSTEM_APIC_VECTOR	LOCAL_TIMER_VECTOR
+diff --git a/arch/x86/kernel/idt.c b/arch/x86/kernel/idt.c
+index dd6416716f..6db71962d3 100644
+--- a/arch/x86/kernel/idt.c
++++ b/arch/x86/kernel/idt.c
+@@ -134,8 +134,9 @@ static const __initconst struct idt_data apic_idts[] = {
+ 	INTG(IRQ_MOVE_CLEANUP_VECTOR,		asm_sysvec_irq_move_cleanup),
+ 	INTG(REBOOT_VECTOR,			asm_sysvec_reboot),
+ #ifdef CONFIG_IRQ_PIPELINE
+-	INTG(RESCHEDULE_OOB_VECTOR,		asm_sysvec_reschedule_oob_ipi),
+ 	INTG(TIMER_OOB_VECTOR,			asm_sysvec_timer_oob_ipi),
++	INTG(RESCHEDULE_OOB_VECTOR,		asm_sysvec_reschedule_oob_ipi),
++	INTG(CALL_FUNCTION_OOB_VECTOR,		asm_sysvec_call_function_oob_ipi),
+ #endif
+ #endif
+ 
+diff --git a/arch/x86/kernel/irq_pipeline.c b/arch/x86/kernel/irq_pipeline.c
+index 831a04a2ea..2b47495b6c 100644
+--- a/arch/x86/kernel/irq_pipeline.c
++++ b/arch/x86/kernel/irq_pipeline.c
+@@ -342,6 +342,10 @@ DEFINE_IDTENTRY_SYSVEC_PIPELINED(RESCHEDULE_OOB_VECTOR,
+ 				 sysvec_reschedule_oob_ipi)
+ { /* In-band handler is unused. */ }
+ 
++DEFINE_IDTENTRY_SYSVEC_PIPELINED(CALL_FUNCTION_OOB_VECTOR,
++				 sysvec_call_function_oob_ipi)
++{ /* In-band handler is unused. */ }
++
+ DEFINE_IDTENTRY_SYSVEC_PIPELINED(TIMER_OOB_VECTOR,
+ 				 sysvec_timer_oob_ipi)
+ { /* In-band handler is unused. */ }
+@@ -386,7 +390,7 @@ static void smp_setup(void)
+ 
+ static void smp_setup(void) { }
+ 
+-#endif
++#endif	/* !CONFIG_SMP */
+ 
+ void __init arch_irq_pipeline_init(void)
+ {
+-- 
+2.30.2
+

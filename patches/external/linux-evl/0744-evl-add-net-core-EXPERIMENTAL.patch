@@ -1,0 +1,4514 @@
+From 1152111bd2d6c91528713ca730e0034d2a1132d0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 21 Dec 2020 17:30:02 +0100
+Subject: [PATCH 0744/1010] evl: add net core (EXPERIMENTAL)
+
+This code lays the groundwork for an out-of-band network stack.  It
+currently provides basic AF_PACKET support (SOCK_RAW only) from the
+out-of-band stage, reusing the regular NIC drivers unmodified for
+dealing with the hardware. Therefore, the stack has NO end-to-end
+real-time property just yet.
+
+The next steps will address:
+
+- a kernel API for making regular NIC drivers oob-capable.
+
+- a mechanism for the out-of-band core to learn the routing
+  information dynamically produced by the in-band stack.
+
+- support for UDP/AF_INET.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/include/dovetail/netdevice.h   |   7 +
+ arch/arm64/include/dovetail/netdevice.h |   7 +
+ arch/x86/include/dovetail/netdevice.h   |   7 +
+ include/asm-generic/evl/netdevice.h     |  54 ++
+ include/evl/factory.h                   |   2 +-
+ include/evl/net.h                       |  37 ++
+ include/evl/net/device.h                |  31 +
+ include/evl/net/input.h                 |  47 ++
+ include/evl/net/neighbour.h             |  44 ++
+ include/evl/net/output.h                |  23 +
+ include/evl/net/packet.h                |  16 +
+ include/evl/net/qdisc.h                 |  55 ++
+ include/evl/net/skb.h                   |  63 ++
+ include/evl/net/socket.h                | 123 ++++
+ include/uapi/evl/control.h              |   2 +-
+ include/uapi/evl/fcntl.h                |  16 +
+ include/uapi/evl/net/sched.h            |  10 +
+ include/uapi/evl/net/socket.h           |  45 ++
+ kernel/evl/Kconfig                      |  21 +
+ kernel/evl/Makefile                     |   2 +-
+ kernel/evl/control.c                    |  34 +
+ kernel/evl/factory.c                    |   3 +-
+ kernel/evl/init.c                       |  13 +-
+ kernel/evl/net/Makefile                 |   5 +
+ kernel/evl/net/dev.c                    | 435 +++++++++++++
+ kernel/evl/net/ethernet/Makefile        |   3 +
+ kernel/evl/net/ethernet/arp.c           |  76 +++
+ kernel/evl/net/ethernet/input.c         | 149 +++++
+ kernel/evl/net/ethernet/output.c        |  37 ++
+ kernel/evl/net/init.c                   |  77 +++
+ kernel/evl/net/input.c                  | 167 +++++
+ kernel/evl/net/neighbour.c              |  80 +++
+ kernel/evl/net/output.c                 | 247 ++++++++
+ kernel/evl/net/packet/Makefile          |   3 +
+ kernel/evl/net/packet/packet.c          | 704 +++++++++++++++++++++
+ kernel/evl/net/qdisc/Makefile           |   3 +
+ kernel/evl/net/qdisc/core.c             | 102 +++
+ kernel/evl/net/qdisc/fifo.c             |  58 ++
+ kernel/evl/net/skb.c                    | 487 ++++++++++++++
+ kernel/evl/net/socket.c                 | 805 ++++++++++++++++++++++++
+ 40 files changed, 4094 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/include/dovetail/netdevice.h
+ create mode 100644 arch/arm64/include/dovetail/netdevice.h
+ create mode 100644 arch/x86/include/dovetail/netdevice.h
+ create mode 100644 include/asm-generic/evl/netdevice.h
+ create mode 100644 include/evl/net.h
+ create mode 100644 include/evl/net/device.h
+ create mode 100644 include/evl/net/input.h
+ create mode 100644 include/evl/net/neighbour.h
+ create mode 100644 include/evl/net/output.h
+ create mode 100644 include/evl/net/packet.h
+ create mode 100644 include/evl/net/qdisc.h
+ create mode 100644 include/evl/net/skb.h
+ create mode 100644 include/evl/net/socket.h
+ create mode 100644 include/uapi/evl/fcntl.h
+ create mode 100644 include/uapi/evl/net/sched.h
+ create mode 100644 include/uapi/evl/net/socket.h
+ create mode 100644 kernel/evl/net/Makefile
+ create mode 100644 kernel/evl/net/dev.c
+ create mode 100644 kernel/evl/net/ethernet/Makefile
+ create mode 100644 kernel/evl/net/ethernet/arp.c
+ create mode 100644 kernel/evl/net/ethernet/input.c
+ create mode 100644 kernel/evl/net/ethernet/output.c
+ create mode 100644 kernel/evl/net/init.c
+ create mode 100644 kernel/evl/net/input.c
+ create mode 100644 kernel/evl/net/neighbour.c
+ create mode 100644 kernel/evl/net/output.c
+ create mode 100644 kernel/evl/net/packet/Makefile
+ create mode 100644 kernel/evl/net/packet/packet.c
+ create mode 100644 kernel/evl/net/qdisc/Makefile
+ create mode 100644 kernel/evl/net/qdisc/core.c
+ create mode 100644 kernel/evl/net/qdisc/fifo.c
+ create mode 100644 kernel/evl/net/skb.c
+ create mode 100644 kernel/evl/net/socket.c
+
+diff --git a/arch/arm/include/dovetail/netdevice.h b/arch/arm/include/dovetail/netdevice.h
+new file mode 100644
+index 0000000000..bc7ac67695
+--- /dev/null
++++ b/arch/arm/include/dovetail/netdevice.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_NETDEVICE_H
++#define _EVL_DOVETAIL_NETDEVICE_H
++
++#include <asm-generic/evl/netdevice.h>
++
++#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
+diff --git a/arch/arm64/include/dovetail/netdevice.h b/arch/arm64/include/dovetail/netdevice.h
+new file mode 100644
+index 0000000000..bc7ac67695
+--- /dev/null
++++ b/arch/arm64/include/dovetail/netdevice.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_NETDEVICE_H
++#define _EVL_DOVETAIL_NETDEVICE_H
++
++#include <asm-generic/evl/netdevice.h>
++
++#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
+diff --git a/arch/x86/include/dovetail/netdevice.h b/arch/x86/include/dovetail/netdevice.h
+new file mode 100644
+index 0000000000..bc7ac67695
+--- /dev/null
++++ b/arch/x86/include/dovetail/netdevice.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_NETDEVICE_H
++#define _EVL_DOVETAIL_NETDEVICE_H
++
++#include <asm-generic/evl/netdevice.h>
++
++#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
+diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
+new file mode 100644
+index 0000000000..b83bd9a8d3
+--- /dev/null
++++ b/include/asm-generic/evl/netdevice.h
+@@ -0,0 +1,54 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _ASM_GENERIC_EVL_NETDEVICE_H
++#define _ASM_GENERIC_EVL_NETDEVICE_H
++
++#ifdef CONFIG_EVL
++
++#include <linux/list.h>
++#include <evl/wait.h>
++#include <evl/poll.h>
++#include <evl/flag.h>
++#include <evl/crossing.h>
++
++struct evl_net_qdisc;
++struct evl_kthread;
++
++struct evl_net_skb_queue {
++	struct list_head queue;
++	hard_spinlock_t lock;
++};
++
++struct evl_netdev_state {
++	/* Buffer pool management */
++	struct list_head free_skb_pool;
++	size_t pool_free;
++	size_t pool_max;
++	size_t buf_size;
++	struct evl_wait_queue pool_wait;
++	struct evl_poll_head poll_head;
++	/* RX handling */
++	struct evl_kthread *rx_handler;
++	struct evl_flag rx_flag;
++	struct evl_net_skb_queue rx_queue;
++	/* TX handling */
++	struct evl_net_qdisc *qdisc;
++	struct evl_kthread *tx_handler;
++	struct evl_flag tx_flag;
++	/* Count of oob ports referring to this device. */
++	int refs;
++};
++
++struct oob_netdev_state {
++	struct evl_netdev_state *estate;
++	struct evl_crossing crossing;
++	struct list_head next;
++};
++
++#else
++
++struct oob_netdev_state {
++};
++
++#endif	/* !CONFIG_EVL */
++
++#endif /* !_ASM_GENERIC_EVL_NETDEVICE_H */
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 847250a80a..2698d378b8 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -200,7 +200,7 @@ void evl_early_cleanup_factories(void);
+ 
+ int evl_late_init_factories(void);
+ 
+-void evl_cleanup_factories(void);
++void evl_late_cleanup_factories(void);
+ 
+ extern struct evl_factory evl_clock_factory;
+ extern struct evl_factory evl_control_factory;
+diff --git a/include/evl/net.h b/include/evl/net.h
+new file mode 100644
+index 0000000000..e283a9dcac
+--- /dev/null
++++ b/include/evl/net.h
+@@ -0,0 +1,37 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_H
++#define _EVL_NET_H
++
++#ifdef CONFIG_EVL_NET
++
++#include <linux/net.h>
++#include <net/sock.h>
++#include <evl/net/skb.h>
++#include <evl/net/input.h>
++
++int evl_net_init(void);
++
++void evl_net_cleanup(void);
++
++extern const struct net_proto_family evl_family_ops;
++
++extern struct proto evl_af_oob_proto;
++
++#else
++
++static inline int evl_net_init(void)
++{
++	return 0;
++}
++
++static inline void evl_net_cleanup(void)
++{ }
++
++#endif
++
++#endif /* !_EVL_NET_H */
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+new file mode 100644
+index 0000000000..752bfea1dd
+--- /dev/null
++++ b/include/evl/net/device.h
+@@ -0,0 +1,31 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_DEVICE_H
++#define _EVL_NET_DEVICE_H
++
++#ifdef CONFIG_EVL_NET
++
++struct evl_socket;
++struct evl_netdev_activation;
++struct notifier_block;
++
++int evl_net_switch_oob_port(struct evl_socket *esk,
++			    struct evl_netdev_activation *act);
++
++int evl_netdev_event(struct notifier_block *ev_block,
++		     unsigned long event, void *ptr);
++
++struct net_device *
++evl_net_get_dev_by_index(struct net *net, int ifindex);
++
++void evl_net_get_dev(struct net_device *dev);
++
++void evl_net_put_dev(struct net_device *dev);
++
++#endif
++
++#endif /* !_EVL_NET_DEVICE_H */
+diff --git a/include/evl/net/input.h b/include/evl/net/input.h
+new file mode 100644
+index 0000000000..f0f2b99c6d
+--- /dev/null
++++ b/include/evl/net/input.h
+@@ -0,0 +1,47 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_INPUT_H
++#define _EVL_NET_INPUT_H
++
++#include <linux/list.h>
++#include <evl/lock.h>
++
++struct sk_buff;
++
++struct evl_net_handler {
++	void (*ingress)(struct sk_buff *skb);
++};
++
++struct evl_net_rxqueue {
++	u32 hkey;
++	struct hlist_node hash;
++	struct list_head subscribers;
++	evl_spinlock_t lock;
++	struct list_head next;
++};
++
++void evl_net_do_rx(void *arg);
++
++void evl_net_receive(struct sk_buff *skb,
++		struct evl_net_handler *handler);
++
++struct evl_net_rxqueue *evl_net_alloc_rxqueue(u32 hkey);
++
++void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq);
++
++bool evl_net_ether_accept(struct sk_buff *skb);
++
++static inline bool evl_net_rxqueue_active(struct evl_net_rxqueue *rxq)
++{
++	return list_empty(&rxq->subscribers);
++}
++
++ssize_t evl_net_store_vlans(const char *buf, size_t len);
++
++ssize_t evl_net_show_vlans(char *buf, size_t len);
++
++#endif /* !_EVL_NET_INPUT_H */
+diff --git a/include/evl/net/neighbour.h b/include/evl/net/neighbour.h
+new file mode 100644
+index 0000000000..b4c334d082
+--- /dev/null
++++ b/include/evl/net/neighbour.h
+@@ -0,0 +1,44 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_NEIGHBOUR_H
++#define _EVL_NET_NEIGHBOUR_H
++
++#include <linux/refcount.h>
++#include <net/neighbour.h>
++
++struct evl_net_neigh_cache;
++struct evl_net_neighbour;
++
++struct evl_net_neigh_cache_ops {
++	struct evl_net_neighbour *(*alloc)(struct neighbour *src);
++	void (*free)(struct evl_net_neighbour *neigh);
++	void (*hash)(struct evl_net_neigh_cache *cache,
++		struct evl_net_neighbour *neigh);
++	void (*unhash)(struct evl_net_neigh_cache *cache,
++		struct evl_net_neighbour *neigh);
++};
++
++struct evl_net_neigh_cache {
++	struct evl_net_neigh_cache_ops *ops;
++	struct neigh_table *source;
++	struct list_head next;	/* in cache_list */
++};
++
++struct evl_net_neighbour {
++	struct evl_net_neigh_cache *cache;
++	refcount_t refcnt;
++	struct net_device *dev;
++	struct hlist_node hash;
++};
++
++int evl_net_init_neighbour(void);
++
++void evl_net_cleanup_neighbour(void);
++
++extern struct evl_net_neigh_cache evl_net_arp_cache;
++
++#endif /* !_EVL_NET_NEIGHBOUR_H */
+diff --git a/include/evl/net/output.h b/include/evl/net/output.h
+new file mode 100644
+index 0000000000..bd5ac1dae4
+--- /dev/null
++++ b/include/evl/net/output.h
+@@ -0,0 +1,23 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_OUTPUT_H
++#define _EVL_NET_OUTPUT_H
++
++struct sk_buff;
++struct evl_socket;
++struct net_device;
++
++void evl_net_do_tx(void *arg);
++
++int evl_net_transmit(struct sk_buff *skb);
++
++void evl_net_init_tx(void);
++
++int evl_net_ether_transmit(struct net_device *dev,
++			   struct sk_buff *skb);
++
++#endif /* !_EVL_NET_OUTPUT_H */
+diff --git a/include/evl/net/packet.h b/include/evl/net/packet.h
+new file mode 100644
+index 0000000000..bea66141fa
+--- /dev/null
++++ b/include/evl/net/packet.h
+@@ -0,0 +1,16 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_PACKET_H
++#define _EVL_NET_PACKET_H
++
++#include <evl/net/socket.h>
++
++bool evl_net_packet_deliver(struct sk_buff *skb);
++
++extern struct evl_socket_domain evl_net_packet;
++
++#endif /* !_EVL_NET_PACKET_H */
+diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
+new file mode 100644
+index 0000000000..be07e0c779
+--- /dev/null
++++ b/include/evl/net/qdisc.h
+@@ -0,0 +1,55 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_QDISC_H
++#define _EVL_NET_QDISC_H
++
++#include <linux/types.h>
++#include <linux/list.h>
++#include <evl/net/skb.h>
++
++struct evl_net_qdisc;
++
++struct evl_net_qdisc_ops {
++	const char *name;
++	size_t priv_size;
++	int (*init)(struct evl_net_qdisc *qdisc);
++	void (*destroy)(struct evl_net_qdisc *qdisc);
++	int (*enqueue)(struct evl_net_qdisc *qdisc, struct sk_buff *skb);
++	struct sk_buff *(*dequeue)(struct evl_net_qdisc *qdisc);
++	struct list_head next;
++};
++
++struct evl_net_qdisc {
++	const struct evl_net_qdisc_ops *oob_ops;
++	struct evl_net_skb_queue inband_q;
++	unsigned long packet_dropped;
++};
++
++static inline void *evl_qdisc_priv(struct evl_net_qdisc *qdisc)
++{
++	return qdisc + 1;
++}
++
++void evl_net_register_qdisc(struct evl_net_qdisc_ops *ops);
++
++void evl_net_unregister_qdisc(struct evl_net_qdisc_ops *ops);
++
++struct evl_net_qdisc *
++evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops);
++
++void evl_net_free_qdisc(struct evl_net_qdisc *qdisc);
++
++int evl_net_sched_packet(struct net_device *dev,
++			 struct sk_buff *skb);
++
++void evl_net_init_qdisc(void);
++
++void evl_net_cleanup_qdisc(void);
++
++extern struct evl_net_qdisc_ops evl_net_qdisc_fifo;
++
++#endif /* !_EVL_NET_QDISC_H */
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+new file mode 100644
+index 0000000000..8c92fff037
+--- /dev/null
++++ b/include/evl/net/skb.h
+@@ -0,0 +1,63 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_SKB_H
++#define _EVL_NET_SKB_H
++
++#include <linux/types.h>
++#include <linux/list.h>
++#include <evl/lock.h>
++#include <evl/timeout.h>
++
++struct sk_buff;
++struct net_device;
++struct evl_net_handler;
++struct evl_net_skb_queue;
++struct evl_socket;
++
++struct evl_net_cb {
++	struct evl_net_handler *handler;
++	struct sk_buff *origin;	/* of a clone. */
++	dma_addr_t dma_addr;
++	struct evl_socket *tracker;
++	union {
++		/* protocol-specific stuff should live here. */
++	};
++};
++#define EVL_NET_CB(__skb)  ((struct evl_net_cb *)&((__skb)->cb[0]))
++
++void evl_net_init_skb_queue(struct evl_net_skb_queue *txq);
++
++void evl_net_destroy_skb_queue(struct evl_net_skb_queue *txq);
++
++void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
++			struct sk_buff *skb);
++
++struct sk_buff *
++evl_net_get_skb_queue(struct evl_net_skb_queue *skbq);
++
++bool evl_net_move_skb_queue(struct evl_net_skb_queue *skbq,
++			struct list_head *list);
++
++int evl_net_dev_build_pool(struct net_device *dev);
++
++void evl_net_dev_purge_pool(struct net_device *dev);
++
++struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
++				      ktime_t timeout,
++				      enum evl_tmode tmode);
++
++void evl_net_free_skb(struct sk_buff *skb);
++
++void evl_net_free_skb_list(struct list_head *list);
++
++struct sk_buff *evl_net_clone_skb(struct sk_buff *skb);
++
++int evl_net_init_pools(void);
++
++ssize_t evl_net_show_clones(char *buf, size_t len);
++
++#endif /* !_EVL_NET_SKB_H */
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+new file mode 100644
+index 0000000000..94bafd0cad
+--- /dev/null
++++ b/include/evl/net/socket.h
+@@ -0,0 +1,123 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_SOCKET_H
++#define _EVL_NET_SOCKET_H
++
++#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/mutex.h>
++#include <linux/atomic.h>
++#include <linux/skbuff.h>
++#include <evl/wait.h>
++#include <evl/file.h>
++#include <evl/poll.h>
++#include <evl/crossing.h>
++#include <uapi/evl/net/socket.h>
++
++struct evl_socket;
++struct net;
++struct net_device;
++
++struct evl_net_proto {
++	int (*attach)(struct evl_socket *esk,
++		struct evl_net_proto *proto, __be16 protocol);
++	void (*detach)(struct evl_socket *esk);
++	int (*bind)(struct evl_socket *esk,
++		struct sockaddr *addr, int len);
++	int (*ioctl)(struct evl_socket *esk, unsigned int cmd,
++		unsigned long arg);
++	ssize_t (*oob_send)(struct evl_socket *esk,
++			const struct user_oob_msghdr __user *u_msghdr,
++			const struct iovec *iov,
++			size_t iovlen);
++	ssize_t (*oob_receive)(struct evl_socket *esk,
++			struct user_oob_msghdr __user *u_msghdr,
++			const struct iovec *iov,
++			size_t iovlen);
++	__poll_t (*oob_poll)(struct evl_socket *esk,
++			struct oob_poll_wait *wait);
++	struct net_device *(*get_netif)(struct evl_socket *esk);
++};
++
++struct evl_socket_domain {
++	int af_domain;
++	struct evl_net_proto *(*match)(int type, __be16 protocol);
++	struct list_head next;
++};
++
++struct evl_socket {
++	struct evl_net_proto *proto;
++	struct evl_file efile;
++	struct mutex lock;
++	struct net *net;
++	struct hlist_node hash;
++	struct list_head input;
++	struct evl_wait_queue input_wait;
++	struct evl_poll_head poll_head; /* On input queue. */
++	struct list_head next_sub;	/* evl_net_rxqueue.subscribers */
++	struct sock *sk;
++	atomic_t rmem_count;
++	int rmem_max;
++	atomic_t wmem_count;
++	int wmem_max;
++	struct evl_wait_queue wmem_wait;
++	struct evl_crossing wmem_drain;
++	__be16 protocol;
++	struct {
++		int real_ifindex;
++		int vlan_ifindex;
++		u16 vlan_id;
++		u32 proto_hash;
++	} binding;
++	hard_spinlock_t oob_lock;
++};
++
++static inline unsigned int evl_socket_f_flags(struct evl_socket *esk)
++{
++	return esk->efile.filp->f_flags;
++}
++
++static inline bool evl_charge_socket_rmem(struct evl_socket *esk,
++					  struct sk_buff *skb)
++{
++	/* An overflow of skb->truesize - 1 is allowed, not more. */
++	if (atomic_read(&esk->rmem_count) >= esk->rmem_max)
++		return false;
++
++	/* We don't have to saturate, atomic_t is fine. */
++	atomic_add(skb->truesize, &esk->rmem_count);
++
++	return true;
++}
++
++static inline void evl_uncharge_socket_rmem(struct evl_socket *esk,
++					    struct sk_buff *skb)
++{
++	atomic_sub(skb->truesize, &esk->rmem_count);
++}
++
++int evl_charge_socket_wmem(struct evl_socket *esk,
++			struct sk_buff *skb,
++			ktime_t timeout, enum evl_tmode tmode);
++
++void evl_uncharge_socket_wmem(struct sk_buff *skb);
++
++int evl_register_socket_domain(struct evl_socket_domain *domain);
++
++void evl_unregister_socket_domain(struct evl_socket_domain *domain);
++
++ssize_t evl_export_iov(const struct iovec *iov, size_t iovlen,
++		const void *data, size_t len);
++
++ssize_t evl_import_iov(const struct iovec *iov, size_t iovlen,
++		void *data, size_t len, size_t *remainder);
++
++int evl_charge_socket_wmem(struct evl_socket *esk,
++			struct sk_buff *skb,
++			ktime_t timeout, enum evl_tmode tmode);
++
++#endif /* !_EVL_NET_SOCKET_H */
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 2e6562c466..f70bfb3355 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -18,7 +18,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  25
++#define EVL_ABI_LEVEL  26
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/fcntl.h b/include/uapi/evl/fcntl.h
+new file mode 100644
+index 0000000000..8f0b925706
+--- /dev/null
++++ b/include/uapi/evl/fcntl.h
+@@ -0,0 +1,16 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_FCNTL_H
++#define _EVL_UAPI_FCNTL_H
++
++/*
++ * EVL-specific open mode. Must match kernel UAPI in
++ * include/uapi/asm-generic/fcntl.h.
++ */
++#define O_OOB	010000000000	/* Request out-of-band capabilities */
++
++#endif /* !_EVL_UAPI_FCNTL_H */
+diff --git a/include/uapi/evl/net/sched.h b/include/uapi/evl/net/sched.h
+new file mode 100644
+index 0000000000..583103d5a4
+--- /dev/null
++++ b/include/uapi/evl/net/sched.h
+@@ -0,0 +1,10 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_NET_SCHED_H
++#define _EVL_UAPI_NET_SCHED_H
++
++#endif /* !_EVL_UAPI_NET_SCHED_H */
+diff --git a/include/uapi/evl/net/socket.h b/include/uapi/evl/net/socket.h
+new file mode 100644
+index 0000000000..1117aa0167
+--- /dev/null
++++ b/include/uapi/evl/net/socket.h
+@@ -0,0 +1,45 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_NET_SOCKET_H
++#define _EVL_UAPI_NET_SOCKET_H
++
++#include <uapi/evl/types.h>
++#include <uapi/evl/fcntl.h>
++
++#define AF_OOB		45	/* Out-of-band domain sockets */
++
++#define SOCK_OOB	O_OOB	/* Request out-of-band capabilities */
++
++/* Keep this distinct from SOCK_IOC_TYPE (0x89) */
++#define EVL_SOCKET_IOCBASE  0xee
++
++struct user_oob_msghdr {
++	__u64 name_ptr;		/* (struct sockaddr __user *name) */
++	__u64 iov_ptr;		/* (struct iovec __user *iov) */
++	__u64 ctl_ptr;		/* (void __user *control) */
++	__u32 namelen;
++	__u32 iovlen;
++	__u32 ctllen;
++	__s32 count;		/* Receive only (actual byte count). */
++	__u32 flags;
++	struct __evl_timespec timeout;
++	struct __evl_timespec timestamp; /* Stats / TSN trigger */
++};
++
++struct evl_netdev_activation {
++	__u64 poolsz;
++	__u64 bufsz;
++};
++
++#define EVL_SOCKIOC_ACTIVATE	_IOW(EVL_SOCKET_IOCBASE, 2, struct evl_netdev_activation)
++#define EVL_SOCKIOC_DEACTIVATE	_IO(EVL_SOCKET_IOCBASE, 3)
++#define EVL_SOCKIOC_SENDMSG	_IOW(EVL_SOCKET_IOCBASE, 4, struct user_oob_msghdr)
++#define EVL_SOCKIOC_RECVMSG	_IOWR(EVL_SOCKET_IOCBASE, 5, struct user_oob_msghdr)
++#define EVL_SOCKIOC_SETRECVSZ	_IOW(EVL_SOCKET_IOCBASE, 6, int)
++#define EVL_SOCKIOC_SETSENDSZ	_IOW(EVL_SOCKET_IOCBASE, 7, int)
++
++#endif /* !_EVL_UAPI_NET_SOCKET_H */
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index fff08f1a80..811deba7dc 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -88,6 +88,21 @@ config EVL_RUNSTATS
+ 	per-thread runtime statistics, which are accessible via
+ 	the /sys interface.
+ 
++config EVL_NET
++        bool "Out-of-band networking (EXPERIMENTAL)"
++	default n
++	select NET_OOB
++	select NET_SCHED
++	select NET_SCH_OOB
++	select INET
++	select VLAN_8021Q
++	help
++	This option enables preliminary networking support for EVL.
++
++	CAUTION! This is WIP, experimental code with limited support
++	at the moment, which is still subject to significant UAPI and
++	kernel API changes all over the map.
++
+ menu "Fixed sizes and limits"
+ 
+ config EVL_COREMEM_SIZE
+@@ -241,6 +256,12 @@ config EVL_DEBUG_WOLI
+ 	  option is off. This feature may induce overhead in some
+ 	  cases, so you should enable it for debugging purposes only.
+ 
++config EVL_DEBUG_NET
++	bool "Network stack debugging"
++	help
++	  This option activates various assertions inside the EVL
++	  network stack. This option has moderate overhead.
++
+ config EVL_WATCHDOG
+ 	bool "Watchdog support"
+ 	default y
+diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
+index 474c804014..1e3bcf7e15 100644
+--- a/kernel/evl/Makefile
++++ b/kernel/evl/Makefile
+@@ -1,4 +1,4 @@
+-obj-$(CONFIG_EVL) += evl.o sched/
++obj-$(CONFIG_EVL) += evl.o sched/ net/
+ 
+ evl-y :=		\
+ 	clock.o		\
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index bdac208d72..2aea3fb57e 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -7,6 +7,7 @@
+ #include <linux/types.h>
+ #include <linux/mm.h>
+ #include <linux/sched/isolation.h>
++#include <linux/bitmap.h>
+ #include <evl/memory.h>
+ #include <evl/thread.h>
+ #include <evl/factory.h>
+@@ -14,6 +15,8 @@
+ #include <evl/tick.h>
+ #include <evl/sched.h>
+ #include <evl/control.h>
++#include <evl/net/input.h>
++#include <evl/net/skb.h>
+ #include <evl/uaccess.h>
+ #include <asm/evl/fptest.h>
+ #include <uapi/evl/control.h>
+@@ -462,6 +465,33 @@ static DEVICE_ATTR_RO(tp);
+ 
+ #endif
+ 
++#ifdef CONFIG_EVL_NET
++
++static ssize_t net_vlans_show(struct device *dev,
++			struct device_attribute *attr,
++			char *buf)
++{
++	return evl_net_show_vlans(buf, PAGE_SIZE);
++}
++
++static ssize_t net_vlans_store(struct device *dev,
++			struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	return evl_net_store_vlans(buf, count);
++}
++static DEVICE_ATTR_RW(net_vlans);
++
++static ssize_t net_clones_show(struct device *dev,
++			struct device_attribute *attr,
++			char *buf)
++{
++	return evl_net_show_clones(buf, PAGE_SIZE);
++}
++static DEVICE_ATTR_RO(net_clones);
++
++#endif
++
+ static struct attribute *control_attrs[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_abi.attr,
+@@ -471,6 +501,10 @@ static struct attribute *control_attrs[] = {
+ #endif
+ #ifdef CONFIG_EVL_SCHED_TP
+ 	&dev_attr_tp.attr,
++#endif
++#ifdef CONFIG_EVL_NET
++	&dev_attr_net_vlans.attr,
++	&dev_attr_net_clones.attr,
+ #endif
+ 	NULL,
+ };
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 2f3a8bfbda..68f3d98bf6 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -971,8 +971,7 @@ int __init evl_late_init_factories(void)
+ 	return create_core_factories(factories, ARRAY_SIZE(factories));
+ }
+ 
+-void __init evl_cleanup_factories(void)
++void __init evl_late_cleanup_factories(void)
+ {
+ 	delete_core_factories(factories, ARRAY_SIZE(factories));
+-	evl_early_cleanup_factories();
+ }
+diff --git a/kernel/evl/init.c b/kernel/evl/init.c
+index 442e3d1f3d..247e79568f 100644
+--- a/kernel/evl/init.c
++++ b/kernel/evl/init.c
+@@ -15,6 +15,7 @@
+ #include <evl/file.h>
+ #include <evl/factory.h>
+ #include <evl/control.h>
++#include <evl/net.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/evl.h>
+ 
+@@ -120,14 +121,24 @@ static __init int init_core(void)
+ 	/*
+ 	 * Other factories can clone elements, which would allow users
+ 	 * to issue Dovetail requests afterwards, so let's expose them
+-	 * last.
++	 * once Dovetail is mindful.
+ 	 */
+ 	ret = evl_late_init_factories();
+ 	if (ret)
+ 		goto cleanup_dovetail;
+ 
++	/*
++	 * Eventually, bootstrap anything which may require factory
++	 * services.
++	 */
++	ret = evl_net_init();
++	if (ret)
++		goto cleanup_late_factories;
++
+ 	return 0;
+ 
++cleanup_late_factories:
++	evl_late_cleanup_factories();
+ cleanup_dovetail:
+ 	dovetail_stop();
+ cleanup_tick:
+diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
+new file mode 100644
+index 0000000000..6a8d74c8d0
+--- /dev/null
++++ b/kernel/evl/net/Makefile
+@@ -0,0 +1,5 @@
++obj-$(CONFIG_EVL_NET) += ethernet/ packet/ qdisc/
++
++obj-$(CONFIG_EVL_NET) += net.o
++
++net-y := init.o socket.o dev.o input.o output.o skb.o neighbour.o
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+new file mode 100644
+index 0000000000..c2472936d7
+--- /dev/null
++++ b/kernel/evl/net/dev.c
+@@ -0,0 +1,435 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/types.h>
++#include <linux/atomic.h>
++#include <linux/slab.h>
++#include <linux/netdevice.h>
++#include <linux/if_vlan.h>
++#include <linux/err.h>
++#include <linux/rtnetlink.h>
++#include <evl/sched.h>
++#include <evl/thread.h>
++#include <evl/crossing.h>
++#include <evl/net/neighbour.h>
++#include <evl/net/socket.h>
++#include <evl/net/device.h>
++#include <evl/net/skb.h>
++#include <evl/net/qdisc.h>
++#include <evl/net/input.h>
++#include <evl/net/output.h>
++
++/*
++ * Since we need an EVL kthread to handle traffic from the out-of-band
++ * stage without borrowing CPU time unwisely from random contexts,
++ * let's have separate, per-device threads for RX and TX. This gives
++ * the best flexibility for leveraging multi-core capabilities on
++ * high-bandwidth systems. Kthread priority defaults to 1, chrt is our
++ * friend for fine-grained tuning.
++ */
++#define KTHREAD_RX_PRIO  1
++#define KTHREAD_TX_PRIO  1
++
++/*
++ * The default number of socket buffers which should be available on a
++ * per-device basis for conveying out-of-band traffic (if not
++ * specified by the EVL_SOCKIOC_DIVERT_ON request).
++ */
++#define EVL_DEFAULT_NETDEV_POOLSZ  128
++/*
++ * The default fixed payload size available in skbs for conveying
++ * out-of-band traffic through the device (if not specified by the
++ * EVL_SOCKIOC_DIVERT_ON request).
++ */
++#define EVL_DEFAULT_NETDEV_BUFSZ   2048
++/*
++ * Max. values for the settings above.
++ */
++#define EVL_MAX_NETDEV_POOLSZ  16384
++#define EVL_MAX_NETDEV_BUFSZ   8192
++
++/*
++ * The list of active oob port devices (i.e. VLAN devices which can be
++ * used to send/receive oob traffic).
++ */
++static LIST_HEAD(active_port_devices);
++
++static DEFINE_HARD_SPINLOCK(active_port_lock);
++
++static struct evl_kthread *
++start_handler_thread(struct net_device *dev,
++		void (*fn)(void *arg),
++		int prio, const char *type)
++{
++	struct evl_kthread *kt;
++	int ret;
++
++	kt = kzalloc(sizeof(*kt), GFP_KERNEL);
++	if (kt == NULL)
++		return ERR_PTR(-ENOMEM);
++
++	ret = evl_run_kthread(kt, fn, dev, prio, 0, "%s.%s",
++			netdev_name(dev), type);
++	if (ret) {
++		kfree(kt);
++		return ERR_PTR(ret);
++	}
++
++	return kt;
++}
++
++static int enable_oob_port(struct net_device *dev,
++			struct evl_netdev_activation *act)
++{
++	struct oob_netdev_state *nds, *vnds;
++	struct evl_netdev_state *est;
++	struct net_device *real_dev;
++	struct evl_kthread *kt;
++	unsigned long flags;
++	unsigned int mtu;
++	int ret;
++
++	if (EVL_WARN_ON(NET, !is_vlan_dev(dev)))
++		return -ENXIO;
++
++	/*
++	 * @dev is a VLAN device which we want to enable as a port for
++	 * channeling out-of-band traffic.
++	 */
++	if (netdev_is_oob_port(dev))
++		return 0;	/* Already enabled. */
++
++	/*
++	 * Diversion is turned on for the real device a VLAN device
++	 * sits on top of, so that the EVL stack is given a chance to
++	 * pick the ingress traffic to be routed to the oob stage. We
++	 * (only) need a valid crossing on the VLAN device, so that
++	 * oob operations can hold references on it using
++	 * evl_net_get_dev(). More resources are needed by the real
++	 * device backing it.
++	 *
++	 * NOTE: the diversion flag is beared by the real device
++	 * exclusively, _never_ by a VLAN device.
++	 */
++	real_dev = vlan_dev_real_dev(dev);
++	nds = &real_dev->oob_context.dev_state;
++	est = nds->estate;
++	if (est == NULL) {
++		est = kzalloc(sizeof(*est), GFP_KERNEL);
++		if (est == NULL)
++			return -ENOMEM;
++		nds->estate = est;
++	}
++
++	vnds = &dev->oob_context.dev_state;
++	evl_init_crossing(&vnds->crossing);
++
++	if (est->refs++ > 0)
++		goto queue;
++
++	if (!act->poolsz)
++		act->poolsz = EVL_DEFAULT_NETDEV_POOLSZ;
++
++	if (!act->bufsz)
++		act->bufsz = EVL_DEFAULT_NETDEV_BUFSZ;
++
++	/* Silently align on the current mtu if need be. */
++	mtu = READ_ONCE(real_dev->mtu);
++	if (act->bufsz < mtu)
++		act->bufsz = mtu;
++
++	est->pool_free = 0;
++	est->pool_max = act->poolsz;
++	est->buf_size = act->bufsz;
++	est->qdisc = evl_net_alloc_qdisc(&evl_net_qdisc_fifo);
++	if (IS_ERR(est->qdisc))
++		return PTR_ERR(est->qdisc);
++
++	ret = evl_net_dev_build_pool(real_dev);
++	if (ret)
++		goto fail_build_pool;
++
++	evl_net_init_skb_queue(&est->rx_queue);
++	evl_init_flag(&est->rx_flag);
++
++	kt = start_handler_thread(real_dev, evl_net_do_rx,
++				KTHREAD_RX_PRIO, "rx");
++	if (IS_ERR(kt))
++		goto fail_start_rx;
++
++	est->rx_handler = kt;
++
++	/*
++	 * We need a TX handler only for oob-capable
++	 * devices. Otherwise, the traffic would go through an in-band
++	 * Qdisc, like the sched_oob in-band queues.
++	 */
++	if (netdev_is_oob_capable(real_dev)) {
++		evl_init_flag(&est->tx_flag);
++		kt = start_handler_thread(real_dev, evl_net_do_tx,
++					KTHREAD_TX_PRIO, "tx");
++		if (IS_ERR(kt))
++			goto fail_start_tx;
++
++		est->tx_handler = kt;
++	}
++
++	evl_init_crossing(&nds->crossing);
++
++	netif_enable_oob_diversion(real_dev);
++
++queue:
++	netdev_enable_oob_port(dev);
++
++	raw_spin_lock_irqsave(&active_port_lock, flags);
++	list_add(&vnds->next, &active_port_devices);
++	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++
++	return 0;
++
++fail_start_tx:
++	/*
++	 * No skb has flowed yet, no pending recycling op. Likewise,
++	 * we cannot have any rxq in the cache or dump lists.
++	 */
++	evl_stop_kthread(est->rx_handler);
++	evl_destroy_flag(&est->tx_flag);
++fail_start_rx:
++	evl_net_dev_purge_pool(real_dev);
++	evl_destroy_flag(&est->rx_flag);
++fail_build_pool:
++	evl_net_free_qdisc(est->qdisc);
++	kfree(est);
++	nds->estate = NULL;
++
++	return ret;
++}
++
++static void disable_oob_port(struct net_device *dev)
++{
++	struct oob_netdev_state *vnds;
++	struct evl_netdev_state *est;
++	struct net_device *real_dev;
++	unsigned long flags;
++
++	if (EVL_WARN_ON(NET, !is_vlan_dev(dev)))
++		return;
++
++	if (!netdev_is_oob_port(dev))
++		return;
++
++	/*
++	 * Make sure that no evl_down_crossing() can be issued after
++	 * we attempt to pass the crossing. Since the former can only
++	 * happen as a result of finding the device in the active
++	 * list, first unlink the latter _then_ pass the crossing
++	 * next.
++	 */
++	vnds = &dev->oob_context.dev_state;
++	raw_spin_lock_irqsave(&active_port_lock, flags);
++	list_del(&vnds->next);
++	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++
++	/*
++	 * Ok, now we may attempt to pass the crossing, waiting until
++	 * all in-flight oob operations holding a reference on the
++	 * vlan device acting as an oob port have completed.
++	 */
++	evl_pass_crossing(&vnds->crossing);
++
++	netdev_disable_oob_port(dev);
++
++	real_dev = vlan_dev_real_dev(dev);
++	est = real_dev->oob_context.dev_state.estate;
++
++	if (EVL_WARN_ON(NET, est->refs <= 0))
++		return;
++
++	if (--est->refs > 0)
++		return;
++
++	/*
++	 * Last ref. from a port to a real device dropped. Dismantle
++	 * the extension for the latter. Start with unblocking all the
++	 * waiters.
++	 */
++
++	evl_signal_poll_events(&est->poll_head, POLLERR);
++	evl_flush_wait(&est->pool_wait, T_RMID);
++	evl_schedule();
++
++	netif_disable_oob_diversion(real_dev);
++
++	evl_stop_kthread(est->rx_handler);
++	if (est->tx_handler)
++		evl_stop_kthread(est->tx_handler);
++
++	evl_net_dev_purge_pool(real_dev);
++	evl_net_free_qdisc(est->qdisc);
++	kfree(est);
++	real_dev->oob_context.dev_state.estate = NULL;
++}
++
++static int switch_oob_port(struct net_device *dev,
++			struct evl_netdev_activation *act) /* in-band */
++{
++	int ret = 0;
++
++	/*
++	 * Turn on/off oob port for the device. When set, packets
++	 * received by the device flowing through the in-band net core
++	 * are diverted to netif_oob_deliver().
++	 */
++	if (act)
++		ret = enable_oob_port(dev, act);
++	else
++		disable_oob_port(dev);
++
++	return ret;
++}
++
++/*
++ * in-band, switches the oob port state of the device bound to the
++ * socket.
++ */
++int evl_net_switch_oob_port(struct evl_socket *esk,
++			struct evl_netdev_activation *act)
++{
++	struct net_device *dev;
++	int ret;
++
++	dev = esk->proto->get_netif(esk);
++	if (dev == NULL)
++		return -ENXIO;
++
++	if (act &&
++		(act->poolsz > EVL_MAX_NETDEV_POOLSZ ||
++		act->bufsz > EVL_MAX_NETDEV_BUFSZ)) {
++		ret = -EINVAL;
++	} else {
++		rtnl_lock();
++		ret = switch_oob_port(dev, act);
++		rtnl_unlock();
++	}
++
++	evl_net_put_dev(dev);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(evl_net_switch_oob_port);
++
++/* Always returns a pointer to a VLAN device. */
++struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
++{
++	struct net_device *dev, *ret = NULL;
++	struct oob_netdev_state *nds;
++	unsigned long flags;
++
++	if (!ifindex)
++		return NULL;
++
++	raw_spin_lock_irqsave(&active_port_lock, flags);
++
++	list_for_each_entry(nds, &active_port_devices, next) {
++		dev = container_of(nds, struct net_device,
++				oob_context.dev_state);
++		if (dev_net(dev) == net && dev->ifindex == ifindex) {
++			evl_down_crossing(&nds->crossing);
++			ret = dev;
++			break;
++		}
++	}
++
++	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++
++	return ret;
++}
++
++void evl_net_get_dev(struct net_device *dev)
++{
++	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++
++	evl_down_crossing(&nds->crossing);
++}
++
++void evl_net_put_dev(struct net_device *dev)
++{
++	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++
++	EVL_WARN_ON(NET, hard_irqs_disabled());
++
++	evl_up_crossing(&nds->crossing);
++}
++
++/**
++ *	netif_oob_switch_port - switch the oob port state of a VLAN
++ *	device.
++ *
++ *	This call is invoked from the net-sysfs interface in order to
++ *	change the state of the oob port of a VLAN device. The default
++ *	pool and buffer size are used when enabling.
++ *
++ *	@dev The network device for which the oob port should be
++ *	switched on/off. The request must be issued for a VLAN device.
++ *
++ *	@enabled The new oob port state.
++ *
++ *	Returns zero on success, an error code otherwise.
++ */
++int netif_oob_switch_port(struct net_device *dev, bool enabled)
++{
++	struct evl_netdev_activation act = {
++		.poolsz = 0,
++		.bufsz = 0,
++	};
++
++	if (!is_vlan_dev(dev))
++		return -ENXIO;
++
++	return switch_oob_port(dev, enabled ? &act : NULL);
++}
++
++/**
++ *	netif_oob_get_port - get the oob diversion state
++ *
++ *	Returns true if the device is currently diverting traffic to
++ *	the oob stage.
++ */
++bool netif_oob_get_port(struct net_device *dev)
++{
++	return netdev_is_oob_port(dev);
++}
++
++ssize_t netif_oob_query_pool(struct net_device *dev, char *buf)
++{
++	struct net_device *real_dev = dev;
++	struct evl_netdev_state *est;
++
++	if (is_vlan_dev(dev))
++		real_dev = vlan_dev_real_dev(dev);
++
++	est = real_dev->oob_context.dev_state.estate;
++	if (est == NULL)
++		return -ENXIO;
++
++	return sprintf(buf, "%zu %zu %zu\n",
++		est->pool_free, est->pool_max, est->buf_size);
++}
++
++int evl_netdev_event(struct notifier_block *ev_block,
++		     unsigned long event, void *ptr)
++{
++	struct net_device *dev = netdev_notifier_info_to_dev(ptr);
++
++	/*
++	 * Disable the oob port enabled on a VLAN device before the
++	 * latter goes down. rtnl_lock is held.
++	 */
++	if (event == NETDEV_GOING_DOWN && netdev_is_oob_port(dev))
++		disable_oob_port(dev);
++
++	return NOTIFY_DONE;
++}
+diff --git a/kernel/evl/net/ethernet/Makefile b/kernel/evl/net/ethernet/Makefile
+new file mode 100644
+index 0000000000..08017431e8
+--- /dev/null
++++ b/kernel/evl/net/ethernet/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_EVL_NET) += ethernet.o
++
++ethernet-y := input.o output.o arp.o
+diff --git a/kernel/evl/net/ethernet/arp.c b/kernel/evl/net/ethernet/arp.c
+new file mode 100644
+index 0000000000..9ec013bacb
+--- /dev/null
++++ b/kernel/evl/net/ethernet/arp.c
+@@ -0,0 +1,76 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/if_ether.h>
++#include <net/arp.h>
++#include <evl/net/neighbour.h>
++
++#define EVL_NET_ARP_HASHBITS  6	/* 2^6 buckets in hash table */
++
++static DEFINE_HASHTABLE(evl_net_arp_hash, EVL_NET_ARP_HASHBITS);
++
++struct evl_net_arp_neigh {
++	struct evl_net_neighbour base;
++	u32 ipaddr;
++	unsigned char macaddr[ETH_ALEN];
++};
++
++static struct evl_net_neighbour *alloc_arp_neighbour(struct neighbour *src)
++{
++	return NULL;		/* FIXME */
++}
++
++static void free_arp_neighbour(struct evl_net_neighbour *neigh)
++{
++	/* FIXME */
++}
++
++/*
++ * CAUTION: lookup at resolution must account for caller's net namespace:
++ *
++ * net_eq(dev_net(n->dev), caller_net))
++ */
++
++static void hash_arp_neighbour(struct evl_net_neigh_cache *cache,
++			struct evl_net_neighbour *neigh)
++{
++	struct evl_net_arp_neigh *entry, *na;
++	struct evl_net_neighbour *n;
++
++	/* FIXME: locking (oob-suitable) ? */
++
++	entry = container_of(neigh, struct evl_net_arp_neigh, base);
++
++	hash_for_each_possible(evl_net_arp_hash, n, hash, entry->ipaddr) {
++		na = container_of(n, struct evl_net_arp_neigh, base);
++		/* Match the device which covers the net namespace. */
++		if (na->base.dev == entry->base.dev &&
++			na->ipaddr == entry->ipaddr)
++			return;
++	}
++
++	hash_add(evl_net_arp_hash, &entry->base.hash, entry->ipaddr);
++}
++
++static void unhash_arp_neighbour(struct evl_net_neigh_cache *cache,
++				struct evl_net_neighbour *neigh)
++{
++	/* FIXME: locking (oob-suitable) ? */
++
++	hash_del(&neigh->hash);
++}
++
++static struct evl_net_neigh_cache_ops evl_net_arp_cache_ops = {
++	.alloc	= alloc_arp_neighbour,
++	.free	= free_arp_neighbour,
++	.hash	= hash_arp_neighbour,
++	.unhash	= unhash_arp_neighbour,
++};
++
++struct evl_net_neigh_cache evl_net_arp_cache = {
++	.source = &arp_tbl,
++	.ops = &evl_net_arp_cache_ops,
++};
+diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
+new file mode 100644
+index 0000000000..4fb7e832ed
+--- /dev/null
++++ b/kernel/evl/net/ethernet/input.c
+@@ -0,0 +1,149 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/if_vlan.h>
++#include <linux/netdevice.h>
++#include <linux/bitmap.h>
++#include <evl/lock.h>
++#include <evl/net/skb.h>
++#include <evl/net/input.h>
++#include <evl/net/output.h>
++#include <evl/net/packet.h>
++
++static DECLARE_BITMAP(vlan_map, VLAN_N_VID);
++
++static struct evl_net_handler evl_net_ether;
++
++/**
++ *	evl_net_ether_accept - Stage dispatcher for ethernet packets
++ *
++ *	Decide whether an incoming ethernet packet should be delivered
++ *	via the out-of-band networking stack instead of the in-band
++ *	one. Since all out-of-band ethernet traffic is required to go
++ *	through VLANs, all we need to do is checking whether the VLAN
++ *	information stored into the packet matches a VID reserved for
++ *	such traffic.
++ *
++ *	@skb the packet to deliver. May be linked to some upstream
++ *	queue.
++ *
++ *	Returns true if the out-of-band stack will handle and deliver
++ *	the packet.
++ */
++bool evl_net_ether_accept(struct sk_buff *skb)
++{
++	struct vlan_ethhdr *ehdr;
++	unsigned char *mac_hdr;
++	u16 vlan_tci;
++	int mac_len;
++
++	/* Try the accelerated way first. */
++	if (!__vlan_hwaccel_get_tag(skb, &vlan_tci) &&
++		test_bit(vlan_tci & VLAN_VID_MASK, vlan_map))
++		goto pick;
++
++	/*
++	 * Deal manually with input from adapters without hw
++	 * accelerated VLAN processing. Only if we should handle this
++	 * packet, pull the VLAN header from it.
++	 */
++	if (!skb_vlan_tag_present(skb) &&
++		eth_type_vlan(skb->protocol)) {
++		mac_hdr = skb_mac_header(skb);
++		ehdr = (struct vlan_ethhdr *)mac_hdr;
++		if (ehdr->h_vlan_encapsulated_proto == htons(ETH_P_IP)) {
++			vlan_tci = ntohs(ehdr->h_vlan_TCI);
++			if (test_bit(vlan_tci & VLAN_VID_MASK, vlan_map))
++				goto untag;
++		}
++	}
++
++	return false;
++
++untag:
++	/*
++	 * We run very early in the RX path, eth_type_trans() already
++	 * pulled the MAC header at this point though. We accept
++	 * ETH_P_IP encapsulation only so that ARP and friends still
++	 * flow through the regular network stack. Fix up the protocol
++	 * tag in the skb manually, cache the VLAN information in the
++	 * skb, then reorder the MAC header eventually.
++	 */
++	skb->protocol = ehdr->h_vlan_encapsulated_proto;
++	__vlan_hwaccel_put_tag(skb, ehdr->h_vlan_proto,
++			ntohs(ehdr->h_vlan_TCI));
++	skb_pull_inline(skb, VLAN_HLEN);
++	mac_len = skb->data - mac_hdr;
++	if (likely(mac_len > VLAN_HLEN + ETH_TLEN)) {
++		memmove(mac_hdr + VLAN_HLEN, mac_hdr,
++			mac_len - VLAN_HLEN - ETH_TLEN);
++	}
++	skb->mac_header += VLAN_HLEN;
++pick:
++	evl_net_receive(skb, &evl_net_ether);
++
++	return true;
++}
++
++/**
++ *	net_ether_ingress - pass an ethernet packet up to the stack
++ *
++ *	We are called from the RX kthread from oob context, hard irqs
++ *	on.  skb is not linked to any queue.
++ */
++static void net_ether_ingress(struct sk_buff *skb) /* oob */
++{
++	/* Try to deliver to a packet socket first. */
++	if (evl_net_packet_deliver(skb))
++		return;
++
++	switch (ntohs(skb->protocol)) {
++	case ETH_P_IP:
++		break;		/* Try UDP.. */
++	}
++
++	evl_net_free_skb(skb);	/* Dropped. */
++}
++
++static struct evl_net_handler evl_net_ether = {
++	.ingress	=	net_ether_ingress,
++};
++
++ssize_t evl_net_store_vlans(const char *buf, size_t len)
++{
++	unsigned long *new_map;
++	ssize_t ret;
++
++	new_map = bitmap_zalloc(VLAN_N_VID, GFP_KERNEL);
++	if (new_map == NULL)
++		return -ENOMEM;
++
++	ret = bitmap_parselist(buf, new_map, VLAN_N_VID);
++	/* VID 0 and 4095 are reserved. */
++	if (!ret && (test_bit(0, new_map) || test_bit(VLAN_VID_MASK, new_map)))
++		ret = -EINVAL;
++	if (ret) {
++		bitmap_free(new_map);
++		return ret;
++	}
++
++	/*
++	 * We don't have to provide for atomic update wrt our net
++	 * stack when updating the vlan map. We use the VID as a
++	 * shortlived information early for filtering
++	 * input. Serializing writes/stores which the vfs does for us
++	 * is enough.
++	 */
++	bitmap_copy(vlan_map, new_map, VLAN_N_VID);
++	bitmap_free(new_map);
++
++	return len;
++}
++
++ssize_t evl_net_show_vlans(char *buf, size_t len)
++{
++	return scnprintf(buf, len, "%*pbl\n", VLAN_N_VID, vlan_map);
++}
+diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
+new file mode 100644
+index 0000000000..1c96ac9cd2
+--- /dev/null
++++ b/kernel/evl/net/ethernet/output.c
+@@ -0,0 +1,37 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/errno.h>
++#include <linux/netdevice.h>
++#include <linux/skbuff.h>
++#include <linux/if_vlan.h>
++#include <evl/net/socket.h>
++#include <evl/net/output.h>
++
++/**
++ *	evl_net_ether_transmit - pass an ethernet packet down to the
++ *	hardware
++ *
++ *	All ethernet traffic needs to be channeled through a VLAN, the
++ *	associated network interface is called an oob port. We are
++ *	called from a protocol handler running in oob context, hard
++ *	irqs on.  skb is not linked to any queue.
++ */
++int evl_net_ether_transmit(struct net_device *dev, struct sk_buff *skb)
++{
++	__be16 vlan_proto;
++	u16 vlan_tci;
++
++	if (EVL_WARN_ON(NET, !is_vlan_dev(dev)))
++		return -EINVAL;
++
++	vlan_proto = vlan_dev_vlan_proto(dev);
++	vlan_tci = vlan_dev_vlan_id(dev);
++	vlan_tci |= vlan_dev_get_egress_qos_mask(dev, skb->priority);
++	__vlan_hwaccel_put_tag(skb, vlan_proto, vlan_tci);
++
++	return evl_net_transmit(skb);
++}
+diff --git a/kernel/evl/net/init.c b/kernel/evl/net/init.c
+new file mode 100644
+index 0000000000..81bec5ba50
+--- /dev/null
++++ b/kernel/evl/net/init.c
+@@ -0,0 +1,77 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/notifier.h>
++#include <linux/netdevice.h>
++#include <linux/socket.h>
++#include <linux/export.h>
++#include <linux/slab.h>
++#include <evl/net/neighbour.h>
++#include <evl/net/qdisc.h>
++#include <evl/net/packet.h>
++#include <evl/net/device.h>
++#include <evl/net/input.h>
++#include <evl/net/output.h>
++#include <evl/net.h>
++
++static struct notifier_block netdev_notifier = {
++	.notifier_call = evl_netdev_event
++};
++
++int __init evl_net_init(void)
++{
++	int ret;
++
++	ret = evl_net_init_pools();
++	if (ret)
++		return ret;
++
++	evl_net_init_tx();
++
++	evl_net_init_qdisc();
++
++	ret = register_netdevice_notifier(&netdev_notifier);
++	if (ret)
++		goto fail_notifier;
++
++	ret = evl_net_init_neighbour();
++	if (ret)
++		goto fail_neighbour;
++
++	ret = evl_register_socket_domain(&evl_net_packet);
++	if (ret)
++		goto fail_domain;
++
++	/* AF_OOB is given no dedicated socket cache. */
++	ret = proto_register(&evl_af_oob_proto, 0);
++	if (ret)
++		goto fail_proto;
++
++	sock_register(&evl_family_ops);
++
++	return 0;
++
++fail_proto:
++	evl_unregister_socket_domain(&evl_net_packet);
++fail_neighbour:
++	unregister_netdevice_notifier(&netdev_notifier);
++fail_domain:
++	evl_net_cleanup_neighbour();
++fail_notifier:
++	evl_net_cleanup_qdisc();
++
++	return ret;
++}
++
++void __init evl_net_cleanup(void)
++{
++	sock_unregister(PF_OOB);
++	proto_unregister(&evl_af_oob_proto);
++	evl_unregister_socket_domain(&evl_net_packet);
++	unregister_netdevice_notifier(&netdev_notifier);
++	evl_net_cleanup_neighbour();
++	evl_net_cleanup_qdisc();
++}
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+new file mode 100644
+index 0000000000..21d176a818
+--- /dev/null
++++ b/kernel/evl/net/input.c
+@@ -0,0 +1,167 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/atomic.h>
++#include <linux/netdevice.h>
++#include <linux/irq_work.h>
++#include <linux/if_vlan.h>
++#include <linux/skbuff.h>
++#include <evl/net.h>
++#include <evl/thread.h>
++#include <evl/lock.h>
++#include <evl/list.h>
++#include <evl/flag.h>
++
++void evl_net_do_rx(void *arg)
++{
++	struct net_device *dev = arg;
++	struct evl_netdev_state *est;
++	struct sk_buff *skb, *next;
++	LIST_HEAD(list);
++	int ret;
++
++	est = dev->oob_context.dev_state.estate;
++
++	while (!evl_kthread_should_stop()) {
++		ret = evl_wait_flag(&est->rx_flag);
++		if (ret)
++			break;
++
++		if (!evl_net_move_skb_queue(&est->rx_queue, &list))
++			continue;
++
++		list_for_each_entry_safe(skb, next, &list, list) {
++			list_del(&skb->list);
++			EVL_NET_CB(skb)->handler->ingress(skb);
++		}
++
++		/* Do NOT wait for evl_wait_flag() for this. */
++		evl_schedule();
++	}
++}
++
++/**
++ *	evl_net_receive - schedule an ingress packet for oob handling
++ *
++ *	Add an incoming packet to the out-of-band receive queue, so
++ *	that it will be delivered to a listening EVL socket (or
++ *	dropped). This call is either invoked:
++ *
++ *	- in-band by a protocol-specific stage dispatcher
++ *	(e.g. evl_net_ether_accept()) diverting packets from the
++ *	regular networking stack, in order to queue work for its
++ *	.ingress() handler.
++ *
++ *	- out-of-band on behalf of a fully oob capable NIC driver,
++ *	typically from an out-of-band (RX) IRQ context.
++ *
++ *	@skb the packet to queue. May be linked to some upstream
++ *	queue. skb->dev must be valid.
++ *
++ *	@handler the network protocol descriptor which should eventually
++ *	handle the packet.
++ */
++void evl_net_receive(struct sk_buff *skb,
++		struct evl_net_handler *handler) /* in-band or oob */
++{
++	struct evl_netdev_state *est = skb->dev->oob_context.dev_state.estate;
++
++	if (skb->next)
++		skb_list_del_init(skb);
++
++	EVL_NET_CB(skb)->handler = handler;
++
++	/*
++	 * Enqueue then kick our kthread handling the ingress path
++	 * immediately if called from oob context. Otherwise, wait for
++	 * the NIC driver to invoke napi_complete_done() when the RX
++	 * side goes quiescent.
++	 */
++	evl_net_add_skb_queue(&est->rx_queue, skb);
++
++	if (running_oob())
++		evl_raise_flag(&est->rx_flag);
++}
++
++struct evl_net_rxqueue *evl_net_alloc_rxqueue(u32 hkey) /* in-band */
++{
++	struct evl_net_rxqueue *rxq;
++
++	rxq = kzalloc(sizeof(*rxq), GFP_KERNEL);
++	if (rxq == NULL)
++		return NULL;
++
++	rxq->hkey = hkey;
++	INIT_LIST_HEAD(&rxq->subscribers);
++	evl_spin_lock_init(&rxq->lock);
++
++	return rxq;
++}
++
++/* in-band */
++void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq)
++{
++	EVL_WARN_ON(NET, !list_empty(&rxq->subscribers));
++
++	kfree(rxq);
++}
++
++/**
++ *	netif_oob_deliver - receive a network packet
++ *
++ *	Decide whether we should channel a freshly incoming packet to
++ *	our out-of-band stack. May be called from any stage.
++ *
++ *	@skb the packet to inspect for oob delivery. May be linked to
++ *	some upstream queue.
++ *
++ *	Returns true if the oob stack wants to handle @skb, in which
++ *	case the caller must assume that it does not own the packet
++ *	anymore.
++ */
++bool netif_oob_deliver(struct sk_buff *skb) /* oob or in-band */
++{
++	/*
++	 * Trivially simple at the moment: the set of protocols we
++	 * handle is statically defined. The point is to provide an
++	 * expedited data path via the oob stage for the protocols
++	 * which most users need, without reinventing the whole
++	 * networking infrastructure. XDP would not help here for
++	 * several reasons.
++	 */
++	switch (skb->protocol) {
++	case htons(ETH_P_IP):	/* Try IP over ethernet. */
++		return evl_net_ether_accept(skb);
++	default:
++		/*
++		 * For those adapters without hw-accelerated VLAN
++		 * capabilities, check the ethertype directly.
++		 */
++		if (eth_type_vlan(skb->protocol))
++			return evl_net_ether_accept(skb);
++
++		return false;
++	}
++}
++
++/**
++ *	netif_oob_run - run the oob packet delivery
++ *
++ *	This call is invoked from napi_complete_done() in order to
++ *	kick our RX kthread, which will forward the oob packets to the
++ *	proper protocol handlers. This is an in-band call.
++ *
++ *	@dev the device receiving packets. netif_oob_diversion(dev) is
++ *	     true.
++ */
++void netif_oob_run(struct net_device *dev) /* in-band */
++{
++	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++
++	evl_raise_flag(&est->rx_flag);
++}
+diff --git a/kernel/evl/net/neighbour.c b/kernel/evl/net/neighbour.c
+new file mode 100644
+index 0000000000..5b807d8800
+--- /dev/null
++++ b/kernel/evl/net/neighbour.c
+@@ -0,0 +1,80 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/notifier.h>
++#include <linux/mutex.h>
++#include <net/netevent.h>
++#include <evl/net/neighbour.h>
++
++static DEFINE_SPINLOCK(cache_lock);
++
++static LIST_HEAD(cache_list);
++
++static void update_neigh_cache(struct evl_net_neigh_cache *cache,
++			struct neighbour *neigh)
++{
++	if (neigh->nud_state & NUD_CONNECTED)
++		; /* (re-)cache, complete */
++	else if (neigh->dead)
++		; /* dropped from source table, destroy */
++
++#if 0
++	printk("# NEIGH: proto=%#x, state=%#x, iface=%s\n", ntohs(neigh->tbl->protocol),
++		neigh->nud_state, neigh->dev ? netdev_name(neigh->dev) : "??");
++#endif
++}
++
++static int netevent_handler(struct notifier_block *nb,
++			unsigned long event, void *arg)
++{
++	struct evl_net_neigh_cache *cache;
++ 	struct neighbour *neigh = arg;
++
++	spin_lock(&cache_lock);
++
++	list_for_each_entry(cache, &cache_list, next) {
++		if (event != NETEVENT_NEIGH_UPDATE)
++			continue;
++		if (neigh->tbl == cache->source)
++			update_neigh_cache(cache, neigh);
++	}
++
++	spin_unlock(&cache_lock);
++
++	return NOTIFY_DONE;
++}
++
++static void register_neigh_cache(struct evl_net_neigh_cache *cache)
++{
++	spin_lock(&cache_lock);
++	list_add(&cache->next, &cache_list);
++	spin_unlock(&cache_lock);
++}
++
++static void unregister_neigh_cache(struct evl_net_neigh_cache *cache)
++{
++	spin_lock(&cache_lock);
++	list_del(&cache->next);
++	spin_unlock(&cache_lock);
++}
++
++static struct notifier_block evl_netevent_notifier __read_mostly = {
++	.notifier_call = netevent_handler,
++};
++
++int evl_net_init_neighbour(void)
++{
++	register_neigh_cache(&evl_net_arp_cache);
++	register_netevent_notifier(&evl_netevent_notifier);
++
++	return 0;
++}
++
++void evl_net_cleanup_neighbour(void)
++{
++	unregister_netevent_notifier(&evl_netevent_notifier);
++	unregister_neigh_cache(&evl_net_arp_cache);
++}
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+new file mode 100644
+index 0000000000..70e928efc3
+--- /dev/null
++++ b/kernel/evl/net/output.c
+@@ -0,0 +1,247 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/list.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/netdevice.h>
++#include <linux/skbuff.h>
++#include <linux/if_vlan.h>
++#include <linux/interrupt.h>
++#include <linux/irq_work.h>
++#include <evl/list.h>
++#include <evl/lock.h>
++#include <evl/flag.h>
++#include <evl/net/socket.h>
++#include <evl/net/output.h>
++#include <evl/net/qdisc.h>
++
++static void xmit_inband(struct irq_work *work);
++
++DEFINE_IRQ_WORK(oob_xmit_work, xmit_inband);
++
++static DEFINE_PER_CPU(struct evl_net_skb_queue, oob_tx_relay);
++
++static inline netdev_tx_t
++oob_start_xmit(struct net_device *dev, struct sk_buff *skb)
++{
++	/*
++	 * If we got there, @dev is deemed oob-capable
++	 * (IFF_OOB_CAPABLE, see evl_net_transmit()). The driver should
++	 * check the current execution stage for handling the
++	 * out-of-band packet properly.
++	 */
++	return dev->netdev_ops->ndo_start_xmit(skb, dev);
++}
++
++static inline void do_tx(struct evl_net_qdisc *qdisc,
++			struct net_device *dev, struct sk_buff *skb)
++{
++	evl_uncharge_socket_wmem(skb);
++
++	switch (oob_start_xmit(dev, skb)) {
++	case NETDEV_TX_OK:
++		break;
++	default: /* busy, or whatever */
++		qdisc->packet_dropped++;
++		/* FIXME: we need to do better wrt error handling. */
++		evl_net_free_skb(skb);
++		break;
++	}
++}
++
++void evl_net_do_tx(void *arg)
++{
++	struct net_device *dev = arg;
++	struct evl_netdev_state *est;
++	struct evl_net_qdisc *qdisc;
++	struct sk_buff *skb, *n;
++	LIST_HEAD(list);
++	int ret;
++
++	est = dev->oob_context.dev_state.estate;
++
++	while (!evl_kthread_should_stop()) {
++		ret = evl_wait_flag(&est->tx_flag);
++		if (ret)
++			break;
++
++		/*
++		 * Reread queueing discipline descriptor to allow
++		 * dynamic updates. FIXME: protect this against
++		 * swap/deletion while pulling packets (stax?).
++		 */
++		qdisc = est->qdisc;
++
++		/*
++		 * First we transmit the traffic as prioritized by the
++		 * out-of-band queueing discipline attached to our
++		 * device.
++		 */
++		for (;;) {
++			skb = qdisc->oob_ops->dequeue(qdisc);
++			if (skb == NULL)
++				break;
++			do_tx(qdisc, dev, skb);
++		}
++
++		/*
++		 * Lastly, we send out any pending traffic we received from the
++		 * in-band sch_oob Qdisc.
++		 */
++		if (evl_net_move_skb_queue(&qdisc->inband_q, &list)) {
++			list_for_each_entry_safe(skb, n, &list, list) {
++				list_del_init(&skb->list);
++				do_tx(qdisc, dev, skb);
++			}
++		}
++	}
++}
++
++/* in-band hook, called upon NET_TX_SOFTIRQ. */
++void skb_inband_xmit_backlog(void)
++{
++	struct sk_buff *skb, *n;
++	LIST_HEAD(list);
++
++	if (evl_net_move_skb_queue(this_cpu_ptr(&oob_tx_relay), &list)) {
++		list_for_each_entry_safe(skb, n, &list, list) {
++			evl_uncharge_socket_wmem(skb);
++			dev_queue_xmit(skb);
++		}
++	}
++}
++
++static void xmit_inband(struct irq_work *work) /* in-band, stalled */
++{
++	/*
++	 * skb_inband_xmit_backlog() should run soon, kicked by tx_action.
++	 */
++	__raise_softirq_irqoff(NET_TX_SOFTIRQ);
++}
++
++/* oob or in-band */
++static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
++{
++	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	int ret;
++
++	ret = evl_net_sched_packet(dev, skb);
++	if (ret)
++		return ret;
++
++	evl_raise_flag(&est->tx_flag);
++
++	return 0;
++}
++
++/**
++ *	evl_net_transmit - queue an egress packet for out-of-band
++ *	transmission to the device.
++ *
++ *	Add an outgoing packet to the out-of-band transmit queue, so
++ *	that it will be handed over to the device referred to by
++ *	@skb->dev. The packet is complete (e.g. the VLAN tag is set if
++ *	@skb->dev is an ethernet device).
++ *
++ *	@skb the packet to queue. Must not be linked to any upstream
++ *	queue.
++ *
++ *	Prerequisites:
++ *	- skb->dev is a valid (real) device. The caller must prevent from
++ *        the interface going down.
++ *	- skb->sk == NULL.
++ *      - skb->oob == true.
++ */
++int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
++{
++	struct evl_net_skb_queue *rl = this_cpu_ptr(&oob_tx_relay);
++	struct net_device *dev = skb->dev;
++	unsigned long flags;
++	bool kick;
++
++	if (EVL_WARN_ON(NET, !dev))
++		return -EINVAL;
++
++	if (EVL_WARN_ON(NET, is_vlan_dev(dev)))
++		return -EINVAL;
++
++	if (EVL_WARN_ON(NET, skb->sk))
++		return -EINVAL;
++
++	/*
++	 * Only packets obtained from the per-device oob pool are
++	 * allowed to flow through this interface.
++	 */
++	if (EVL_WARN_ON(NET, !skb->oob))
++		return -EINVAL;
++
++	if (netdev_is_oob_capable(dev))
++		return xmit_oob(dev, skb);
++
++	/*
++	 * If running in-band, just push the skb for transmission
++	 * immediately to the in-band stack. Otherwise relay it via
++	 * xmit_inband().
++	 */
++	if (running_inband()) {
++		evl_uncharge_socket_wmem(skb);
++		dev_queue_xmit(skb);
++		return 0;
++	}
++
++	/*
++	 * Running oob but net device is not oob-capable, resort to
++	 * relaying the traffic to the in-band stage for enqueuing.
++	 * Dovetail does ensure that __raise_softirq_irqoff() is safe
++	 * to call from the oob stage, but we want the softirq to be
++	 * raised as soon as in-band resumes with interrupts enabled,
++	 * so we go through the irq_work indirection first.
++	 */
++	raw_spin_lock_irqsave(&rl->lock, flags);
++	kick = list_empty(&rl->queue);
++	list_add_tail(&skb->list, &rl->queue);
++	raw_spin_unlock_irqrestore(&rl->lock, flags);
++
++	if (kick)	/* Rare false positives are ok. */
++		irq_work_queue(&oob_xmit_work);
++
++	return 0;
++}
++
++/**
++ *	netif_xmit_oob - send a network packet in out-of-band mode
++ *
++ *	Queue the packet for transmission from the out-of-band stage
++ *	as low priority traffic. This hook is called by the enqueuing
++ *	handler of the "sch_oob" in-band Qdisc for any packet sent to
++ * 	an oob-capable interface, so that both in-band and out-of-band
++ *	traffic is injected from our out-of-band Qdisc.
++ *
++ *	@skb the packet to transmit. Not linked to any upstream
++ *	queue. We may take for granted that @skb->dev is valid and
++ *	oob-capable. There will be no further routing of @skb, we only
++ *	queue the packet to the oob queuing discipline we have for the
++ *	oob-capable device.
++ *
++ *	Returns NET_XMIT_SUCCESS if the packet was successfully queued
++ *	for transmission, NET_XMIT_DROP otherwise.
++ */
++int netif_xmit_oob(struct sk_buff *skb) /* in-band */
++{
++	return xmit_oob(skb->dev, skb) ? NET_XMIT_DROP : NET_XMIT_SUCCESS;
++}
++
++void __init evl_net_init_tx(void)
++{
++	struct evl_net_skb_queue *txq;
++	int cpu;
++
++	for_each_online_cpu(cpu) {
++		txq = &per_cpu(oob_tx_relay, cpu);
++		evl_net_init_skb_queue(txq);
++	}
++}
+diff --git a/kernel/evl/net/packet/Makefile b/kernel/evl/net/packet/Makefile
+new file mode 100644
+index 0000000000..582beb7927
+--- /dev/null
++++ b/kernel/evl/net/packet/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_EVL_NET) += af_packet.o
++
++af_packet-y := packet.o
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+new file mode 100644
+index 0000000000..ca1a1f71cb
+--- /dev/null
++++ b/kernel/evl/net/packet/packet.c
+@@ -0,0 +1,704 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/hashtable.h>
++#include <linux/jhash.h>
++#include <linux/skbuff.h>
++#include <linux/netdevice.h>
++#include <linux/poll.h>
++#include <linux/if_ether.h>
++#include <linux/if_vlan.h>
++#include <linux/err.h>
++#include <linux/ip.h>
++#include <net/sock.h>
++#include <evl/lock.h>
++#include <evl/thread.h>
++#include <evl/wait.h>
++#include <evl/poll.h>
++#include <evl/sched.h>
++#include <evl/net/socket.h>
++#include <evl/net/packet.h>
++#include <evl/net/input.h>
++#include <evl/net/output.h>
++#include <evl/net/device.h>
++#include <evl/net/skb.h>
++#include <evl/uaccess.h>
++
++static struct evl_net_proto *
++find_packet_proto(__be16 protocol,
++		struct evl_net_proto *default_proto);
++
++/*
++ * Lock nesting: protocol_lock -> rxq->lock -> esk->input_wait.lock
++ * We use linear skbs only (no paged data).
++ */
++
++#define EVL_PROTO_HASH_BITS	8
++
++static DEFINE_HASHTABLE(protocol_hash, EVL_PROTO_HASH_BITS);
++
++/*
++ * Protects protocol_hash, shared between in-band and oob contexts,
++ * never accessed from oob IRQ handlers.
++ */
++static DEFINE_EVL_SPINLOCK(protocol_lock);
++
++/* oob, hard irqs off */
++static bool __packet_deliver(struct evl_net_rxqueue *rxq,
++			struct sk_buff *skb, __be16 protocol)
++{
++	struct net_device *dev = skb->dev;
++	bool delivered = false;
++	struct evl_socket *esk;
++	struct sk_buff *qskb;
++	u16 vlan_id;
++	int ifindex;
++
++	evl_spin_lock(&rxq->lock);
++
++	/*
++	 * Subscribers are searched sequentially for a matching net
++	 * device if specified, otherwise we accept traffic from any
++	 * interface. The net_device lookup could be hashed too, but
++	 * [lame excuse coming] we are not supposed to have a
++	 * truckload of NICs to listen to, so keep it plain dumb which
++	 * is going to be faster in the normal case.
++	 */
++	list_for_each_entry(esk, &rxq->subscribers, next_sub) {
++		/*
++		 * Revisit: we could filter on some "activation tag"
++		 * value calculated at activation time
++		 * (enable_oob_port) to eliminate spurious matches on
++		 * a newly registered device reusing an old ifindex we
++		 * initially captured at binding time.
++		 */
++		ifindex = READ_ONCE(esk->binding.real_ifindex);
++		if (ifindex) {
++			if (ifindex != dev->ifindex)
++				continue;
++			vlan_id = READ_ONCE(esk->binding.vlan_id);
++			if (skb_vlan_tag_get_id(skb) != vlan_id)
++				continue;
++		}
++
++		/*
++		 * This packet may be delivered to esk, attempt to
++		 * charge it to its rmem counter. If the socket may
++		 * not consume more memory, skip delivery and try with
++		 * the next subscriber.
++		 */
++		if (!evl_charge_socket_rmem(esk, skb))
++			continue;
++
++		/*
++		 * All sockets bound to ETH_P_ALL receive a clone of
++		 * each incoming buffer, leaving the latter unconsumed
++		 * yet. A single one among the other listeners
++		 * consumes the incoming buffer.
++		 */
++		qskb = skb;
++		if (protocol == htons(ETH_P_ALL)) {
++			qskb = evl_net_clone_skb(skb);
++			if (qskb == NULL) {
++				evl_flush_wait(&esk->input_wait, T_NOMEM);
++				evl_uncharge_socket_rmem(esk, skb);
++				break;
++			}
++		}
++
++		raw_spin_lock(&esk->input_wait.lock);
++
++		list_add_tail(&qskb->list, &esk->input);
++		if (evl_wait_active(&esk->input_wait))
++			evl_wake_up_head(&esk->input_wait);
++
++		raw_spin_unlock(&esk->input_wait.lock);
++
++		evl_signal_poll_events(&esk->poll_head,	POLLIN|POLLRDNORM);
++		delivered = true;
++		if (protocol != htons(ETH_P_ALL))
++			break;
++	}
++
++	evl_spin_unlock(&rxq->lock);
++
++	return delivered;
++}
++
++/* protocol_lock held, hard irqs off */
++static struct evl_net_rxqueue *find_rxqueue(u32 hkey)
++{
++	struct evl_net_rxqueue *rxq;
++
++	hash_for_each_possible(protocol_hash, rxq, hash, hkey)
++		if (rxq->hkey == hkey)
++			return rxq;
++
++	return NULL;
++}
++
++static inline u32 get_protocol_hash(__be16 protocol)
++{
++	u32 hsrc = protocol;
++
++	return jhash2(&hsrc, 1, 0);
++}
++
++static bool packet_deliver(struct sk_buff *skb, __be16 protocol) /* oob */
++{
++	struct evl_net_rxqueue *rxq;
++	unsigned long flags;
++	bool ret = false;
++	u32 hkey;
++
++	hkey = get_protocol_hash(protocol);
++
++	/*
++	 * Find the rx queue linking sockets attached to the protocol.
++	 */
++	evl_spin_lock_irqsave(&protocol_lock, flags); /* FIXME: this is utterly inefficient. */
++
++	rxq = find_rxqueue(hkey);
++	if (rxq)
++		ret = __packet_deliver(rxq, skb, protocol);
++
++	evl_spin_unlock_irqrestore(&protocol_lock, flags);
++
++	return ret;
++}
++
++/**
++ *	evl_net_packet_deliver - deliver an ethernet packet to the raw
++ *	interface tap
++ *
++ *	Deliver a copy of @skb to every socket accepting all ethernet
++ *	protocols (ETH_P_ALL) if any, and/or @skb to the heading
++ *	socket waiting for skb->protocol.
++ *
++ *	@skb the packet to deliver, not linked to any upstream
++ *	queue.
++ *
++ *      Returns true if @skb was queued.
++ *
++ *	Caller must call evl_schedule().
++ */
++bool evl_net_packet_deliver(struct sk_buff *skb) /* oob */
++{
++	packet_deliver(skb, htons(ETH_P_ALL));
++
++	return packet_deliver(skb, skb->protocol);
++}
++
++/* in-band. */
++static int attach_packet_socket(struct evl_socket *esk,
++				struct evl_net_proto *proto, __be16 protocol)
++{
++	struct evl_net_rxqueue *rxq, *_rxq;
++	unsigned long flags;
++	u32 hkey;
++
++	hkey = get_protocol_hash(protocol);
++
++	/*
++	 * We pre-allocate an rx queue then drop it if one is already
++	 * hashed for the same protocol. Not pretty but we are running
++	 * in-band, and this keeps the hard locked section short.
++	 */
++	rxq = evl_net_alloc_rxqueue(hkey);
++	if (rxq == NULL)
++		return -ENOMEM;
++
++	/*
++	 * From this point we cannot fail, packets might come in as
++	 * soon as we queue.
++	 */
++
++	evl_spin_lock_irqsave(&protocol_lock, flags);
++
++	esk->proto = proto;
++	esk->binding.proto_hash = hkey;
++	esk->protocol = protocol;
++
++	_rxq = find_rxqueue(hkey);
++	if (_rxq) {
++		evl_spin_lock(&_rxq->lock);
++		list_add(&esk->next_sub, &_rxq->subscribers);
++		evl_spin_unlock(&_rxq->lock);
++	} else {
++		hash_add(protocol_hash, &rxq->hash, hkey);
++		list_add(&esk->next_sub, &rxq->subscribers);
++	}
++
++	evl_spin_unlock_irqrestore(&protocol_lock, flags);
++
++	if (_rxq)
++		evl_net_free_rxqueue(rxq);
++
++	return 0;
++}
++
++/* in-band, esk->lock held or socket_release() */
++static void detach_packet_socket(struct evl_socket *esk)
++{
++	struct evl_net_rxqueue *rxq, *n;
++	unsigned long flags;
++	LIST_HEAD(tmp);
++
++	if (list_empty(&esk->next_sub))
++		return;
++
++	evl_spin_lock_irqsave(&protocol_lock, flags);
++
++	rxq = find_rxqueue(esk->binding.proto_hash);
++
++	list_del_init(&esk->next_sub); /* Remove from rxq->subscribers */
++	if (list_empty(&rxq->subscribers)) {
++		hash_del(&rxq->hash);
++		list_add(&rxq->next, &tmp);
++	}
++
++	evl_spin_unlock_irqrestore(&protocol_lock, flags);
++
++	list_for_each_entry_safe(rxq, n, &tmp, next)
++		evl_net_free_rxqueue(rxq);
++}
++
++/* in-band */
++static int bind_packet_socket(struct evl_socket *esk,
++			struct sockaddr *addr,
++			int len)
++{
++	int ret, new_ifindex, real_ifindex, old_ifindex;
++	static struct evl_net_proto *proto;
++	struct net_device *dev = NULL;
++	struct sockaddr_ll *sll;
++	unsigned long flags;
++	u16 vlan_id;
++
++	if (len != sizeof(*sll))
++		return -EINVAL;
++
++	sll = (struct sockaddr_ll *)addr;
++	if (sll->sll_family != AF_PACKET)
++		return -EINVAL;
++
++	proto = find_packet_proto(sll->sll_protocol, esk->proto);
++	if (proto == NULL)
++		return -EINVAL;
++
++	new_ifindex = sll->sll_ifindex;
++
++	mutex_lock(&esk->lock);
++
++	old_ifindex = esk->binding.vlan_ifindex;
++	if (new_ifindex != old_ifindex) {
++		if (new_ifindex) {
++			/* @dev has to be a VLAN device. */
++			dev = evl_net_get_dev_by_index(esk->net, new_ifindex);
++			if (dev == NULL)
++				return -EINVAL;
++			vlan_id = vlan_dev_vlan_id(dev);
++			real_ifindex = vlan_dev_real_dev(dev)->ifindex;
++		} else {
++			vlan_id = 0;
++			real_ifindex = 0;
++		}
++	}
++
++	/*
++	 * We precede the regular AF_PACKET bind handler which makes
++	 * no sense of bindings to VLAN devices unlike we do. Fix up
++	 * the address accordingly, pointing at the real device
++	 * instead.
++	 */
++	sll->sll_ifindex = real_ifindex;
++
++	if (esk->protocol != sll->sll_protocol) {
++		detach_packet_socket(esk);
++		/*
++		 * Since the old binding was dropped, we would not
++		 * receive anything if the new binding fails. This
++		 * said, -ENOMEM is the only possible failure, so the
++		 * root issue would be way more problematic than a
++		 * dead socket.
++		 */
++		ret = attach_packet_socket(esk, proto, sll->sll_protocol);
++		if (ret)
++			goto out;
++	}
++
++	/*
++	 * Ensure that all binding-related changes happen atomically
++	 * from the standpoint of oob observers.
++	 *
++	 * Revisit: cannot race with IRQs, use preemption-disabling
++	 * spinlock instead.
++	 */
++	raw_spin_lock_irqsave(&esk->oob_lock, flags);
++	if (new_ifindex != old_ifindex) {
++		/* First change the real interface, next the vid. */
++		WRITE_ONCE(esk->binding.real_ifindex, real_ifindex);
++		esk->binding.vlan_id = vlan_id;
++		WRITE_ONCE(esk->binding.vlan_ifindex, new_ifindex);
++	}
++	raw_spin_unlock_irqrestore(&esk->oob_lock, flags);
++
++ out:
++	mutex_unlock(&esk->lock);
++
++	if (dev)
++		evl_net_put_dev(dev);
++
++	return ret;
++}
++
++static struct net_device *get_netif_packet(struct evl_socket *esk)
++{
++	return  evl_net_get_dev_by_index(esk->net,
++					esk->binding.vlan_ifindex);
++}
++
++static struct net_device *find_xmit_device(struct evl_socket *esk,
++			const struct user_oob_msghdr __user *u_msghdr)
++{
++	struct sockaddr_ll __user *u_addr;
++	__u64 name_ptr = 0, namelen = 0;
++	struct sockaddr_ll addr;
++	struct net_device *dev;
++	int ret;
++
++	ret = raw_get_user(name_ptr, &u_msghdr->name_ptr);
++	if (ret)
++		return ERR_PTR(-EFAULT);
++
++	ret = raw_get_user(namelen, &u_msghdr->namelen);
++	if (ret)
++		return ERR_PTR(-EFAULT);
++
++	if (!name_ptr) {
++		if (namelen)
++			return ERR_PTR(-EINVAL);
++
++		dev = esk->proto->get_netif(esk);
++	} else {
++		if (namelen < sizeof(addr))
++			return ERR_PTR(-EINVAL);
++
++		u_addr = evl_valptr64(name_ptr, struct sockaddr_ll);
++		ret = raw_copy_from_user(&addr, u_addr, sizeof(addr));
++		if (ret)
++			return ERR_PTR(-EFAULT);
++
++		if (addr.sll_family != AF_PACKET &&
++			addr.sll_family != AF_UNSPEC)
++			return ERR_PTR(-EINVAL);
++
++		dev = evl_net_get_dev_by_index(esk->net, addr.sll_ifindex);
++	}
++
++	if (dev == NULL)
++		return ERR_PTR(-ENXIO);
++
++	return dev;
++}
++
++/* oob */
++static ssize_t send_packet(struct evl_socket *esk,
++			const struct user_oob_msghdr __user *u_msghdr,
++			const struct iovec *iov,
++			size_t iovlen)
++{
++	struct net_device *dev, *real_dev;
++	struct __evl_timespec uts;
++	enum evl_tmode tmode;
++	struct sk_buff *skb;
++	__u32 msg_flags = 0;
++	ssize_t ret, count;
++	ktime_t timeout;
++	size_t rem;
++
++	ret = raw_get_user(msg_flags, &u_msghdr->flags);
++	if (ret)
++		return -EFAULT;
++
++	if (msg_flags & ~MSG_DONTWAIT)
++		return -EINVAL;
++
++	if (evl_socket_f_flags(esk) & O_NONBLOCK)
++		msg_flags |= MSG_DONTWAIT;
++
++	/*
++	 * Fetch the timeout on obtaining a buffer from
++	 * est->free_skb_pool.
++	 */
++	ret = raw_copy_from_user(&uts, &u_msghdr->timeout, sizeof(uts));
++	if (ret)
++		return -EFAULT;
++
++	timeout = msg_flags & MSG_DONTWAIT ? EVL_NONBLOCK :
++		u_timespec_to_ktime(uts);
++	tmode = timeout ? EVL_ABS : EVL_REL;
++
++	/* Determine the xmit interface (always a VLAN device). */
++	dev = find_xmit_device(esk, u_msghdr);
++	if (IS_ERR(dev))
++		return PTR_ERR(dev);
++
++	/*
++	 * Since @dev is a VLAN device, then @real_dev cannot be stale
++	 * until @dev goes down per the in-band refcounting
++	 * guarantee. Since we hold a crossing reference on @dev, it
++	 * cannot go down as it would need to pass the crossing first,
++	 * so @real_dev cannot go stale until we are done.
++	 */
++	real_dev = vlan_dev_real_dev(dev);
++	skb = evl_net_dev_alloc_skb(real_dev, timeout, tmode);
++	if (IS_ERR(skb)) {
++		ret = PTR_ERR(skb);
++		goto out;
++	}
++
++	skb_reset_mac_header(skb);
++	skb->protocol = esk->protocol;
++	skb->dev = real_dev;
++	skb->priority = esk->sk->sk_priority;
++
++	count = evl_import_iov(iov, iovlen, skb->data, skb_tailroom(skb), &rem);
++	if (rem || count > dev->mtu + dev->hard_header_len + VLAN_HLEN)
++		ret = -EMSGSIZE;
++	else if (!dev_validate_header(dev, skb->data, count))
++		ret = -EINVAL;
++
++	if (ret < 0)
++		goto cleanup;
++
++	skb_put(skb, count);
++
++	if (!skb->protocol || skb->protocol == htons(ETH_P_ALL))
++		skb->protocol = dev_parse_header_protocol(skb);
++
++	skb_set_network_header(skb, real_dev->hard_header_len);
++
++	/*
++	 * Charge the socket with the memory consumption of skb,
++	 * waiting for the output to drain if needed. The latter might
++	 * fail if we got forcibly unblocked while waiting for the
++	 * output contention to end, or the caller asked for a
++	 * non-blocking operation while such contention was ongoing.
++	 */
++	ret = evl_charge_socket_wmem(esk, skb, timeout, tmode);
++	if (ret)
++		goto cleanup;
++
++	ret = evl_net_ether_transmit(dev, skb);
++	if (ret) {
++		evl_uncharge_socket_wmem(skb);
++		goto cleanup;
++	}
++
++	ret = count;
++out:
++	evl_net_put_dev(dev);
++
++	return ret;
++cleanup:
++	evl_net_free_skb(skb);
++	goto out;
++}
++
++static ssize_t copy_packet_to_user(struct user_oob_msghdr __user *u_msghdr,
++				const struct iovec *iov,
++				size_t iovlen,
++				struct sk_buff *skb)
++{
++	struct sockaddr_ll addr, __user *u_addr;
++	__u64 name_ptr, namelen;
++	__u32 msg_flags = 0;
++	ssize_t ret, count;
++
++	ret = raw_get_user(name_ptr, &u_msghdr->name_ptr);
++	if (ret)
++		return -EFAULT;
++
++	ret = raw_get_user(namelen, &u_msghdr->namelen);
++	if (ret)
++		return -EFAULT;
++
++	if (!name_ptr) {
++		if (namelen)
++			return -EINVAL;
++		goto copy_data;
++	}
++
++	if (namelen < sizeof(addr))
++		return -EINVAL;
++
++	addr.sll_family = AF_PACKET;
++	addr.sll_protocol = skb->protocol;
++	addr.sll_ifindex = skb->dev->ifindex;
++	addr.sll_hatype = skb->dev->type;
++	addr.sll_pkttype = skb->pkt_type;
++	addr.sll_halen = dev_parse_header(skb, addr.sll_addr);
++
++	u_addr = evl_valptr64(name_ptr, struct sockaddr_ll);
++	ret = raw_copy_to_user(u_addr, &addr, sizeof(addr));
++	if (ret)
++		return -EFAULT;
++
++copy_data:
++	count = evl_export_iov(iov, iovlen, skb->data, skb->len);
++	if (count < skb->len)
++		msg_flags |= MSG_TRUNC;
++
++	ret = raw_put_user(msg_flags, &u_msghdr->flags);
++	if (ret)
++		return -EFAULT;
++
++	return count;
++}
++
++/* oob */
++static ssize_t receive_packet(struct evl_socket *esk,
++			struct user_oob_msghdr __user *u_msghdr,
++			const struct iovec *iov,
++			size_t iovlen)
++{
++	struct __evl_timespec uts;
++	enum evl_tmode tmode;
++	struct sk_buff *skb;
++	unsigned long flags;
++	__u32 msg_flags = 0;
++	ktime_t timeout;
++	ssize_t ret;
++
++	if (u_msghdr) {
++		ret = raw_get_user(msg_flags, &u_msghdr->flags);
++		if (ret)
++			return -EFAULT;
++
++		/* No MSG_TRUNC on recv, too much of a kludge. */
++		if (msg_flags & ~MSG_DONTWAIT)
++			return -EINVAL;
++
++		/*
++		 * Fetch the timeout on receiving a buffer from
++		 * esk->input.
++		 */
++		ret = raw_copy_from_user(&uts, &u_msghdr->timeout,
++					sizeof(uts));
++		if (ret)
++			return -EFAULT;
++
++		timeout = u_timespec_to_ktime(uts);
++		tmode = timeout ? EVL_ABS : EVL_REL;
++	} else {
++		timeout = EVL_INFINITE;
++		tmode = EVL_REL;
++	}
++
++	if (evl_socket_f_flags(esk) & O_NONBLOCK)
++		msg_flags |= MSG_DONTWAIT;
++
++	do {
++		raw_spin_lock_irqsave(&esk->input_wait.lock, flags);
++
++		if (!list_empty(&esk->input)) {
++			skb = list_get_entry(&esk->input, struct sk_buff, list);
++			raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++			/* Restore the MAC header. */
++			skb_push(skb, skb->data - skb_mac_header(skb));
++			ret = copy_packet_to_user(u_msghdr, iov, iovlen, skb);
++			evl_uncharge_socket_rmem(esk, skb);
++			evl_net_free_skb(skb);
++			return ret;
++		}
++
++		if (msg_flags & MSG_DONTWAIT) {
++			raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++			return -EWOULDBLOCK;
++		}
++
++		evl_add_wait_queue(&esk->input_wait, timeout, tmode);
++		raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++		ret = evl_wait_schedule(&esk->input_wait);
++	} while (!ret);
++
++	return ret;
++}
++
++/* oob */
++static __poll_t poll_packet(struct evl_socket *esk,
++			struct oob_poll_wait *wait)
++{
++	struct evl_netdev_state *est;
++	struct net_device *dev;
++	__poll_t ret = 0;
++
++	/*
++	 * Enqueue, then test. No big deal if we race on list_empty(),
++	 * at worst this would lead to a spurious wake up, which the
++	 * caller would detect under lock then go back waiting.
++	 */
++	evl_poll_watch(&esk->poll_head, wait, NULL);
++	if (!list_empty(&esk->input))
++		ret = POLLIN|POLLRDNORM;
++
++	dev = esk->proto->get_netif(esk);
++	if (dev) {
++		est = dev->oob_context.dev_state.estate;
++		evl_poll_watch(&est->poll_head, wait, NULL);
++		if (!list_empty(&est->free_skb_pool))
++			ret = POLLOUT|POLLWRNORM;
++		evl_net_put_dev(dev);
++	}
++
++	return ret;
++}
++
++static struct evl_net_proto ether_packet_proto = {
++	.attach	= attach_packet_socket,
++	.detach = detach_packet_socket,
++	.bind = bind_packet_socket,
++	.oob_send = send_packet,
++	.oob_poll = poll_packet,
++	.oob_receive = receive_packet,
++	.get_netif = get_netif_packet,
++};
++
++static struct evl_net_proto *
++find_packet_proto(__be16 protocol,
++		struct evl_net_proto *default_proto)
++{
++	switch (protocol) {
++	case htons(ETH_P_ALL):
++	case htons(ETH_P_IP):
++		return &ether_packet_proto;
++	case 0:
++		return default_proto;
++	default:
++		return NULL;
++	}
++}
++
++static struct evl_net_proto *
++match_packet_domain(int type, __be16 protocol)
++{
++	static struct evl_net_proto *proto;
++
++	proto = find_packet_proto(protocol, &ether_packet_proto);
++	if (proto == NULL)
++		return NULL;
++
++	if (type != SOCK_RAW)
++		return ERR_PTR(-ESOCKTNOSUPPORT);
++
++	return proto;
++}
++
++struct evl_socket_domain evl_net_packet = {
++	.af_domain = AF_PACKET,
++	.match = match_packet_domain,
++};
+diff --git a/kernel/evl/net/qdisc/Makefile b/kernel/evl/net/qdisc/Makefile
+new file mode 100644
+index 0000000000..ad48ae7033
+--- /dev/null
++++ b/kernel/evl/net/qdisc/Makefile
+@@ -0,0 +1,3 @@
++obj-$(CONFIG_EVL_NET) += qdisc.o
++
++qdisc-y := core.o fifo.o
+diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
+new file mode 100644
+index 0000000000..16b3db48e8
+--- /dev/null
++++ b/kernel/evl/net/qdisc/core.c
+@@ -0,0 +1,102 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/list.h>
++#include <linux/mutex.h>
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/netdevice.h>
++#include <evl/net/qdisc.h>
++
++static LIST_HEAD(all_net_qdisc);
++
++static DEFINE_MUTEX(qdisc_list_lock);
++
++void evl_net_register_qdisc(struct evl_net_qdisc_ops *ops)
++{
++	mutex_lock(&qdisc_list_lock);
++	list_add(&ops->next, &all_net_qdisc);
++	mutex_unlock(&qdisc_list_lock);
++}
++EXPORT_SYMBOL_GPL(evl_net_register_qdisc);
++
++void evl_net_unregister_qdisc(struct evl_net_qdisc_ops *ops)
++{
++	mutex_lock(&qdisc_list_lock);
++	list_del(&ops->next);
++	mutex_unlock(&qdisc_list_lock);
++}
++EXPORT_SYMBOL_GPL(evl_net_unregister_qdisc);
++
++struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops)
++{
++	struct evl_net_qdisc *qdisc;
++	int ret;
++
++	qdisc = kzalloc(sizeof(*qdisc) + ops->priv_size, GFP_KERNEL);
++	if (qdisc == NULL)
++		return ERR_PTR(-ENOMEM);
++
++	qdisc->oob_ops = ops;
++	evl_net_init_skb_queue(&qdisc->inband_q);
++
++	ret = ops->init(qdisc);
++	if (ret) {
++		kfree(qdisc);
++		return ERR_PTR(ret);
++	}
++
++	return qdisc;
++}
++EXPORT_SYMBOL_GPL(evl_net_alloc_qdisc);
++
++void evl_net_free_qdisc(struct evl_net_qdisc *qdisc)
++{
++	evl_net_destroy_skb_queue(&qdisc->inband_q);
++	qdisc->oob_ops->destroy(qdisc);
++	kfree(qdisc);
++}
++EXPORT_SYMBOL_GPL(evl_net_free_qdisc);
++
++/**
++ *	evl_net_sched_packet - pass an outgoing buffer to the packet
++ *	scheduler.
++ *
++ *	Any high priority packet originating from the EVL stack
++ *	(i.e. skb->oob is true) is given to the out-of-band qdisc
++ *	handler attached to the device for scheduling. Otherwise, the
++ *	packet is linked to the qdisc's low priority in-band queue.
++ *
++ *	@skb the packet to schedule for transmission. Must not be
++ *	linked to any upstream queue.
++ *
++ *	@dev the device to pass the packet to.
++ */
++int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob or in-band */
++{
++	struct evl_net_qdisc *qdisc = dev->oob_context.dev_state.estate->qdisc;
++
++	/*
++	 * Low-priority traffic sent by the sched_oob Qdisc goes to
++	 * the internal in-band queue.
++	 */
++	if (!skb->oob) {
++		evl_net_add_skb_queue(&qdisc->inband_q, skb);
++		return 0;
++	}
++
++	return qdisc->oob_ops->enqueue(qdisc, skb);
++}
++
++void __init evl_net_init_qdisc(void)
++{
++	evl_net_register_qdisc(&evl_net_qdisc_fifo);
++}
++
++void __init evl_net_cleanup_qdisc(void)
++{
++	evl_net_unregister_qdisc(&evl_net_qdisc_fifo);
++}
+diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
+new file mode 100644
+index 0000000000..a1d8e97da8
+--- /dev/null
++++ b/kernel/evl/net/qdisc/fifo.c
+@@ -0,0 +1,58 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/list.h>
++#include <linux/netdevice.h>
++#include <linux/skbuff.h>
++#include <evl/list.h>
++#include <evl/net/qdisc.h>
++#include <uapi/evl/net/sched.h>
++
++struct qdisc_fifo_priv {
++	struct evl_net_skb_queue q;
++};
++
++static int init_qdisc_fifo(struct evl_net_qdisc *qdisc)
++{
++	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
++
++	evl_net_init_skb_queue(&p->q);
++
++	return 0;
++}
++
++static void destroy_qdisc_fifo(struct evl_net_qdisc *qdisc)
++{
++	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
++
++	evl_net_destroy_skb_queue(&p->q);
++}
++
++static int enqueue_qdisc_fifo(struct evl_net_qdisc *qdisc,
++			struct sk_buff *skb)
++{
++	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
++
++	evl_net_add_skb_queue(&p->q, skb);
++
++	return 0;
++}
++
++static struct sk_buff *dequeue_qdisc_fifo(struct evl_net_qdisc *qdisc)
++{
++	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
++
++	return evl_net_get_skb_queue(&p->q);
++}
++
++struct evl_net_qdisc_ops evl_net_qdisc_fifo = {
++	.name	        = "oob_fifo",
++	.priv_size      = sizeof(struct qdisc_fifo_priv),
++	.init		= init_qdisc_fifo,
++	.destroy	= destroy_qdisc_fifo,
++	.enqueue	= enqueue_qdisc_fifo,
++	.dequeue	= dequeue_qdisc_fifo,
++};
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+new file mode 100644
+index 0000000000..26999b1c1b
+--- /dev/null
++++ b/kernel/evl/net/skb.c
+@@ -0,0 +1,487 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/types.h>
++#include <linux/list.h>
++#include <linux/atomic.h>
++#include <linux/netdevice.h>
++#include <linux/dma-mapping.h>
++#include <linux/if_vlan.h>
++#include <linux/err.h>
++#include <evl/net.h>
++#include <evl/lock.h>
++#include <evl/list.h>
++#include <evl/work.h>
++#include <evl/wait.h>
++
++static unsigned int net_clones = 1024; /* FIXME: Kconfig? */
++
++static unsigned int net_clones_arg;
++module_param_named(net_clones, net_clones_arg, uint, 0444);
++
++/*
++ * skb lifecycle:
++ *
++ * [RX path]: netif_oob_deliver(skb)
++ *             * false: pass down, freed through in-band stack
++ *             * true: process -> receive -> evl_net_free_skb(skb)
++ *                     skb->oob ? added to skb->dev->free_skb_pool or clone_heads
++ *                              : pushed to in-band recycling queue
++ *
++ * [TX path]: skb = evl_net_dev_alloc_skb() | netdev_alloc_skb*()
++ *           ...
++ *           netdev_start_xmit(skb)
++ *           ...
++ *           [IRQ or NAPI context]
++ *              napi_consume_skb(skb)
++ *                    -> recycle_oob_skb(skb)
++ *            |
++ * [1]          consume_skb(skb)
++ * [2]                 -> __kfree_skb(skb)
++ *                           -> recycle_oob_skb(skb)
++ *            |
++ *              __dev_kfree_skb_any(skb)
++ *                        -> __dev_kfree_skb_irq(skb)
++ *                             [SOFTIRQ NET_TX]
++ *                                -> net_tx_action
++ *                        |              -> __kfree_skb(skb) [2]
++ *                        |              |
++ *                        |              -> __kfree_skb_defer(skb)
++ *                                                -> recycle_oob_skb(skb)
++ *                        -> dev_kfree_skb(skb)
++ *                                -> consume_skb(skb) [1]
++ */
++
++#define SKB_RECYCLING_THRESHOLD	64
++
++static LIST_HEAD(recycling_queue);
++
++static int recycling_count;
++
++/*
++ * CAUTION: Innermost lock, may be nested with
++ * oob_netdev_state.pool_wait.lock.
++ */
++static DEFINE_HARD_SPINLOCK(recycling_lock);
++
++static struct evl_work recycler_work;
++
++static DEFINE_HARD_SPINLOCK(clone_lock);
++
++static LIST_HEAD(clone_heads);
++
++static unsigned int clone_count;
++
++/**
++ *	skb_oob_recycle - release a network packet to the out-of-band
++ *	stack.
++ *
++ *	Called by the in-band stack in order to release a socket
++ *	buffer (e.g. __kfree_skb[_defer]()). This routine might decide
++ *	to leave it to the in-band caller for releasing the packet
++ *	eventually, in which case it would return false.
++ *
++ *	@skb the packet to release.
++ *
++ *	Returns true if the oob stack consumed the packet.
++ */
++bool skb_oob_recycle(struct sk_buff *skb) /* in-band */
++{
++	if (EVL_WARN_ON(NET, !skb->oob || skb->dev == NULL))
++		return false;
++
++	evl_net_free_skb(skb);
++
++	return true;
++}
++
++static void skb_recycler(struct evl_work *work)
++{
++	struct sk_buff *skb, *next;
++	unsigned long flags;
++	LIST_HEAD(list);
++
++	raw_spin_lock_irqsave(&recycling_lock, flags);
++	list_splice_init(&recycling_queue, &list);
++	recycling_count = 0;
++	raw_spin_unlock_irqrestore(&recycling_lock, flags);
++
++	/*
++	 * The recycler runs on a workqueue context with (in-band)
++	 * irqs on, so calling dev_kfree_skb() is fine.
++	 */
++	list_for_each_entry_safe(skb, next, &list, list) {
++		skb_list_del_init(skb);
++		dev_kfree_skb(skb);
++	}
++}
++
++struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
++				      ktime_t timeout, enum evl_tmode tmode)
++{
++	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct sk_buff *skb;
++	unsigned long flags;
++	int ret;
++
++	if (EVL_WARN_ON(NET, is_vlan_dev(dev)))
++		return NULL;
++
++	for (;;) {
++		raw_spin_lock_irqsave(&est->pool_wait.lock, flags);
++
++		if (!list_empty(&est->free_skb_pool)) {
++			skb = list_get_entry(&est->free_skb_pool,
++					struct sk_buff, list);
++			est->pool_free--;
++			break;
++		}
++
++		if (timeout == EVL_NONBLOCK) {
++			skb = ERR_PTR(-EWOULDBLOCK);
++			break;
++		}
++
++		evl_add_wait_queue(&est->pool_wait, timeout, tmode);
++
++		raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++
++		ret = evl_wait_schedule(&est->pool_wait);
++		if (ret)
++			return ERR_PTR(ret);
++	}
++
++	raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++
++	return skb;
++}
++
++static inline void maybe_kick_recycler(void)
++{
++	if (READ_ONCE(recycling_count) >= SKB_RECYCLING_THRESHOLD)
++		evl_call_inband(&recycler_work);
++}
++
++static void free_skb_inband(struct sk_buff *skb)
++{
++	raw_spin_lock(&recycling_lock);
++	list_add(&skb->list, &recycling_queue);
++	recycling_count++;
++	raw_spin_unlock(&recycling_lock);
++}
++
++static void free_skb_to_dev(struct sk_buff *skb)
++{
++	struct net_device *dev = skb->dev;
++	struct evl_netdev_state *est;
++	unsigned long flags;
++
++	est = dev->oob_context.dev_state.estate;
++	raw_spin_lock_irqsave(&est->pool_wait.lock, flags);
++
++	list_add(&skb->list, &est->free_skb_pool);
++	est->pool_free++;
++
++	if (evl_wait_active(&est->pool_wait))
++		evl_wake_up_head(&est->pool_wait);
++
++	raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++
++	evl_signal_poll_events(&est->poll_head,	POLLOUT|POLLWRNORM);
++}
++
++static void free_skb_clone(struct sk_buff *skb)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&clone_lock, flags);
++	list_add(&skb->list, &clone_heads);
++	clone_count++;
++	raw_spin_unlock_irqrestore(&clone_lock, flags);
++}
++
++static void free_skb(struct sk_buff *skb)
++{
++	struct net_device *dev = skb->dev;
++	struct sk_buff *origin;
++	int dref;
++
++	if (EVL_WARN_ON(NET, dev == NULL))
++		return;
++
++	if (EVL_WARN_ON(NET, is_vlan_dev(dev)))
++		return;
++
++	/*
++	 * We might receive requests to free regular skbs, or
++	 * associated to devices for which diversion was just turned
++	 * off: pass them on to the in-band stack if so.
++	 * FIXME: should we receive that?
++	 */
++	if (unlikely(!netif_oob_diversion(skb->dev)))
++		skb->oob = false;
++
++	if (!skb_is_oob(skb)) {
++		if (!skb_has_oob_clone(skb))
++			free_skb_inband(skb);
++		return;
++	}
++
++	if (!skb_release_oob_skb(skb, &dref))
++		return;
++
++	if (skb_is_oob_clone(skb)) {
++		origin = EVL_NET_CB(skb)->origin;
++		free_skb_clone(skb);
++		if (!skb_is_oob(origin)) {
++			if (dref == 1)
++				free_skb_inband(origin);
++			else
++				EVL_WARN_ON(NET, dref < 1);
++			return;
++		}
++		skb = origin;
++	}
++
++	if (!dref) {
++		netdev_reset_oob_skb(dev, skb);
++		free_skb_to_dev(skb);
++	}
++}
++
++/**
++ *	evl_net_clone_skb - clone a socket buffer.
++ *
++ *	Allocate and build a clone of @skb, referring to the same
++ *	data. Unlike its in-band counterpart, a cloned skb lives
++ *	(i.e. shell + data) until all its clones are freed.
++ *
++ *	@skb the packet to clone.
++ */
++struct sk_buff *evl_net_clone_skb(struct sk_buff *skb)
++{
++	struct sk_buff *clone = NULL;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&clone_lock, flags);
++	if (!list_empty(&clone_heads)) {
++		clone = list_get_entry(&clone_heads, struct sk_buff, list);
++		clone_count--;
++	}
++	raw_spin_unlock_irqrestore(&clone_lock, flags);
++
++	if (unlikely(!clone))
++		return NULL;
++
++	skb_morph_oob_skb(clone, skb);
++	/*
++	 * Propagate the origin, this is a N(clones):1(origin)
++	 * relationship.
++	 */
++	EVL_NET_CB(clone)->origin = EVL_NET_CB(skb)->origin ?: skb;
++
++	return clone;
++}
++
++/**
++ *	evl_net_free_skb - releases a socket buffer.
++ *
++ *	Packets which were conveying out-of-band data are moved back
++ *	to the originating per-device pool (if that device is still
++ *	active). Otherwise, the packet is scheduled for release to the
++ *	in-band pool.
++ *
++ *	@skb the packet to release. Not linked to any upstream queue.
++ */
++void evl_net_free_skb(struct sk_buff *skb)
++{
++	EVL_WARN_ON(NET, hard_irqs_disabled());
++
++	free_skb(skb);
++	evl_schedule();
++	maybe_kick_recycler();
++}
++
++/**
++ *	evl_net_free_skb_list - releases a list of socket buffers.
++ *
++ *	Releases a list of buffers linked to a private list. Buffers
++ *	may belong to different devices.
++
++ *	@list the list head queuing packets to release.
++ */
++void evl_net_free_skb_list(struct list_head *list)
++{
++	struct sk_buff *skb, *n;
++
++	EVL_WARN_ON(NET, hard_irqs_disabled());
++
++	if (list_empty(list))
++		return;
++
++	list_for_each_entry_safe(skb, n, list, list)
++		free_skb(skb);
++
++	evl_schedule();
++	maybe_kick_recycler();
++}
++
++void evl_net_init_skb_queue(struct evl_net_skb_queue *skbq)
++{
++	INIT_LIST_HEAD(&skbq->queue);
++	raw_spin_lock_init(&skbq->lock);
++}
++
++void evl_net_destroy_skb_queue(struct evl_net_skb_queue *skbq)
++{
++	evl_net_free_skb_list(&skbq->queue);
++}
++
++void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
++			struct sk_buff *skb)
++{
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&skbq->lock, flags);
++	list_add_tail(&skb->list, &skbq->queue);
++	raw_spin_unlock_irqrestore(&skbq->lock, flags);
++}
++
++struct sk_buff *evl_net_get_skb_queue(struct evl_net_skb_queue *skbq)
++{
++	struct sk_buff *skb = NULL;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&skbq->lock, flags);
++
++	if (!list_empty(&skbq->queue))
++		skb = list_get_entry(&skbq->queue, struct sk_buff, list);
++
++	raw_spin_unlock_irqrestore(&skbq->lock, flags);
++
++	return skb;
++}
++
++bool evl_net_move_skb_queue(struct evl_net_skb_queue *skbq,
++			struct list_head *list)
++{
++	unsigned long flags;
++	bool ret;
++
++	raw_spin_lock_irqsave(&skbq->lock, flags);
++	list_splice_init(&skbq->queue, list);
++	ret = !list_empty(list);
++	raw_spin_unlock_irqrestore(&skbq->lock, flags);
++
++	return ret;
++}
++
++static struct sk_buff *alloc_one_skb(struct net_device *dev)
++{
++	struct evl_netdev_state *est;
++	struct sk_buff *skb;
++	dma_addr_t dma_addr;
++
++	if (!netdev_is_oob_capable(dev)) {
++		est = dev->oob_context.dev_state.estate;
++		return __netdev_alloc_oob_skb(dev, est->buf_size, GFP_KERNEL);
++	}
++
++	skb = netdev_alloc_oob_skb(dev, &dma_addr);
++	if (skb)
++		EVL_NET_CB(skb)->dma_addr = dma_addr;
++
++	return skb;
++}
++
++/* in-band */
++int evl_net_dev_build_pool(struct net_device *dev)
++{
++	struct evl_netdev_state *est;
++	struct sk_buff *skb;
++	int n;
++
++	if (EVL_WARN_ON(NET, is_vlan_dev(dev)))
++		return -EINVAL;
++
++	if (EVL_WARN_ON(NET, netif_oob_diversion(dev)))
++		return -EBUSY;
++
++	est = dev->oob_context.dev_state.estate;
++
++	INIT_LIST_HEAD(&est->free_skb_pool);
++
++	for (n = 0; n < est->pool_max; n++) {
++		skb = alloc_one_skb(dev);
++		if (skb == NULL) {
++			evl_net_dev_purge_pool(dev);
++			return -ENOMEM;
++		}
++		list_add(&skb->list, &est->free_skb_pool);
++	}
++
++	est->pool_free = est->pool_max;
++	evl_init_wait(&est->pool_wait, &evl_mono_clock, EVL_WAIT_PRIO);
++	evl_init_poll_head(&est->poll_head);
++
++	return 0;
++}
++
++/* in-band, only when diversion is disabled! */
++void evl_net_dev_purge_pool(struct net_device *dev)
++{
++	struct evl_netdev_state *est;
++	struct sk_buff *skb, *next;
++
++	if (EVL_WARN_ON(NET, netif_oob_diversion(dev)))
++		return;
++
++	est = dev->oob_context.dev_state.estate;
++
++	list_for_each_entry_safe(skb, next, &est->free_skb_pool, list) {
++		if (netdev_is_oob_capable(dev))
++			netdev_free_oob_skb(dev, skb,
++					EVL_NET_CB(skb)->dma_addr);
++		else
++			__netdev_free_oob_skb(dev, skb);
++	}
++
++	evl_destroy_wait(&est->pool_wait);
++}
++
++ssize_t evl_net_show_clones(char *buf, size_t len)
++{
++	return scnprintf(buf, len, "%u\n", clone_count);
++}
++
++int __init evl_net_init_pools(void)
++{
++	struct sk_buff *clone, *tmp;
++	unsigned int n;
++
++	clone_count = net_clones;
++
++	for (n = 0; n < clone_count; n++) {
++		clone = skb_alloc_oob_head(GFP_KERNEL);
++		if (clone == NULL)
++			goto fail;
++		list_add(&clone->list, &clone_heads);
++	}
++
++	evl_init_work(&recycler_work, skb_recycler);
++
++	return 0;
++
++fail:
++	list_for_each_entry_safe(clone, tmp, &clone_heads, list) {
++		list_del(&clone->list);
++		kfree_skb(clone);
++	}
++
++	clone_count = 0;
++
++	return -ENOMEM;
++}
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+new file mode 100644
+index 0000000000..5402e157bb
+--- /dev/null
++++ b/kernel/evl/net/socket.c
+@@ -0,0 +1,805 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/file.h>
++#include <linux/net.h>
++#include <linux/socket.h>
++#include <linux/mutex.h>
++#include <linux/if_ether.h>
++#include <linux/uio.h>
++#include <linux/err.h>
++#include <linux/hashtable.h>
++#include <linux/jhash.h>
++#include <linux/nsproxy.h>
++#include <linux/compat.h>
++#include <linux/uaccess.h>
++#include <net/net_namespace.h>
++#include <net/sock.h>
++#include <evl/file.h>
++#include <evl/factory.h>
++#include <evl/uaccess.h>
++#include <evl/net.h>
++#include <evl/poll.h>
++#include <evl/memory.h>
++#include <evl/net/skb.h>
++#include <evl/net/socket.h>
++#include <evl/net/device.h>
++
++/*
++ * EVL sockets are (almost) regular sockets, extended with out-of-band
++ * capabilities. In theory, this would allow us to provide out-of-band
++ * services on top of any common protocol already handled by the
++ * in-band network stack. EVL-specific protocols belong to the generic
++ * PF_OOB family, which we use as a protocol mutiplexor.
++ */
++
++#define EVL_DOMAIN_HASH_BITS	8
++
++static DEFINE_HASHTABLE(domain_hash, EVL_DOMAIN_HASH_BITS);
++
++static DEFINE_MUTEX(domain_lock);
++
++struct domain_list_head {
++	int af_domain;
++	u32 hkey;
++	struct hlist_node hash;
++	struct list_head list;
++};
++
++/*
++ * EVL sockets are always bound to an EVL file (see
++ * sock_oob_attach()). We may access our extended socket context via
++ * filp->oob_data or sock->sk->oob_data, which works for all socket
++ * families.
++ */
++static inline struct evl_socket *evl_sk_from_file(struct file *filp)
++{
++	return filp->oob_data ?
++		container_of(filp->oob_data, struct evl_socket, efile) :
++		NULL;
++}
++
++static inline struct evl_socket *evl_sk(struct socket *sock)
++{
++	return sock->sk->oob_data;
++}
++
++static int load_iov_native(struct iovec *iov,
++			const struct iovec __user *u_iov,
++			size_t iovlen)
++{
++	return raw_copy_from_user(iov, u_iov, iovlen * sizeof(*u_iov)) ?
++		-EFAULT : 0;
++}
++
++#ifdef CONFIG_COMPAT
++
++int do_load_iov(struct iovec *iov,
++		const struct iovec __user *u_iov,
++		size_t iovlen)
++{
++	struct compat_iovec c_iov[UIO_FASTIOV], __user *uc_iov;
++	size_t nvec = 0;
++	int ret, n, i;
++
++	if (likely(!is_compat_oob_call()))
++		return load_iov_native(iov, u_iov, iovlen);
++
++	uc_iov = (struct compat_iovec *)u_iov;
++
++	/*
++	 * Slurp compat_iovector in by chunks of UIO_FASTIOV
++	 * cells. This is faster in the most likely case compared to
++	 * allocating yet another in-kernel vector dynamically for
++	 * such purpose.
++	 */
++	while (nvec < iovlen) {
++		n = iovlen - nvec;
++		if (n > UIO_FASTIOV)
++			n = UIO_FASTIOV;
++		ret = raw_copy_from_user(c_iov, uc_iov, sizeof(*uc_iov) * n);
++		if (ret)
++			return -EFAULT;
++		for (i = 0; i < n; i++, iov++) {
++			iov->iov_base = compat_ptr(c_iov[i].iov_base);
++			iov->iov_len = c_iov[i].iov_len;
++		}
++		uc_iov += n;
++		nvec += n;
++	}
++
++	return 0;
++}
++
++#else
++
++static inline int do_load_iov(struct iovec *iov,
++			const struct iovec __user *u_iov,
++			size_t iovlen)
++{
++	return load_iov_native(iov, u_iov, iovlen);
++}
++
++#endif
++
++static struct iovec *
++load_iov(const struct iovec __user *u_iov, size_t iovlen,
++	struct iovec *fast_iov)
++{
++	struct iovec *slow_iov;
++	int ret;
++
++	if (iovlen > UIO_MAXIOV)
++		return ERR_PTR(-EINVAL);
++
++	if (likely(iovlen <= UIO_FASTIOV)) {
++		ret = do_load_iov(fast_iov, u_iov, iovlen);
++		return ret ? ERR_PTR(ret) : fast_iov;
++	}
++
++	slow_iov = evl_alloc(iovlen * sizeof(*u_iov));
++	if (slow_iov == NULL)
++		return ERR_PTR(-ENOMEM);
++
++	ret = do_load_iov(slow_iov, u_iov, iovlen);
++	if (ret) {
++		evl_free(slow_iov);
++		return ERR_PTR(ret);
++	}
++
++	return slow_iov;
++}
++
++ssize_t evl_export_iov(const struct iovec *iov, size_t iovlen,
++		const void *data, size_t len)
++{
++	ssize_t written = 0;
++	size_t nbytes;
++	int n, ret;
++
++	for (n = 0; len > 0 && n < iovlen; n++, iov++) {
++		if (iov->iov_len == 0)
++			continue;
++
++		nbytes = iov->iov_len;
++		if (nbytes > len)
++			nbytes = len;
++
++		ret = raw_copy_to_user(iov->iov_base, data, nbytes);
++		if (ret)
++			return -EFAULT;
++
++		len -= nbytes;
++		data += nbytes;
++		written += nbytes;
++		if (written < 0)
++			return -EINVAL;
++	}
++
++	return written;
++}
++EXPORT_SYMBOL_GPL(evl_export_iov);
++
++ssize_t evl_import_iov(const struct iovec *iov, size_t iovlen,
++		       void *data, size_t len, size_t *remainder)
++{
++	size_t nbytes, avail = 0;
++	ssize_t read = 0;
++	int n, ret;
++
++	for (n = 0; len > 0 && n < iovlen; n++, iov++) {
++		if (iov->iov_len == 0)
++			continue;
++
++		nbytes = iov->iov_len;
++		avail += nbytes;
++		if (nbytes > len)
++			nbytes = len;
++
++		ret = raw_copy_from_user(data, iov->iov_base, nbytes);
++		if (ret)
++			return -EFAULT;
++
++		len -= nbytes;
++		data += nbytes;
++		read += nbytes;
++		if (read < 0)
++			return -EINVAL;
++	}
++
++	if (remainder) {
++		for (; n < iovlen; n++, iov++)
++			avail += iov->iov_len;
++		*remainder = avail - read;
++	}
++
++	return read;
++}
++EXPORT_SYMBOL_GPL(evl_import_iov);
++
++static inline u32 get_domain_hash(int af_domain)
++{
++	u32 hsrc = af_domain;
++
++	return jhash2(&hsrc, 1, 0);
++}
++
++/* domain_lock held */
++static struct domain_list_head *fetch_domain_list(u32 hkey)
++{
++	struct domain_list_head *head;
++
++	hash_for_each_possible(domain_hash, head, hash, hkey)
++		if (head->hkey == hkey)
++			return head;
++
++	return NULL;
++}
++
++int evl_register_socket_domain(struct evl_socket_domain *domain)
++{
++	struct domain_list_head *head;
++	u32 hkey;
++
++	inband_context_only();
++
++	hkey = get_domain_hash(domain->af_domain);
++
++	mutex_lock(&domain_lock);
++
++	head = fetch_domain_list(hkey);
++	if (head == NULL) {
++		head = kzalloc(sizeof(*head), GFP_KERNEL);
++		if (head) {
++			head->af_domain = domain->af_domain;
++			head->hkey = hkey;
++			INIT_LIST_HEAD(&head->list);
++			hash_add(domain_hash, &head->hash, hkey);
++		}
++	}
++
++	if (head)	/* Add LIFO to allow for override. */
++		list_add(&domain->next, &head->list);
++
++	mutex_unlock(&domain_lock);
++
++	return head ? 0 : -ENOMEM;
++}
++
++void evl_unregister_socket_domain(struct evl_socket_domain *domain)
++{
++	struct domain_list_head *head;
++	u32 hkey;
++
++	inband_context_only();
++
++	hkey = get_domain_hash(domain->af_domain);
++
++	mutex_lock(&domain_lock);
++
++	head = fetch_domain_list(hkey);
++	if (head) {
++		list_del(&domain->next);
++		if (list_empty(&head->list)) {
++			hash_del(&head->hash);
++			kfree(head);
++		}
++	} else {
++		EVL_WARN_ON(NET, 1);
++	}
++
++	mutex_unlock(&domain_lock);
++}
++
++static inline bool charge_socket_wmem(struct evl_socket *esk,
++				struct sk_buff *skb)
++{				/* esk->wmem_wait.lock held */
++	if (atomic_read(&esk->wmem_count) >= esk->wmem_max)
++		return false;
++
++	atomic_add(skb->truesize, &esk->wmem_count);
++	EVL_NET_CB(skb)->tracker = esk;
++	evl_down_crossing(&esk->wmem_drain);
++
++	return true;
++}
++
++int evl_charge_socket_wmem(struct evl_socket *esk,
++			struct sk_buff *skb,
++			ktime_t timeout, enum evl_tmode tmode)
++{
++	EVL_NET_CB(skb)->tracker = NULL;
++
++	if (!esk->wmem_max)	/* Unlimited. */
++		return 0;
++
++	return evl_wait_event_timeout(&esk->wmem_wait,
++				timeout, tmode,
++				charge_socket_wmem(esk, skb));
++}
++
++void evl_uncharge_socket_wmem(struct sk_buff *skb)
++{
++	struct evl_socket *esk = EVL_NET_CB(skb)->tracker;
++	unsigned long flags;
++	int count;
++
++	if (!esk)
++		return;
++
++	/*
++	 * The tracking socket cannot be stale as it has to pass the
++	 * wmem_crossing first before unwinding in sock_oob_detach().
++	 */
++	raw_spin_lock_irqsave(&esk->wmem_wait.lock, flags);
++
++	EVL_NET_CB(skb)->tracker = NULL;
++
++	count = atomic_sub_return(skb->truesize, &esk->wmem_count);
++	if (count < esk->wmem_max && evl_wait_active(&esk->wmem_wait))
++		evl_flush_wait_locked(&esk->wmem_wait, 0);
++
++	evl_up_crossing(&esk->wmem_drain);
++
++	raw_spin_unlock_irqrestore(&esk->wmem_wait.lock, flags);
++
++	EVL_WARN_ON(NET, count < 0);
++}
++
++/* in-band */
++static struct evl_net_proto *
++find_oob_proto(int domain, int type, __be16 protocol)
++{
++	struct evl_net_proto *proto = NULL;
++	struct domain_list_head *head;
++	struct evl_socket_domain *d;
++	u32 hkey;
++
++	hkey = get_domain_hash(domain);
++
++	mutex_lock(&domain_lock);
++
++	head = fetch_domain_list(hkey);
++	if (head) {
++		list_for_each_entry(d, &head->list, next) {
++			if (d->af_domain != domain)
++				continue;
++			proto = d->match(type, protocol);
++			if (proto)
++				break;
++		}
++	}
++
++	mutex_unlock(&domain_lock);
++
++	return proto;
++}
++
++/*
++ * In-band call from the common network stack creating a new socket,
++ * @sock is already bound to a file. We know the following:
++ *
++ * - the caller wants us either to attach an out-of-band extension to
++ *   a common protocol (e.g. AF_PACKET over ethernet), or to set up an
++ *   mere AF_OOB socket for EVL-specific protocols.
++ *
++ * - we have no oob extension context for @sock yet
++ *   (sock->sk->oob_data is NULL)
++ */
++int sock_oob_attach(struct socket *sock)
++{
++	struct evl_net_proto *proto;
++	struct sock *sk = sock->sk;
++	struct evl_socket *esk;
++	int ret;
++
++	/*
++	 * Try finding a suitable out-of-band protocol among those
++	 * registered in EVL.
++	 */
++	proto = find_oob_proto(sk->sk_family, sk->sk_type, sk->sk_protocol);
++	if (proto == NULL)
++		return -EPROTONOSUPPORT;
++
++	/*
++	 * We might support a protocol, but we might not be happy with
++	 * the socket type (e.g. AF_PACKET mandates SOCK_RAW).
++	 */
++	if (IS_ERR(proto))
++		return PTR_ERR(proto);
++
++	/*
++	 * If sk->sk_family is not PF_OOB, we have no extended oob
++	 * context yet, allocate one to piggyback on a common socket.
++	 */
++	if (sk->sk_family != PF_OOB) {
++		esk = kzalloc(sizeof(*esk), GFP_KERNEL);
++		if (esk == NULL)
++			return -ENOMEM;
++	} else {
++		esk = (struct evl_socket *)sk;
++	}
++
++	esk->sk = sk;
++
++	/*
++	 * Bind the underlying socket file to an EVL file, which
++	 * enables out-of-band I/O requests for that socket.
++	 */
++	ret = evl_open_file(&esk->efile, sock->file);
++	if (ret)
++		goto fail_open;
++
++	/*
++	 * In-band wise, the host socket is fully initialized, so the
++	 * in-band network stack already holds a ref. on the net
++	 * struct for that socket.
++	 */
++	esk->net = sock_net(sock->sk);
++	mutex_init(&esk->lock);
++	INIT_LIST_HEAD(&esk->input);
++	INIT_LIST_HEAD(&esk->next_sub);
++	evl_init_wait(&esk->input_wait, &evl_mono_clock, 0);
++	evl_init_wait(&esk->wmem_wait, &evl_mono_clock, 0);
++	evl_init_poll_head(&esk->poll_head);
++	raw_spin_lock_init(&esk->oob_lock);
++	/* Inherit the {rw}mem limits from the base socket. */
++	esk->rmem_max = sk->sk_rcvbuf;
++	esk->wmem_max = sk->sk_sndbuf;
++	evl_init_crossing(&esk->wmem_drain);
++
++	ret = proto->attach(esk, proto, sk->sk_protocol);
++	if (ret)
++		goto fail_attach;
++
++	sk->oob_data = esk;
++
++	return 0;
++
++fail_attach:
++	evl_release_file(&esk->efile);
++fail_open:
++	if (sk->sk_family != PF_OOB)
++		kfree(esk);
++
++	return ret;
++}
++
++/*
++ * In-band call from the common network stack which is about to
++ * release a socket (@sock is out-of-band capable).
++ */
++void sock_oob_detach(struct socket *sock)
++{
++	struct sock *sk = sock->sk;
++	struct evl_socket *esk = evl_sk(sock);
++
++	evl_release_file(&esk->efile);
++	/* Wait for the stack to drain in-flight outgoing buffers. */
++	evl_pass_crossing(&esk->wmem_drain);
++	/* We are detaching, so rmem_count can be left out of sync. */
++	evl_net_free_skb_list(&esk->input);
++
++	if (esk->proto->detach)
++		esk->proto->detach(esk);
++
++	if (sk->sk_family != PF_OOB)
++		kfree(esk);	/* i.e. sk->oob_data. */
++
++	sk->oob_data = NULL;
++}
++
++/*
++ * In-band call from the common network stack (@sock is out-of-band
++ * capable). We end up here after a socket was successful bound to the
++ * given address by the common network stack, so that we can do some
++ * EVL-specific work on top of that.
++ */
++int sock_oob_bind(struct socket *sock, struct sockaddr *addr, int len)
++{
++	struct sock *sk = sock->sk;
++	struct evl_socket *esk = evl_sk(sock);
++
++	/*
++	 * If @sock belongs to PF_OOB, then evl_sock_bind() already
++	 * handled the binding. We ony care about common protocols
++	 * for which we have an out-of-band extension
++	 * (e.g. AF_PACKET).
++	 */
++	if (sk->sk_family == PF_OOB)
++		return 0;
++
++	return esk->proto->bind(esk, addr, len);
++}
++
++static int socket_send_recv(struct evl_socket *esk,
++			struct user_oob_msghdr __user *u_msghdr,
++			unsigned int cmd)
++{
++	struct iovec fast_iov[UIO_FASTIOV], *iov, __user *u_iov;
++	__u64 iov_ptr;
++	__u32 iovlen;
++	__s32 count;
++	int ret;
++
++	ret = raw_get_user(iov_ptr, &u_msghdr->iov_ptr);
++	if (ret)
++		return -EFAULT;
++
++	ret = raw_get_user(iovlen, &u_msghdr->iovlen);
++	if (ret)
++		return -EFAULT;
++
++	u_iov = evl_valptr64(iov_ptr, struct iovec);
++	iov = load_iov(u_iov, iovlen, fast_iov);
++	if (IS_ERR(iov))
++		return PTR_ERR(iov);
++
++	if (cmd == EVL_SOCKIOC_SENDMSG)
++		count = esk->proto->oob_send(esk, u_msghdr, iov, iovlen);
++	else
++		count = esk->proto->oob_receive(esk, u_msghdr, iov, iovlen);
++
++	if (iov != fast_iov)
++		evl_free(iov);
++
++	if (count < 0)
++		return count;
++
++	ret = raw_put_user(count, &u_msghdr->count);
++	if (ret)
++		return -EFAULT;
++
++	return 0;
++}
++
++long sock_oob_ioctl(struct file *filp, unsigned int cmd,
++		unsigned long arg)
++{
++	struct evl_socket *esk = evl_sk_from_file(filp);
++	struct user_oob_msghdr __user *u_msghdr;
++	long ret;
++
++	if (esk == NULL)
++		return -EBADFD;
++
++	switch (cmd) {
++	case EVL_SOCKIOC_SENDMSG:
++	case EVL_SOCKIOC_RECVMSG:
++		u_msghdr = (typeof(u_msghdr))arg;
++		ret = socket_send_recv(esk, u_msghdr, cmd);
++		break;
++	default:
++		ret = -ENOTTY;
++	}
++
++	return ret;
++}
++
++ssize_t sock_oob_write(struct file *filp,
++			const char __user *u_buf, size_t count)
++{
++	struct evl_socket *esk = evl_sk_from_file(filp);
++	struct iovec iov;
++
++	if (esk == NULL)
++		return -EBADFD;
++
++	if (!count)
++		return 0;
++
++	iov.iov_base = (void *)u_buf;
++	iov.iov_len = count;
++
++	return esk->proto->oob_send(esk, NULL, &iov, 1);
++}
++
++ssize_t sock_oob_read(struct file *filp,
++			char __user *u_buf, size_t count)
++{
++	struct evl_socket *esk = evl_sk_from_file(filp);
++	struct iovec iov;
++
++	if (esk == NULL)
++		return -EBADFD;
++
++	if (!count)
++		return 0;
++
++	iov.iov_base = u_buf;
++	iov.iov_len = count;
++
++	return esk->proto->oob_receive(esk, NULL, &iov, 1);
++}
++
++__poll_t sock_oob_poll(struct file *filp,
++			struct oob_poll_wait *wait)
++{
++	struct evl_socket *esk = evl_sk_from_file(filp);
++
++	if (esk == NULL)
++		return -EBADFD;
++
++	return esk->proto->oob_poll(esk, wait);
++}
++
++static int socket_set_rmem(struct evl_socket *esk, int __user *u_val)
++{
++	int ret, val;
++
++	ret = raw_get_user(val, u_val);
++	if (ret)
++		return -EFAULT;
++
++	/* Same logic as __sock_set_rcvbuf(). */
++	val = min_t(int, val, INT_MAX / 2);
++	WRITE_ONCE(esk->rmem_max, max_t(int, val * 2, SOCK_MIN_RCVBUF));
++
++	return 0;
++}
++
++static int socket_set_wmem(struct evl_socket *esk, int __user *u_val)
++{
++	int ret, val;
++
++	ret = raw_get_user(val, u_val);
++	if (ret)
++		return -EFAULT;
++
++	val = min_t(int, val, INT_MAX / 2);
++	WRITE_ONCE(esk->wmem_max, max_t(int, val * 2, SOCK_MIN_SNDBUF));
++
++	return 0;
++}
++
++static int sock_inband_ioctl(struct socket *sock, unsigned int cmd,
++			unsigned long arg)
++{
++	struct sock *sk = sock->sk;
++	struct evl_socket *esk = sk->oob_data;
++	struct evl_netdev_activation act, __user *u_act;
++	int __user *u_val;
++	int ret;
++
++	switch (cmd) {
++	case EVL_SOCKIOC_ACTIVATE: /* Turn oob port on. */
++		u_act = (typeof(u_act))arg;
++		ret = raw_copy_from_user(&act, u_act, sizeof(act));
++		if (ret)
++			return -EFAULT;
++		ret = evl_net_switch_oob_port(esk, &act);
++		break;
++	case EVL_SOCKIOC_DEACTIVATE: /* Turn oob port off. */
++		ret = evl_net_switch_oob_port(esk, NULL);
++ 		break;
++	case EVL_SOCKIOC_SETRECVSZ:
++		u_val = (typeof(u_val))arg;
++		ret = socket_set_rmem(esk, u_val);
++		break;
++	case EVL_SOCKIOC_SETSENDSZ:
++		u_val = (typeof(u_val))arg;
++		ret = socket_set_wmem(esk, u_val);
++		break;
++	default:
++		ret = -ENOTTY;
++		if (esk->proto->ioctl)
++			ret = esk->proto->ioctl(esk, cmd, arg);
++	}
++
++	return ret;
++}
++
++/*
++ * Ioctl redirector for common protocols with oob extension. AF_OOB
++ * jumps directly to sock_ioctl() via the netproto ops instead. If the
++ * out-of-band protocol implementation was not able to handle the
++ * EVL-specific command, we should return -ENOIOCTLCMD to the caller,
++ * so that it tries harder to find a suitable handler.
++ */
++long sock_inband_ioctl_redirect(struct socket *sock, /* in-band hook */
++				unsigned int cmd, unsigned long arg)
++{
++	long ret = sock_inband_ioctl(sock, cmd, arg);
++
++	return ret == -ENOTTY ? -ENOIOCTLCMD : ret;
++}
++
++static int evl_sock_bind(struct socket *sock, struct sockaddr *u_addr, int len)
++{
++	struct evl_socket *esk = evl_sk(sock);
++
++	return esk->proto->bind(esk, u_addr, len);
++}
++
++static int evl_sock_release(struct socket *sock)
++{
++	/*
++	 * Cleanup happens from sock_oob_detach(), so that PF_OOB
++	 * and common protocols sockets we piggybacked on are
++	 * released.
++	 */
++	return 0;
++}
++
++static const struct proto_ops netproto_ops = {
++	.family =	PF_OOB,
++	.owner =	THIS_MODULE,
++	.release =	evl_sock_release,
++	.bind =		evl_sock_bind,
++	.connect =	sock_no_connect,
++	.socketpair =	sock_no_socketpair,
++	.accept =	sock_no_accept,
++	.getname =	sock_no_getname,
++	.ioctl =	sock_inband_ioctl,
++	.listen =	sock_no_listen,
++	.shutdown =	sock_no_shutdown,
++	.sendmsg =	sock_no_sendmsg,
++	.recvmsg =	sock_no_recvmsg,
++	.mmap =		sock_no_mmap,
++	.sendpage =	sock_no_sendpage,
++};
++
++/*
++ * A generic family for protocols implemented by the companion
++ * core. user<->evl interaction is possible only through the
++ * oob_read/oob_write/oob_ioctl/ioctl calls.
++ */
++struct proto evl_af_oob_proto = {
++	.name		= "EVL",
++	.owner		= THIS_MODULE,
++	.obj_size	= sizeof(struct evl_socket),
++};
++
++static void destroy_evl_socket(struct sock *sk)
++{
++	local_bh_disable();
++	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
++	local_bh_enable();
++
++	sk_refcnt_debug_dec(sk);
++}
++
++static int create_evl_socket(struct net *net, struct socket *sock,
++			int protocol, int kern)
++{
++	struct sock *sk;
++
++	if (kern)
++		return -EOPNOTSUPP;
++
++	sock->state = SS_UNCONNECTED;
++
++	sk = sk_alloc(net, PF_OOB, GFP_KERNEL, &evl_af_oob_proto, 0);
++	if (!sk)
++		return -ENOBUFS;
++
++	sock->ops = &netproto_ops;
++	sock_init_data(sock, sk);
++
++	/*
++	 * Protocol is checked for validity when the socket is
++	 * attached to the out-of-band core in sock_oob_attach().
++	 */
++	sk->sk_protocol = protocol;
++	sk_refcnt_debug_inc(sk);
++	sk->sk_destruct	= destroy_evl_socket;
++
++	local_bh_disable();
++	sock_prot_inuse_add(net, &evl_af_oob_proto, 1);
++	local_bh_enable();
++
++	return 0;
++}
++
++const struct net_proto_family evl_family_ops = {
++	.family = PF_OOB,
++	.create = create_evl_socket,
++	.owner	= THIS_MODULE,
++};
+-- 
+2.30.2
+

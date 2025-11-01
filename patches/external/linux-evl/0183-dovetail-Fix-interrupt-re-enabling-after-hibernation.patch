@@ -1,0 +1,36 @@
+From 4c48a897b2c0e5729e8ee4b94fabdc69c70bde18 Mon Sep 17 00:00:00 2001
+From: Jan Kiszka <jan.kiszka@siemens.com>
+Date: Thu, 20 Mar 2025 17:41:28 +0100
+Subject: [PATCH 0183/1010] dovetail: Fix interrupt re-enabling after
+ hibernation
+
+We had unbalanced hard_cond_local_irq_disable here so far.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ kernel/power/hibernate.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index 4ddaf36f0a..e565a3a940 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -343,6 +343,7 @@ static int create_image(int platform_mode)
+ 	syscore_resume();
+ 
+  Enable_irqs:
++	hard_cond_local_irq_enable();
+ 	system_state = SYSTEM_RUNNING;
+ 	local_irq_enable();
+ 
+@@ -513,6 +514,7 @@ static int resume_target_kernel(bool platform_mode)
+ 	syscore_resume();
+ 
+  Enable_irqs:
++	hard_cond_local_irq_enable();
+ 	system_state = SYSTEM_RUNNING;
+ 	local_irq_enable();
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,29 @@
+From 2a6d33616007e936f568a245b0491a2c7b406d5b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 23 Mar 2020 10:41:37 +0100
+Subject: [PATCH 0625/1010] evl/proxy: do not discard undrained output upon
+ disposal
+
+We want the pending output to be drained upon disposal, so that write
+operations we have already accepted do complete properly.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 85eee78270..b159722652 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -387,7 +387,6 @@ static void proxy_factory_dispose(struct evl_element *e)
+ 	out = &proxy->output;
+ 	if (out->wq) {
+ 		irq_work_sync(&out->irq_work);
+-		cancel_work_sync(&out->work);
+ 		destroy_workqueue(out->wq);
+ 	}
+ 	fput(proxy->filp);
+-- 
+2.30.2
+

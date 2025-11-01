@@ -1,0 +1,87 @@
+From ecb580de05f89fd17c8355e3f83993be8982c720 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 16 Oct 2024 11:27:46 +0200
+Subject: [PATCH 0925/1010] evl/net: dev: send notice to console on input
+ filter removal
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/dev.c | 24 +++++++++++++++---------
+ 1 file changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index e57147cb59..079520b7f5 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -68,8 +68,9 @@ static LIST_HEAD(oob_port_list);
+ 
+ static DEFINE_HARD_SPINLOCK(oob_port_lock);
+ 
+-static void __set_rx_filter(struct evl_netdev_state *est,
+-			struct evl_net_ebpf_filter *filter);
++static struct evl_net_ebpf_filter *
++__set_rx_filter(struct evl_netdev_state *est,
++		struct evl_net_ebpf_filter *filter);
+ 
+ static struct evl_kthread *
+ start_handler_thread(struct net_device *dev,
+@@ -502,8 +503,9 @@ static void drop_rx_filter(struct rcu_head *rcu)
+ 	kfree(filter);
+ }
+ 
+-static void __set_rx_filter(struct evl_netdev_state *est,
+-			struct evl_net_ebpf_filter *filter)
++static struct evl_net_ebpf_filter *
++__set_rx_filter(struct evl_netdev_state *est,
++		struct evl_net_ebpf_filter *filter)
+ {
+ 	struct evl_net_ebpf_filter *old;
+ 
+@@ -519,17 +521,19 @@ static void __set_rx_filter(struct evl_netdev_state *est,
+ 
+ 	if (old)
+ 		call_rcu(&old->rcu, drop_rx_filter);
++
++	return old;
+ }
+ 
+ /*
+- * set_rx_filter - install an eBPF filter module to redirect ingress
++ * set_rx_filter - install an eBPF program module to redirect ingress
+  * traffic to the proper network stack, inband or oob.  @dev is a
+  * physical interface.
+  */
+ static int set_rx_filter(struct net_device *dev, unsigned long arg)
+ {
+ 	struct oob_netdev_state *nds = &dev->oob_state;
+-	struct evl_net_ebpf_filter *new = NULL;
++	struct evl_net_ebpf_filter *old, *new = NULL;
+ 	struct bpf_prog *prog;
+ 	int ret, fd;
+ 
+@@ -540,17 +544,19 @@ static int set_rx_filter(struct net_device *dev, unsigned long arg)
+ 	if (fd != -1) {
+ 		prog = bpf_prog_get_type(fd, BPF_PROG_TYPE_SOCKET_FILTER);
+ 		if (IS_ERR(prog)) {
+-			netdev_warn(dev, "invalid out-of-band eBPF filter\n");
++			netdev_warn(dev, "invalid out-of-band eBPF program\n");
+ 			return PTR_ERR(prog);
+ 		}
+ 		new = kmalloc(sizeof(*new), GFP_KERNEL);
+ 		if (!new)
+ 			return -ENOMEM;
+ 		new->prog = prog;
+-		netdev_notice(dev, "out-of-band eBPF filter installed\n");
++		netdev_notice(dev, "out-of-band eBPF program installed\n");
+ 	}
+ 
+-	__set_rx_filter(nds->estate, new);
++	old = __set_rx_filter(nds->estate, new);
++	if (old && !new)
++		netdev_notice(dev, "out-of-band eBPF program removed\n");
+ 
+ 	return 0;
+ }
+-- 
+2.30.2
+

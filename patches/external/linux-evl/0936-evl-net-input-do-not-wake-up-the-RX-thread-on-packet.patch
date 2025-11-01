@@ -1,0 +1,55 @@
+From 6e9ea6de9f51162c64b5dc56a541ae858afdd4a9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 27 Mar 2025 16:05:28 +0100
+Subject: [PATCH 0936/1010] evl/net: input: do not wake up the RX thread on
+ packet queuing
+
+There is no point in waking up the RX thread when accepting a packet.
+The NIC driver is expected to call napi_complete_done() when the RX
+side goes quiescent in the ->poll() handler, which will in turn wake
+up our RX thread via a call to evl_net_wake_rx().
+
+Ancient non-NAPI drivers would have to call evl_net_wake_rx()
+explicitly whenever they see fit. Export that symbol appropriately.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/input.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 3c6c8c1166..26a4048a3d 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -119,6 +119,7 @@ void evl_net_wake_rx(struct net_device *dev)
+ 
+ 	evl_raise_flag(&est->rx_flag);
+ }
++EXPORT_SYMBOL_GPL(evl_net_wake_rx);
+ 
+ /**
+  * evl_net_receive - schedule an ingress packet for oob handling
+@@ -151,15 +152,13 @@ void evl_net_receive(struct sk_buff *skb,
+ 	EVL_NET_CB(skb)->handler = handler;
+ 
+ 	/*
+-	 * Enqueue then kick our kthread handling the ingress path
+-	 * immediately if called from oob context. Otherwise, wait for
+-	 * the NIC driver to invoke napi_complete_done() when the RX
+-	 * side goes quiescent.
++	 * Enqueue the packet. The NIC driver is expected to call
++	 * napi_complete_done() when the RX side goes quiescent, which
++	 * will in turn wake up our RX thread via a call to
++	 * evl_net_wake_rx(). Ancient non-NAPI drivers would have to
++	 * call evl_net_wake_rx() explicitly whenever they see fit.
+ 	 */
+ 	evl_net_add_skb_queue(&est->rx_packets, skb);
+-
+-	if (running_oob())
+-		evl_net_wake_rx(skb->dev);
+ }
+ 
+ struct evl_net_rxqueue *evl_net_alloc_rxqueue(u32 hkey) /* in-band */
+-- 
+2.30.2
+

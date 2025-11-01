@@ -1,0 +1,21 @@
+From 443c545b34f6c96fb472400922ccb56ac3f34f7b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 27 Oct 2024 18:48:37 +0100
+Subject: [PATCH 0927/1010] evl: advertise nickname in uname()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ scripts/dovetail-guest.sh | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100755 scripts/dovetail-guest.sh
+
+diff --git a/scripts/dovetail-guest.sh b/scripts/dovetail-guest.sh
+new file mode 100755
+index 0000000000..175d9de698
+--- /dev/null
++++ b/scripts/dovetail-guest.sh
+@@ -0,0 +1 @@
++echo EVL
+-- 
+2.30.2
+

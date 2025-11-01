@@ -1,0 +1,119 @@
+From a6108bec02f74c9734f497434653f9bb06855e51 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 5 Jun 2025 16:03:01 +0200
+Subject: [PATCH 0962/1010] evl/net: skb: move owning device to shared info
+
+We cannot safely use the control block to store the owning device
+pointer specifically when the NIC driver is not oob-capable, in which
+case we'd have to hand the buffer over to the inband stack
+(dev_queue_xmit()) where the cb might be used for other purpose.
+
+Move the device pointer from the cb to the shared oob information
+descriptor available in every skb.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/evl/skbuff.h |  4 ++++
+ include/evl/net/skb.h            |  5 +++++
+ kernel/evl/net/input.c           |  1 -
+ kernel/evl/net/skb.c             | 21 +++++++++++----------
+ 4 files changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/include/asm-generic/evl/skbuff.h b/include/asm-generic/evl/skbuff.h
+index c9515f1353..c03521486a 100644
+--- a/include/asm-generic/evl/skbuff.h
++++ b/include/asm-generic/evl/skbuff.h
+@@ -6,7 +6,11 @@
+ 
+ #include <linux/ktime.h>
+ 
++struct net_device;
++
+ struct skb_shared_oob {
++	/* Device owning the storage. */
++	struct net_device *owner;
+ 	/* Time at device I/O. */
+ 	ktime_t device_time;
+ 	/* Time at RX/TX thread dequeuing/queuing point. */
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+index c1a980b3f0..7b3b0a7351 100644
+--- a/include/evl/net/skb.h
++++ b/include/evl/net/skb.h
+@@ -19,6 +19,11 @@ struct evl_net_skb_queue;
+ struct evl_socket;
+ struct iovec;
+ 
++/*
++ * The content of our control block is valid as long as EVL owns the
++ * buffer. Any layer from the in-band netstack may happily reuse it
++ * for its own purpose.
++ */
+ struct evl_net_cb {
+ 	/* Cached source/destination device. */
+ 	struct net_device *dev;
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 67ee062aa1..36f0365958 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -163,7 +163,6 @@ void evl_net_receive(struct sk_buff *skb,
+ 		skb_list_del_init(skb);
+ 
+ 	EVL_NET_CB(skb)->handler = handler;
+-	EVL_NET_CB(skb)->dev = dev;
+ 
+ 	/*
+ 	 * Enqueue the packet. The NIC driver is expected to call
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 4a36e6c4aa..a944123a11 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -166,6 +166,7 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 
+ 	skb_mark_oob_managed(skb);
+ 	skb_mark_for_recycle(skb);
++
+ 	/*
+ 	 * The current assumption is that we are going to deal with
+ 	 * ethernet devices, for which we may need some extra header
+@@ -175,15 +176,15 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 	 */
+ 	skb_reserve(skb, VLAN_HLEN);
+ 	skb->dev = real_dev;
++
+ 	/*
+-	 * We need to keep a pointer to the originating device for the
+-	 * release path (__free_evl_skb), since a protocol layer might
+-	 * use skb->dev_scratch which would cause skb->dev to be
+-	 * lost. So basically, we rely on skb->dev as long as it is
+-	 * safe to do so, switching to EVL_NET_CB(skb)->dev
+-	 * afterwards.
++	 * Keep a pointer to the device owning the storage area for
++	 * the release path (free_evl_skb). A protocol layer might use
++	 * skb->dev_scratch which would cause skb->dev to be lost.  We
++	 * can rely on skb->dev as long as the inband stack is not
++	 * involved in dealing with the buffer.
+ 	 */
+-	EVL_NET_CB(skb)->dev = real_dev;
++	skb_shinfo_oob(skb)->owner = real_dev;
+ 
+ 	return skb;
+ }
+@@ -252,12 +253,12 @@ static void __free_evl_skb(struct sk_buff *skb, struct net_device *dev)
+  * exclusive ownership on this (i.e. no other reference is pending).
+  *
+  * CAUTION: skb->dev might be invalid, always use the cached value in
+- * EVL_NET_CB(skb)->dev on the release path instead. See comment in
+- * evl_net_dev_alloc_skb().
++ * skb_shinfo_oob(skb)->owner on the release path instead. See comment
++ * in evl_net_dev_alloc_skb().
+  */
+ static void free_evl_skb(struct sk_buff *skb)
+ {
+-	struct net_device *dev = EVL_NET_CB(skb)->dev;
++	struct net_device *dev = skb_shinfo_oob(skb)->owner;
+ 	struct sk_buff *fskb, *nskb;
+ 
+ 	if (EVL_WARN_ON(NET, dev == NULL))
+-- 
+2.30.2
+

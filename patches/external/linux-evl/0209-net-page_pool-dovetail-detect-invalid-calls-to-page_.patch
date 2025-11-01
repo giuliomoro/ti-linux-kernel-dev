@@ -1,0 +1,31 @@
+From eca09a3a42f058d8e765d74cfc7836f44ee1856d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 29 Apr 2025 09:43:00 +0200
+Subject: [PATCH 0209/1010] net/page_pool: dovetail: detect invalid calls to
+ page_pool_update_nid()
+
+We cannot dynamically change the allocation node for oob pools. Detect
+invalid calls to page_pool_update_nid() accordingly.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/page_pool.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index b1f08113da..5e8c7e8061 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -1044,6 +1044,9 @@ void page_pool_update_nid(struct page_pool *pool, int new_nid)
+ {
+ 	struct page *page;
+ 
++	if (WARN_ON_ONCE(page_pool_is_oob(pool)))
++		return;
++
+ 	trace_page_pool_update_nid(pool, new_nid);
+ 	pool->p.nid = new_nid;
+ 
+-- 
+2.30.2
+

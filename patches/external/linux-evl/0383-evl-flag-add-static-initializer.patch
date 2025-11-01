@@ -1,0 +1,39 @@
+From d3a48d8a910c87bfac6463c5afb9156c54bf1d0d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 17 Mar 2019 15:55:37 +0100
+Subject: [PATCH 0383/1010] evl/flag: add static initializer
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/flag.h | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/include/evl/flag.h b/include/evl/flag.h
+index 78699abb25..5b6a0b0658 100644
+--- a/include/evl/flag.h
++++ b/include/evl/flag.h
+@@ -15,16 +15,17 @@ struct evl_flag {
+ 	bool raised;
+ };
+ 
+-#define DEFINE_EVL_FLAG(__name)					\
+-	struct evl_flag __name = {				\
++#define EVL_FLAG_INITIALIZER(__name) {				\
+ 		.wait = EVL_WAIT_INITIALIZER((__name).wait),	\
+ 		.raised = false,				\
+ 	}
+ 
++#define DEFINE_EVL_FLAG(__name)					\
++	struct evl_flag __name = EVL_FLAG_INITIALIZER(__name)
++
+ static inline void evl_init_flag(struct evl_flag *wf)
+ {
+-	wf->wait = (struct evl_wait_queue)EVL_WAIT_INITIALIZER(wf->wait);
+-	wf->raised = false;
++	*wf = (struct evl_flag)EVL_FLAG_INITIALIZER(*wf);
+ }
+ 
+ static inline void evl_destroy_flag(struct evl_flag *wf)
+-- 
+2.30.2
+

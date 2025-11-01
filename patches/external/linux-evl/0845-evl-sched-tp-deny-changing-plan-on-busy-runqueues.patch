@@ -1,0 +1,200 @@
+From 50781c3b9b62fa236e8824450044594212d05aec Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 3 Dec 2022 13:00:54 +0100
+Subject: [PATCH 0845/1010] evl/sched: tp: deny changing plan on busy runqueues
+
+Unconditionally switching the remaining TP threads on a runqueue to
+the SCHED_FIFO class before swapping the TP schedule plan is an
+arbitrary decision which may have unwanted side-effects, even papering
+over a consistency issue in the application.
+
+Besides, the implementation had the locking wrong in a couple of
+places, such as failing to grab the thread lock before calling
+evl_set_thread_schedparam_locked().
+
+Change the logic by detecting the case and simply denying the change
+instead, returning -EBUSY to the caller. User must ensure to update
+the schedule plan consistently, i.e. when no thread is still running
+the previous one.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/tp.c | 64 ++++++++++++++++++++++++-------------------
+ kernel/evl/thread.c   |  6 ++--
+ 2 files changed, 39 insertions(+), 31 deletions(-)
+
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index d0f610e1bf..8aa52e70ff 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -5,6 +5,7 @@
+  * Copyright (C) 2008, 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
++#include <linux/err.h>
+ #include <evl/sched.h>
+ #include <evl/memory.h>
+ #include <uapi/evl/sched.h>
+@@ -276,33 +277,36 @@ static struct evl_tp_schedule *
+ set_tp_schedule(struct evl_rq *rq, struct evl_tp_schedule *gps)
+ {
+ 	struct evl_sched_tp *tp = &rq->tp;
+-	struct evl_thread *thread, *tmp;
+ 	struct evl_tp_schedule *old_gps;
+-	union evl_sched_param param;
+-
+-	assert_hard_lock(&rq->lock);
++	unsigned long flags;
+ 
+ 	if (EVL_WARN_ON(CORE, gps != NULL &&
+ 		(gps->pwin_nr <= 0 || gps->pwins[0].w_offset != 0)))
+ 		return tp->gps;
+ 
+-	stop_tp_schedule(rq);
+-
+ 	/*
+-	 * Move all TP threads on this scheduler to the FIFO class,
+-	 * until we call evl_set_thread_schedparam_locked() for them again.
++	 * Changing the TP schedule on a runqueue is a twofold
++	 * operation which happens atomically: first we stop the
++	 * per-CPU timer driving the time slicing, next the new
++	 * scheduling table is swapped with the old one.
+ 	 */
+-	if (list_empty(&tp->threads))
+-		goto done;
++	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+-	list_for_each_entry_safe(thread, tmp, &tp->threads, tp_link) {
+-		param.fifo.prio = thread->cprio;
+-		evl_set_thread_schedparam_locked(thread, &evl_sched_fifo, &param);
++	/*
++	 * We deny the change if some thread undergoing the TP policy
++	 * is currently attached to the target runqueue.
++	 */
++	if (!list_empty(&tp->threads)) {
++		raw_spin_unlock_irqrestore(&rq->lock, flags);
++		return ERR_PTR(-EBUSY);
+ 	}
+-done:
++
++	stop_tp_schedule(rq);
+ 	old_gps = tp->gps;
+ 	tp->gps = gps;
+ 
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
++
+ 	return old_gps;
+ }
+ 
+@@ -333,20 +337,18 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	struct evl_tp_ctlparam *pt = &ctlp->tp;
+ 	ktime_t offset, duration, next_offset;
+ 	struct evl_tp_schedule *gps, *ogps;
++	int n, nr_windows, ret = -EINVAL;
+ 	struct __evl_tp_window *p, *pp;
+ 	struct evl_tp_window *w, *pw;
+ 	struct evl_tp_ctlinfo *it;
+ 	unsigned long flags;
+ 	struct evl_rq *rq;
+-	int n, nr_windows;
+ 
+ 	if (cpu < 0 || !cpu_present(cpu) || !is_threading_cpu(cpu))
+ 		return -EINVAL;
+ 
+ 	rq = evl_cpu_rq(cpu);
+ 
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-
+ 	switch (pt->op) {
+ 	case evl_tp_install:
+ 		if (pt->nr_windows > 0)
+@@ -356,23 +358,27 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 		gps = NULL;
+ 		goto switch_schedule;
+ 	case evl_tp_start:
++		raw_spin_lock_irqsave(&rq->lock, flags);
+ 		start_tp_schedule(rq);
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 		goto done;
+ 	case evl_tp_stop:
++		raw_spin_lock_irqsave(&rq->lock, flags);
+ 		stop_tp_schedule(rq);
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 		goto done;
+ 	case evl_tp_get:
++		raw_spin_lock_irqsave(&rq->lock, flags);
++		gps = get_tp_schedule(rq);
++		raw_spin_unlock_irqrestore(&rq->lock, flags);
++		if (gps == NULL)
++			goto done;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+ 
+-	gps = get_tp_schedule(rq);
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-	if (gps == NULL)
+-		goto done;
++	/* evl_tp_get */
+ 
+ 	if (infp == NULL) {
+ 		put_tp_schedule(gps);
+@@ -398,8 +404,7 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 
+ 	return evl_tp_infolen(nr_windows);
+ 
+-install_schedule:
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
++install_schedule:	/* evl_tp_install */
+ 
+ 	gps = evl_alloc(sizeof(*gps) + pt->nr_windows * sizeof(*w));
+ 	if (gps == NULL)
+@@ -433,11 +438,14 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	atomic_set(&gps->refcount, 1);
+ 	gps->pwin_nr = n;
+ 	gps->tf_duration = next_offset;
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-switch_schedule:
+-	ogps = set_tp_schedule(rq, gps);
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 
++switch_schedule:	/* evl_tp_{un}install */
++
++	ogps = set_tp_schedule(rq, gps);
++	if (IS_ERR(ogps)) {
++		ret = PTR_ERR(ogps);
++		goto fail;
++	}
+ 	if (ogps)
+ 		put_tp_schedule(ogps);
+ done:
+@@ -447,7 +455,7 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ fail:
+ 	evl_free(gps);
+ 
+-	return -EINVAL;
++	return ret;
+ }
+ 
+ struct evl_sched_class evl_sched_tp = {
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 423c9b7e87..836e769a57 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1090,9 +1090,9 @@ int evl_set_thread_schedparam_locked(struct evl_thread *thread,
+ 	 * Only if the (weighted) priority actually changed - so that
+ 	 * we do not cause any spurious RR side effect - and the
+ 	 * thread is sleeping on a wait channel, tell the caller to
+-	 * requeue it its wait list at the first opportunity. We
+-	 * cannot do that here since this would trigger ABBA locking
+-	 * issues with wchan->lock and/or thread->lock.
++	 * reorder the wait list at the first opportunity. We cannot
++	 * do that here since this would trigger ABBA locking issues
++	 * with wchan->lock and/or thread->lock.
+ 	 *
+ 	 * CAVEAT: This must be done prior to rescheduling or
+ 	 * re-enabling irqs in order to prevent priority inversion.
+-- 
+2.30.2
+

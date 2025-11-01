@@ -1,0 +1,41 @@
+From f2c37bd8e48461759032c0c191a5a17974934d91 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 2 Apr 2025 17:14:43 +0200
+Subject: [PATCH 0937/1010] evl/net: input: prevent missed polling
+
+napi_poll_oob() might rechedule itself for a next run asap without
+posting the wake up event of the RX thread by leaving
+EVL_NETDEV_POLL_SCHED set, so don't go waiting for such event if
+EVL_NETDEV_POLL_SCHED is set.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/input.c | 11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 26a4048a3d..d07c3566fa 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -95,12 +95,13 @@ void evl_net_do_rx(void *arg)
+ 	est = dev->oob_state.estate;
+ 
+ 	while (!evl_kthread_should_stop()) {
+-		ret = evl_wait_flag(&est->rx_flag);
+-		if (ret)
+-			break;
++		while (!test_bit(EVL_NETDEV_POLL_SCHED, &est->flags)) {
++			ret = evl_wait_flag(&est->rx_flag);
++			if (ret)
++				break;
++		}
+ 
+-		if (test_bit(EVL_NETDEV_POLL_SCHED, &est->flags))
+-			napi_poll_oob(est);
++		napi_poll_oob(est);
+ 
+ 		if (evl_net_move_skb_queue(&est->rx_packets, &list)) {
+ 			list_for_each_entry_safe(skb, next, &list, list) {
+-- 
+2.30.2
+

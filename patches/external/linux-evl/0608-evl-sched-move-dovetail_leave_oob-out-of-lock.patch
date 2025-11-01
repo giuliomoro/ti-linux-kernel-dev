@@ -1,0 +1,28 @@
+From 47c08b5b5293f7b3e0edaafec5d2c98a0659942a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 12 Feb 2020 09:55:07 +0100
+Subject: [PATCH 0608/1010] evl/sched: move dovetail_leave_oob() out of lock
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index d6e77fc528..28fbba0aea 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1024,9 +1024,9 @@ void evl_switch_inband(int cause)
+ 	curr->state |= T_INBAND;
+ 	curr->local_info &= ~T_SYSRST;
+ 	evl_set_resched(rq);
+-	dovetail_leave_oob();
+ 	evl_spin_unlock(&rq->lock);
+ 	evl_spin_unlock(&curr->lock);
++	dovetail_leave_oob();
+ 	__evl_schedule();
+ 	/*
+ 	 * this_rq()->lock was released when the root thread resumed
+-- 
+2.30.2
+

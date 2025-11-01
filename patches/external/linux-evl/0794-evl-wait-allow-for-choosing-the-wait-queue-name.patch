@@ -1,0 +1,45 @@
+From 621532c39092c97dd5070d53d67878b7382e3759 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 19 Oct 2022 15:19:54 +0200
+Subject: [PATCH 0794/1010] evl/wait: allow for choosing the wait queue name
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h   | 5 ++++-
+ kernel/evl/monitor.c | 3 ++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 354e55c807..6667b786d4 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -123,8 +123,11 @@ void __evl_init_wait(struct evl_wait_queue *wq,
+ 		const char *name,
+ 		struct lock_class_key *lock_key);
+ 
++#define evl_init_named_wait(__wq, __clock, __flags, __name)	\
++	__evl_init_wait(__wq, __clock, __flags, __name, NULL)
++
+ #define evl_init_wait(__wq, __clock, __flags)	\
+-	__evl_init_wait(__wq, __clock, __flags, #__wq, NULL)
++	evl_init_named_wait(__wq, __clock, __flags, #__wq)
+ 
+ #define evl_init_wait_on_stack(__wq, __clock, __flags)	\
+ 	do {								\
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 89f5c23bf3..83746924f3 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -874,7 +874,8 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		raw_spin_lock_init(&mon->lock);
+ 		break;
+ 	case EVL_MONITOR_EVENT:
+-		evl_init_wait(&mon->wait_queue, clock, EVL_WAIT_PRIO);
++		evl_init_named_wait(&mon->wait_queue, clock, EVL_WAIT_PRIO,
++				evl_element_name(&mon->element));
+ 		state->u.event.gate_offset = EVL_MONITOR_NOGATE;
+ 		atomic_set(&state->u.event.value, attrs.initval);
+ 		evl_init_poll_head(&mon->poll_head);
+-- 
+2.30.2
+

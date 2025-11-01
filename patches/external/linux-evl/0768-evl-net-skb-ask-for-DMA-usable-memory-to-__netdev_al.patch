@@ -1,0 +1,28 @@
+From daa919467ece0f9327811afc3815b2665d7b32e2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 22 Jul 2022 10:29:41 +0200
+Subject: [PATCH 0768/1010] evl/net: skb: ask for DMA-usable memory to
+ __netdev_alloc_oob_skb()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/skb.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 26999b1c1b..229a99da11 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -387,7 +387,8 @@ static struct sk_buff *alloc_one_skb(struct net_device *dev)
+ 
+ 	if (!netdev_is_oob_capable(dev)) {
+ 		est = dev->oob_context.dev_state.estate;
+-		return __netdev_alloc_oob_skb(dev, est->buf_size, GFP_KERNEL);
++		return __netdev_alloc_oob_skb(dev, est->buf_size,
++					      GFP_KERNEL|GFP_DMA);
+ 	}
+ 
+ 	skb = netdev_alloc_oob_skb(dev, &dma_addr);
+-- 
+2.30.2
+

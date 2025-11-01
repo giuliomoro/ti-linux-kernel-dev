@@ -1,0 +1,41 @@
+From ea5e01598a9199d5f8a0bc55d5da0e14c374c32a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 23 Nov 2022 10:51:33 +0100
+Subject: [PATCH 0830/1010] evl/mutex: ensure PP mutexes have strictly static
+ priority
+
+Priority protection is about enforcing a static (ceiling) priority, so
+there is no point in tracking the top waiter priority dynamically for
+them. IOW, a PP mutex should be queued according to that static
+priority when part of a booster list.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index b7ae28c8d4..f2a0e209e7 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -888,12 +888,11 @@ void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 	 */
+ 	list_del(&waiter->wait_next);
+ 	list_add_priff(waiter, &wchan->wait_list, wprio, wait_next);
+-	top_waiter = list_first_entry(&mutex->wchan.wait_list,
+-				struct evl_thread, wait_next);
+-
+-	if (mutex->wprio != top_waiter->wprio) {
+-		mutex->wprio = top_waiter->wprio;
+-		if (mutex->flags & EVL_MUTEX_PIBOOST) {
++	if (mutex->flags & EVL_MUTEX_PIBOOST) {
++		top_waiter = list_first_entry(&mutex->wchan.wait_list,
++					struct evl_thread, wait_next);
++		if (mutex->wprio != top_waiter->wprio) {
++			mutex->wprio = top_waiter->wprio;
+ 			list_del(&mutex->next_booster);
+ 			list_add_priff(mutex, &owner->boosters, wprio, next_booster);
+ 		}
+-- 
+2.30.2
+

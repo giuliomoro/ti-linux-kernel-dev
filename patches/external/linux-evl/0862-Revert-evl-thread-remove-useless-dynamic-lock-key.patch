@@ -1,0 +1,101 @@
+From b9826358bc10d0b7885d329ae040aa27091ced1c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 5 Nov 2023 15:53:19 +0100
+Subject: [PATCH 0862/1010] Revert "evl/thread: remove useless dynamic lock
+ key"
+
+This reverts commit 5ae263a6ca027c4b79c4dfacfcf4eca8209eefd0, because
+disambiguating the per-thread lock is not as useless as it seemed at
+first.
+
+Fixes this regression when CONFIG_DEBUG_HARD_SPINLOCKS is on:
+
+[   52.090120]
+[   52.090129] ============================================
+[   52.090134] WARNING: possible recursive locking detected
+[   52.090139] 5.10.199-00830-g18654c202dd6 #118 Not tainted
+[   52.090143] --------------------------------------------
+[   52.090147] monitor-dlk-A:4/493 is trying to acquire lock:
+[   52.090152] c34a7010 (__RAWLOCK(&thread->lock)){-.-.}-{0:0}, at: evl_lock_mutex_timeout+0x4e0/0x870
+[   52.090169]
+[   52.090173] but task is already holding lock:
+[   52.090176] c34a5810 (__RAWLOCK(&thread->lock)){-.-.}-{0:0}, at: evl_lock_mutex_timeout+0x4e0/0x870
+[   52.090192]
+[   52.090195] other info that might help us debug this:
+[   52.090199]  Possible unsafe locking scenario:
+[   52.090202]
+[   52.090205]        CPU0
+[   52.090208]        ----
+[   52.090211]   lock(__RAWLOCK(&thread->lock));
+[   52.090221]   lock(__RAWLOCK(&thread->lock));
+[   52.090229]
+[   52.090233]  *** DEADLOCK ***
+[   52.090235]
+[   52.090239]  May be due to missing lock nesting notation
+[   52.090242]
+[   52.090246] 2 locks held by monitor-dlk-A:4/493:
+[   52.090249]  #0: c2d030d4 (&mon->mutex){....}-{0:0}, at: evl_lock_mutex_timeout+0x104/0x870
+[   52.090267]  #1: c34a5810 (__RAWLOCK(&thread->lock)){-.-.}-{0:0}, at: evl_lock_mutex_timeout+0x4e0/0x870
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/thread.h |  1 +
+ kernel/evl/thread.c  | 16 +++++++++++++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 1c2e4a269e..1164962cdc 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -63,6 +63,7 @@ struct evl_init_thread_attr {
+ 
+ struct evl_thread {
+ 	hard_spinlock_t lock;
++	struct lock_class_key lock_key;	/* lockdep disambiguation */
+ 
+ 	/*
+ 	 * Shared thread-specific data, covered by ->lock.
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 1c5bfe12d2..76d7e8eaad 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -224,7 +224,6 @@ int evl_init_thread(struct evl_thread *thread,
+ 	INIT_LIST_HEAD(&thread->boosters);
+ 	INIT_LIST_HEAD(&thread->owned_mutexes);
+ 	raw_spin_lock_init(&thread->lock);
+-	might_hard_lock(&thread->lock);
+ 	init_completion(&thread->exited);
+ 	INIT_LIST_HEAD(&thread->ptsync_next);
+ 	thread->oob_mm = NULL;
+@@ -247,6 +246,18 @@ int evl_init_thread(struct evl_thread *thread,
+ 	if (ret)
+ 		goto err_out;
+ 
++#ifdef CONFIG_LOCKDEP
++	if (state & EVL_T_ROOT) {
++		lockdep_set_class_and_name(&thread->lock, &rq->root_lock_key,
++					thread->name);
++	} else {
++		lockdep_register_key(&thread->lock_key);
++		lockdep_set_class_and_name(&thread->lock, &thread->lock_key,
++					thread->name);
++	}
++	might_hard_lock(&thread->lock);
++#endif
++
+ 	trace_evl_init_thread(thread, iattr, ret);
+ 
+ 	return 0;
+@@ -282,6 +293,9 @@ static void uninit_thread(struct evl_thread *thread)
+ 	evl_forget_thread(thread);
+ 	evl_put_thread_rq(thread, rq, flags);
+ 
++	if (!(thread->state & EVL_T_ROOT))
++		lockdep_unregister_key(&thread->lock_key);
++
+ 	kfree(thread->name);
+ }
+ 
+-- 
+2.30.2
+

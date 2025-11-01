@@ -1,0 +1,68 @@
+From ff0f586e5ad6b9baad45c4d4041ce78a8f674c2c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 31 Oct 2022 10:01:22 +0100
+Subject: [PATCH 0808/1010] evl/wait: lockdep: set lock debugging dependency on
+ CONFIG_LOCKDEP
+
+CONFIG_PROVE_LOCKING depends on the lockdep infrastructure, the hard
+lock debugging feature directly depends on the latter, so do we when
+it comes to the wait/mutex support.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h | 2 +-
+ kernel/evl/mutex.c | 2 +-
+ kernel/evl/wait.c  | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 6d56ba9ea9..7f18c13d5a 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -36,7 +36,7 @@ enum evl_walk_mode {
+ 	evl_pi_check,		/* Check the PI chain (no change). */
+ };
+ 
+-#ifdef CONFIG_PROVE_LOCKING
++#ifdef CONFIG_LOCKDEP
+ struct evl_lock_key_addr {
+ 	struct lock_class_key *addr;
+ };
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index befaca5470..0a50318307 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -481,7 +481,7 @@ void __evl_init_mutex(struct evl_mutex *mutex,
+ 	mutex->wchan.name = name;
+ 	INIT_LIST_HEAD(&mutex->wchan.wait_list);
+ 	raw_spin_lock_init(&mutex->wchan.lock);
+-#ifdef CONFIG_PROVE_LOCKING
++#ifdef CONFIG_LOCKDEP
+ 	lockdep_register_key(&mutex->wchan.lock_key);
+ 	lockdep_set_class_and_name(&mutex->wchan.lock, &mutex->wchan.lock_key, name);
+ 	local_irq_save(flags);
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index e60fc5557d..486ae38de5 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -27,7 +27,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,
+ 	wq->wchan.name = name;
+ 	INIT_LIST_HEAD(&wq->wchan.wait_list);
+ 	raw_spin_lock_init(&wq->wchan.lock);
+-#ifdef CONFIG_PROVE_LOCKING
++#ifdef CONFIG_LOCKDEP
+ 	if (lock_key) {
+ 		wq->lock_key_addr.addr = lock_key;
+ 		lockdep_set_class_and_name(&wq->wchan.lock, lock_key, name);
+@@ -55,7 +55,7 @@ void evl_destroy_wait(struct evl_wait_queue *wq)
+ {
+ 	evl_flush_wait(wq, T_RMID);
+ 	evl_schedule();
+-#ifdef CONFIG_PROVE_LOCKING
++#ifdef CONFIG_LOCKDEP
+ 	/* Drop dynamic key. */
+ 	if (wq->lock_key_addr.addr == &wq->wchan.lock_key)
+ 		lockdep_unregister_key(&wq->wchan.lock_key);
+-- 
+2.30.2
+

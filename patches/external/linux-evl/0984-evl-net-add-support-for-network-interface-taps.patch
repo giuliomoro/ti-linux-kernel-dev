@@ -1,0 +1,310 @@
+From e1d9e592d4c65d79372adb95285930fe8541df05 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sat, 21 Jun 2025 17:11:22 +0200
+Subject: [PATCH 0984/1010] evl/net: add support for network interface taps
+
+Feed the in-band network interface taps with ingress traffic we
+accept, and egress traffic we produce. The scheme works with or
+without oob support from the NIC device the netstack deals with.
+
+This addition enables common traffic sniffers to capture all traffic
+going through EVL netstack (wireshark, tcpdump and friends).
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/tap.h   |  19 +++++++
+ kernel/evl/net/Makefile |   2 +-
+ kernel/evl/net/input.c  |  30 +++++++++--
+ kernel/evl/net/net.c    |   3 ++
+ kernel/evl/net/output.c |  12 +++++
+ kernel/evl/net/tap.c    | 114 ++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 174 insertions(+), 6 deletions(-)
+ create mode 100644 include/evl/net/tap.h
+ create mode 100644 kernel/evl/net/tap.c
+
+diff --git a/include/evl/net/tap.h b/include/evl/net/tap.h
+new file mode 100644
+index 0000000000..7a67114e87
+--- /dev/null
++++ b/include/evl/net/tap.h
+@@ -0,0 +1,19 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2025 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_TAP_H
++#define _EVL_NET_TAP_H
++
++struct net_device;
++struct sk_buff;
++
++void evl_net_tap_in(struct net_device *dev, struct sk_buff *skb);
++
++void evl_net_tap_out(struct net_device *dev, struct sk_buff *skb);
++
++void evl_net_init_taps(void);
++
++#endif /* !_EVL_NET_TAP_H */
+diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
+index 8a49ac6454..0d05ec1b4b 100644
+--- a/kernel/evl/net/Makefile
++++ b/kernel/evl/net/Makefile
+@@ -4,4 +4,4 @@ obj-$(CONFIG_EVL_NET) += networking.o
+ 
+ networking-y := net.o socket.o dev.o skb.o \
+ 		input.o output.o route.o \
+-		timestamping.o
++		timestamping.o tap.o
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 892098df77..ad53f62ecd 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -19,6 +19,7 @@
+ #include <evl/net/device.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/timestamping.h>
++#include <evl/net/tap.h>
+ 
+ /*
+  * NOTE: This code cannot compete with napi_complete_done()
+@@ -256,6 +257,9 @@ void napi_schedule_oob(struct napi_struct *n) /* inband/oob */
+  */
+ bool netif_deliver_oob(struct sk_buff *skb) /* oob or in-band */
+ {
++	struct net_device *dev = skb->dev;
++	bool picked;
++
+ 	skb_reset_network_header(skb);
+ 	if (!skb_transport_header_was_set(skb))
+ 		skb_reset_transport_header(skb);
+@@ -267,7 +271,7 @@ bool netif_deliver_oob(struct sk_buff *skb) /* oob or in-band */
+ 	 * the regular in-band stack if the filter code says that we
+ 	 * are not interested in it.
+ 	 */
+-	switch (evl_net_filter_rx(skb->dev, skb)) {
++	switch (evl_net_filter_rx(dev, skb)) {
+ 	case EVL_RX_VLAN:
+ 		/*
+ 		 * Apply our VLAN rules to decide whether this is an
+@@ -278,7 +282,8 @@ bool netif_deliver_oob(struct sk_buff *skb) /* oob or in-band */
+ 		/* Direct the packet to the oob stack unconditionally. */
+ 		switch (skb->protocol) {
+ 		case htons(ETH_P_IP):
+-			return evl_net_ether_accept(skb);
++			picked = evl_net_ether_accept(skb);
++			goto taps;
+ 		default:
+ 			/*
+ 			 * We don't deal with non-IP protocols, and
+@@ -302,17 +307,32 @@ bool netif_deliver_oob(struct sk_buff *skb) /* oob or in-band */
+ 	 */
+ 	switch (skb->protocol) {
+ 	case htons(ETH_P_IP):
+-		return evl_net_ether_accept_vlan(skb);
++		picked = evl_net_ether_accept_vlan(skb);
++		break;
+ 	default:
+ 		/*
+ 		 * For those adapters without hw-accelerated VLAN
+ 		 * capabilities, check the ethertype directly.
+ 		 */
+-		if (eth_type_vlan(skb->protocol))
+-			return evl_net_ether_accept_vlan(skb);
++		if (eth_type_vlan(skb->protocol)) {
++			picked = evl_net_ether_accept_vlan(skb);
++			goto taps;
++		}
+ 
+ 		return false;
+ 	}
++taps:
++	/*
++	 * Feed in-band input taps if any. Racing with in-band updates
++	 * to the packet type chain is ok, we don't dereference it but
++	 * only use a hint to determine whether we should push the
++	 * buffer to the in-band nit, all operations are properly
++	 * serialized there.
++	 */
++	if (picked && dev_nit_active(dev))
++		evl_net_tap_in(dev, skb);
++
++	return picked;
+ }
+ 
+ /*
+diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
+index 46e454cee6..972417dd05 100644
+--- a/kernel/evl/net/net.c
++++ b/kernel/evl/net/net.c
+@@ -22,6 +22,7 @@
+ #include <evl/net/ipv4/arp.h>
+ #include <evl/net/ipv4/route.h>
+ #include <evl/net/ipv4.h>
++#include <evl/net/tap.h>
+ #include <evl/net.h>
+ 
+ /*
+@@ -54,6 +55,8 @@ int __init evl_net_init(void)
+ 
+ 	evl_net_init_qdisc();
+ 
++	evl_net_init_taps();
++
+ 	ret = register_netdevice_notifier(&netdev_notifier);
+ 	if (ret)
+ 		goto fail_notifier;
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 7a22063da7..2a5db7c27a 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -18,6 +18,7 @@
+ #include <evl/net/socket.h>
+ #include <evl/net/output.h>
+ #include <evl/net/qdisc.h>
++#include <evl/net/tap.h>
+ 
+ static void xmit_inband(struct irq_work *work);
+ 
+@@ -81,6 +82,17 @@ static inline void do_tx(struct evl_net_qdisc *qdisc,
+ 	 * the socket tracking info.
+ 	 */
+ 	timestamp_at_device(skb);
++
++	/*
++	 * Feed in-band output taps if any. Racing with in-band
++	 * updates to the packet type chain is ok, we don't
++	 * dereference it but only use a hint to determine whether we
++	 * should push the buffer to the in-band nit, all operations
++	 * are properly serialized there.
++	 */
++	if (dev_nit_active(dev))
++		evl_net_tap_out(dev, skb);
++
+ 	evl_net_uncharge_skb_wmem(skb);
+ 
+ 	switch (oob_start_xmit(dev, skb, more)) {
+diff --git a/kernel/evl/net/tap.c b/kernel/evl/net/tap.c
+new file mode 100644
+index 0000000000..292df450dd
+--- /dev/null
++++ b/kernel/evl/net/tap.c
+@@ -0,0 +1,114 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2025 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/inband_work.h>
++#include <linux/netdevice.h>
++#include <linux/skbuff.h>
++#include <evl/net/skb.h>
++#include <evl/net/tap.h>
++
++#define EVL_TAP_RING_SIZE  2048
++
++struct evl_net_tap_data {
++	struct net_device *dev;
++	struct sk_buff *skb;
++};
++
++static void feed_tap_in(struct net_device *dev, struct sk_buff *skb)
++{
++	/*
++	 * The buffer headers are reset and untagged from VLAN bits if
++	 * any as well (see netif_deliver_oob()).
++	 */
++	dev_queue_recv_nit(skb, dev);
++}
++
++static void deliver_input_nit(struct evl_net_tap_data *data)
++{
++	feed_tap_in(data->dev, data->skb);
++	evl_net_free_skb(data->skb);
++}
++
++INBAND_BATCH_WORK(
++	evl_net_tap_in, deliver_input_nit,
++	struct evl_net_tap_data, EVL_TAP_RING_SIZE
++);
++
++static DECLARE_INBAND_BATCH_WORK(evl_net_tap_in, tap_in);
++
++void evl_net_tap_in(struct net_device *dev, struct sk_buff *skb)
++{
++	struct evl_net_tap_data in;
++	struct sk_buff *qskb;
++
++	/*
++	 * If @dev is not oob-capable, we are already running in-band,
++	 * feed the nits via the in-band call immediately.
++	 */
++	if (running_inband()) {
++		feed_tap_in(dev, skb);
++		return;
++	}
++
++	/*
++	 * The guarantee is that we feed taps only with skbs we did
++	 * accept for oob handling (see netif_deliver_oob()),
++	 * therefore evl_net_clone_skb() is by design able to deal
++	 * with any type of buffers the oob stack accepts.
++	 */
++	qskb = evl_net_clone_skb(skb);
++	/* Failing to feed taps not considered harmful. */
++	if (unlikely(!qskb))
++		return;
++
++	/*
++	 * Since we cloned the skb using a buffer from the device
++	 * pool, that device won't vanish until the buffer is released
++	 * (see wmem crossing).
++	 */
++	in.dev = dev;
++	in.skb = qskb;
++	queue_evl_net_tap_in(&tap_in, &in);
++}
++
++static void feed_tap_out(struct net_device *dev, struct sk_buff *skb)
++{
++	dev_queue_xmit_nit(skb, dev);
++}
++
++static void deliver_output_nit(struct evl_net_tap_data *data)
++{
++	feed_tap_out(data->dev, data->skb);
++	evl_net_free_skb(data->skb);
++}
++
++INBAND_BATCH_WORK(
++	evl_net_tap_out, deliver_output_nit,
++	struct evl_net_tap_data, EVL_TAP_RING_SIZE
++);
++
++static DECLARE_INBAND_BATCH_WORK(evl_net_tap_out, tap_out);
++
++void evl_net_tap_out(struct net_device *dev, struct sk_buff *skb)
++{
++	struct evl_net_tap_data out;
++	struct sk_buff *qskb;
++
++	qskb = evl_net_clone_skb(skb);
++	/* Failing to feed taps not considered harmful. */
++	if (unlikely(!qskb))
++		return;
++
++	out.dev = dev;
++	out.skb = qskb;
++	queue_evl_net_tap_out(&tap_out, &out);
++}
++
++void evl_net_init_taps(void)
++{
++	init_evl_net_tap_in(&tap_in);
++	init_evl_net_tap_out(&tap_out);
++}
+-- 
+2.30.2
+

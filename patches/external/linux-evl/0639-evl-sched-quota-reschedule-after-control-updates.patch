@@ -1,0 +1,35 @@
+From 94a9e7d8ca3da1ee332537d93ee0d3897312f841 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 15:49:54 +0200
+Subject: [PATCH 0639/1010] evl/sched: quota: reschedule after control updates
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/quota.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
+index ad7a9b3424..8daa51fbdc 100644
+--- a/kernel/evl/sched/quota.c
++++ b/kernel/evl/sched/quota.c
+@@ -695,7 +695,7 @@ static int quota_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 		list_del(&group->next);
+ 		evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 		evl_free(group);
+-		return 0;
++		goto done;
+ 	case evl_quota_set:
+ 		rq = evl_cpu_rq(cpu);
+ 		evl_spin_lock_irqsave(&rq->lock, flags);
+@@ -723,7 +723,7 @@ static int quota_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	iq->quota_peak = tg->quota_peak_percent;
+ 	evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 	iq->quota_sum = quota_sum;
+-
++done:
+ 	evl_schedule();
+ 
+ 	return 0;
+-- 
+2.30.2
+

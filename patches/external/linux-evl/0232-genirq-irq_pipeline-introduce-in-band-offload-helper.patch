@@ -1,0 +1,300 @@
+From 20d724c1d7f0b9b611d86d72c764b65b1aacd566 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 18 Jun 2025 19:19:43 +0200
+Subject: [PATCH 0232/1010] genirq: irq_pipeline: introduce in-band offload
+ helpers
+
+Offloading work to a workqueue from the oob stage is a fairly common
+pattern, which so far required to open code a fair amount of
+boilerplate.
+
+This patch adds a few helpers to factor out the related code, namely:
+
+- a way to schedule a work_struct directly from the oob stage, via an
+  irq_work trampoline. inband_work_struct is a counterpart to
+  work_struct, providing the limited API we need from the oob stage.
+
+- a way to batch a set of actions carried out by a single user
+  handler, based on varying argument descriptors stored in a ring. An
+  irq_work is used for scheduling the inband work on the system
+  workqueue of the local CPU eventually. The user handler runs from
+  there, as many times as required to visit each active descriptor
+  containing arguments present in the ring.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/inband_work.h | 209 ++++++++++++++++++++++++++++++++++++
+ kernel/irq/pipeline.c       |  19 +++-
+ 2 files changed, 225 insertions(+), 3 deletions(-)
+ create mode 100644 include/linux/inband_work.h
+
+diff --git a/include/linux/inband_work.h b/include/linux/inband_work.h
+new file mode 100644
+index 0000000000..6960a79fde
+--- /dev/null
++++ b/include/linux/inband_work.h
+@@ -0,0 +1,209 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2025 Philippe Gerum  <rpm@xenomai.org>.
++ */
++#ifndef _LINUX_INBAND_WORK_H
++#define _LINUX_INBAND_WORK_H
++
++#ifdef CONFIG_IRQ_PIPELINE
++
++#include <linux/irq_work.h>
++#include <linux/workqueue.h>
++
++struct inband_work_struct {
++	struct irq_work irq_work;
++	struct work_struct work;
++	int cancel_pending;	/* xchg(int) is supported on all archs. */
++};
++
++void inband_work_trigger(struct irq_work *irq_work);
++
++#define INIT_INBAND_WORK(__iwork, __func)				\
++	do {								\
++		INIT_WORK(&(__iwork)->work, __func);			\
++		init_irq_work(&(__iwork)->irq_work, inband_work_trigger); \
++		(__iwork)->cancel_pending = false;			\
++	} while (0)
++
++static inline bool schedule_inband_work(struct inband_work_struct *iwork)
++{
++	if (unlikely(running_inband()))
++		return schedule_work(&iwork->work);
++
++	if (!xchg(&iwork->cancel_pending, false))
++		return irq_work_queue(&iwork->irq_work);
++
++	return true;
++}
++
++static inline
++bool schedule_inband_work_on(int cpu, struct inband_work_struct *iwork)
++{
++	if (unlikely(running_inband()))
++		return schedule_work_on(cpu, &iwork->work);
++
++	if (!xchg(&iwork->cancel_pending, false))
++		return irq_work_queue_on(&iwork->irq_work, cpu);
++
++	return true;
++}
++
++static inline
++bool cancel_inband_work(struct inband_work_struct *iwork)
++{
++	if (unlikely(running_inband()))
++		return cancel_work(&iwork->work);
++
++	if (xchg(&iwork->cancel_pending, true))
++		return true;
++
++	return irq_work_queue(&iwork->irq_work);
++}
++
++static inline
++bool cancel_inband_work_sync(struct inband_work_struct *iwork)
++{
++	if (running_inband())
++		return cancel_work_sync(&iwork->work);
++
++	/*
++	 * We can't yield to in-band, so complain loudly for heads up
++	 * then make best-effort.
++	 */
++	WARN_ON_ONCE(1);
++
++	return cancel_inband_work(iwork);
++}
++
++static inline
++bool flush_inband_work(struct inband_work_struct *iwork)
++{
++	if (running_inband())
++		return flush_work(&iwork->work);
++
++	/* See cancel_inband_work_sync(). */
++	WARN_ON_ONCE(1);
++
++	return false;
++}
++
++/* NOTE: the batch ring should always have at least one free entry. */
++#define __INBAND_BATCH_WORK(__tag, __handler, __count)			\
++	static inline void __PASTE(__tag, __trampoline)(struct irq_work *irq_work) \
++	{								\
++		struct __tag *__r = container_of(irq_work, struct __tag, irq_work); \
++		schedule_work(&__r->work);				\
++	}								\
++	static inline void __PASTE(__tag, __batch)(struct work_struct *work) \
++	{								\
++		struct __tag *__r = container_of(work, struct __tag, work); \
++		while (__r->tail != READ_ONCE(__r->head)) {		\
++			int tail = __r->tail;				\
++			__typeof(&__r->data[0]) __d = __r->data + tail; \
++			__handler(__d);					\
++			WRITE_ONCE(__r->tail, (tail + 1) % (__count));	\
++		}							\
++	}								\
++	static inline void __PASTE(queue_, __tag)(struct __tag *__r, __typeof((&(__r)->data[0])) d) \
++	{								\
++		int head = __r->head;					\
++		__typeof(d) _d = __r->data + head;			\
++		*_d = *d;						\
++		WRITE_ONCE(__r->head, (head + 1) % __count);		\
++		irq_work_queue(&__r->irq_work);				\
++		WARN_ON_ONCE(__r->head == READ_ONCE(__r->tail));	\
++	}
++
++#define INBAND_BATCH_WORK_INITIALIZER(__tag, __name)			\
++	(struct __tag){							\
++		.irq_work = IRQ_WORK_INIT(__PASTE(__tag, __trampoline)), \
++		.work = __WORK_INITIALIZER((__name).work, __PASTE(__tag, __batch)), \
++		.head = 0,						\
++		.tail = 0,						\
++	}
++
++#define INBAND_BATCH_WORK(__tag, __handler, __data, __count)		\
++	struct __tag {							\
++		__typeof(__data) data[__count];				\
++		struct irq_work irq_work;				\
++		struct work_struct work;				\
++		int head;						\
++		int tail;						\
++	};								\
++	__INBAND_BATCH_WORK(__tag, __handler, __count);			\
++	static inline void __PASTE(destroy_, __tag)(struct __tag *r)	\
++	{								\
++	}
++
++#define DECLARE_INBAND_BATCH_WORK(__tag, __name)			\
++	struct __tag __name
++
++#define DEFINE_INBAND_BATCH_WORK(__tag, __name)				\
++	struct __tag __name = INBAND_BATCH_WORK_INITIALIZER(__tag, __name)
++
++#define INBAND_BATCH_WORK_DYNAMIC(__tag, __handler, __data)		\
++	struct __tag {							\
++		__typeof(__data) *data;					\
++		struct irq_work irq_work;				\
++		struct work_struct work;				\
++		int head;						\
++		int tail;						\
++		int count;						\
++	};								\
++	__INBAND_BATCH_WORK(__tag, __handler, __r->count);		\
++	static inline int __PASTE(init_, __tag)(struct __tag *r, int count, gfp_t gfp) \
++	{								\
++		init_irq_work(&r->irq_work, __PASTE(__tag, __trampoline)); \
++		INIT_WORK(&r->work, __PASTE(__tag, __batch));		\
++		r->head = 0;						\
++		r->tail = 0;						\
++		r->count = count;					\
++		r->data = kmalloc(sizeof(r->data[0]) * count, gfp);	\
++		return r->data ? 0 : -ENOMEM;				\
++	}								\
++	static inline void __PASTE(destroy_, __tag)(struct __tag *r)	\
++	{								\
++		kfree(r->data);						\
++	}
++
++#else  /* !CONFIG_IRQ_PIPELINE */
++
++struct inband_work_struct {
++	struct work_struct work;
++};
++
++#define INIT_INBAND_WORK(__iwork, __func)	INIT_WORK(&(__iwork)->work, __func)
++
++static inline bool schedule_inband_work(struct inband_work_struct *iwork)
++{
++	return schedule_work(&iwork->work);
++}
++
++static inline
++bool schedule_inband_work_on(int cpu, struct inband_work_struct *iwork)
++{
++	return schedule_work_on(cpu, &iwork->work);
++}
++
++static inline
++bool cancel_inband_work(struct inband_work_struct *iwork)
++{
++	return cancel_work(&iwork->work);
++}
++
++static inline
++bool cancel_inband_work_sync(struct inband_work_struct *iwork)
++{
++	return cancel_work_sync(&iwork->work);
++}
++
++static inline
++bool flush_inband_work(struct inband_work_struct *iwork)
++{
++	return flush_work(&iwork->work);
++}
++
++#endif /* !CONFIG_IRQ_PIPELINE */
++
++#endif /* _LINUX_INBAND_WORK_H */
+diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
+index 5f82d3a4e8..777121644e 100644
+--- a/kernel/irq/pipeline.c
++++ b/kernel/irq/pipeline.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/sched.h>
+ #include <linux/smp.h>
++#include <linux/inband_work.h>
+ #include <dovetail/irq.h>
+ #include <trace/events/irq.h>
+ #include "internals.h"
+@@ -1679,9 +1680,9 @@ static irqreturn_t inband_work_interrupt(int sirq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static struct irqaction inband_work = {
++static struct irqaction inband_irq_work = {
+ 	.handler = inband_work_interrupt,
+-	.name = "in-band work",
++	.name = "in-band irq work",
+ 	.flags = IRQF_NO_THREAD,
+ };
+ 
+@@ -1703,6 +1704,18 @@ void irq_local_work_raise(void)
+ 	hard_local_irq_restore(flags);
+ }
+ 
++void inband_work_trigger(struct irq_work *irq_work)
++{
++	struct inband_work_struct *iwork =
++		container_of(irq_work, struct inband_work_struct, irq_work);
++
++	if (unlikely(xchg(&iwork->cancel_pending, false)))
++		cancel_work(&iwork->work);
++	else
++		schedule_work(&iwork->work);
++}
++EXPORT_SYMBOL(inband_work_trigger);
++
+ #ifdef CONFIG_DEBUG_IRQ_PIPELINE
+ 
+ #ifdef CONFIG_LOCKDEP
+@@ -1840,7 +1853,7 @@ void __init irq_pipeline_init(void)
+ 						    &sirq_domain_ops,
+ 						    NULL);
+ 	inband_work_sirq = irq_create_direct_mapping(synthetic_irq_domain);
+-	setup_percpu_irq(inband_work_sirq, &inband_work);
++	setup_percpu_irq(inband_work_sirq, &inband_irq_work);
+ 
+ 	/*
+ 	 * We are running on the boot CPU, hw interrupts are off, and
+-- 
+2.30.2
+

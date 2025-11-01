@@ -1,0 +1,49 @@
+From ffa0fa0460d904a163371c5cee71400564204d59 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 10 Aug 2019 19:13:15 +0200
+Subject: [PATCH 0504/1010] evl/sched: properly annotate fall-through cases
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 4 ++--
+ kernel/evl/sched/tp.c   | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index e314f961f2..b89f2d9afa 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -718,7 +718,7 @@ evl_find_sched_class(union evl_sched_param *param,
+ 	case SCHED_NORMAL:
+ 		if (prio)
+ 			return NULL;
+-		/* Fallback wanted */
++		/* fall-through */
+ 	case SCHED_WEAK:
+ 		if (prio < EVL_WEAK_MIN_PRIO ||	prio > EVL_WEAK_MAX_PRIO)
+ 			return NULL;
+@@ -730,7 +730,7 @@ evl_find_sched_class(union evl_sched_param *param,
+ 		tslice = timespec_to_ktime(attrs->sched_rr_quantum);
+ 		if (timeout_infinite(tslice) && tslice_r)
+ 			tslice = *tslice_r;
+-		/* falldown wanted */
++		/* fall-through */
+ 	case SCHED_FIFO:
+ 		/*
+ 		 * This routine handles requests submitted from
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index 2ae572398c..607e8b09d6 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -318,7 +318,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	case evl_install_tp:
+ 		if (pt->nr_windows > 0)
+ 			goto install_schedule;
+-		/* Fallback wanted. */
++		/* fall-through. */
+ 	case evl_uninstall_tp:
+ 		gps = NULL;
+ 		goto switch_schedule;
+-- 
+2.30.2
+

@@ -1,0 +1,156 @@
+From 8177c3acb1fcb8da2ea5046ed336f6c0320b8a03 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 31 Oct 2020 11:16:36 +0100
+Subject: [PATCH 0688/1010] evl/timer: remove timer priority logic
+
+Prioritization of timers in timer queues dates back to the Dark Ages
+of Xenomai 2.x, when multiple time bases would co-exist in the core,
+some of which representing date values as a count of periodic ticks.
+In such a case, multiple timers might elapse on the very same tick,
+hence the need for prioritizing them.
+
+With a single time base indexing timers on absolute date values, which
+are expressed as a 64bit monotonic count of nanoseconds, the
+likelihood of observing identical trigger dates is very low.
+
+Furthermore, the formerly defined priorities where assigned as
+follows:
+
+1) high priority to the per-thread periodic and resource timers
+2) medium priority to the user-defined timers
+3) low priority to the in-band tick emulation timer
+
+It turns out that forcibly prioritizing 1) over 2) is at least
+debatable, if not questionable: resource timers have no high priority
+at all, they merely tick on the (unlikely) timeout condition. On the
+other hand, user-defined timers may well deal with high priority
+events only some EVL driver code may know about.
+
+Finally, handling 3) is a fast operation on top of Dovetail, which is
+already deferred internally whenever the timer management core detects
+that some oob activity is running/pending.
+
+So we may remove the logic handling the timer priority, only relying
+on the trigger date for dispatching. This should save precious cycles
+in the hot path without any actual downside.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/timer.h     | 12 ------------
+ kernel/evl/sched/core.c |  3 ---
+ kernel/evl/thread.c     |  2 --
+ kernel/evl/timer.c      |  8 +++-----
+ 4 files changed, 3 insertions(+), 22 deletions(-)
+
+diff --git a/include/evl/timer.h b/include/evl/timer.h
+index 04dc8f67ce..8471f33928 100644
+--- a/include/evl/timer.h
++++ b/include/evl/timer.h
+@@ -63,15 +63,9 @@ enum evl_tmode {
+ #define EVL_TIMER_GRAVITY_MASK	(EVL_TIMER_KGRAVITY|EVL_TIMER_UGRAVITY)
+ #define EVL_TIMER_INIT_MASK	EVL_TIMER_GRAVITY_MASK
+ 
+-/* Timer priorities */
+-#define EVL_TIMER_LOPRIO  (-999999999)
+-#define EVL_TIMER_STDPRIO 0
+-#define EVL_TIMER_HIPRIO  999999999
+-
+ struct evl_tnode {
+ 	struct rb_node rb;
+ 	ktime_t date;
+-	int prio;
+ };
+ 
+ struct evl_tqueue {
+@@ -232,12 +226,6 @@ ktime_t evl_get_timer_next_date(struct evl_timer *timer)
+ 			timer->pexpect_ticks * ktime_to_ns(timer->interval));
+ }
+ 
+-static inline
+-void evl_set_timer_priority(struct evl_timer *timer, int prio)
+-{
+-	timer->node.prio = prio;
+-}
+-
+ void __evl_init_timer(struct evl_timer *timer,
+ 		struct evl_clock *clock,
+ 		void (*handler)(struct evl_timer *timer),
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 116e426f7f..cdf77302d3 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -176,17 +176,14 @@ static void init_rq(struct evl_rq *rq, int cpu)
+ 	 */
+ 	evl_init_timer_on_rq(&rq->inband_timer, &evl_mono_clock, NULL,
+ 			rq, EVL_TIMER_IGRAVITY);
+-	evl_set_timer_priority(&rq->inband_timer, EVL_TIMER_LOPRIO);
+ 	evl_set_timer_name(&rq->inband_timer, rq->proxy_timer_name);
+ 	evl_init_timer_on_rq(&rq->rrbtimer, &evl_mono_clock, roundrobin_handler,
+ 			rq, EVL_TIMER_IGRAVITY);
+ 	evl_set_timer_name(&rq->rrbtimer, rq->rrb_timer_name);
+-	evl_set_timer_priority(&rq->rrbtimer, EVL_TIMER_LOPRIO);
+ #ifdef CONFIG_EVL_WATCHDOG
+ 	evl_init_timer_on_rq(&rq->wdtimer, &evl_mono_clock, watchdog_handler,
+ 			rq, EVL_TIMER_IGRAVITY);
+ 	evl_set_timer_name(&rq->wdtimer, "[watchdog]");
+-	evl_set_timer_priority(&rq->wdtimer, EVL_TIMER_LOPRIO);
+ #endif /* CONFIG_EVL_WATCHDOG */
+ 
+ 	evl_set_current_account(rq, &rq->root_thread.stat.account);
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 37ef40a950..d44d2476c7 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -237,11 +237,9 @@ int evl_init_thread(struct evl_thread *thread,
+ 	evl_init_timer_on_rq(&thread->rtimer, &evl_mono_clock, timeout_handler,
+ 			rq, gravity);
+ 	evl_set_timer_name(&thread->rtimer, thread->name);
+-	evl_set_timer_priority(&thread->rtimer, EVL_TIMER_HIPRIO);
+ 	evl_init_timer_on_rq(&thread->ptimer, &evl_mono_clock, periodic_handler,
+ 			rq, gravity);
+ 	evl_set_timer_name(&thread->ptimer, thread->name);
+-	evl_set_timer_priority(&thread->ptimer, EVL_TIMER_HIPRIO);
+ 
+ 	thread->base_class = NULL; /* evl_set_thread_policy() sets it. */
+ 	ret = evl_init_rq_thread(thread);
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 2353bec4a1..5eba693801 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -297,7 +297,6 @@ void __evl_init_timer(struct evl_timer *timer,
+ 
+ 	timer->clock = clock;
+ 	evl_tdate(timer) = EVL_INFINITE;
+-	evl_set_timer_priority(timer, EVL_TIMER_STDPRIO);
+ 	timer->status = EVL_TIMER_DEQUEUED|(flags & EVL_TIMER_INIT_MASK);
+ 	timer->handler = handler;
+ 	timer->interval = EVL_INFINITE;
+@@ -460,13 +459,13 @@ static __always_inline
+ bool date_is_earlier(struct evl_tnode *left,
+ 		struct evl_tnode *right)
+ {
+-	return left->date < right->date
+-		|| (left->date == right->date && left->prio > right->prio);
++	return left->date < right->date;
+ }
+ 
+ void evl_insert_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ {
+ 	struct rb_node **new = &tq->root.rb_node, *parent = NULL;
++	struct evl_tnode *i;
+ 
+ 	if (!tq->head)
+ 		tq->head = node;
+@@ -475,8 +474,7 @@ void evl_insert_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ 		new = &parent->rb_left;
+ 		tq->head = node;
+ 	} else while (*new) {
+-			struct evl_tnode *i = container_of(*new, struct evl_tnode, rb);
+-
++			i = container_of(*new, struct evl_tnode, rb);
+ 			parent = *new;
+ 			if (date_is_earlier(node, i))
+ 				new = &((*new)->rb_left);
+-- 
+2.30.2
+

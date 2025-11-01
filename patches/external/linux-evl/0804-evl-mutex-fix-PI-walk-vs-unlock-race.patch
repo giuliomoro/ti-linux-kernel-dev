@@ -1,0 +1,83 @@
+From efccf2ad91c41fcc6c7eb141ae5474ce4125518d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 26 Oct 2022 15:19:20 +0200
+Subject: [PATCH 0804/1010] evl/mutex: fix PI walk vs unlock race
+
+When dropping a mutex, the next owner its ownership is transferred to
+must be unblocked by a call to evl_wakeup_thread() before
+mutex->wchan.lock is released in __evl_unlock_mutex().
+
+Otherwise, we would still have owner->wchan pointing at mutex, which
+would confuse walk_pi_chain() as it might access the unlocked mutex
+state in the meantime, observing waiter->wchan == &mutex->wchan AND
+mutex->wchan.owner == waiter at the same time, which makes no
+sense. The PI walk would then issue a recursive spinlocking request,
+in an attempt to double-lock the (waiter, owner) pair pointing at the
+same thread.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index c31bdc4171..c033364246 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -1230,22 +1230,24 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		raw_spin_unlock(&curr->lock);
+ 	}
+ 
+-	/*
+-	 * walk_pi_chain() may have dropped mutex->wchan.lock
+-	 * temporarily causing the current mutex owner to change under
+-	 * us, refresh this information under lock.
+-	 */
+-	owner = mutex->wchan.owner;
+-
+ 	/*
+ 	 * Walking the PI chain is preemptible by other CPUs since
+-	 * mutex->wchan.lock may be released during the process, so we
+-	 * might have been given ownership of this mutex by
+-	 * transfer_ownership(), or the latest owner of this mutex
+-	 * might have dropped it while we were busy progressing down
+-	 * this chain. Check for those events while we hold
+-	 * mutex->wchan.lock, before deciding to sleep.
++	 * mutex->wchan.lock may be released during the process, so
++	 * the following might have happened while we were busy
++	 * progressing down the chain:
++	 *
++	 * - the current mutex owner might have changed under us, so
++	 * we have to refresh this information under lock.
++	 *
++	 * - the calling thread might have been given ownership of
++	 * this mutex by transfer_ownership(), in which case we should
++	 * not block for it.
++	 *
++	 * - the latest owner of this mutex might have dropped it, if
++	 * so we should not wait for it but re-run the whole
++	 * acquisition process from the beginning instead.
+ 	 */
++	owner = mutex->wchan.owner;
+ 	if (unlikely(!owner)) {
+ 		raw_spin_lock(&curr->lock);
+ 		/*
+@@ -1453,6 +1455,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 			n_ownerh = mutex_fast_claim(n_ownerh);
+ 
+ 		atomic_set(lockp, n_ownerh);
++		evl_wakeup_thread(n_owner, T_PEND, T_WAKEN);
+ 	} else {
+ 		atomic_set(lockp, EVL_NO_HANDLE);
+ 	}
+@@ -1480,7 +1483,6 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 		if (adjust_wait)
+ 			evl_adjust_wait_priority(n_owner);
+ 
+-		evl_wakeup_thread(n_owner, T_PEND, T_WAKEN);
+ 		evl_put_element(&n_owner->element);
+ 	}
+ 
+-- 
+2.30.2
+

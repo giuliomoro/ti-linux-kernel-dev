@@ -1,0 +1,30 @@
+From 27a07764f1ffec568186f7169830bd6d9f97013f Mon Sep 17 00:00:00 2001
+From: Jorge Ramirez-Ortiz <jorge.ramirez.ortiz@gmail.com>
+Date: Wed, 9 Aug 2023 19:05:29 +0200
+Subject: [PATCH 0849/1010] evl: increase default number of xbuffers
+
+The default case is too limiting. Increasing it to 128 allows clients
+such as the Pipewire Multimedia server to operate without additional
+tweaks.
+
+Signed-off-by: Jorge Ramirez-Ortiz <jorge.ramirez.ortiz@gmail.com>
+---
+ kernel/evl/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index a5ce944e9d..e41aa74be8 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -144,7 +144,7 @@ config EVL_NR_CLOCKS
+ config EVL_NR_XBUFS
+ 	int "Maximum number of x-buffers"
+ 	range 1 16384
+-	default 16
++	default 128
+ 	help
+ 
+ 	This value gives the maximum number of x-buffers which can be
+-- 
+2.30.2
+

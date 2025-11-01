@@ -1,0 +1,72 @@
+From 86cba4c489e3013b09c35563d74b41cd7ba20035 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 4 Jun 2025 09:30:58 +0200
+Subject: [PATCH 0218/1010] net: dovetail: make loopback device oob-capable
+
+We don't need any specific support to make the stock 'lo' device
+oob-capable now that [__]netif_rx() relays packets to the oob
+stack. Just turn on the capability bit in the netdev accordingly.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/net/loopback.c    | 3 +++
+ include/linux/netdevice.h | 5 +++++
+ net/core/dev.c            | 4 +++-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
+index 8dc6a4df93..df989570db 100644
+--- a/drivers/net/loopback.c
++++ b/drivers/net/loopback.c
+@@ -221,6 +221,9 @@ static __net_init int loopback_net_init(struct net *net)
+ 	if (err)
+ 		goto out_free_netdev;
+ 
++	if (IS_ENABLED(CONFIG_NET_OOB))
++		netdev_set_oob_capable(dev);
++
+ 	BUG_ON(dev->ifindex != LOOPBACK_IFINDEX);
+ 	net->loopback_dev = dev;
+ 	return 0;
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 1f265cdf80..085c7848d4 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4372,6 +4372,7 @@ int napi_poll_oob(struct napi_struct *n, struct list_head *repoll);
+ /* Out-of-band hooks implemented by the companion core. */
+ void napi_schedule_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
++void netif_schedule_oob(struct net_device *dev);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
+ void netif_tx_wake_oob(struct netdev_queue *txq); /* rcu_read locked */
+@@ -4388,6 +4389,10 @@ static inline bool netif_receive_oob(struct sk_buff *skb)
+ 	return false;
+ }
+ 
++static inline void netif_schedule_oob(struct net_device *dev)
++{
++}
++
+ static inline bool netif_oob_diversion(const struct net_device *dev)
+ {
+ 	return false;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 07f6ec4675..90e4cf6efe 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5146,8 +5146,10 @@ static int netif_rx_internal(struct sk_buff *skb)
+ {
+ 	int ret;
+ 
+-	if (netif_receive_oob(skb))
++	if (netif_receive_oob(skb)) {
++		netif_schedule_oob(skb->dev);
+ 		return NET_RX_SUCCESS;
++	}
+ 
+ 	net_timestamp_check(READ_ONCE(netdev_tstamp_prequeue), skb);
+ 
+-- 
+2.30.2
+

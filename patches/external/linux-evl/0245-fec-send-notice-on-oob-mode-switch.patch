@@ -1,0 +1,36 @@
+From 6677c570d0577bf0962ceb185e7d644e79ca92f2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 15:57:40 +0200
+Subject: [PATCH 0245/1010] fec: send notice on oob mode switch
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/net/ethernet/freescale/fec_main.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 0162f78419..0fe1fa73c9 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -373,6 +373,9 @@ static int fec_enet_enable_oob(struct net_device *ndev)
+ 	netif_tx_unlock_bh(ndev);
+ 	napi_enable(&fep->napi);
+ 
++	if (!ret)
++		pr_info("%s: enabled out-of-band I/O mode\n", netdev_name(ndev));
++
+ 	return ret;
+ }
+ 
+@@ -389,6 +392,8 @@ static void fec_enet_disable_oob(struct net_device *ndev)
+ 
+ 	netif_tx_unlock_bh(ndev);
+ 	napi_enable(&fep->napi);
++
++	pr_info("%s: disabled out-of-band I/O mode\n", netdev_name(ndev));
+ }
+ 
+ static void release_inband_work(struct irq_work *irq_work)
+-- 
+2.30.2
+

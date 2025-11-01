@@ -1,0 +1,26 @@
+From 86f0b2bdec810d9c857540b2d2380a9476c4d363 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 27 Jul 2021 19:09:33 +0200
+Subject: [PATCH 0737/1010] drivers/evl: hectic: annotate fallthrough statement
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 3882c5e85d..92fec7c86c 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -415,7 +415,7 @@ static void rtswitch_kthread(void *arg)
+ 			if (to == task->base.index)
+ 				++to;
+ 
+-			/* Fall through. */
++			fallthrough;
+ 		case 2:
+ 			rtswitch_to_rt(ctx, task->base.index, to);
+ 		}
+-- 
+2.30.2
+

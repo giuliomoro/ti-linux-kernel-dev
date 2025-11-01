@@ -1,0 +1,56 @@
+From 4f279f82a7b2fdf47b689c740a8815e1b850b5f0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 19 Mar 2022 18:21:37 +0100
+Subject: [PATCH 0758/1010] evl/work: work around pedantic -Wcast-function-type
+
+This is not fixing a bug, but rather prevents GCC from complaining
+about incompatible types in casts between function pointers, which are
+nevertheless correct runtime-wise.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/work.h | 5 ++++-
+ kernel/evl/work.c  | 4 ++--
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/include/evl/work.h b/include/evl/work.h
+index 84c6ed62c4..48fe6b2e62 100644
+--- a/include/evl/work.h
++++ b/include/evl/work.h
+@@ -17,7 +17,10 @@ struct evl_work {
+ 	struct irq_work irq_work;
+ 	struct work_struct wq_work;
+ 	struct workqueue_struct *wq;
+-	int (*handler)(void *arg);
++	union {
++		int (*handler)(void *arg);
++		void (*handler_noreturn)(void *arg);
++	};
+ 	struct evl_element *element;
+ };
+ 
+diff --git a/kernel/evl/work.c b/kernel/evl/work.c
+index 3e0a074de3..1c3774482a 100644
+--- a/kernel/evl/work.c
++++ b/kernel/evl/work.c
+@@ -12,7 +12,7 @@ static void do_wq_work(struct work_struct *wq_work)
+ 	struct evl_work *work;
+ 
+ 	work = container_of(wq_work, struct evl_work, wq_work);
+-	work->handler(work);
++	work->handler_noreturn(work);
+ 	if (work->element)
+ 		evl_put_element(work->element);
+ }
+@@ -41,7 +41,7 @@ void evl_init_work(struct evl_work *work,
+ {
+ 	init_irq_work(&work->irq_work, do_irq_work);
+ 	INIT_WORK(&work->wq_work, do_wq_work);
+-	work->handler = (typeof(work->handler))handler;
++	work->handler_noreturn = (typeof(work->handler_noreturn))handler;
+ 	work->element = NULL;
+ }
+ EXPORT_SYMBOL_GPL(evl_init_work);
+-- 
+2.30.2
+

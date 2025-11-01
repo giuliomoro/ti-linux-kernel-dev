@@ -1,0 +1,37 @@
+From d07b64393b76c813073244e4b44a98dad0263271 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 22 Sep 2023 10:52:53 +0200
+Subject: [PATCH 0112/1010] tracing: irq_pipeline: call update_max_tr_single()
+ w/ hard irqs off
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/trace/trace.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index df54e30a4d..d0aaf7b921 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -7553,7 +7553,9 @@ static int tracing_snapshot_open(struct inode *inode, struct file *file)
+ 
+ static void tracing_swap_cpu_buffer(void *tr)
+ {
++	hard_local_irq_disable();
+ 	update_max_tr_single((struct trace_array *)tr, current, smp_processor_id());
++	hard_local_irq_enable();
+ }
+ 
+ static ssize_t
+@@ -7619,7 +7621,7 @@ tracing_snapshot_write(struct file *filp, const char __user *ubuf, size_t cnt,
+ 			hard_local_irq_disable();
+ 			update_max_tr(tr, current, smp_processor_id(), NULL);
+ 			hard_local_irq_enable();
+-		} else {	/* FIXME: irq_pipeline */
++		} else {
+ 			smp_call_function_single(iter->cpu_file, tracing_swap_cpu_buffer,
+ 						 (void *)tr, 1);
+ 		}
+-- 
+2.30.2
+

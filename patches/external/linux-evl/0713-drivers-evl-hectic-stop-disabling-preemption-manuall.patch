@@ -1,0 +1,50 @@
+From 489e885810bd0cb5a21c24fe54cff337c8cd0c0b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 26 Dec 2020 18:51:05 +0100
+Subject: [PATCH 0713/1010] drivers/evl: hectic: stop disabling preemption
+ manually
+
+Given the semantics of an evl_flag, disabling preemption manually
+around the evl_raise_flag(to_flag) -> evl_wait_flag(from_flag)
+sequence does not make sense.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index bec9ca0584..3882c5e85d 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -173,18 +173,15 @@ static int rtswitch_to_rt(struct rtswitch_context *ctx,
+ 				evl_abs_timeout(&ctx->wake_up_delay,
+ 						ctx->pause_us * 1000),
+ 				EVL_INFINITE);
+-		evl_disable_preempt();
+ 	} else
+ 		switch (to->base.flags & HECTIC_OOB_WAIT) {
+ 		case HECTIC_INBAND_WAIT:
+ 			ctx->utask = to;
+ 			barrier();
+ 			irq_work_queue(&ctx->wake_utask);
+-			evl_disable_preempt();
+ 			break;
+ 
+ 		case HECTIC_OOB_WAIT:
+-			evl_disable_preempt();
+ 			evl_raise_flag(&to->rt_synch);
+ 			break;
+ 
+@@ -193,8 +190,6 @@ static int rtswitch_to_rt(struct rtswitch_context *ctx,
+ 		}
+ 
+ 	rc = evl_wait_flag(&from->rt_synch);
+-	evl_enable_preempt();
+-
+ 	if (rc < 0)
+ 		return rc;
+ 
+-- 
+2.30.2
+

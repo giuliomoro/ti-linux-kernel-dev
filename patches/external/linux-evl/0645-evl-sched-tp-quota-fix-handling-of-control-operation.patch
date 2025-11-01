@@ -1,0 +1,78 @@
+From 0291d37867b6ca4cd1d15a4369589d74d1f7a25d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 22 Apr 2020 15:04:59 +0200
+Subject: [PATCH 0645/1010] evl/sched: tp, quota: fix handling of control
+ operation status
+
+The ->sched_control() returns the length of the information block to
+copy back to user, not a zero/non-zero status.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/control.c | 31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 919058063c..a59c1ec936 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -114,9 +114,12 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
+ 		return -EFAULT;
+ 
+ 	ret = evl_sched_quota.sched_control(ctl->cpu, &param, &info);
+-	if (ret || !ctl->info_ptr)
++	if (ret < 0)
+ 		return ret;
+ 
++	if (!ctl->info_ptr)
++		return 0;
++
+ 	u_infp = evl_valptr64(ctl->info_ptr, union evl_sched_ctlinfo);
+ 	ret = raw_copy_to_user(&u_infp->quota, &info.quota,
+ 			sizeof(info.quota));
+@@ -142,7 +145,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 	union evl_sched_ctlparam _param, *param = &_param, __user *u_ctlp;
+ 	union evl_sched_ctlinfo *info = NULL, __user *u_infp;
+ 	ssize_t ret;
+-	size_t len;
++	ssize_t len;
+ 
+ 	u_ctlp = evl_valptr64(ctl->param_ptr, union evl_sched_ctlparam);
+ 	ret = raw_copy_from_user(&_param.tp, &u_ctlp->tp, sizeof(_param.tp));
+@@ -178,19 +181,23 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 		}
+ 	}
+ 
+-	ret = evl_sched_tp.sched_control(ctl->cpu, param, info);
++	len = evl_sched_tp.sched_control(ctl->cpu, param, info);
++	if (len < 0) {
++		ret = len;
++		goto out;
++	}
+ 
+-	if (info) {
+-		if (ret > 0) {
+-			u_infp = evl_valptr64(ctl->info_ptr,
+-					union evl_sched_ctlinfo);
+-			ret = raw_copy_to_user(&u_infp->tp, &info->tp, ret);
+-			if (ret)
+-				ret = -EFAULT;
+-		}
+-		evl_free(info);
++	if (info && len > 0) {
++		u_infp = evl_valptr64(ctl->info_ptr,
++				union evl_sched_ctlinfo);
++		ret = raw_copy_to_user(&u_infp->tp, &info->tp, len);
++		if (ret)
++			ret = -EFAULT;
+ 	}
+ out:
++	if (info)
++		evl_free(info);
++
+ 	if (param != &_param)
+ 		evl_free(param);
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,28 @@
+From 5f7284d8d62eac071a8196e1521ab89dcdcf72dd Mon Sep 17 00:00:00 2001
+From: lio via Evl <evl@evlproject.org>
+Date: Fri, 27 Nov 2020 14:45:22 +0100
+Subject: [PATCH 0694/1010] evl/thread: remove the repeated inclusion of
+ sched.h
+
+This is a tiny fix for the repeated evl/sched.h inclusion.
+
+Signed-off-by: lio <liu.hailong6@zte.com.cn>
+---
+ kernel/evl/thread.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 1f52697888..979bff2e52 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -31,7 +31,6 @@
+ #include <evl/assert.h>
+ #include <evl/lock.h>
+ #include <evl/thread.h>
+-#include <evl/sched.h>
+ #include <evl/memory.h>
+ #include <evl/file.h>
+ #include <evl/factory.h>
+-- 
+2.30.2
+

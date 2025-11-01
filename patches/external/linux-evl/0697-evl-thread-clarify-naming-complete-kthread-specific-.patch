@@ -1,0 +1,240 @@
+From e1410089fb47e1b9324ebe931b6fd806920a91a2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 17 Dec 2020 11:28:09 +0100
+Subject: [PATCH 0697/1010] evl/thread: clarify naming, complete
+ kthread-specific interface
+
+By convention, all thread-related calls which implicitly affect
+current and therefore do not take any @thread parameter should use a
+short-form name, such as evl_delay(), evl_sleep(). For this reason,
+the following renames took place:
+
+- evl_set_thread_period -> evl_set_period
+- evl_wait_thread_period -> evl_wait_period
+- evl_delay_thread -> evl_delay
+
+In addition, complete the set of kthread-specific calls which are
+based on the inner thread interface (this one working for user and
+kernel threads indifferently):
+
+- evl_kthread_unblock
+- evl_kthread_join
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/latmus.c | 10 ++++----
+ include/evl/thread.h | 54 ++++++++++++++++++++++++++++----------------
+ kernel/evl/clock.c   |  2 +-
+ kernel/evl/thread.c  | 18 +++++++--------
+ 4 files changed, 49 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 7e2cd9556f..134e29109a 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -455,20 +455,20 @@ void kthread_handler(struct evl_kthread *kthread)
+ 		if (ret)
+ 			break;
+ 
+-		ret = evl_set_thread_period(&evl_mono_clock,
+-					k_runner->start_time,
+-					k_runner->runner.period);
++		ret = evl_set_period(&evl_mono_clock,
++				k_runner->start_time,
++				k_runner->runner.period);
+ 		if (ret)
+ 			break;
+ 
+ 		for (;;) {
+-			ret = evl_wait_thread_period(NULL);
++			ret = evl_wait_period(NULL);
+ 			if (ret && ret != -ETIMEDOUT)
+ 				goto out;
+ 
+ 			now = evl_read_clock(&evl_mono_clock);
+ 			if (k_runner->runner.add_sample(&k_runner->runner, now)) {
+-				evl_set_thread_period(NULL, 0, 0);
++				evl_set_period(NULL, 0, 0);
+ 				break;
+ 			}
+ 		}
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index cbca3eaf4f..40b14418ea 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -158,14 +158,6 @@ struct evl_thread {
+ 	char *name;
+ };
+ 
+-struct evl_kthread {
+-	struct evl_thread thread;
+-	struct completion done;
+-	void (*threadfn)(struct evl_kthread *kthread);
+-	int status;
+-	struct irq_work irq_work;
+-};
+-
+ #define for_each_evl_booster(__pos, __thread)			\
+ 	list_for_each_entry(__pos, &(__thread)->boosters, next_booster)
+ 
+@@ -275,19 +267,19 @@ void evl_release_thread(struct evl_thread *thread,
+ void evl_unblock_thread(struct evl_thread *thread,
+ 			int reason);
+ 
+-ktime_t evl_delay_thread(ktime_t timeout,
+-			enum evl_tmode timeout_mode,
+-			struct evl_clock *clock);
++ktime_t evl_delay(ktime_t timeout,
++		enum evl_tmode timeout_mode,
++		struct evl_clock *clock);
+ 
+ int evl_sleep_until(ktime_t timeout);
+ 
+ int evl_sleep(ktime_t delay);
+ 
+-int evl_set_thread_period(struct evl_clock *clock,
+-			ktime_t idate,
+-			ktime_t period);
++int evl_set_period(struct evl_clock *clock,
++		ktime_t idate,
++		ktime_t period);
+ 
+-int evl_wait_thread_period(unsigned long *overruns_r);
++int evl_wait_period(unsigned long *overruns_r);
+ 
+ void evl_cancel_thread(struct evl_thread *thread);
+ 
+@@ -330,6 +322,18 @@ static inline void evl_propagate_schedparam_change(struct evl_thread *curr)
+ 		__evl_propagate_schedparam_change(curr);
+ }
+ 
++pid_t evl_get_inband_pid(struct evl_thread *thread);
++
++int activate_oob_mm_state(struct oob_mm_state *p);
++
++struct evl_kthread {
++	struct evl_thread thread;
++	struct completion done;
++	void (*threadfn)(struct evl_kthread *kthread);
++	int status;
++	struct irq_work irq_work;
++};
++
+ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 
+ #define _evl_run_kthread(__kthread, __affinity, __fn, __priority,	\
+@@ -363,6 +367,9 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 	_evl_run_kthread(__kthread, cpumask_of(__cpu), __fn, __priority, \
+ 			__clone_flags, __fmt, ##__args)
+ 
++void evl_set_kthread_priority(struct evl_kthread *kthread,
++			int priority);
++
+ static inline void evl_stop_kthread(struct evl_kthread *kthread)
+ {
+ 	evl_cancel_thread(&kthread->thread);
+@@ -374,11 +381,18 @@ static inline bool evl_kthread_should_stop(void)
+ 	return !!(evl_current()->info & T_CANCELD);
+ }
+ 
+-void evl_set_kthread_priority(struct evl_kthread *thread,
+-			int priority);
+-
+-pid_t evl_get_inband_pid(struct evl_thread *thread);
++static inline
++void evl_unblock_kthread(struct evl_kthread *kthread,
++			int reason)
++{
++	evl_unblock_thread(&kthread->thread, reason);
++}
+ 
+-int activate_oob_mm_state(struct oob_mm_state *p);
++static inline
++int evl_join_kthread(struct evl_kthread *kthread,
++		bool uninterruptible)
++{
++	return evl_join_thread(&kthread->thread, uninterruptible);
++}
+ 
+ #endif /* !_EVL_THREAD_H */
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index dc7119d352..8df773ea9b 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -491,7 +491,7 @@ static int clock_sleep(struct evl_clock *clock,
+ 	} else
+ 		timeout = timespec64_to_ktime(ts64);
+ 
+-	rem = evl_delay_thread(timeout, EVL_ABS, clock);
++	rem = evl_delay(timeout, EVL_ABS, clock);
+ 	if (!rem)
+ 		return 0;
+ 
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 979bff2e52..354f58e2b6 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -777,8 +777,8 @@ ktime_t evl_get_thread_period(struct evl_thread *thread)
+ }
+ EXPORT_SYMBOL_GPL(evl_get_thread_period);
+ 
+-ktime_t evl_delay_thread(ktime_t timeout, enum evl_tmode timeout_mode,
+-			struct evl_clock *clock)
++ktime_t evl_delay(ktime_t timeout, enum evl_tmode timeout_mode,
++		struct evl_clock *clock)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 	ktime_t rem = 0;
+@@ -791,7 +791,7 @@ ktime_t evl_delay_thread(ktime_t timeout, enum evl_tmode timeout_mode,
+ 
+ 	return rem;
+ }
+-EXPORT_SYMBOL_GPL(evl_delay_thread);
++EXPORT_SYMBOL_GPL(evl_delay);
+ 
+ int evl_sleep_until(ktime_t timeout)
+ {
+@@ -800,7 +800,7 @@ int evl_sleep_until(ktime_t timeout)
+ 	if (!EVL_ASSERT(CORE, !evl_cannot_block()))
+ 		return -EPERM;
+ 
+-	rem = evl_delay_thread(timeout, EVL_ABS, &evl_mono_clock);
++	rem = evl_delay(timeout, EVL_ABS, &evl_mono_clock);
+ 
+ 	return rem ? -EINTR : 0;
+ }
+@@ -813,8 +813,8 @@ int evl_sleep(ktime_t delay)
+ }
+ EXPORT_SYMBOL_GPL(evl_sleep);
+ 
+-int evl_set_thread_period(struct evl_clock *clock,
+-			ktime_t idate, ktime_t period)
++int evl_set_period(struct evl_clock *clock,
++		ktime_t idate, ktime_t period)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 	unsigned long flags;
+@@ -849,9 +849,9 @@ int evl_set_thread_period(struct evl_clock *clock,
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(evl_set_thread_period);
++EXPORT_SYMBOL_GPL(evl_set_period);
+ 
+-int evl_wait_thread_period(unsigned long *overruns_r)
++int evl_wait_period(unsigned long *overruns_r)
+ {
+ 	unsigned long overruns, flags;
+ 	struct evl_thread *curr;
+@@ -886,7 +886,7 @@ int evl_wait_thread_period(unsigned long *overruns_r)
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(evl_wait_thread_period);
++EXPORT_SYMBOL_GPL(evl_wait_period);
+ 
+ void evl_cancel_thread(struct evl_thread *thread)
+ {
+-- 
+2.30.2
+

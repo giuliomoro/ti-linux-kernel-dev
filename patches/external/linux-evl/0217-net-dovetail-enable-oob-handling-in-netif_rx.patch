@@ -1,0 +1,36 @@
+From 466d50c4f25072fd17bfc1455335b4c0eefd401b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 4 Jun 2025 09:17:48 +0200
+Subject: [PATCH 0217/1010] net: dovetail: enable oob handling in netif_rx()
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/dev.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 91e0b1768c..07f6ec4675 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5146,6 +5146,9 @@ static int netif_rx_internal(struct sk_buff *skb)
+ {
+ 	int ret;
+ 
++	if (netif_receive_oob(skb))
++		return NET_RX_SUCCESS;
++
+ 	net_timestamp_check(READ_ONCE(netdev_tstamp_prequeue), skb);
+ 
+ 	trace_netif_rx(skb);
+@@ -5186,7 +5189,7 @@ int __netif_rx(struct sk_buff *skb)
+ {
+ 	int ret;
+ 
+-	lockdep_assert_once(hardirq_count() | softirq_count());
++	lockdep_assert_once(running_oob() | hardirq_count() | softirq_count());
+ 
+ 	trace_netif_rx_entry(skb);
+ 	ret = netif_rx_internal(skb);
+-- 
+2.30.2
+

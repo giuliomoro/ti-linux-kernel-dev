@@ -1,0 +1,28 @@
+From a9eec8ffe546c8f08a53e46d4c4d0b9a066b74fc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 1 Sep 2023 15:16:09 +0200
+Subject: [PATCH 0853/1010] drivers/gpio: evl: fix line event initialization
+
+The in-band wait queue was lacking an init call.
+
+Reported-by: Jesus Villena <j.villena@ecler.com>
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/gpio/gpiolib-cdev.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
+index b0a7c664c3..e11ccd7fdb 100644
+--- a/drivers/gpio/gpiolib-cdev.c
++++ b/drivers/gpio/gpiolib-cdev.c
+@@ -2508,6 +2508,7 @@ static int lineevent_create(struct gpio_device *gdev, void __user *ip)
+ 	irqflags |= IRQF_ONESHOT;
+ 
+ 	INIT_KFIFO(le->events);
++	init_waitqueue_head(&le->wait);
+ 
+ 	if (oob_handling_requested(lflags)) {
+ 		if (desc->gdev->chip->can_sleep) {
+-- 
+2.30.2
+

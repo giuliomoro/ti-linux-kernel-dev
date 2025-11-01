@@ -1,0 +1,27 @@
+From ceda3407abfef234cd69d81f1df9e82cda2cb4e2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 9 Jun 2022 09:42:53 +0200
+Subject: [PATCH 0763/1010] evl/syscall: detect COMPAT syscall using
+ arch_dovetail_is_syscall
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/syscall.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index af40de7a3f..12b14ee3af 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -439,7 +439,7 @@ static unsigned int collect_syscall_args(struct pt_regs *regs,
+ 	 * and prctl(@nr | __OOB_SYSCALL_BIT, args...). If none is
+ 	 * matched, this is an in-band syscall.
+ 	 */
+-	if (nr != __NR_prctl || !(args[0] & __OOB_SYSCALL_BIT))
++	if (!arch_dovetail_is_syscall(nr) || !(args[0] & __OOB_SYSCALL_BIT))
+ 		return nr;
+ 
+ 	/*
+-- 
+2.30.2
+

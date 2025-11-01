@@ -1,0 +1,35 @@
+From 11fe20568f0145c0f030e8226e4aea31bae860e9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 3 Jul 2019 12:53:45 +0200
+Subject: [PATCH 0470/1010] evl/sched: generalize use of evl_schedq_is_empty()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 765fd4b746..143e0193cf 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -537,7 +537,7 @@ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)
+ 	struct list_head *head;
+ 	int idx;
+ 
+-	if (q->elems == 0)
++	if (evl_schedq_is_empty(q))
+ 		return NULL;
+ 
+ 	idx = evl_get_schedq_weight(q);
+@@ -569,7 +569,7 @@ struct evl_thread *evl_fifo_pick(struct evl_rq *rq)
+ 	struct list_head *head;
+ 	int idx;
+ 
+-	if (q->elems == 0)
++	if (evl_schedq_is_empty(q))
+ 		return NULL;
+ 
+ 	/*
+-- 
+2.30.2
+

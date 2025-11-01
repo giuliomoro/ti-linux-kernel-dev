@@ -1,0 +1,99 @@
+From e4d4c91e098132225916f3d565f089edebd04b43 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 23 Jul 2022 16:46:07 +0200
+Subject: [PATCH 0770/1010] evl/monitor: event: disable syscall restart on
+ interrupted wait
+
+When interrupted by a signal, a wait operation on a gated monitor
+should not be restarted automatically from kernel space, but reported
+to the user instead.
+
+Rationale: the mutex guarding the monitor was dropped prior to
+waiting, and must be re-acquired explicitly by an UNWAIT request when
+the interrupted status is detected from user-space. Consequently, we
+cannot retry a WAIT request without transitioning to user-space first.
+
+Add the T_NORST local information bit to the thread control block,
+which is set by the monitor wait operation, and tested by the syscall
+trampoline code for disabling automatic restart.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/thread.h |  1 +
+ kernel/evl/monitor.c      | 10 ++++++++--
+ kernel/evl/syscall.c      | 14 ++++++--------
+ 3 files changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
+index 9f23455be6..47bad95a89 100644
+--- a/include/uapi/evl/thread.h
++++ b/include/uapi/evl/thread.h
+@@ -62,6 +62,7 @@
+ #define T_SYSRST  0x00000001 /* Thread awaiting syscall restart after signal */
+ #define T_IGNOVR  0x00000002 /* Overrun detection temporarily disabled */
+ #define T_INFAULT 0x00000004 /* In fault handling */
++#define T_NORST   0x00000008 /* Disable syscall restart */
+ 
+ /*
+  * Must follow strictly the declaration order of the state flags
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 9b2aafb962..26486ead54 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -527,13 +527,19 @@ static int wait_monitor(struct file *filp,
+ 	 * be handled asap. So exit to user mode, allowing any pending
+ 	 * signal to be handled during the transition, then expect
+ 	 * userland to issue UNWAIT to recover (or exit, whichever
+-	 * comes first).
++	 * comes first). Consequently, disable syscall restart from
++	 * kernel upon interrupted wait, because the caller does not
++	 * hold the mutex until UNWAIT happens.
+ 	 */
+ 	ret = evl_wait_schedule(&event->wait_queue);
+ 	if (ret) {
+ 		untrack_event(event);
+-		if (ret == -EINTR)
++		if (ret == -EINTR) {
++			/* Disable syscall restart upon signal (only). */
++			if (signal_pending(current))
++				curr->local_info |= T_NORST;
+ 			goto put;
++		}
+ 		op_ret = ret;
+ 	}
+ 
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index 12b14ee3af..be5b92416f 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -164,13 +164,6 @@ static void prepare_for_signal(struct task_struct *p,
+ {
+ 	unsigned long flags;
+ 
+-	/*
+-	 * FIXME: no restart mode flag for setting -EINTR instead of
+-	 * -ERESTARTSYS should be obtained from curr->local_info on a
+-	 * per-invocation basis, not on a per-call one (since we have
+-	 * 3 generic calls only).
+-	 */
+-
+ 	/*
+ 	 * @curr == this_evl_rq()->curr over oob so no need to grab
+ 	 * @curr->lock (i.e. @curr cannot go away under out feet).
+@@ -187,7 +180,12 @@ static void prepare_for_signal(struct task_struct *p,
+ 	 */
+ 	if (curr->info & T_KICKED) {
+ 		if (signal_pending(p)) {
+-			syscall_set_return_value(current, regs, -ERESTARTSYS, 0);
++			int retval = -ERESTARTSYS;
++			if (curr->local_info & T_NORST) {
++				retval = -EINTR;
++				curr->local_info &= ~T_NORST;
++			}
++			syscall_set_return_value(current, regs, retval, 0);
+ 			curr->info &= ~T_BREAK;
+ 		}
+ 		curr->info &= ~T_KICKED;
+-- 
+2.30.2
+

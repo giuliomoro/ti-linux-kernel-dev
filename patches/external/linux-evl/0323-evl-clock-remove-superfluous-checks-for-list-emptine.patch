@@ -1,0 +1,33 @@
+From 266869ec67b50bf8cbce535bc20d8be3d1dba33b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 11 Feb 2019 09:36:44 +0100
+Subject: [PATCH 0323/1010] evl/clock: remove superfluous checks for list
+ emptiness
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/clock.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
+index 6fafa5d656..8c33a290c9 100644
+--- a/kernel/evenless/clock.c
++++ b/kernel/evenless/clock.c
+@@ -137,11 +137,9 @@ void inband_clock_was_set(void)
+ 
+ 	mutex_lock(&clocklist_lock);
+ 
+-	if (!list_empty(&clock_list)) {
+-		list_for_each_entry(clock, &clock_list, next) {
+-			if (clock->ops.adjust)
+-				clock->ops.adjust(clock);
+-		}
++	list_for_each_entry(clock, &clock_list, next) {
++		if (clock->ops.adjust)
++			clock->ops.adjust(clock);
+ 	}
+ 
+ 	mutex_unlock(&clocklist_lock);
+-- 
+2.30.2
+

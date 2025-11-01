@@ -1,0 +1,35 @@
+From d290a6b70d4c762cd1a53e19bc24a066c03f24c7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 25 Jun 2025 18:53:00 +0200
+Subject: [PATCH 0995/1010] evl/net: arp: resolve broadcast address via a
+ pseudo-entry
+
+Since the (limited) broadcast address is an IPv4 constant, we can
+build a pseudo-entry for it, just like for the loopback one.
+
+So, if evl_net_solicit() finds a device with an active oob port which
+supports broadcast, then passing this device along with the broadcast
+address to evl_net_get_arp_entry_or_pseudo() will build a valid
+ARP pseudo-entry for oob broadcasting, e.g. of UDP frames.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/arp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index a447a077a3..8efc0b084b 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -220,7 +220,7 @@ evl_net_get_arp_entry_or_pseudo(struct net_device *dev, __be32 addr,
+ 	 * have one already, and expected not to put back this
+ 	 * temporary entry.
+ 	 */
+-	if (unlikely(ipv4_is_loopback(addr))) {
++	if (unlikely(ipv4_is_loopback(addr) || ipv4_is_lbcast(addr))) {
+ 		earp = pseudo_earp;
+ 		earp->key.dev = dev;
+ 		earp->key.addr = addr;
+-- 
+2.30.2
+

@@ -1,0 +1,194 @@
+From af98091cc3beb0b9af8d3065b9669b474a96613f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 18 Oct 2022 11:05:31 +0200
+Subject: [PATCH 0787/1010] evl/mutex: sanitize dropping of owned mutexes at
+ thread exit
+
+We should never rely on fundles to determine which mutexes should be
+dropped by an exiting thread: this data is shared with userland,
+therefore it is unsafe by nature.
+
+Since all mutexes a thread owns is duly tracked by the core, trust the
+tracking list exclusively to figure out which mutexes need to be
+released, there is no rationale to revalidate this information via
+fundle probing.
+
+At this chance, use the common thread->lock to serialize access to
+this list, there is no point in throwing yet another lock dedicated to
+tracking, since we have to hold it anyway for the surrounding
+operations (locking/unlocking), or nobody racing with us (i.e. at
+thread exit). This also fixes an ABBA issue which existed between
+wchan->lock and thread->tracking_lock. Now we only need to hold
+wchan->lock then thread->lock nested, which is deadlock-safe.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h  |  4 ++--
+ include/evl/thread.h |  3 +--
+ kernel/evl/mutex.c   | 55 +++++++++++++++++---------------------------
+ kernel/evl/thread.c  |  9 ++++----
+ 4 files changed, 28 insertions(+), 43 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index 44b8c60ce6..7af657840a 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -32,7 +32,7 @@ struct evl_mutex {
+ 	u32 *ceiling_ref;
+ 	struct evl_wait_channel wchan;
+ 	struct list_head next_booster; /* thread->boosters */
+-	struct list_head next_tracker;   /* thread->trackers */
++	struct list_head next_owned;   /* thread->owned_mutexes */
+ };
+ 
+ void __evl_init_mutex(struct evl_mutex *mutex,
+@@ -82,7 +82,7 @@ int evl_reorder_mutex_wait(struct evl_thread *waiter,
+ void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 			struct evl_thread *waiter);
+ 
+-void evl_drop_tracking_mutexes(struct evl_thread *curr);
++void evl_drop_current_ownership(void);
+ 
+ struct evl_kmutex {
+ 	struct evl_mutex mutex;
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 3b86eb2c86..0bf36a6d24 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -145,8 +145,7 @@ struct evl_thread {
+ 
+ 	/* Misc stuff. */
+ 
+-	struct list_head trackers; /* Mutexes tracking @thread */
+-	hard_spinlock_t tracking_lock;
++	struct list_head owned_mutexes; /* Mutex(es) this thread currently owns */
+ 	struct evl_element element;
+ 	struct cpumask affinity;
+ 	struct completion exited;
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 4a5f7689a0..7e9fdc90ca 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -484,9 +484,9 @@ static void untrack_owner(struct evl_mutex *mutex)
+ 	assert_hard_lock(&mutex->wchan.lock);
+ 
+ 	if (owner) {
+-		raw_spin_lock(&owner->tracking_lock);
+-		list_del(&mutex->next_tracker);
+-		raw_spin_unlock(&owner->tracking_lock);
++		raw_spin_lock(&owner->lock);
++		list_del(&mutex->next_owned);
++		raw_spin_unlock(&owner->lock);
+ 		evl_put_element(&owner->element);
+ 		mutex->wchan.owner = NULL;
+ 	}
+@@ -497,21 +497,19 @@ static void track_owner(struct evl_mutex *mutex,
+ 			struct evl_thread *owner)
+ {
+ 	struct evl_thread *prev = mutex->wchan.owner;
+-	unsigned long flags;
+ 
+ 	assert_hard_lock(&mutex->wchan.lock);
+ 
+ 	if (EVL_WARN_ON_ONCE(CORE, prev == owner))
+ 		return;
+ 
+-	raw_spin_lock_irqsave(&owner->tracking_lock, flags);
++	raw_spin_lock(&owner->lock);
+ 	if (prev) {
+-		list_del(&mutex->next_tracker);
+-		smp_wmb();
++		list_del(&mutex->next_owned);
+ 		evl_put_element(&prev->element);
+ 	}
+-	list_add(&mutex->next_tracker, &owner->trackers);
+-	raw_spin_unlock_irqrestore(&owner->tracking_lock, flags);
++	list_add(&mutex->next_owned, &owner->owned_mutexes);
++	raw_spin_unlock(&owner->lock);
+ 	mutex->wchan.owner = owner;
+ }
+ 
+@@ -1339,38 +1337,27 @@ void evl_unlock_mutex(struct evl_mutex *mutex)
+ }
+ EXPORT_SYMBOL_GPL(evl_unlock_mutex);
+ 
+-void evl_drop_tracking_mutexes(struct evl_thread *curr)
++/*
++ * Release all mutexes the current (exiting) thread owns.
++ */
++void evl_drop_current_ownership(void)
+ {
++	struct evl_thread *curr = evl_current();
+ 	struct evl_mutex *mutex;
+ 	unsigned long flags;
+-	fundle_t h;
+ 
+-	/* FIXME: ABBA, tracking_lock vs wchan. */
+-
+-	raw_spin_lock_irqsave(&curr->tracking_lock, flags);
++	raw_spin_lock_irqsave(&curr->lock, flags);
+ 
+-	/* Release all mutexes tracking @curr. */
+-	while (!list_empty(&curr->trackers)) {
+-		/*
+-		 * Either __evl_unlock_mutex() or untrack_owner() will
+-		 * unlink @mutex from curr->trackers.
+-		 */
+-		mutex = list_first_entry(&curr->trackers,
+-					struct evl_mutex, next_tracker);
+-		raw_spin_unlock_irqrestore(&curr->tracking_lock, flags);
+-		h = evl_get_index(atomic_read(mutex->fastlock));
+-		if (h == fundle_of(curr)) {
+-			__evl_unlock_mutex(mutex);
+-		} else {
+-			raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+-			if (mutex->wchan.owner == curr) /* FIXME: infinite loop, not unlinked otherwise?? */
+-				untrack_owner(mutex);
+-			raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+-		}
+-		raw_spin_lock_irqsave(&curr->tracking_lock, flags);
++	while (!list_empty(&curr->owned_mutexes)) {
++		mutex = list_first_entry(&curr->owned_mutexes,
++					struct evl_mutex, next_owned);
++		raw_spin_unlock_irqrestore(&curr->lock, flags);
++		/* This removes @mutex from curr->owned_mutexes. */
++		__evl_unlock_mutex(mutex);
++		raw_spin_lock_irqsave(&curr->lock, flags);
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&curr->tracking_lock, flags);
++	raw_spin_unlock_irqrestore(&curr->lock, flags);
+ }
+ 
+ static inline struct evl_mutex *
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index ce91128369..f83deca6fd 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -224,8 +224,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 
+ 	INIT_LIST_HEAD(&thread->next);
+ 	INIT_LIST_HEAD(&thread->boosters);
+-	INIT_LIST_HEAD(&thread->trackers);
+-	raw_spin_lock_init(&thread->tracking_lock);
++	INIT_LIST_HEAD(&thread->owned_mutexes);
+ 	raw_spin_lock_init(&thread->lock);
+ 	init_completion(&thread->exited);
+ 	INIT_LIST_HEAD(&thread->ptsync_next);
+@@ -302,10 +301,10 @@ static void do_cleanup_current(struct evl_thread *curr)
+ 		evl_flush_observable(curr->observable);
+ 
+ 	/*
+-	 * Drop trackers first since this may alter the rq state for
+-	 * current.
++	 * Drop all mutexes first since this may alter the rq state
++	 * for current.
+ 	 */
+-	evl_drop_tracking_mutexes(curr);
++	evl_drop_current_ownership();
+ 
+ 	evl_unindex_factory_element(&curr->element);
+ 
+-- 
+2.30.2
+

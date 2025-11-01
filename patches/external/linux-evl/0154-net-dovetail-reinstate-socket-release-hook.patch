@@ -1,0 +1,56 @@
+From e38cad7659e5e7e1aafb37b32e172c59e17a4fd5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 2 Feb 2024 16:47:44 +0100
+Subject: [PATCH 0154/1010] net: dovetail: reinstate socket release hook
+
+Now that we won't trigger any use-after-free by spuriously
+dereferencing the potentially stale sock->sk struct anymore, we can
+add back a release hook to be called when a socket is closed.
+
+This is semantically distinct from sock_oob_destruct(), see the
+related commit log.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/socket.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/net/socket.c b/net/socket.c
+index 131fbd8eda..54fc990a04 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -156,6 +156,10 @@ int __weak sock_oob_attach(struct socket *sock)
+ 	return 0;
+ }
+ 
++void __weak sock_oob_release(struct socket *sock)
++{
++}
++
+ void __weak sock_oob_destroy(struct sock *sk)
+ {
+ }
+@@ -220,6 +224,10 @@ static inline int sock_oob_attach(struct socket *sock)
+ 	return 0;
+ }
+ 
++static inline void sock_oob_release(struct socket *sock)
++{
++}
++
+ static inline int sock_oob_bind(struct socket *sock,
+ 				struct sockaddr *addr, int len)
+ {
+@@ -767,6 +775,9 @@ EXPORT_SYMBOL(sock_alloc);
+ 
+ static void __sock_release(struct socket *sock, struct inode *inode)
+ {
++	if (sock_oob_capable(sock))
++		sock_oob_release(sock);
++
+ 	if (sock->ops) {
+ 		struct module *owner = sock->ops->owner;
+ 
+-- 
+2.30.2
+

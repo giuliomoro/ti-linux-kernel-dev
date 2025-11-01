@@ -1,0 +1,35 @@
+From c550e63c27ac17f3cdfa833c31edce9f2920cde9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Nov 2020 11:13:12 +0100
+Subject: [PATCH 0691/1010] evl/thread: non-EVL tasks might receive trap
+ notifications
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index d44d2476c7..1f52697888 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1523,7 +1523,16 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ 	if (in_nmi())
+ 		return;
+ 
++	/*
++	 * We might be running oob over a non-dovetailed task context
++	 * (e.g. taking a trap on top of evl_schedule() ->
++	 * run_oob_call()). In this case, there is nothing we
++	 * can/should do, just bail out.
++	 */
+ 	curr = evl_current();
++	if (curr == NULL)
++		return;
++
+ 	if (curr->local_info & T_INFAULT) {
+ 		note_trap(curr, trapnr, regs, "recursive fault");
+ 		return;
+-- 
+2.30.2
+

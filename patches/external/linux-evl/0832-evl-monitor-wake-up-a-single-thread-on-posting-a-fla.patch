@@ -1,0 +1,37 @@
+From 46a96c1e4954ae33d68d4181a096e09fd575f4aa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 27 Nov 2022 17:51:13 +0100
+Subject: [PATCH 0832/1010] evl/monitor: wake up a single thread on posting a
+ flag
+
+Posting a flag should wake up the thread leading the wait queue, not
+all waiting threads. The latter would not make sense because the first
+thread to reach test_event_mask() would fetch and clear the flag value
+atomically, causing subsequent ones to go sleeping again anyway.
+
+Since threads wait by decreasing priority order, there is no point in
+waking up all waiters upon a post action either. Fix the thundering
+herd effect by calling evl_wake_up_head() instead of
+evl_flush_wait_lock() on event receipt.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 057a9c662d..c1abc20296 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -418,7 +418,7 @@ static int signal_monitor_ungated(struct evl_monitor *event, s32 sigval)
+ 		raw_spin_lock_irqsave(&event->wait_queue.wchan.lock, flags);
+ 		val = set_event_mask(state, (int)sigval);
+ 		if (val)
+-			evl_flush_wait_locked(&event->wait_queue, 0);
++			evl_wake_up_head(&event->wait_queue);
+ 		else
+ 			pollable = false;
+ 		raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
+-- 
+2.30.2
+

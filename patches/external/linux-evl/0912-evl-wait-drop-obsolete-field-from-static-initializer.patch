@@ -1,0 +1,26 @@
+From 4fba553b70483b3735ef4650394733e3e33268ee Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Sep 2024 11:21:05 +0200
+Subject: [PATCH 0912/1010] evl/wait: drop obsolete field from static
+ initializer
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index adb3e6d185..fd363331c2 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -38,7 +38,6 @@ struct evl_wait_queue {
+ 		.clock = &evl_mono_clock,				\
+ 		.wchan = {						\
+ 			.lock = __HARD_SPIN_LOCK_INITIALIZER((__name).wchan.lock), \
+-			.pi_serial = 0,					\
+ 			.owner = NULL,					\
+ 			.requeue_wait = evl_requeue_wait,		\
+ 			.wait_list = LIST_HEAD_INIT((__name).wchan.wait_list), \
+-- 
+2.30.2
+

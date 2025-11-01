@@ -1,0 +1,114 @@
+From fba20c68332f120949d307e9e5a589146f0ae9d1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 7 May 2025 09:20:26 +0200
+Subject: [PATCH 0214/1010] net: dovetail: plan for oob timestamping of skbuff
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/dovetail/skbuff.h |  7 +++++++
+ include/linux/skbuff.h    | 35 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 42 insertions(+)
+ create mode 100644 include/dovetail/skbuff.h
+
+diff --git a/include/dovetail/skbuff.h b/include/dovetail/skbuff.h
+new file mode 100644
+index 0000000000..0d653ec2ef
+--- /dev/null
++++ b/include/dovetail/skbuff.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _DOVETAIL_SKBUFF_H
++#define _DOVETAIL_SKBUFF_H
++
++struct skb_shared_oob { };
++
++#endif /* !_DOVETAIL_SKBUFF_H */
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 4173d3dbf0..a789e8802d 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -39,6 +39,7 @@
+ #include <linux/llist.h>
+ #include <net/flow.h>
+ #include <net/page_pool.h>
++#include <dovetail/skbuff.h>
+ #if IS_ENABLED(CONFIG_NF_CONNTRACK)
+ #include <linux/netfilter/nf_conntrack_common.h>
+ #endif
+@@ -529,6 +530,9 @@ enum {
+ 	/* data storage is managed by a companion core operating from
+ 	 * the oob stage. */
+ 	SKBFL_OOB_MANAGED = BIT(5),
++
++	/* a companion core is timestamping this buffer. */
++	SKBFL_OOB_TIMESTAMPED = BIT(6),
+ };
+ 
+ #define SKBFL_ZEROCOPY_FRAG	(SKBFL_ZEROCOPY_ENABLE | SKBFL_SHARED_FRAG)
+@@ -592,6 +596,7 @@ struct skb_shared_info {
+ 	unsigned short	gso_segs;
+ 	struct sk_buff	*frag_list;
+ 	struct skb_shared_hwtstamps hwtstamps;
++	struct		skb_shared_oob oob_shinfo;
+ 	unsigned int	gso_type;
+ 	u32		tskey;
+ 
+@@ -5173,6 +5178,21 @@ static inline void skb_mark_oob(struct sk_buff *skb)
+ 	skb->oob = 1;
+ }
+ 
++/**
++ * skb_is_oob_timestamped - Whether the buffer is timestamped by a
++ * companion core, in which case the timestamps should be stored in
++ * skb_shinfo(skb)->oob_shinfo by a companion core.
++ */
++static inline bool skb_is_oob_timestamped(const struct sk_buff *skb)
++{
++	return skb_shinfo(skb)->flags & SKBFL_OOB_TIMESTAMPED;
++}
++
++static inline void skb_mark_oob_timestamped(struct sk_buff *skb)
++{
++	skb_shinfo(skb)->flags |= SKBFL_OOB_TIMESTAMPED;
++}
++
+ /**
+  * skb_is_oob_managed - Whether the skb data is managed by a companion
+  * core.
+@@ -5187,6 +5207,11 @@ static inline void skb_mark_oob_managed(struct sk_buff *skb)
+ 	skb_shinfo(skb)->flags |= SKBFL_OOB_MANAGED;
+ }
+ 
++static inline struct skb_shared_oob *skb_shinfo_oob(struct sk_buff *skb)
++{
++	return &skb_shinfo(skb)->oob_shinfo;
++}
++
+ static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
+ {
+ 	if (!skb->head || !skb_is_oob_managed(skb) || !skb->pp_recycle)
+@@ -5248,11 +5273,21 @@ static inline bool __skb_oob_free_head(struct sk_buff *skb)
+ 	return false;
+ }
+ 
++static inline bool skb_is_oob_timestamped(const struct sk_buff *skb)
++{
++	return false;
++}
++
+ static inline bool skb_is_oob_managed(const struct sk_buff *skb)
+ {
+ 	return false;
+ }
+ 
++static inline struct skb_shared_oob *skb_shinfo_oob(struct sk_buff *skb)
++{
++	return NULL;
++}
++
+ static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
+ {
+ 	return DMA_MAPPING_ERROR;
+-- 
+2.30.2
+

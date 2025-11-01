@@ -1,0 +1,128 @@
+From ca4387a7f8a6b80cfac241c89db962db9055a08a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 5 Oct 2023 18:07:18 +0200
+Subject: [PATCH 0855/1010] evl/net: skb: fix inconsistent locking of recycling
+ queue
+
+Interrupts on/off mismatch when locking the recycling queue.  At this
+chance annotate some routines wrt the legit call context.
+
+[   39.474194] ================================
+[   39.474195] WARNING: inconsistent lock state
+[   39.474197] 6.1.54+ #66 Not tainted
+[   39.474200] --------------------------------
+[   39.474201] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+[   39.474203] eth0.rx/370 [HC1[0]:SC0[0]:HE0:SE1] takes:
+[   39.474207] ffffffff8276b8d8 (recycling_lock){?.+.}-{0:0}, at: free_skb_inband+0x5/0xa0
+[   39.474222] {HARDIRQ-ON-W} state was registered at:
+[   39.474223]   __lock_acquire+0x363/0x9a0
+[   39.474229]   lock_acquire+0xbe/0x2a0
+[   39.474233]   free_skb_inband+0x2a/0xa0
+[   39.474236]   evl_net_free_skb+0x11/0x90
+[   39.474239]   evl_net_do_rx+0x1b7/0x280
+[   39.474242]   kthread_trampoline+0x1c7/0x2d0
+[   39.474246]   kthread+0xf5/0x120
+[   39.474251]   ret_from_fork+0x22/0x30
+[   39.474255] irq event stamp: 24
+[   39.474256] hardirqs last  enabled at (23): [<ffffffff81b06125>] _raw_spin_unlock_irqrestore+0x65/0x80
+[   39.474262] hardirqs last disabled at (24): [<ffffffff81afb971>] __schedule+0x3a1/0x770
+[   39.474266] softirqs last  enabled at (0): [<ffffffff810c1ad6>] copy_process+0x796/0x18c0
+[   39.474271] softirqs last disabled at (0): [<0000000000000000>] 0x0
+[   39.474274]
+[   39.474274] other info that might help us debug this:
+[   39.474275]  Possible unsafe locking scenario:
+[   39.474275]
+[   39.474276]        CPU0
+[   39.474276]        ----
+[   39.474277]   lock(recycling_lock);
+[   39.474278]   <Interrupt>
+[   39.474279]     lock(recycling_lock);
+[   39.474280]
+[   39.474280]  *** DEADLOCK ***
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/qdisc/core.c | 10 +++++-----
+ kernel/evl/net/skb.c        |  8 +++++---
+ 2 files changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
+index 16b3db48e8..e10f3b8abf 100644
+--- a/kernel/evl/net/qdisc/core.c
++++ b/kernel/evl/net/qdisc/core.c
+@@ -15,7 +15,7 @@ static LIST_HEAD(all_net_qdisc);
+ 
+ static DEFINE_MUTEX(qdisc_list_lock);
+ 
+-void evl_net_register_qdisc(struct evl_net_qdisc_ops *ops)
++void evl_net_register_qdisc(struct evl_net_qdisc_ops *ops) /* in-band */
+ {
+ 	mutex_lock(&qdisc_list_lock);
+ 	list_add(&ops->next, &all_net_qdisc);
+@@ -23,7 +23,7 @@ void evl_net_register_qdisc(struct evl_net_qdisc_ops *ops)
+ }
+ EXPORT_SYMBOL_GPL(evl_net_register_qdisc);
+ 
+-void evl_net_unregister_qdisc(struct evl_net_qdisc_ops *ops)
++void evl_net_unregister_qdisc(struct evl_net_qdisc_ops *ops) /* in-band */
+ {
+ 	mutex_lock(&qdisc_list_lock);
+ 	list_del(&ops->next);
+@@ -31,7 +31,7 @@ void evl_net_unregister_qdisc(struct evl_net_qdisc_ops *ops)
+ }
+ EXPORT_SYMBOL_GPL(evl_net_unregister_qdisc);
+ 
+-struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops)
++struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops) /* in-band */
+ {
+ 	struct evl_net_qdisc *qdisc;
+ 	int ret;
+@@ -53,7 +53,7 @@ struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops)
+ }
+ EXPORT_SYMBOL_GPL(evl_net_alloc_qdisc);
+ 
+-void evl_net_free_qdisc(struct evl_net_qdisc *qdisc)
++void evl_net_free_qdisc(struct evl_net_qdisc *qdisc) /* in-band */
+ {
+ 	evl_net_destroy_skb_queue(&qdisc->inband_q);
+ 	qdisc->oob_ops->destroy(qdisc);
+@@ -75,7 +75,7 @@ EXPORT_SYMBOL_GPL(evl_net_free_qdisc);
+  *
+  *	@dev the device to pass the packet to.
+  */
+-int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob or in-band */
++int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob/in-band */
+ {
+ 	struct evl_net_qdisc *qdisc = dev->oob_context.dev_state.estate->qdisc;
+ 
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 3f5456b1e0..391c0dd194 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -167,10 +167,12 @@ static inline void maybe_kick_recycler(void)
+ 
+ static void free_skb_inband(struct sk_buff *skb)
+ {
+-	raw_spin_lock(&recycling_lock);
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&recycling_lock, flags);
+ 	list_add(&skb->list, &recycling_queue);
+ 	recycling_count++;
+-	raw_spin_unlock(&recycling_lock);
++	raw_spin_unlock_irqrestore(&recycling_lock, flags);
+ }
+ 
+ static void free_skb_to_dev(struct sk_buff *skb)
+@@ -296,7 +298,7 @@ struct sk_buff *evl_net_clone_skb(struct sk_buff *skb)
+  *
+  *	@skb the packet to release. Not linked to any upstream queue.
+  */
+-void evl_net_free_skb(struct sk_buff *skb)
++void evl_net_free_skb(struct sk_buff *skb) /* in-band/oob */
+ {
+ 	EVL_WARN_ON(NET, hard_irqs_disabled());
+ 
+-- 
+2.30.2
+

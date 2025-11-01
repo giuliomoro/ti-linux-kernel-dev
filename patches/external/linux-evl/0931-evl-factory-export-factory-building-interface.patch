@@ -1,0 +1,216 @@
+From 0b5c94cad00120dc34f2d0ef4c40f74fd41c3e93 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 31 Jan 2025 10:16:08 +0100
+Subject: [PATCH 0931/1010] evl/factory: export factory building interface
+
+So that drivers implementing EVL-based extensions/features can provide
+their own set of factories.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h |  8 +++----
+ kernel/evl/clock.c    |  2 +-
+ kernel/evl/factory.c  | 50 +++++++++++++++++++++++++++++++------------
+ kernel/evl/thread.c   |  6 +++---
+ 4 files changed, 44 insertions(+), 22 deletions(-)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 14ace15100..dbecef12b7 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -188,9 +188,9 @@ int evl_open_element(struct inode *inode,
+ int evl_release_element(struct inode *inode,
+ 			struct file *filp);
+ 
+-int evl_create_core_element_device(struct evl_element *e,
+-				struct evl_factory *fac,
+-				const char *name);
++int evl_create_element_device(struct evl_element *e,
++			struct evl_factory *fac,
++			const char *name);
+ 
+ void evl_remove_element_device(struct evl_element *e);
+ 
+@@ -210,7 +210,7 @@ static inline void evl_unindex_factory_element(struct evl_element *e)
+ 	evl_unindex_element(&e->factory->index, e);
+ }
+ 
+-int evl_create_factory(struct evl_factory *fac, dev_t rdev);
++int evl_create_factory(struct evl_factory *fac);
+ 
+ void evl_delete_factory(struct evl_factory *fac);
+ 
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 3e8dd473f6..7cf4bc3042 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -168,7 +168,7 @@ static int init_clock(struct evl_clock *clock, struct evl_clock *master)
+ 	 * usable. Make sure all inits have been completed before this
+ 	 * point.
+ 	 */
+-	ret = evl_create_core_element_device(&clock->element,
++	ret = evl_create_element_device(&clock->element,
+ 					&evl_clock_factory,
+ 					clock->name);
+ 	if (ret) {
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 1a102b8897..1209864c45 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -189,6 +189,7 @@ int evl_open_element(struct inode *inode, struct file *filp)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(evl_open_element);
+ 
+ static void __do_put_element(struct evl_element *e)
+ {
+@@ -296,6 +297,7 @@ int evl_release_element(struct inode *inode, struct file *filp)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(evl_release_element);
+ 
+ static void release_sys_device(struct device *dev)
+ {
+@@ -497,9 +499,9 @@ static int create_element_device(struct evl_element *e,
+ 	return ret;
+ }
+ 
+-int evl_create_core_element_device(struct evl_element *e,
+-				struct evl_factory *fac,
+-				const char *name)
++int evl_create_element_device(struct evl_element *e,
++			struct evl_factory *fac,
++			const char *name)
+ {
+ 	struct filename *devname;
+ 
+@@ -514,6 +516,7 @@ int evl_create_core_element_device(struct evl_element *e,
+ 
+ 	return create_element_device(e, fac);
+ }
++EXPORT_SYMBOL_GPL(evl_create_element_device);
+ 
+ void evl_remove_element_device(struct evl_element *e)
+ {
+@@ -787,7 +790,7 @@ static void delete_element_class(struct evl_factory *fac)
+ 	bitmap_free(fac->minor_map);
+ }
+ 
+-int evl_create_factory(struct evl_factory *fac, dev_t rdev)
++static int create_factory(struct evl_factory *fac, dev_t rdev)
+ {
+ 	const char *idevname = "clone"; /* Initial device in factory. */
+ 	struct device *dev = NULL;
+@@ -834,9 +837,8 @@ int evl_create_factory(struct evl_factory *fac, dev_t rdev)
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(evl_create_factory);
+ 
+-void evl_delete_factory(struct evl_factory *fac)
++static void delete_factory(struct evl_factory *fac)
+ {
+ 	struct device *dev = fac->dev;
+ 
+@@ -848,7 +850,6 @@ void evl_delete_factory(struct evl_factory *fac)
+ 	if (!(fac->flags & EVL_FACTORY_SINGLE))
+ 		delete_element_class(fac);
+ }
+-EXPORT_SYMBOL_GPL(evl_delete_factory);
+ 
+ bool evl_may_access_factory(struct evl_factory *fac)
+ {
+@@ -897,13 +898,12 @@ static int factory_flusher(void *arg)
+ 	return 0;
+ }
+ 
+-static int __init
+-create_core_factories(struct evl_factory **factories, int nr)
++static int create_core_factories(struct evl_factory **factories, int nr)
+ {
+ 	int ret, n;
+ 
+ 	for (n = 0; n < nr; n++) {
+-		ret = evl_create_factory(factories[n],
++		ret = create_factory(factories[n],
+ 				MKDEV(MAJOR(factory_rdev), n));
+ 		if (ret)
+ 			goto fail;
+@@ -912,20 +912,42 @@ create_core_factories(struct evl_factory **factories, int nr)
+ 	return 0;
+ fail:
+ 	while (n-- > 0)
+-		evl_delete_factory(factories[n]);
++		delete_factory(factories[n]);
+ 
+ 	return ret;
+ }
+ 
+-static void __init
+-delete_core_factories(struct evl_factory **factories, int nr)
++static void delete_core_factories(struct evl_factory **factories, int nr)
+ {
+ 	int n;
+ 
+ 	for (n = 0; n < nr; n++)
+-		evl_delete_factory(factories[n]);
++		delete_factory(factories[n]);
+ }
+ 
++int evl_create_factory(struct evl_factory *fac)
++{
++	int ret;
++
++	ret = alloc_chrdev_region(&fac->sub_rdev, 0, 1, fac->name);
++	if (ret)
++		return ret;;
++
++	ret = create_factory(fac, MKDEV(MAJOR(fac->sub_rdev), 0));
++	if (ret)
++		unregister_chrdev_region(fac->sub_rdev, 1);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(evl_create_factory);
++
++void evl_delete_factory(struct evl_factory *fac)
++{
++	unregister_chrdev_region(fac->sub_rdev, 1);
++	delete_factory(fac);
++}
++EXPORT_SYMBOL_GPL(evl_delete_factory);
++
+ int __init evl_early_init_factories(void)
+ {
+ 	struct task_struct *p;
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 0191394bc8..7d582d65cf 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -467,7 +467,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)
+ 	if (ret)
+ 		goto fail_element;
+ 
+-	ret = evl_create_core_element_device(&thread->element,
++	ret = evl_create_element_device(&thread->element,
+ 					&evl_thread_factory,
+ 					thread->name);
+ 	if (ret)
+@@ -2510,10 +2510,10 @@ thread_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		}
+ 		/*
+ 		 * Element name was already set from user input by
+-		 * evl_alloc_observable(). evl_create_core_element_device()
++		 * evl_alloc_observable(). evl_create_element_device()
+ 		 * is told to skip name assignment (NULL name).
+ 		 */
+-		ret = evl_create_core_element_device(
++		ret = evl_create_element_device(
+ 			&observable->element,
+ 			&evl_observable_factory, NULL);
+ 		if (ret)
+-- 
+2.30.2
+

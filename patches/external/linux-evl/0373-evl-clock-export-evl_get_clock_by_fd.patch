@@ -1,0 +1,25 @@
+From 6a46f8d13a70d45a18168cc55d1c2f15d5400a02 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 11 Mar 2019 11:56:58 +0100
+Subject: [PATCH 0373/1010] evl/clock: export evl_get_clock_by_fd()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/clock.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 43967d470d..594dd137ef 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -419,6 +419,7 @@ struct evl_clock *evl_get_clock_by_fd(int efd)
+ 
+ 	return clock;
+ }
++EXPORT_SYMBOL_GPL(evl_get_clock_by_fd);
+ 
+ static long restart_clock_sleep(struct restart_block *param)
+ {
+-- 
+2.30.2
+

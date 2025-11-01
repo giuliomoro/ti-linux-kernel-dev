@@ -1,0 +1,66 @@
+From 13450e75ac35525eb7cdfb23a8418b23c922df47 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 4 Nov 2022 19:18:17 +0100
+Subject: [PATCH 0811/1010] evl/monitor: fix racy access to wchan in targeted
+ signaling
+
+We may not retrieve the wait channel a thread pends on then base a
+decision to signal it on that information, all locklessly: this is
+racy. We must pin the wait channel while we do this.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index b43340b5c2..66671a8bd6 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -58,10 +58,10 @@ struct evl_monitor *get_monitor_by_fd(int efd, struct evl_file **efilpp)
+ 
+ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ {
++	struct evl_wait_channel *wchan;
+ 	struct evl_monitor *event;
+ 	struct evl_file *efilp;
+ 	unsigned long flags;
+-	struct evl_rq *rq;
+ 	int ret = 0;
+ 
+ 	event = get_monitor_by_fd(monfd, &efilp);
+@@ -74,17 +74,25 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ 	}
+ 
+ 	/*
+-	 * Current ought to hold the gate lock before calling us; if
+-	 * not, we might race updating the state flags, possibly
+-	 * loosing events. Too bad.
++	 * Current must hold the gate lock before calling us; if not,
++	 * we might race updating state->flags, possibly loosing
++	 * events. Too bad.
+ 	 */
+-	if (target->wchan == &event->wait_queue.wchan) {
++	raw_spin_lock_irqsave(&target->lock, flags);
++
++	wchan = evl_get_thread_wchan(target);
++	if (wchan == &event->wait_queue.wchan) {
+ 		event->state->flags |= (EVL_MONITOR_TARGETED|
+ 					EVL_MONITOR_SIGNALED);
+-		rq = evl_get_thread_rq(target, flags);
++		raw_spin_lock(&target->rq->lock);
+ 		target->info |= T_SIGNAL;
+-		evl_put_thread_rq(target, rq, flags);
++		raw_spin_unlock(&target->rq->lock);
+ 	}
++
++	if (wchan)
++		evl_put_thread_wchan(wchan);
++
++	raw_spin_unlock_irqrestore(&target->lock, flags);
+ out:
+ 	evl_put_file(efilp);
+ 
+-- 
+2.30.2
+

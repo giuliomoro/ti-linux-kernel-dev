@@ -1,0 +1,26 @@
+From 2a9a501f4e9bf9a42157c240931fe9f89789408f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 25 Oct 2022 20:19:40 +0200
+Subject: [PATCH 0803/1010] evl/thread: use unambiguous symbol for no wchan
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 88f7194324..7e8a76e2d8 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2808,7 +2808,7 @@ static ssize_t wchan_show(struct device *dev,
+ 
+ 	raw_spin_lock_irqsave(&thread->lock, flags);
+ 	wchan = thread->wchan;
+-	ret = snprintf(buf, PAGE_SIZE, "%s\n", wchan ? wchan->name : "none");
++	ret = snprintf(buf, PAGE_SIZE, "%s\n", wchan ? wchan->name : "-");
+ 	raw_spin_unlock_irqrestore(&thread->lock, flags);
+ 
+ 	evl_put_element(&thread->element);
+-- 
+2.30.2
+

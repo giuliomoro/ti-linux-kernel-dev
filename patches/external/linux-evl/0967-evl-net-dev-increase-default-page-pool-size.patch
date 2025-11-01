@@ -1,0 +1,26 @@
+From 7076b7bb9d8943860967b8267b8e2c2a336ffdb7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 8 Jun 2025 11:41:33 +0200
+Subject: [PATCH 0967/1010] evl/net: dev: increase default page pool size
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index b199fba82f..bb1f8c764c 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -47,7 +47,7 @@
+  * per-device basis for conveying out-of-band traffic if not specified
+  * by an EVL_SOCKIOC_ACTIVATE request.
+  */
+-#define EVL_DEFAULT_NETDEV_POOLSZ  1024
++#define EVL_DEFAULT_NETDEV_POOLSZ  2048
+ /*
+  * The default fixed payload size available in I/O pages for conveying
+  * out-of-band traffic through the device if not specified by an
+-- 
+2.30.2
+

@@ -1,0 +1,91 @@
+From ceef238d28f1fc51ece97a7ad4dda2506d3327bd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 20 Jun 2020 19:23:58 +0200
+Subject: [PATCH 0679/1010] evl: pull asm syscall defs from evl/uaccess.h
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/uaccess.h | 1 +
+ kernel/evl/clock.c    | 1 -
+ kernel/evl/control.c  | 1 -
+ kernel/evl/monitor.c  | 1 -
+ kernel/evl/poll.c     | 1 -
+ kernel/evl/thread.c   | 2 +-
+ 6 files changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/uaccess.h b/include/evl/uaccess.h
+index 679bc5b808..349e6ec7f8 100644
+--- a/include/evl/uaccess.h
++++ b/include/evl/uaccess.h
+@@ -8,6 +8,7 @@
+ #define _EVL_UACCESS_H
+ 
+ #include <linux/uaccess.h>
++#include <asm/evl/syscall.h>
+ 
+ static inline unsigned long __must_check
+ raw_copy_from_user_ptr64(void *to, u64 from_ptr, unsigned long n)
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 0e64118faf..e00da3dfb5 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -33,7 +33,6 @@
+ #include <evl/file.h>
+ #include <evl/irq.h>
+ #include <evl/uaccess.h>
+-#include <asm/evl/syscall.h>
+ #include <uapi/evl/factory.h>
+ #include <uapi/evl/clock.h>
+ #include <trace/events/evl.h>
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index a59c1ec936..bdac208d72 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -15,7 +15,6 @@
+ #include <evl/sched.h>
+ #include <evl/control.h>
+ #include <evl/uaccess.h>
+-#include <asm/evl/syscall.h>
+ #include <asm/evl/fptest.h>
+ #include <uapi/evl/control.h>
+ 
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index d2ba6a88c2..6809bf9c07 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -20,7 +20,6 @@
+ #include <evl/syscall.h>
+ #include <evl/poll.h>
+ #include <evl/uaccess.h>
+-#include <asm/evl/syscall.h>
+ #include <uapi/evl/monitor.h>
+ #include <trace/events/evl.h>
+ 
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index 930e91afce..9bc2a72fe6 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -19,7 +19,6 @@
+ #include <evl/flag.h>
+ #include <evl/mutex.h>
+ #include <evl/uaccess.h>
+-#include <asm/evl/syscall.h>
+ 
+ struct poll_group {
+ 	struct rb_root item_index;  /* struct poll_item */
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index c35b03f6c7..b58295c51c 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -41,7 +41,7 @@
+ #include <evl/flag.h>
+ #include <evl/factory.h>
+ #include <evl/observable.h>
+-#include <asm/evl/syscall.h>
++#include <evl/uaccess.h>
+ #include <trace/events/evl.h>
+ 
+ #define EVL_THREAD_CLONE_FLAGS	\
+-- 
+2.30.2
+

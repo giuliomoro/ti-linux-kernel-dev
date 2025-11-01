@@ -1,0 +1,146 @@
+From 754f1b2595361e961a535063857b8533f3e0ff56 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 7 Feb 2021 12:07:57 +0100
+Subject: [PATCH 0732/1010] evl/sched: refine tracepoints
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/trace/events/evl.h | 36 ++++++++++++++++++++++++++++++++++++
+ kernel/evl/sched/core.c    | 20 +++++++++++++-------
+ 2 files changed, 49 insertions(+), 7 deletions(-)
+
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index f8054428e8..786bf18a7d 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -245,6 +245,24 @@ DEFINE_EVENT(evl_schedule_event, evl_reschedule_ipi,
+ 	TP_ARGS(rq)
+ );
+ 
++TRACE_EVENT(evl_pick_thread,
++	TP_PROTO(struct evl_thread *next),
++	TP_ARGS(next),
++
++	TP_STRUCT__entry(
++		__string(next_name, next->name)
++		__field(pid_t, next_pid)
++	),
++
++	TP_fast_assign(
++		__assign_str(next_name, next->name);
++		__entry->next_pid = evl_get_inband_pid(next);
++	),
++
++	TP_printk("{ next=%s[%d] }",
++		__get_str(next_name), __entry->next_pid)
++);
++
+ TRACE_EVENT(evl_switch_context,
+ 	TP_PROTO(struct evl_thread *prev, struct evl_thread *next),
+ 	TP_ARGS(prev, next),
+@@ -275,6 +293,24 @@ TRACE_EVENT(evl_switch_context,
+ 		  __get_str(next_name), __entry->next_pid, __entry->next_prio)
+ );
+ 
++TRACE_EVENT(evl_switch_tail,
++	TP_PROTO(struct evl_thread *curr),
++	TP_ARGS(curr),
++
++	TP_STRUCT__entry(
++		__string(curr_name, curr->name)
++		__field(pid_t, curr_pid)
++	),
++
++	TP_fast_assign(
++		__assign_str(curr_name, curr->name);
++		__entry->curr_pid = evl_get_inband_pid(curr);
++	),
++
++	TP_printk("{ current=%s[%d] }",
++		__get_str(curr_name), __entry->curr_pid)
++);
++
+ TRACE_EVENT(evl_init_thread,
+ 	TP_PROTO(struct evl_thread *thread,
+ 		 const struct evl_init_thread_attr *iattr,
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index c73e0fc60a..dcda37f09b 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -826,8 +826,9 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)
+ 	return next;
+ }
+ 
+-static inline void prepare_rq_switch(struct evl_rq *this_rq,
+-				struct evl_thread *next)
++static __always_inline
++void prepare_rq_switch(struct evl_rq *this_rq,
++		struct evl_thread *prev, struct evl_thread *next)
+ {
+ 	if (irq_pipeline_debug_locking())
+ 		spin_release(&this_rq->lock.rlock.dep_map,
+@@ -835,12 +836,17 @@ static inline void prepare_rq_switch(struct evl_rq *this_rq,
+ #ifdef CONFIG_DEBUG_SPINLOCK
+ 	this_rq->lock.rlock.owner = next->altsched.task;
+ #endif
++
++	trace_evl_switch_context(prev, next);
+ }
+ 
+-static inline void finish_rq_switch(bool inband_tail, unsigned long flags)
++static __always_inline
++void finish_rq_switch(bool inband_tail, unsigned long flags)
+ {
+ 	struct evl_rq *this_rq = this_evl_rq();
+ 
++	trace_evl_switch_tail(this_rq->curr);
++
+ 	EVL_WARN_ON(CORE, this_rq->curr->state & EVL_THREAD_BLOCK_BITS);
+ 
+ 	/*
+@@ -860,7 +866,7 @@ static inline void finish_rq_switch(bool inband_tail, unsigned long flags)
+ 	}
+ }
+ 
+-static inline void finish_rq_switch_from_inband(void)
++static __always_inline void finish_rq_switch_from_inband(void)
+ {
+ 	struct evl_rq *this_rq = this_evl_rq();
+ 
+@@ -874,7 +880,7 @@ static inline void finish_rq_switch_from_inband(void)
+ }
+ 
+ /* hard irqs off. */
+-static inline bool test_resched(struct evl_rq *this_rq)
++static __always_inline bool test_resched(struct evl_rq *this_rq)
+ {
+ 	bool need_resched = evl_need_resched(this_rq);
+ 
+@@ -939,6 +945,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	}
+ 
+ 	next = pick_next_thread(this_rq);
++	trace_evl_pick_thread(next);
+ 	if (next == curr) {
+ 		if (unlikely(next->state & T_ROOT)) {
+ 			if (this_rq->local_flags & RQ_TPROXY)
+@@ -952,7 +959,6 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	}
+ 
+ 	prev = curr;
+-	trace_evl_switch_context(prev, next);
+ 	this_rq->curr = next;
+ 	leaving_inband = false;
+ 
+@@ -971,7 +977,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	evl_inc_counter(&next->stat.csw);
+ 	raw_spin_unlock(&prev->lock);
+ 
+-	prepare_rq_switch(this_rq, next);
++	prepare_rq_switch(this_rq, prev, next);
+ 	inband_tail = dovetail_context_switch(&prev->altsched,
+ 					&next->altsched, leaving_inband);
+ 	finish_rq_switch(inband_tail, flags);
+-- 
+2.30.2
+

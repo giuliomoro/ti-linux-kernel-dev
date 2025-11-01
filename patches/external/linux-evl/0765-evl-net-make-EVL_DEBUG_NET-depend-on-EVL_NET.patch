@@ -1,0 +1,25 @@
+From bf005ee417511cfe78e8d89a93a4bbbc0c6d82d0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 13 Jul 2022 13:33:16 +0200
+Subject: [PATCH 0765/1010] evl/net: make EVL_DEBUG_NET depend on EVL_NET
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index be00a495fa..ccf23585bc 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -259,6 +259,7 @@ config EVL_DEBUG_WOLI
+ 
+ config EVL_DEBUG_NET
+ 	bool "Network stack debugging"
++	depends on EVL_NET
+ 	select DOVETAIL_DEBUG
+ 	help
+ 	  This option activates various assertions inside the EVL
+-- 
+2.30.2
+

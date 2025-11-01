@@ -1,0 +1,45 @@
+From 093a1559e318376d67eeda99102b3615a2b0b116 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 26 Oct 2024 19:24:21 +0200
+Subject: [PATCH 0168/1010] dovetail: net: introduce netdev_set_oob_capable()
+
+Starting from v6.12, the oob capability bit moves away from the
+ndev->priv_flags. Hide the details about its location for
+compatibility purpose across kernel releases when back/forward-porting
+oob-enabled drivers.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/netdevice.h | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 559edbc4e7..324fe05222 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4300,6 +4300,11 @@ void netif_device_attach(struct net_device *dev);
+ 
+ #ifdef CONFIG_NET_OOB
+ 
++static inline void netdev_set_oob_capable(struct net_device *dev)
++{
++	dev->priv_flags |= IFF_OOB_CAPABLE;
++}
++
+ static inline bool netdev_is_oob_capable(struct net_device *dev)
+ {
+ 	return !!(dev->priv_flags & IFF_OOB_CAPABLE);
+@@ -4373,6 +4378,10 @@ void process_inband_tx_backlog(struct softnet_data *sd);
+ 
+ #else  /* !CONFIG_NET_OOB */
+ 
++static inline void netdev_set_oob_capable(struct net_device *dev)
++{
++}
++
+ static inline bool netif_receive_oob(struct sk_buff *skb)
+ {
+ 	return false;
+-- 
+2.30.2
+

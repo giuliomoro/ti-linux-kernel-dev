@@ -1,0 +1,39 @@
+From d9aec55f88957fb4a52cd37ca1713518df382b39 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 10:10:38 +0100
+Subject: [PATCH 0188/1010] softirq: enable call to raise_softirq_irqoff() from
+ oob
+
+__raise_softirq_irqoff() was already oob-enabled, extend this
+capability to its direct caller raise_softirq_irqoff().
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/softirq.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 9ab5ca399a..aee492537e 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -721,9 +721,15 @@ inline void raise_softirq_irqoff(unsigned int nr)
+ 	 *
+ 	 * Otherwise we wake up ksoftirqd to make sure we
+ 	 * schedule the softirq soon.
++	 *
++	 * Dovetail: only set the softirq pending and trigger a
++	 * cpu-local work interrupt if running oob, the inband stage
++	 * will notice once execution resumes from the IRQ.
+ 	 */
+-	if (!in_interrupt() && should_wake_ksoftirqd())
+-		wakeup_softirqd();
++	if (running_oob())
++		irq_local_work_raise();
++	else if (!in_interrupt() && should_wake_ksoftirqd())
++			wakeup_softirqd();
+ }
+ 
+ void raise_softirq(unsigned int nr)
+-- 
+2.30.2
+

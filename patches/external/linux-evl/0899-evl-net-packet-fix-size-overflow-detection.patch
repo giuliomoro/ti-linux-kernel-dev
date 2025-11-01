@@ -1,0 +1,26 @@
+From 3e27da44b7650c344b547b9a3337a7b7f93d9fb5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 27 Dec 2023 09:09:50 +0100
+Subject: [PATCH 0899/1010] evl/net: packet: fix size overflow detection
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/packet/packet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index be1422e467..e314ede1a0 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -467,7 +467,7 @@ static ssize_t send_packet(struct evl_socket *esk,
+ 	skb->priority = esk->sk->sk_priority;
+ 
+ 	count = evl_copy_from_uio(iov, iovlen, skb->data, skb_tailroom(skb), &rem);
+-	if (rem || count > READ_ONCE(dev->mtu) + dev->hard_header_len + VLAN_HLEN)
++	if (rem || count + dev->hard_header_len + VLAN_HLEN > READ_ONCE(dev->mtu))
+ 		ret = -EMSGSIZE;
+ 	else if (!dev_validate_header(dev, skb->data, count))
+ 		ret = -EINVAL;
+-- 
+2.30.2
+

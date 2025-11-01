@@ -1,0 +1,95 @@
+From d0224756478560560bfb0af34fbefe2f37157ad7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 19 Sep 2021 10:37:49 +0200
+Subject: [PATCH 0748/1010] evl/poll: limit clear_wait() to the active
+ watchpoint range
+
+Several factors may cause the active watchpoint count to be lesser
+than the poll table size as a result of collecting events:
+
+- a stale file descriptor is encountered (-EBADF)
+- bad user memory is written to while copying back evl_poll_event (-EFAULT)
+- the user event set has fewer entries than the ready set (> 0)
+
+In all of these cases, we may end up watching fewer files than the
+total amount of items in the poll table, in which case poll_context.nr
+is larger than the actual number of active watchpoints.
+
+For this reason, clear_wait() cannot iterate over poll_context.nr
+items, but should rather consider the active watchpoints only. To this
+end, introduce poll_context.active which is set by collect_events()
+appropriately.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/thread.h |  1 +
+ kernel/evl/poll.c    | 13 ++++++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index ad198b1d20..bf663949cd 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -128,6 +128,7 @@ struct evl_thread {
+ 		struct evl_poll_watchpoint *table;
+ 		unsigned int generation;
+ 		int nr;
++		int active;
+ 	} poll_context;
+ 	atomic_t inband_disable_count;
+ 	struct irq_work inband_work;
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index b3255ac8f3..f5d8174b9b 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -430,6 +430,7 @@ static int collect_events(struct poll_group *group,
+ 		table = evl_alloc(sizeof(*wpt) * nr);
+ 		if (table == NULL) {
+ 			curr->poll_context.nr = 0;
++			curr->poll_context.active = 0;
+ 			curr->poll_context.table = NULL;
+ 			curr->poll_context.generation = 0;
+ 			return -ENOMEM;
+@@ -453,6 +454,9 @@ static int collect_events(struct poll_group *group,
+ collect:
+ 	evl_unlock_kmutex(&group->item_lock);
+ 
++	if (flag)
++		curr->poll_context.active = 0;
++
+ 	for (n = 0, wpt = table; n < nr; n++, wpt++) {
+ 		if (flag) {
+ 			wpt->flag = flag;
+@@ -465,6 +469,7 @@ static int collect_events(struct poll_group *group,
+ 			efilp = evl_watch_fd(wpt->fd, &wpt->node);
+ 			if (efilp == NULL)
+ 				goto stale;
++			curr->poll_context.active++;
+ 			filp = efilp->filp;
+ 			wpt->filp = filp;
+ 			if (filp->f_op->oob_poll)
+@@ -482,8 +487,10 @@ static int collect_events(struct poll_group *group,
+ 			ev.pollval = wpt->pollval;
+ 			ev.events = ready;
+ 			ret = raw_copy_to_user(u_set, &ev, sizeof(ev));
+-			if (ret)
+-				return -EFAULT;
++			if (ret) {
++				count = -EFAULT;
++				break;
++			}
+ 			u_set++;
+ 			if (++count > maxevents) {
+ 				count = maxevents;
+@@ -527,7 +534,7 @@ static inline void clear_wait(void)
+ 	 * here.
+ 	 */
+ 	for (n = 0, wpt = curr->poll_context.table;
+-	     n < curr->poll_context.nr; n++, wpt++) {
++	     n < curr->poll_context.active; n++, wpt++) {
+ 		evl_ignore_fd(&wpt->node);
+ 		/* Remove from driver's poll head(s). */
+ 		for_each_poll_connector(poco, wpt) {
+-- 
+2.30.2
+

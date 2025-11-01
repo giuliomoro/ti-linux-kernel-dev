@@ -1,0 +1,52 @@
+From 120f671569330d9f94a45fc5161e52cef38f2738 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 23 Sep 2024 17:46:28 +0200
+Subject: [PATCH 0914/1010] evl/net: add missing prototypes
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/arp.c    | 2 +-
+ kernel/evl/net/ipv4/ipv4.c   | 1 +
+ kernel/evl/net/ipv4/output.c | 1 +
+ 3 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index 8b60cc5e19..abfaf5715a 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -52,7 +52,7 @@ static const void *get_arp_key(const struct evl_cache_entry *entry)
+ 	return &e->key;
+ }
+ 
+-void free_arp_entry(struct evl_cache_entry *entry) /* in-band */
++static void free_arp_entry(struct evl_cache_entry *entry) /* in-band */
+ {
+ 	struct evl_net_arp_entry *e =
+ 		container_of(entry, struct evl_net_arp_entry, entry);
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 623dc32831..3f02f76055 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -14,6 +14,7 @@
+ #include <evl/memory.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/skb.h>
++#include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/fragment.h>
+ #include <evl/net/ipv4/route.h>
+ #include <evl/net/ipv4/arp.h>
+diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
+index bffa85de74..e3e9fdd168 100644
+--- a/kernel/evl/net/ipv4/output.c
++++ b/kernel/evl/net/ipv4/output.c
+@@ -15,6 +15,7 @@
+ #include <evl/net/skb.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/route.h>
++#include <evl/net/ipv4/output.h>
+ #include <evl/net/ipv4/arp.h>
+ 
+ static inline int select_ttl(struct inet_sock *inet, struct dst_entry *dst)
+-- 
+2.30.2
+

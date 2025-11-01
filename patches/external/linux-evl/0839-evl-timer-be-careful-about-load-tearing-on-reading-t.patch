@@ -1,0 +1,54 @@
+From c1caa89281f497fadb31ba2aac841219357dc706 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 3 Dec 2022 17:22:49 +0100
+Subject: [PATCH 0839/1010] evl/timer: be careful about load tearing on reading
+ the base
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/timer.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 5faba97628..c609676eae 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -25,11 +25,11 @@ lock_timer_base(struct evl_timer *timer, unsigned long *flags)
+ 	struct evl_timerbase *base;
+ 
+ 	for (;;) {
+-		base = timer->base;
++		base = READ_ONCE(timer->base);
+ 		raw_spin_lock_irqsave(&base->lock, *flags);
+ 		/*
+-		 * Careful about a bolting of the same timer happening
+-		 * concurrently from a different CPU.
++		 * Careful about evl_move_timer() running concurrently
++		 * on a different CPU.
+ 		 */
+ 		if (base == timer->base)
+ 			break;
+@@ -336,9 +336,9 @@ void evl_destroy_timer(struct evl_timer *timer)
+ 	evl_stop_timer(timer);
+ 	timer->status |= EVL_TIMER_KILLED;
+ #ifdef CONFIG_SMP
+-	timer->rq = NULL;
++	WRITE_ONCE(timer->rq, NULL);
+ #endif
+-	timer->base = NULL;
++	WRITE_ONCE(timer->base, NULL);
+ }
+ EXPORT_SYMBOL_GPL(evl_destroy_timer);
+ 
+@@ -428,7 +428,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
+ 		goto done;
+ 
+ 	EVL_WARN_ON_ONCE(CORE, (timer->status &
+-						(EVL_TIMER_DEQUEUED|EVL_TIMER_PERIODIC))
++			(EVL_TIMER_DEQUEUED|EVL_TIMER_PERIODIC))
+ 			!= EVL_TIMER_PERIODIC);
+ 	tq = &base->q;
+ 	evl_dequeue_timer(timer, tq);
+-- 
+2.30.2
+

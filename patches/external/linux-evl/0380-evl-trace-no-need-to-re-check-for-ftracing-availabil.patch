@@ -1,0 +1,28 @@
+From 255f650d97f237d8997f7c26186f55fa829f1c6e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 17 Mar 2019 15:44:33 +0100
+Subject: [PATCH 0380/1010] evl/trace: no need to re-check for ftracing
+ availability
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/trace.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
+index 9a47dafece..2bab7a2019 100644
+--- a/kernel/evl/trace.c
++++ b/kernel/evl/trace.c
+@@ -42,9 +42,6 @@ trace_oob_write(struct file *filp,
+ 	char buf[128];
+ 	int ret;
+ 
+-	if (!IS_ENABLED(CONFIG_FTRACE))
+-		return -EINVAL;
+-
+ 	if (count >= sizeof(buf))
+ 		count = sizeof(buf) - 1;
+ 
+-- 
+2.30.2
+

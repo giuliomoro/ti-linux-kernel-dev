@@ -1,0 +1,122 @@
+From 1601411a644cdc45a08406dbf114e0b7fbd035ff Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 24 Jun 2025 14:39:32 +0200
+Subject: [PATCH 0992/1010] evl/net: ethernet: fix buffer leak on transmit
+ error
+
+We need evl_net_ether_transmit() to drop all skbs starting from the
+heading one on error, since we have the information about the precise
+failing point right there in order to release any orphaned fragments,
+which the caller does not.
+
+Fix the single caller in the UDP implementation accordingly.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/ethernet/output.c | 45 +++++++++++++++++++-------------
+ kernel/evl/net/ipv4/udp.c        |  8 ++----
+ 2 files changed, 29 insertions(+), 24 deletions(-)
+
+diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
+index c05076691d..a34e1aeec8 100644
+--- a/kernel/evl/net/ethernet/output.c
++++ b/kernel/evl/net/ethernet/output.c
+@@ -6,7 +6,7 @@
+ 
+ #include <linux/errno.h>
+ #include <linux/netdevice.h>
+-#include <linux/skbuff.h>
++#include <evl/net/skb.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/device.h>
+ #include <evl/net/output.h>
+@@ -52,9 +52,11 @@ static int ether_transmit_one(struct net_device *dev, struct sk_buff *skb,
+ 
+ /**
+  *  evl_net_ether_transmit - set the l2 header of an ethernet packet
+- *  before passing it down to the hardware.
++ *  before passing it down to the hardware.  This routine can deal
++ *  with fragmented output.
+  *
+- *  This routine can deal with fragmented output.
++ *  CAUTION: unlike other calls in this family, on transmit error,
++ *  evl_net_ether_transmit() releases all the untransmitted buffers.
+  */
+ int evl_net_ether_transmit(struct net_device *dev, struct sk_buff *skb,
+ 			const void *hw_dst)
+@@ -62,24 +64,31 @@ int evl_net_ether_transmit(struct net_device *dev, struct sk_buff *skb,
+ 	struct sk_buff *fskb, *nskb;
+ 	int ret;
+ 
++	fskb = skb_shinfo(skb)->frag_list;
++	if (fskb)
++		skb_shinfo(skb)->frag_list = NULL;
++
+ 	ret = ether_transmit_one(dev, skb, hw_dst);
+-	if (ret)
++	if (ret) {
++		evl_net_wput_skb(skb);
+ 		return ret;
++	}
+ 
+-	fskb = skb_shinfo(skb)->frag_list;
+-	if (fskb) {
+-		do {
+-			nskb = fskb->next;
+-			fskb->next = NULL;
+-			ret = ether_transmit_one(dev, fskb, hw_dst);
+-			if (ret) {
+-				fskb->next = nskb;
+-				skb_shinfo(skb)->frag_list = fskb;
+-				return ret;
+-			}
+-			fskb = nskb;
+-		} while (fskb);
+-		skb_shinfo(skb)->frag_list = NULL;
++	while (fskb)  {
++		nskb = fskb->next;
++		fskb->next = NULL;
++		ret = ether_transmit_one(dev, fskb, hw_dst);
++		if (ret) {
++			fskb->next = nskb;
++			do {
++				nskb = fskb->next;
++				fskb->next = NULL;
++				evl_net_wput_skb(fskb);
++				fskb = nskb;
++			} while (fskb);
++			return ret;
++		}
++		fskb = nskb;
+ 	}
+ 
+ 	return 0;
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index 7e461e198c..aa0893513a 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -246,7 +246,6 @@ static int send_datagram(struct sk_buff *skb, struct net_device *dev,
+ {
+ 	size_t ulen = datalen + sizeof(struct udphdr);
+ 	struct udphdr *uh;
+-	int ret;
+ 
+ 	/*
+ 	 * Set up our transport header. evl_net_ipv4_build_datagram()
+@@ -264,11 +263,8 @@ static int send_datagram(struct sk_buff *skb, struct net_device *dev,
+ 
+ 	skb->ip_summed = CHECKSUM_NONE;
+ 
+-	ret = evl_net_ether_transmit(dev, skb, earp->ha);
+-	if (ret)
+-		evl_net_wput_skb(skb);
+-
+-	return ret;
++	/* On error, this call releases the untransmitted buffers. */
++	return evl_net_ether_transmit(dev, skb, earp->ha);
+ }
+ 
+ /* oob */
+-- 
+2.30.2
+

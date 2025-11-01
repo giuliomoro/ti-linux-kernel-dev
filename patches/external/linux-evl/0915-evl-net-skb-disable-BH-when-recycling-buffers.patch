@@ -1,0 +1,35 @@
+From 9758686260687eb504f9d3c4789e321c6d8e1ff3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 24 Sep 2024 10:48:26 +0200
+Subject: [PATCH 0915/1010] evl/net: skb: disable BH when recycling buffers
+
+We need to serialize against softirqs when running the NAPI buffer
+management code.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/skb.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 6304939932..525323f308 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -74,10 +74,14 @@ static void skb_recycler(struct evl_work *work)
+ 	recycling_count = 0;
+ 	raw_spin_unlock_irqrestore(&recycling_lock, flags);
+ 
++	local_bh_disable();
++
+ 	list_for_each_entry_safe(skb, next, &list, list) {
+ 		skb_list_del_init(skb);
+ 		finalize_skb_inband(skb);
+ 	}
++
++	local_bh_enable();
+ }
+ 
+ static EVL_DEFINE_WORK(recycler_work, skb_recycler);
+-- 
+2.30.2
+

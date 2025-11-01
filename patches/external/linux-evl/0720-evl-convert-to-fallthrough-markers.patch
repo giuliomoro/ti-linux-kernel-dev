@@ -1,0 +1,49 @@
+From ad933a0f43767a23e9bba8dd23cb61d7cb69db61 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 2 Jan 2021 17:20:50 +0100
+Subject: [PATCH 0720/1010] evl: convert to fallthrough markers
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 4 ++--
+ kernel/evl/sched/tp.c   | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 449af6fbf1..a2a1cc010a 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1227,7 +1227,7 @@ evl_find_sched_class(union evl_sched_param *param,
+ 	case SCHED_NORMAL:
+ 		if (prio)
+ 			return ERR_PTR(-EINVAL);
+-		/* fall-through */
++		fallthrough;
+ 	case SCHED_WEAK:
+ 		if (prio < EVL_WEAK_MIN_PRIO ||	prio > EVL_WEAK_MAX_PRIO)
+ 			return ERR_PTR(-EINVAL);
+@@ -1239,7 +1239,7 @@ evl_find_sched_class(union evl_sched_param *param,
+ 		tslice = u_timespec_to_ktime(attrs->sched_rr_quantum);
+ 		if (timeout_infinite(tslice) && tslice_r)
+ 			tslice = *tslice_r;
+-		/* fall-through */
++		fallthrough;
+ 	case SCHED_FIFO:
+ 		/*
+ 		 * This routine handles requests submitted from
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index a9a0d5a377..ccb8e1acfd 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -331,7 +331,7 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	case evl_tp_install:
+ 		if (pt->nr_windows > 0)
+ 			goto install_schedule;
+-		/* fall-through. */
++		fallthrough;
+ 	case evl_tp_uninstall:
+ 		gps = NULL;
+ 		goto switch_schedule;
+-- 
+2.30.2
+

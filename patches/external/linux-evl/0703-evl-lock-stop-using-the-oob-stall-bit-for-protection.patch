@@ -1,0 +1,358 @@
+From dd080ce5fe171293cf91bf9602dba2142b23513c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 25 Dec 2020 18:15:10 +0100
+Subject: [PATCH 0703/1010] evl/lock: stop using the oob stall bit for
+ protection
+
+We don't actually need to rely on the oob stall bit, provided hard
+irqs are off in the deemed interrupt-free sections, because the latter
+is sufficient as long as the code does not traverse a pipeline
+synchronization point (sync_current_irq_stage()) while holding a lock,
+which would be in and of itself a bug in the first place.
+
+Remove the stall/unstall operations from the evl_spinlock
+implementation, fixing the few locations which were still testing the
+oob stall bit.
+
+The oob stall bit is still set by Dovetail on entry to IRQ handlers,
+which is ok: we will neither use nor affect it anymore, only relying
+on hard disabled irqs.
+
+This temporary alignment of the evl_spinlock on the hard spinlock is a
+first step to revisit the lock types in the core, before the
+evl_spinlock is changed again to manage the preemption count.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/assert.h    |  5 ++---
+ include/evl/lock.h      | 15 +++++---------
+ include/evl/sched.h     |  8 ++++----
+ kernel/evl/clock.c      |  4 ++--
+ kernel/evl/factory.c    | 11 +++++++----
+ kernel/evl/sched/core.c | 44 +++++++++++++++++++++++++++--------------
+ kernel/evl/thread.c     |  2 +-
+ kernel/evl/timer.c      |  4 ++--
+ 8 files changed, 52 insertions(+), 41 deletions(-)
+
+diff --git a/include/evl/assert.h b/include/evl/assert.h
+index e4cd8a47c9..1cedad4051 100644
+--- a/include/evl/assert.h
++++ b/include/evl/assert.h
+@@ -37,11 +37,10 @@
+ #ifdef CONFIG_SMP
+ #define assert_hard_lock(__lock) EVL_WARN_ON_ONCE(CORE, \
+ 				!(raw_spin_is_locked(__lock) && hard_irqs_disabled()))
+-#define assert_evl_lock(__lock) EVL_WARN_ON_ONCE(CORE, \
+-				!(raw_spin_is_locked(&(__lock)->_lock) && oob_irqs_disabled()))
++#define assert_evl_lock(__lock) assert_hard_lock(&(__lock)->_lock)
+ #else
+ #define assert_hard_lock(__lock) EVL_WARN_ON_ONCE(CORE, !hard_irqs_disabled())
+-#define assert_evl_lock(__lock)  EVL_WARN_ON_ONCE(CORE, !oob_irqs_disabled())
++#define assert_evl_lock(__lock) assert_hard_lock(&(__lock)->_lock)
+ #endif
+ 
+ #define assert_thread_pinned(__thread)			\
+diff --git a/include/evl/lock.h b/include/evl/lock.h
+index 13623d5c60..4cf670d692 100644
+--- a/include/evl/lock.h
++++ b/include/evl/lock.h
+@@ -9,8 +9,7 @@
+ #include <linux/spinlock.h>
+ 
+ /*
+- * The spinlock API used in the EVL core, which preserves Dovetail's
+- * stall bit for the out-of-band stage.
++ * The spinlock API used in the EVL core.
+  */
+ 
+ typedef struct evl_spinlock {
+@@ -38,20 +37,17 @@ typedef struct evl_spinlock {
+ 
+ #define evl_spin_lock_irq(__lock)			\
+ 	do {						\
+-		oob_irq_disable();			\
+-		raw_spin_lock(&(__lock)->_lock);	\
++		raw_spin_lock_irq(&(__lock)->_lock);	\
+ 	} while (0)
+ 
+ #define evl_spin_unlock_irq(__lock)			\
+ 	do {						\
+-		raw_spin_unlock(&(__lock)->_lock);	\
+-		oob_irq_enable();			\
++		raw_spin_unlock_irq(&(__lock)->_lock);	\
+ 	} while (0)
+ 
+ #define evl_spin_lock_irqsave(__lock, __flags)		\
+ 	do {						\
+-		(__flags) = oob_irq_save();		\
+-		evl_spin_lock(__lock);			\
++		raw_spin_lock_irqsave(&(__lock)->_lock, __flags);	\
+ 	} while (0)
+ 
+ #define evl_spin_unlock(__lock)				\
+@@ -59,8 +55,7 @@ typedef struct evl_spinlock {
+ 
+ #define evl_spin_unlock_irqrestore(__lock, __flags)	\
+ 	do {						\
+-		raw_spin_unlock(&(__lock)->_lock);	\
+-		oob_irq_restore(__flags);		\
++		raw_spin_unlock_irqrestore(&(__lock)->_lock, __flags);	\
+ 	} while (0)
+ 
+ #endif /* !_EVL_LOCK_H */
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 6318a3eb14..942b3f6349 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -221,16 +221,16 @@ static inline void evl_set_resched(struct evl_rq *rq)
+ {
+ 	struct evl_rq *this_rq = this_evl_rq();
+ 
+-	assert_evl_lock(&rq->lock); /* Implies oob is stalled. */
++	assert_evl_lock(&rq->lock); /* Implies hard irqs are off. */
+ 
+ 	if (this_rq == rq) {
+ 		this_rq->flags |= RQ_SCHED;
+ 	} else if (!evl_need_resched(rq)) {
+ 		rq->flags |= RQ_SCHED;
+ 		/*
+-		 * The following updates change CPU-local data and oob
+-		 * is stalled on the current CPU, so this is safe
+-		 * despite that we don't hold this_rq->lock.
++		 * The following updates change CPU-local data and
++		 * hard irqs are off on the current CPU, so this is
++		 * safe despite that we don't hold this_rq->lock.
+ 		 *
+ 		 * NOTE: raising RQ_SCHED in the local_flags too
+ 		 * ensures that the current CPU will pass through
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 8df773ea9b..23d0393694 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -573,13 +573,13 @@ struct evl_timerfd {
+ /* Pin @timer to the current thread rq. */
+ static void pin_timer(struct evl_timer *timer)
+ {
+-	unsigned long flags = oob_irq_save();
++	unsigned long flags = hard_local_irq_save();
+ 	struct evl_rq *this_rq = evl_current_rq();
+ 
+ 	if (this_rq != timer->rq)
+ 		evl_move_timer(timer, timer->clock, this_rq);
+ 
+-	oob_irq_restore(flags);
++	hard_local_irq_restore(flags);
+ }
+ 
+ #else
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 95b57005f9..241634b8be 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -259,11 +259,14 @@ static void do_put_element(struct evl_element *e)
+ 	 * These trampolines may look like a bit cheesy but we have no
+ 	 * choice but offloading the disposal to an in-band task
+ 	 * context. In (the rare) case the last ref. to an element was
+-	 * dropped from OOB(-protected) context, we need to go via an
+-	 * irq_work->workqueue chain in order to run
+-	 * __do_put_element() eventually.
++	 * dropped from OOB(-protected) context or while hard irqs
++	 * were off, we need to go via an irq_work->workqueue chain in
++	 * order to run __do_put_element() eventually.
++	 *
++	 * NOTE: irq_work_queue() does not synchronize the interrupt
++	 * log when called with hard irqs off.
+ 	 */
+-	if (unlikely(running_oob() || oob_irqs_disabled())) {
++	if (unlikely(running_oob() || hard_irqs_disabled())) {
+ 		init_irq_work(&e->irq_work, do_put_element_irq);
+ 		irq_work_queue(&e->irq_work);
+ 	} else
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index ea25478915..9a36cf5431 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -241,7 +241,7 @@ EXPORT_SYMBOL(evl_enable_preempt);
+ static inline
+ void evl_double_rq_lock(struct evl_rq *rq1, struct evl_rq *rq2)
+ {
+-	EVL_WARN_ON_ONCE(CORE, !oob_irqs_disabled());
++	EVL_WARN_ON_ONCE(CORE, !hard_irqs_disabled());
+ 
+ 	/* Prevent ABBA deadlock, always lock rqs in address order. */
+ 
+@@ -300,7 +300,7 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)
+ 	evl_double_rq_unlock(src_rq, dst_rq);
+ }
+ 
+-/* thread->lock held, oob stalled. @thread must not be running oob. */
++/* thread->lock held, hard irqs off. @thread must be running in-band. */
+ void evl_migrate_thread(struct evl_thread *thread, struct evl_rq *dst_rq)
+ {
+ 	assert_evl_lock(&thread->lock);
+@@ -322,7 +322,7 @@ void evl_migrate_thread(struct evl_thread *thread, struct evl_rq *dst_rq)
+ 	evl_reset_account(&thread->stat.lastperiod);
+ }
+ 
+-static void check_cpu_affinity(struct task_struct *p) /* inband, oob stage stalled */
++static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off */
+ {
+ 	struct evl_thread *thread = evl_thread_from_task(p);
+ 	int cpu = task_cpu(p);
+@@ -379,7 +379,7 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, oob stage stall
+ #else
+ 
+ #define evl_double_rq_lock(__rq1, __rq2)  \
+-	EVL_WARN_ON_ONCE(CORE, !oob_irqs_disabled());
++	EVL_WARN_ON_ONCE(CORE, !hard_irqs_disabled());
+ 
+ #define evl_double_rq_unlock(__rq1, __rq2)  do { } while (0)
+ 
+@@ -866,7 +866,7 @@ static inline void finish_rq_switch_from_inband(void)
+ 	evl_spin_unlock_irq(&this_rq->lock);
+ }
+ 
+-/* oob stalled. */
++/* hard irqs off. */
+ static inline bool test_resched(struct evl_rq *this_rq)
+ {
+ 	bool need_resched = evl_need_resched(this_rq);
+@@ -893,19 +893,19 @@ static inline bool test_resched(struct evl_rq *this_rq)
+  * use "current" for disambiguating if you intend to refer to the
+  * running inband task.
+  */
+-void __evl_schedule(void) /* oob or oob stalled (CPU migration-safe) */
++void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ {
+ 	struct evl_rq *this_rq = this_evl_rq();
+ 	struct evl_thread *prev, *next, *curr;
+ 	bool leaving_inband, inband_tail;
+ 	unsigned long flags;
+ 
+-	if (EVL_WARN_ON_ONCE(CORE, running_inband() && !oob_irqs_disabled()))
++	if (EVL_WARN_ON_ONCE(CORE, running_inband() && !hard_irqs_disabled()))
+ 		return;
+ 
+ 	trace_evl_schedule(this_rq);
+ 
+-	flags = oob_irq_save();
++	flags = hard_local_irq_save();
+ 
+ 	/*
+ 	 * Check whether we have a pending priority ceiling request to
+@@ -972,7 +972,7 @@ void __evl_schedule(void) /* oob or oob stalled (CPU migration-safe) */
+ }
+ EXPORT_SYMBOL_GPL(__evl_schedule);
+ 
+-/* this_rq->lock held, oob stage stalled. */
++/* this_rq->lock held, hard irqs off. */
+ static void start_ptsync_locked(struct evl_thread *stopper,
+ 				struct evl_rq *this_rq)
+ {
+@@ -995,7 +995,7 @@ void evl_start_ptsync(struct evl_thread *stopper)
+ 	if (EVL_WARN_ON(CORE, !(stopper->state & T_USER)))
+ 		return;
+ 
+-	flags = oob_irq_save();
++	flags = hard_local_irq_save();
+ 	this_rq = this_evl_rq();
+ 	evl_spin_lock(&this_rq->lock);
+ 	start_ptsync_locked(stopper, this_rq);
+@@ -1007,12 +1007,19 @@ void resume_oob_task(struct task_struct *p) /* inband, oob stage stalled */
+ 	struct evl_thread *thread = evl_thread_from_task(p);
+ 
+ 	/*
+-	 * If T_PTSTOP is set, pick_next_thread() is not allowed to
+-	 * freeze @thread while in flight to the out-of-band stage.
++	 * Dovetail calls us with hard irqs off, oob stage
++	 * stalled. Clear the stall bit which we don't use for
++	 * protection but keep hard irqs off.
+ 	 */
++	unstall_oob();
+ 	check_cpu_affinity(p);
+ 	evl_release_thread(thread, T_INBAND, 0);
++	/*
++	 * If T_PTSTOP is set, pick_next_thread() is not allowed to
++	 * freeze @thread while in flight to the out-of-band stage.
++	 */
+ 	evl_schedule();
++	stall_oob();
+ }
+ 
+ int evl_switch_oob(void)
+@@ -1041,11 +1048,18 @@ int evl_switch_oob(void)
+ 		return ret;
+ 	}
+ 
++	/*
++	 * On success, dovetail_leave_inband() stalls the oob stage
++	 * before returning to us: clear this stall bit since we don't
++	 * use it for protection but keep hard irqs off.
++	 */
++	unstall_oob();
++
+ 	/*
+ 	 * The current task is now running on the out-of-band
+ 	 * execution stage, scheduled in by the latest call to
+ 	 * __evl_schedule() on this CPU: we must be holding the
+-	 * runqueue lock and the oob stage must be stalled.
++	 * runqueue lock and hard irqs must be off.
+ 	 */
+ 	oob_context_only();
+ 
+@@ -1095,7 +1109,7 @@ void evl_switch_inband(int cause)
+ 	 * only applies to the current thread running out-of-band on
+ 	 * this CPU. See caveat about dovetail_leave_oob() below.
+ 	 */
+-	oob_irq_disable();
++	hard_local_irq_disable();
+ 	irq_work_queue(&curr->inband_work);
+ 
+ 	evl_spin_lock(&curr->lock);
+@@ -1146,7 +1160,7 @@ void evl_switch_inband(int cause)
+ 	 * this_rq()->lock was released when the root thread resumed
+ 	 * from __evl_schedule() (i.e. inband_tail path).
+ 	 */
+-	oob_irq_enable();
++	hard_local_irq_enable();
+ 	dovetail_resume_inband();
+ 
+ 	/*
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index d6c002bc94..36ce3d6a20 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -481,7 +481,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)
+ }
+ EXPORT_SYMBOL_GPL(__evl_run_kthread);
+ 
+-/* evl_current()->lock + evl_current()->rq->lock held, oob stalled. */
++/* evl_current()->lock + evl_current()->rq->lock held, hard irqs off. */
+ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,
+ 		struct evl_clock *clock,
+ 		struct evl_wait_channel *wchan)
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 6baca052b3..1d6e320871 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -349,7 +349,7 @@ EXPORT_SYMBOL_GPL(evl_destroy_timer);
+  * @clock:      reference clock
+  * @rq:         runqueue to assign the timer to
+  *
+- * oob stage stalled on entry.
++ * hard irqs off on entry.
+  */
+ void evl_move_timer(struct evl_timer *timer,
+ 		struct evl_clock *clock, struct evl_rq *rq)
+@@ -359,7 +359,7 @@ void evl_move_timer(struct evl_timer *timer,
+ 	unsigned long flags;
+ 	int cpu;
+ 
+-	EVL_WARN_ON_ONCE(CORE, !oob_irqs_disabled());
++	EVL_WARN_ON_ONCE(CORE, !hard_irqs_disabled());
+ 
+ 	trace_evl_timer_move(timer, clock, evl_rq_cpu(rq));
+ 
+-- 
+2.30.2
+

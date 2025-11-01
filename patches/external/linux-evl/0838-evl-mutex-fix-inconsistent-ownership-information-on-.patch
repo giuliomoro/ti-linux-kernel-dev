@@ -1,0 +1,85 @@
+From a256a880a640a634c58f266880aa3f38711da3b9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 3 Dec 2022 16:35:48 +0100
+Subject: [PATCH 0838/1010] evl/mutex: fix inconsistent ownership information
+ on release
+
+drop_booster() may unlock the wait channel if some priority adjustment
+is required for the last owner as a result of dropping it. Meanwhile,
+a remote CPU might observe this wait channel still has a valid owner
+kernel-wise, although it is being released concurrently.
+
+Fix this lock state inconsistency by clearing the mutex owner
+information before the wait channel is unlocked in drop_booster().
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 64f0808f04..f5abc467b4 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -200,7 +200,7 @@ static int fast_grab_mutex(struct evl_mutex *mutex, fundle_t *oldh)
+ }
+ 
+ /* mutex->wchan.lock held (temporarily dropped), irqs off */
+-static void drop_booster(struct evl_mutex *mutex)
++static void drop_booster(struct evl_mutex *mutex, bool release)
+ {
+ 	struct evl_thread *owner;
+ 	bool adjusted;
+@@ -218,6 +218,9 @@ static void drop_booster(struct evl_mutex *mutex)
+ 	 */
+ 	evl_get_element(&owner->element);
+ 
++	if (release)	/* Drop upon release sequence? */
++		untrack_mutex_owner(mutex);
++
+ 	raw_spin_lock(&owner->lock);
+ 	list_del(&mutex->next_booster);	/* owner->boosters */
+ 	mutex->boost.sched_class = NULL;
+@@ -303,7 +306,7 @@ static void flush_mutex_locked(struct evl_mutex *mutex, int reason)
+ 
+ 		if (mutex->flags & EVL_MUTEX_PIBOOST) {
+ 			mutex->flags &= ~EVL_MUTEX_PIBOOST;
+-			drop_booster(mutex);
++			drop_booster(mutex, false);
+ 		}
+ 	}
+ }
+@@ -369,7 +372,7 @@ static void undo_pi_walk(struct evl_mutex *mutex)
+ 	if (owner && mutex->flags & EVL_MUTEX_PIBOOST) {
+ 		if (list_empty(&mutex->wchan.wait_list)) {
+ 			mutex->flags &= ~EVL_MUTEX_PIBOOST;
+-			drop_booster(mutex);
++			drop_booster(mutex, false);
+ 		} else {
+ 			raw_spin_lock(&owner->lock);
+ 			raw_spin_unlock(&mutex->wchan.lock);
+@@ -616,16 +619,16 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	if (mutex->flags & EVL_MUTEX_CEILING) {
+ 		EVL_WARN_ON(CORE, mutex->flags & EVL_MUTEX_PIBOOST);
+ 		mutex->flags &= ~EVL_MUTEX_CEILING;
+-		drop_booster(mutex);
++		drop_booster(mutex, true);
+ 	} else if (mutex->flags & EVL_MUTEX_PIBOOST) {
+ 		EVL_WARN_ON(CORE, mutex->flags & EVL_MUTEX_CEILING);
+ 		mutex->flags &= ~EVL_MUTEX_PIBOOST;
+-		drop_booster(mutex);
++		drop_booster(mutex, true);
++	} else {
++		/* Clear the owner information only. */
++		untrack_mutex_owner(mutex);
+ 	}
+ 
+-	/* Clear the owner information. */
+-	untrack_mutex_owner(mutex);
+-
+ 	/*
+ 	 * Allow the first waiter in line to retry acquiring the
+ 	 * mutex.
+-- 
+2.30.2
+

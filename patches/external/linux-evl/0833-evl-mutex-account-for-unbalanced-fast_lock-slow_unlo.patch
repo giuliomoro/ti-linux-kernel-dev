@@ -1,0 +1,63 @@
+From d80ab84b2b22140f97d18a45ecff1f8727a85b6e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 28 Nov 2022 09:21:57 +0100
+Subject: [PATCH 0833/1010] evl/mutex: account for unbalanced
+ fast_lock/slow_unlock pattern
+
+A thread might have acquired a lock from user-space via the fast
+procedure, releasing it from kernel space - this pattern typically
+happens with the event monitor, e.g. fast_lock(x) -> signal(event) ->
+slow_unlock(x).
+
+In this case, the owner field into the wait channel might be unset if
+the lock was uncontended, although the atomic handle does match the
+thread's fundle. This is a legit case: skip the PI/PP deboosting if so
+because no boost can be in effect for such lock, waking up the heading
+waiter if any.
+
+CAUTION: this issue can be noticed only if T_WOLI is disabled for the
+thread (which means that CONFIG_EVL_DEBUG_WOLI is off too), otherwise
+only the slow acquire/release path would be taken, papering over the
+bug.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 9d85516c29..d1bad9f210 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -771,6 +771,20 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 
+ 	raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+ 
++	/*
++	 * We might have acquired the lock earlier from user-space via
++	 * the fast procedure, releasing it now from kernel space -
++	 * this pattern typically happens with the event monitor,
++	 * e.g. fast_lock(x) -> signal(event) -> slow_unlock(x). In
++	 * this case, the owner field into the wait channel might be
++	 * unset if the lock was uncontended, although our caller has
++	 * checked that the atomic handle does match current's
++	 * fundle. If so, skip the PI/PP deboosting, no boost can be
++	 * in effect for such lock.
++	 */
++	if (mutex->wchan.owner == NULL)
++		goto release;
++
+ 	if (EVL_WARN_ON(CORE, mutex->wchan.owner != curr))
+ 		goto out;
+ 
+@@ -803,6 +817,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	 * Allow the first waiter in line to retry acquiring the
+ 	 * mutex.
+ 	 */
++release:
+ 	if (!list_empty(&mutex->wchan.wait_list)) {
+ 		top_waiter = list_get_entry_init(&mutex->wchan.wait_list,
+ 				struct evl_thread, wait_next);
+-- 
+2.30.2
+

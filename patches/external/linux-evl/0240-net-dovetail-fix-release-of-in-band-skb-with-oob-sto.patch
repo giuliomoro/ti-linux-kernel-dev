@@ -1,0 +1,213 @@
+From 4bf1d763a5f996dbd85cf7b3d69d59569e4caebc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 22 Jun 2025 13:23:24 +0200
+Subject: [PATCH 0240/1010] net: dovetail: fix release of in-band skb with oob
+ storage
+
+__kfree_skb() may receive in-band buffers (!skb_is_oob()) conveying
+oob storage, which must be passed to the companion core for
+release. Typically, this may happen when network interface taps are
+fed with traffic handled by such core.
+
+However, we want to allow the companion core to resend such buffers to
+__kfree_skb() via finalize_skb_inband() once the storage is dropped
+eventually, in order to flush their head state, then release the
+buffer shells to the proper kmem cache.
+
+Add the necessary logic to enable this path, using the new
+oob_released marker to prevent a circular call chain to take place
+(i.e. __kfree_skb -> skb_release_oob -> free_skb_oob ->
+finalize_skb_inband -> __kfree_skb). Meanwhile, move the oob marker
+out of the skb 'headers' group, since we don't want a clone to inherit
+this information from the source skb, which would cause a release to
+the wrong (oob) pool.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/skbuff.h | 35 ++++++++++++++++++-----------------
+ net/core/dev.c         |  2 +-
+ net/core/skbuff.c      | 23 +++++++++++------------
+ 3 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 16bd5bc8e5..417baf1398 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -933,6 +933,10 @@ struct sk_buff {
+ 				head_frag:1,
+ 				pfmemalloc:1,
+ 				pp_recycle:1; /* page_pool recycle indicator */
++#ifdef CONFIG_NET_OOB
++	__u8			oob:1,
++				oob_released:1;
++#endif
+ #ifdef CONFIG_SKB_EXTENSIONS
+ 	__u8			active_extensions;
+ #endif
+@@ -997,9 +1001,6 @@ struct sk_buff {
+ 	__u8			slow_gro:1;
+ 	__u8			csum_not_inet:1;
+ 	__u8			scm_io_uring:1;
+-#ifdef CONFIG_NET_OOB
+-	__u8			oob:1;
+-#endif
+ 
+ #ifdef CONFIG_NET_SCHED
+ 	__u16			tc_index;	/* traffic control index */
+@@ -5178,6 +5179,16 @@ static inline void skb_mark_oob(struct sk_buff *skb)
+ 	skb->oob = 1;
+ }
+ 
++static inline bool skb_is_oob_released(const struct sk_buff *skb)
++{
++	return skb->oob_released;
++}
++
++static inline void skb_mark_oob_released(struct sk_buff *skb)
++{
++	skb->oob_released = 1;
++}
++
+ /**
+  * skb_is_oob_timestamped - Whether the buffer is timestamped by a
+  * companion core, in which case the timestamps should be stored in
+@@ -5234,7 +5245,7 @@ static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
+ 	return page_pool_get_dma_addr(page);
+ }
+ 
+-bool recycle_skb_oob(struct sk_buff *skb);
++bool skb_release_oob(struct sk_buff *skb);
+ void free_skb_oob(struct sk_buff *skb);
+ 
+ static inline void finalize_skb_inband(struct sk_buff *skb)
+@@ -5242,17 +5253,6 @@ static inline void finalize_skb_inband(struct sk_buff *skb)
+ 	__kfree_skb(skb);
+ }
+ 
+-/**
+- *	__skb_inband_clone - In-band specific setup for skbs for a
+- *	newly allocated clone head. Other allocation places don't need
+- *	that because they are memset-zeroed from skb to &skb->end
+- *	before building the buffer around a data storage area.
+- */
+-static inline void __skb_inband_clone(struct sk_buff *skb)
+-{
+-	skb->oob = 0;
+-}
+-
+ /**
+  *	__skb_oob_free_head - Called from the in-band net core after
+  *      the last reference to the buffer head (->users) was dropped,
+@@ -5278,8 +5278,9 @@ static inline bool skb_is_oob(const struct sk_buff *skb)
+ 	return false;
+ }
+ 
+-static inline void __skb_inband_clone(struct sk_buff *skb)
++static inline bool skb_is_oob_released(const struct sk_buff *skb)
+ {
++	return false;
+ }
+ 
+ static inline bool __skb_oob_free_head(struct sk_buff *skb)
+@@ -5307,7 +5308,7 @@ static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
+ 	return DMA_MAPPING_ERROR;
+ }
+ 
+-static inline bool recycle_skb_oob(struct sk_buff *skb)
++static inline bool skb_release_oob(struct sk_buff *skb)
+ {
+ 	return false;
+ }
+diff --git a/net/core/dev.c b/net/core/dev.c
+index bc2d5a8c27..88b424c1f8 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3208,7 +3208,7 @@ void __dev_kfree_skb_irq(struct sk_buff *skb, enum skb_free_reason reason)
+ 
+ 	get_kfree_skb_cb(skb)->reason = reason;
+ 
+-	if (recycle_skb_oob(skb))
++	if (skb_release_oob(skb))
+ 		return;
+ 
+ 	local_irq_save(flags);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 100e46116f..f81a3c0c7b 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -301,20 +301,21 @@ static void __build_skb_around(struct sk_buff *skb, void *data,
+ 
+ #ifdef CONFIG_NET_OOB
+ 
+-unsigned int sysctl_max_oob_skb __read_mostly = 2048;
++unsigned int sysctl_max_oob_skb __read_mostly = 16384;
+ EXPORT_SYMBOL(sysctl_max_oob_skb);
+ 
+ __weak void free_skb_oob(struct sk_buff *skb)
+ { }
+ 
+-bool recycle_skb_oob(struct sk_buff *skb)
++bool skb_release_oob(struct sk_buff *skb)
+ {
+ 	/*
+-	 * Hand the buffer release over the out-of-band core either if
+-	 * the latter manages the data storage or we are currently
+-	 * running oob.
++	 * If the buffer was not already released by the out-of-band
++	 * core, hand it the buffer for release either if it manages
++	 * the data storage or we are currently running oob.
+ 	 */
+-	if (running_oob() || skb_is_oob_managed(skb)) {
++	if (!skb_is_oob_released(skb) && (running_oob() || skb_is_oob_managed(skb))) {
++		skb_mark_oob_released(skb);
+ 		free_skb_oob(skb);
+ 		return true;
+ 	}
+@@ -430,7 +431,7 @@ struct sk_buff *__build_skb(void *data, unsigned int frag_size)
+ 
+ 	if (running_oob()) {
+ 		skb = get_oob_skb();
+-		if (unlikely(!skb))
++		if (unlikely(WARN_ON_ONCE(!skb)))
+ 			return NULL;
+ 	} else {
+ 		skb = kmem_cache_alloc(skbuff_head_cache, GFP_ATOMIC);
+@@ -996,7 +997,7 @@ static void skb_release_all(struct sk_buff *skb)
+ 
+ void __kfree_skb(struct sk_buff *skb)
+ {
+-	if (recycle_skb_oob(skb))
++	if (skb_release_oob(skb))
+ 		return;
+ 
+ 	skb_release_all(skb);
+@@ -1210,7 +1211,7 @@ static void napi_skb_cache_put(struct sk_buff *skb)
+ 
+ void __kfree_skb_defer(struct sk_buff *skb)
+ {
+-	if (recycle_skb_oob(skb))
++	if (skb_release_oob(skb))
+ 		return;
+ 
+ 	skb_release_all(skb);
+@@ -1804,8 +1805,6 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
+ 		n->fclone = SKB_FCLONE_UNAVAILABLE;
+ 	}
+ 
+-	__skb_inband_clone(n);
+-
+ 	return __skb_clone(n, skb);
+ }
+ EXPORT_SYMBOL(skb_clone);
+@@ -5571,7 +5570,7 @@ EXPORT_SYMBOL(__skb_warn_lro_forwarding);
+ void kfree_skb_partial(struct sk_buff *skb, bool head_stolen)
+ {
+ 	if (head_stolen) {
+-		if (!recycle_skb_oob(skb)) {
++		if (!skb_release_oob(skb)) {
+ 			skb_release_head_state(skb);
+ 			if (!__skb_oob_free_head(skb))
+ 				kmem_cache_free(skbuff_head_cache, skb);
+-- 
+2.30.2
+

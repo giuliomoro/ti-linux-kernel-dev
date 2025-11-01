@@ -1,0 +1,37 @@
+From 552ed85b9bdebfa72fe244cd32c7e55d83b2abe7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 31 Dec 2019 12:22:33 +0100
+Subject: [PATCH 0582/1010] evl/xbuf: fix POLLIN detection
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/xbuf.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index 7f01e74fb9..bf8ee9c731 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -210,6 +210,7 @@ static ssize_t do_xbuf_write(struct xbuf_ring *ring,
+ 	ssize_t len, ret, wbytes, n;
+ 	unsigned int wroff, avail;
+ 	unsigned long flags;
++	bool sigpoll;
+ 	int xret;
+ 
+ 	len = wd->count;
+@@ -277,9 +278,10 @@ static ssize_t do_xbuf_write(struct xbuf_ring *ring,
+ 		} while (wbytes > 0);
+ 
+ 		if (--ring->wrpending == 0) {
++			sigpoll = ring->fillsz == 0;
+ 			ring->fillsz += ring->wrrsvd;
+ 			ring->wrrsvd = 0;
+-			ring->signal_input(ring, ring->fillsz == len);
++			ring->signal_input(ring, sigpoll);
+ 		}
+ 
+ 		ring->unlock(ring, flags);
+-- 
+2.30.2
+

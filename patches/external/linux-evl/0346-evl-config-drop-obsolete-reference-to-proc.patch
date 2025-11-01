@@ -1,0 +1,28 @@
+From bb4ab9933afc0e124b611eb085dbd600c476503b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 16 Feb 2019 12:06:19 +0100
+Subject: [PATCH 0346/1010] evl/config: drop obsolete reference to /proc
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
+index 4ec461eef9..1b04cfea11 100644
+--- a/kernel/evenless/Kconfig
++++ b/kernel/evenless/Kconfig
+@@ -44,8 +44,8 @@ config EVENLESS_STATS
+ 	default y
+ 	help
+ 	This option causes the Evenless kernel to collect various
+-	per-thread runtime statistics, which are accessible through
+-	the /proc/evenless/sched/stat interface.
++	per-thread runtime statistics, which are accessible via
++	the /sys interface.
+ 
+ endmenu
+ 
+-- 
+2.30.2
+

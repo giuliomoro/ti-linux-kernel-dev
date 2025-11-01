@@ -1,0 +1,120 @@
+From e2227ed63e2642bb38e53d0f5118f4227f2dd707 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 11:06:31 +0200
+Subject: [PATCH 0634/1010] evl/thread: send -EOPNOTSUPP to requests for
+ unavailable sched policy
+
+Upon requests involving SCHED_TP, SCHED_QUOTA policies which have been
+compiled out, we should send -EOPNOTSUPP instead of -EINVAL to the
+caller, so that we can distinguish between lack of kernel support from
+mere invalid argument issue.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/control.c    |  4 ++--
+ kernel/evl/sched/core.c | 16 ++++++++++------
+ kernel/evl/thread.c     |  6 ++++--
+ 3 files changed, 16 insertions(+), 10 deletions(-)
+
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 0a1e8a6d9d..d4e533723e 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -130,7 +130,7 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
+ 
+ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
+ {
+-	return -EINVAL;
++	return -EOPNOTSUPP;
+ }
+ 
+ #endif
+@@ -180,7 +180,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 
+ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ {
+-	return -EINVAL;
++	return -EOPNOTSUPP;
+ }
+ 
+ #endif
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index f2fbe3807b..a415a23bea 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1202,11 +1202,11 @@ evl_find_sched_class(union evl_sched_param *param,
+ 	switch (policy) {
+ 	case SCHED_NORMAL:
+ 		if (prio)
+-			return NULL;
++			return ERR_PTR(-EINVAL);
+ 		/* fall-through */
+ 	case SCHED_WEAK:
+ 		if (prio < EVL_WEAK_MIN_PRIO ||	prio > EVL_WEAK_MAX_PRIO)
+-			return NULL;
++			return ERR_PTR(-EINVAL);
+ 		param->weak.prio = prio;
+ 		sched_class = &evl_sched_weak;
+ 		break;
+@@ -1223,24 +1223,28 @@ evl_find_sched_class(union evl_sched_param *param,
+ 		 * must be in the [FIFO_MIN..FIFO_MAX] range.
+ 		 */
+ 		if (prio < EVL_FIFO_MIN_PRIO ||	prio > EVL_FIFO_MAX_PRIO)
+-			return NULL;
++			return ERR_PTR(-EINVAL);
+ 		break;
+-#ifdef CONFIG_EVL_SCHED_QUOTA
+ 	case SCHED_QUOTA:
++#ifdef CONFIG_EVL_SCHED_QUOTA
+ 		param->quota.prio = attrs->sched_priority;
+ 		param->quota.tgid = attrs->sched_quota_group;
+ 		sched_class = &evl_sched_quota;
+ 		break;
++#else
++		return ERR_PTR(-EOPNOTSUPP);
+ #endif
+-#ifdef CONFIG_EVL_SCHED_TP
+ 	case SCHED_TP:
++#ifdef CONFIG_EVL_SCHED_TP
+ 		param->tp.prio = attrs->sched_priority;
+ 		param->tp.ptid = attrs->sched_tp_partition;
+ 		sched_class = &evl_sched_tp;
+ 		break;
++#else
++		return ERR_PTR(-EOPNOTSUPP);
+ #endif
+ 	default:
+-		return NULL;
++		return ERR_PTR(-EINVAL);
+ 	}
+ 
+ 	*tslice_r = tslice;
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 1c8f6d2362..a1f8f3a50e 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1935,8 +1935,8 @@ static int set_sched_attrs(struct evl_thread *thread,
+ 	union evl_sched_param param;
+ 	unsigned long flags;
+ 	struct evl_rq *rq;
+-	int ret = -EINVAL;
+ 	ktime_t tslice;
++	int ret;
+ 
+ 	trace_evl_thread_setsched(thread, attrs);
+ 
+@@ -1944,8 +1944,10 @@ static int set_sched_attrs(struct evl_thread *thread,
+ 
+ 	tslice = thread->rrperiod;
+ 	sched_class = evl_find_sched_class(&param, attrs, &tslice);
+-	if (sched_class == NULL)
++	if (IS_ERR(sched_class)) {
++		ret = PTR_ERR(sched_class);
+ 		goto out;
++	}
+ 
+ 	ret = set_time_slice(thread, tslice);
+ 	if (ret)
+-- 
+2.30.2
+

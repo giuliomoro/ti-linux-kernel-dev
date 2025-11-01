@@ -1,0 +1,54 @@
+From 963e1281859bfe82b06c1c3c4a9fecbdd5f08870 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 5 Sep 2021 10:10:13 +0200
+Subject: [PATCH 0751/1010] evl/thread: use canonical way of updating
+ current->comm
+
+Updating tsk->comm requires holding the task lock, along with
+propagating the change to a few subsystems (e.g. trace, perf). Use
+set_task_comm() to update such field instead of open coding the change
+in a half baked way. Also, make sure such change is forwarded to the
+process event connector.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 4d176c1577..a9ac34dfc6 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -22,6 +22,7 @@
+ #include <linux/err.h>
+ #include <linux/ptrace.h>
+ #include <linux/math64.h>
++#include <linux/cn_proc.h>
+ #include <uapi/linux/sched/types.h>
+ #include <evl/sched.h>
+ #include <evl/timer.h>
+@@ -2386,6 +2387,7 @@ thread_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 	struct evl_observable *observable = NULL;
+ 	struct task_struct *tsk = current;
+ 	struct evl_init_thread_attr iattr;
++	unsigned char comm[sizeof(tsk->comm)];
+ 	struct evl_thread *curr;
+ 	int ret;
+ 
+@@ -2464,9 +2466,10 @@ thread_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 	 */
+ 	evl_get_element(&curr->element);
+ 
+-	strncpy(tsk->comm, evl_element_name(&curr->element),
+-		sizeof(tsk->comm));
+-	tsk->comm[sizeof(tsk->comm) - 1] = '\0';
++	strncpy(comm, evl_element_name(&curr->element), sizeof(comm));
++	comm[sizeof(comm) - 1] = '\0';
++	set_task_comm(tsk, comm);
++	proc_comm_connector(tsk);
+ 
+ 	return &curr->element;
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,37 @@
+From f6b3ca2fff0428408bf48484c366618aa11eb11c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 3 Feb 2019 18:52:19 +0100
+Subject: [PATCH 0033/1010] pinctrl: msm: irq_pipeline: enable pipelined
+ interrupt control
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/pinctrl/qcom/pinctrl-msm.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
+index 34fc47c5c6..888e06e331 100644
+--- a/drivers/pinctrl/qcom/pinctrl-msm.c
++++ b/drivers/pinctrl/qcom/pinctrl-msm.c
+@@ -67,7 +67,7 @@ struct msm_pinctrl {
+ 
+ 	bool intr_target_use_scm;
+ 
+-	raw_spinlock_t lock;
++	hard_spinlock_t lock;
+ 
+ 	DECLARE_BITMAP(dual_edge_irqs, MAX_NR_GPIO);
+ 	DECLARE_BITMAP(enabled_irqs, MAX_NR_GPIO);
+@@ -1322,7 +1322,8 @@ static const struct irq_chip msm_gpio_irq_chip = {
+ 	.flags			= (IRQCHIP_MASK_ON_SUSPEND |
+ 				   IRQCHIP_SET_TYPE_MASKED |
+ 				   IRQCHIP_ENABLE_WAKEUP_ON_SUSPEND |
+-				   IRQCHIP_IMMUTABLE),
++				   IRQCHIP_IMMUTABLE |
++				   IRQCHIP_PIPELINE_SAFE),
+ };
+ 
+ static int msm_gpio_init(struct msm_pinctrl *pctrl)
+-- 
+2.30.2
+

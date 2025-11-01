@@ -1,0 +1,77 @@
+From b2a98c9d54f017738e79befa4238e1e7dff8ff09 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 26 Dec 2022 18:45:58 +0100
+Subject: [PATCH 0843/1010] evl/wait: return the number of threads readied on
+ flush
+
+We can make a good use of this information in order to implement
+broadcast wakeups efficiently.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h |  4 ++--
+ kernel/evl/wait.c  | 13 ++++++++++---
+ 2 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index db54e55870..ba58c0210e 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -140,10 +140,10 @@ void evl_destroy_wait(struct evl_wait_queue *wq);
+ 
+ struct evl_thread *evl_wait_head(struct evl_wait_queue *wq);
+ 
+-void evl_flush_wait_locked(struct evl_wait_queue *wq,
++int evl_flush_wait_locked(struct evl_wait_queue *wq,
+ 			int reason);
+ 
+-void evl_flush_wait(struct evl_wait_queue *wq,
++int evl_flush_wait(struct evl_wait_queue *wq,
+ 		int reason);
+ 
+ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index a6465882b3..5305a0a1b1 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -115,9 +115,10 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+ EXPORT_SYMBOL_GPL(evl_wake_up);
+ 
+ /* wq->wchan.lock held, hard irqs off */
+-void evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
++int evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
+ {
+ 	struct evl_thread *waiter, *tmp;
++	int ret = 0;
+ 
+ 	assert_hard_lock(&wq->wchan.lock);
+ 
+@@ -126,17 +127,23 @@ void evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
+ 	list_for_each_entry_safe(waiter, tmp, &wq->wchan.wait_list, wait_next) {
+ 		list_del_init(&waiter->wait_next);
+ 		evl_wakeup_thread(waiter, EVL_T_PEND, reason);
++		ret++;
+ 	}
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(evl_flush_wait_locked);
+ 
+-void evl_flush_wait(struct evl_wait_queue *wq, int reason)
++int evl_flush_wait(struct evl_wait_queue *wq, int reason)
+ {
+ 	unsigned long flags;
++	int ret;
+ 
+ 	raw_spin_lock_irqsave(&wq->wchan.lock, flags);
+-	evl_flush_wait_locked(wq, reason);
++	ret = evl_flush_wait_locked(wq, reason);
+ 	raw_spin_unlock_irqrestore(&wq->wchan.lock, flags);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(evl_flush_wait);
+ 
+-- 
+2.30.2
+

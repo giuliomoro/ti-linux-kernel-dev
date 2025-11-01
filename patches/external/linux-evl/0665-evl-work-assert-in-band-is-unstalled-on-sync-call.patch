@@ -1,0 +1,29 @@
+From 5e2e91b73a95b1f5dcf22e34efa500a613db90cc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 11 Jun 2020 09:56:08 +0200
+Subject: [PATCH 0665/1010] evl/work: assert in-band is unstalled on sync call
+
+We need to wait for the synthetic irq fired by irq_work_queue() to be
+delivered on the current CPU, so we'd better not stall the in-band
+stage prior to waiting for the handler to complete (flush_work()).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/work.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/work.c b/kernel/evl/work.c
+index eb7eef177a..3e0a074de3 100644
+--- a/kernel/evl/work.c
++++ b/kernel/evl/work.c
+@@ -98,6 +98,7 @@ int evl_call_inband_sync_from(struct evl_sync_work *sync_work,
+ 	sync_work->result = -EINVAL;
+ 
+ 	if (unlikely(running_inband())) {
++		EVL_WARN_ON(CORE, irqs_disabled());
+ 		evl_call_inband_from(work, wq);
+ 		flush_work(&work->wq_work);
+ 		return sync_work->result;
+-- 
+2.30.2
+

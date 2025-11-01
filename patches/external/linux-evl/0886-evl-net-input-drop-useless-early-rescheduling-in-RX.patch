@@ -1,0 +1,33 @@
+From 91bb0ded14dbcbcf47e3fc41ecdb2106ba8c3863 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 6 Oct 2023 10:52:26 +0200
+Subject: [PATCH 0886/1010] evl/net: input: drop useless early rescheduling in
+ RX
+
+Unlike what the comment suggests, there is no reason to call
+evl_schedule() prior to pulling more data from the RX queue. We are
+running in a plain task context with preemption enabled, regular
+priority rules apply.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/input.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 21d176a818..8fd9d85992 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -39,9 +39,6 @@ void evl_net_do_rx(void *arg)
+ 			list_del(&skb->list);
+ 			EVL_NET_CB(skb)->handler->ingress(skb);
+ 		}
+-
+-		/* Do NOT wait for evl_wait_flag() for this. */
+-		evl_schedule();
+ 	}
+ }
+ 
+-- 
+2.30.2
+

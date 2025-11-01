@@ -1,0 +1,84 @@
+From 47de23a5694760dd769395d59e6fdf7dbaa47d04 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 4 Jul 2021 16:38:24 +0200
+Subject: [PATCH 0739/1010] evl/wait: accept reason for wake up in
+ evl_wake_up()
+
+So far the API would only allow us to set the reason for a mass wake
+up of all waiters. We also need a way to set the reason for a directed
+wake up of a single thread. Change evl_wake_up() appropriately.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h   | 5 +++--
+ kernel/evl/monitor.c | 3 ++-
+ kernel/evl/wait.c    | 9 +++++----
+ 3 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index c0fc270032..b833880a25 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -117,12 +117,13 @@ void evl_flush_wait(struct evl_wait_queue *wq,
+ 		int reason);
+ 
+ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+-			struct evl_thread *waiter);
++			struct evl_thread *waiter,
++			int reason);
+ 
+ static inline
+ struct evl_thread *evl_wake_up_head(struct evl_wait_queue *wq)
+ {
+-	return evl_wake_up(wq, NULL);
++	return evl_wake_up(wq, NULL, 0);
+ }
+ 
+ int evl_reorder_wait(struct evl_thread *waiter,
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index fc1061c511..d19bd0e7d2 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -174,7 +174,8 @@ static void wakeup_waiters(struct evl_monitor *event)
+ 			evl_for_each_waiter_safe(waiter, n,
+ 						&event->wait_queue) {
+ 				if (waiter->info & T_SIGNAL)
+-					evl_wake_up(&event->wait_queue, waiter);
++					evl_wake_up(&event->wait_queue,
++						waiter, 0);
+ 			}
+ 		} else
+ 			evl_wake_up_head(&event->wait_queue);
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index f6a4682e00..715b82a0ac 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -59,20 +59,21 @@ EXPORT_SYMBOL_GPL(evl_add_wait_queue);
+ 
+ /* wq->lock held, hard irqs off */
+ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+-			struct evl_thread *waiter)
++			struct evl_thread *waiter,
++			int reason)
+ {
+ 	assert_hard_lock(&wq->lock);
+ 
+ 	trace_evl_wake_up(wq);
+ 
+-	if (list_empty(&wq->wchan.wait_list))
++	if (list_empty(&wq->wchan.wait_list)) {
+ 		waiter = NULL;
+-	else {
++	} else {
+ 		if (waiter == NULL)
+ 			waiter = list_first_entry(&wq->wchan.wait_list,
+ 						struct evl_thread, wait_next);
+ 		list_del_init(&waiter->wait_next);
+-		evl_wakeup_thread(waiter, T_PEND, 0);
++		evl_wakeup_thread(waiter, T_PEND, reason);
+ 	}
+ 
+ 	return waiter;
+-- 
+2.30.2
+

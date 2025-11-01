@@ -1,0 +1,34 @@
+From af79eb3e57a0895b5d24ecc6b37bbe2dc8479017 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 28 Sep 2022 11:18:27 +0200
+Subject: [PATCH 0777/1010] evl/mutex: remove redundant irq disabling
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 1a02b2f07b..3d3ffca20f 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -236,14 +236,13 @@ static void ceil_owner_priority(struct evl_mutex *mutex,
+ static void untrack_owner(struct evl_mutex *mutex)
+ {
+ 	struct evl_thread *prev = mutex->owner;
+-	unsigned long flags;
+ 
+ 	assert_hard_lock(&mutex->lock);
+ 
+ 	if (prev) {
+-		raw_spin_lock_irqsave(&prev->tracking_lock, flags);
++		raw_spin_lock(&prev->tracking_lock);
+ 		list_del(&mutex->next_tracker);
+-		raw_spin_unlock_irqrestore(&prev->tracking_lock, flags);
++		raw_spin_unlock(&prev->tracking_lock);
+ 		evl_put_element(&prev->element);
+ 		mutex->owner = NULL;
+ 	}
+-- 
+2.30.2
+

@@ -1,0 +1,64 @@
+From 5675e9a55fa182a5bd8cca6b3d0fc1d877783bb7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 27 Mar 2025 08:21:42 +0100
+Subject: [PATCH 0197/1010] net: dovetail: finalize alls skbs to head cache
+
+Abusing the semantics of SKB_FCLONE_UNAVAILABLE to determine whether a
+skb should go to the NAPI cache makes no sense, this is fragile at
+best, and likely wrong with real clones. Since the NAPI cache will be
+refilled from the head cache as needed when depleted, we can release
+all finalized skbs to the latter.
+
+This change somewhat partially disables the NAPI fast cache for
+devices operating as oob ports when releasing inband-originated skbs
+after transmission (i.e. when cleaning the TX ring). This said, that
+is acceptable since mixing inband and oob traffic through the same
+device is not recommended, although definitely possible, and we
+certainly/obviously don't expect high traffic load on the inband side
+in such a case.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/skbuff.h | 6 +++++-
+ net/core/skbuff.c      | 8 --------
+ 2 files changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index c98975da32..173c8a1c77 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -5196,7 +5196,11 @@ static inline dma_addr_t skb_oob_storage_addr(const struct sk_buff *skb)
+ 
+ bool recycle_skb_oob(struct sk_buff *skb);
+ void free_skb_oob(struct sk_buff *skb);
+-void finalize_skb_inband(struct sk_buff *skb);
++
++static inline void finalize_skb_inband(struct sk_buff *skb)
++{
++	__kfree_skb(skb);
++}
+ 
+ /**
+  *	__skb_inband_clone - In-band specific setup for skbs for a
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index eaf9041ec7..0a6444de27 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -322,14 +322,6 @@ bool recycle_skb_oob(struct sk_buff *skb)
+ 	return false;
+ }
+ 
+-void finalize_skb_inband(struct sk_buff *skb)
+-{
+-	if (skb->fclone != SKB_FCLONE_UNAVAILABLE)
+-		__kfree_skb(skb);
+-	else
+-		__kfree_skb_defer(skb);
+-}
+-
+ /*
+  * Pool for out-of-band allocation of buffer heads. The implementation
+  * is trivial ATM, we may improve this with per-CPU caches in the
+-- 
+2.30.2
+

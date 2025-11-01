@@ -1,0 +1,103 @@
+From f81a4e1a9965750a8e6ffa79a8d19b61830fb005 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 19 Sep 2020 12:12:24 +0200
+Subject: [PATCH 0682/1010] evl/clock: make default gravity a per-arch setting
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/include/asm/evl/calibration.h   | 13 +++++++++++++
+ arch/arm64/include/asm/evl/calibration.h | 12 ++++++++++++
+ arch/x86/include/asm/evl/calibration.h   | 12 ++++++++++++
+ kernel/evl/clock.c                       | 10 ++++++----
+ 4 files changed, 43 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/include/asm/evl/calibration.h
+ create mode 100644 arch/arm64/include/asm/evl/calibration.h
+ create mode 100644 arch/x86/include/asm/evl/calibration.h
+
+diff --git a/arch/arm/include/asm/evl/calibration.h b/arch/arm/include/asm/evl/calibration.h
+new file mode 100644
+index 0000000000..0fe3ef8cf7
+--- /dev/null
++++ b/arch/arm/include/asm/evl/calibration.h
+@@ -0,0 +1,13 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_ARM_ASM_CALIBRATION_H
++#define _EVL_ARM_ASM_CALIBRATION_H
++
++#include <linux/kconfig.h>
++
++static inline unsigned int evl_get_default_clock_gravity(void)
++{
++	/* Reasonable default for many armv7-based systems. */
++	return IS_ENABLED(CONFIG_SMP) ? 6000 : 3000;
++}
++
++#endif /* !_EVL_ARM_ASM_CALIBRATION_H */
+diff --git a/arch/arm64/include/asm/evl/calibration.h b/arch/arm64/include/asm/evl/calibration.h
+new file mode 100644
+index 0000000000..297f131b1c
+--- /dev/null
++++ b/arch/arm64/include/asm/evl/calibration.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_ARM64_ASM_CALIBRATION_H
++#define _EVL_ARM64_ASM_CALIBRATION_H
++
++#include <linux/kconfig.h>
++
++static inline unsigned int evl_get_default_clock_gravity(void)
++{
++	return 3000;
++}
++
++#endif /* !_EVL_ARM64_ASM_CALIBRATION_H */
+diff --git a/arch/x86/include/asm/evl/calibration.h b/arch/x86/include/asm/evl/calibration.h
+new file mode 100644
+index 0000000000..d3dcfdb864
+--- /dev/null
++++ b/arch/x86/include/asm/evl/calibration.h
+@@ -0,0 +1,12 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_X86_ASM_CALIBRATION_H
++#define _EVL_X86_ASM_CALIBRATION_H
++
++#include <linux/kconfig.h>
++
++static inline unsigned int evl_get_default_clock_gravity(void)
++{
++	return 3000;
++}
++
++#endif /* !_EVL_X86_ASM_CALIBRATION_H */
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index e00da3dfb5..abfffa52b7 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -33,6 +33,7 @@
+ #include <evl/file.h>
+ #include <evl/irq.h>
+ #include <evl/uaccess.h>
++#include <asm/evl/calibration.h>
+ #include <uapi/evl/factory.h>
+ #include <uapi/evl/clock.h>
+ #include <trace/events/evl.h>
+@@ -1029,11 +1030,12 @@ static int set_coreclk_gravity(struct evl_clock *clock,
+ 
+ static void get_default_gravity(struct evl_clock_gravity *p)
+ {
+-	unsigned int ulat = 3000; /* ns, decent default. */
++	unsigned int ulat = CONFIG_EVL_LATENCY_USER; /* ns */
++
++	if (!ulat)
++		/* If not specified, pick a reasonable default. */
++		ulat = evl_get_default_clock_gravity();
+ 
+-#if CONFIG_EVL_LATENCY_USER != 0
+-	ulat = CONFIG_EVL_LATENCY_USER;
+-#endif
+ 	p->user = ulat;
+ 	p->kernel = CONFIG_EVL_LATENCY_KERNEL;
+ 	p->irq = CONFIG_EVL_LATENCY_IRQ;
+-- 
+2.30.2
+

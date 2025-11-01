@@ -1,0 +1,26 @@
+From 27b332860941500394ff89c9c120aeeeeffe228c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 26 May 2020 16:17:31 +0200
+Subject: [PATCH 0662/1010] evl: kconfig: better qualify scope of DEBUG_WOLI
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index 86d1af5b30..e549e25c6e 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -190,7 +190,7 @@ config EVL_DEBUG_MEMORY
+ 	  heaps.
+ 
+ config EVL_DEBUG_WOLI
+-	bool "Enable locking consistency checks"
++	bool "Default enable locking consistency checks"
+ 	help
+ 	  This option enables a set of consistency checks by default
+ 	  for every new EVL thread for detecting wrong mutex-based
+-- 
+2.30.2
+

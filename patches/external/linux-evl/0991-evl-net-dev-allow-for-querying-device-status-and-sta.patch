@@ -1,0 +1,245 @@
+From 73e4b1d0f65fae89bccb577246c7174a1602ad3d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 16:18:00 +0200
+Subject: [PATCH 0991/1010] evl/net: dev: allow for querying device status and
+ statistics
+
+Implement ioctl(EVL_NDEVIOC_GETSTAT) which returns a structure filled
+with configuration data, status and statistics about the target
+device (which must be an active oob port), namely:
+
+- whether the device is oob-capable
+- number of packets on rx/tx
+- number of bytes on rx/tx
+- base buffer (skb) size
+- number of free buffers in pool
+- total number of buffers in pool
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/evl/netdevice.h | 10 +++++++++
+ include/uapi/evl/control-abi.h      |  2 +-
+ include/uapi/evl/net/device-abi.h   | 13 ++++++++++++
+ kernel/evl/net/dev.c                | 32 +++++++++++++++++++++++++++++
+ kernel/evl/net/input.c              |  8 ++++++++
+ kernel/evl/net/output.c             | 11 +++++++++-
+ kernel/evl/net/skb.c                |  8 +++++++-
+ 7 files changed, 81 insertions(+), 3 deletions(-)
+
+diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
+index 46402fc61a..2427017e3e 100644
+--- a/include/asm-generic/evl/netdevice.h
++++ b/include/asm-generic/evl/netdevice.h
+@@ -11,6 +11,7 @@
+ #include <evl/poll.h>
+ #include <evl/flag.h>
+ #include <evl/stax.h>
++#include <evl/stat.h>
+ #include <evl/crossing.h>
+ 
+ struct evl_net_qdisc;
+@@ -52,6 +53,15 @@ struct evl_netdev_state {
+ 	struct evl_net_ebpf_filter __rcu *rx_filter;
+ 	/* Runtime state flags. */
+ 	unsigned long flags;
++	/* Statistics */
++	struct {
++		evl_counter64 rx_packets;
++		evl_counter64 rx_bytes;
++		evl_counter64 tx_packets;
++		evl_counter64 tx_bytes;
++		evl_counter32 pool_alloc_count;
++		evl_counter32 pool_release_count;
++	} stats;
+ 	/* Count of oob ports referring to this device. */
+ 	int refs;
+ };
+diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
+index 0cf83bb169..f2137a4772 100644
+--- a/include/uapi/evl/control-abi.h
++++ b/include/uapi/evl/control-abi.h
+@@ -17,7 +17,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  40
++#define EVL_ABI_LEVEL  41
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
+index fb2a30de7a..6eec8fefb9 100644
+--- a/include/uapi/evl/net/device-abi.h
++++ b/include/uapi/evl/net/device-abi.h
+@@ -11,7 +11,20 @@
+ 
+ #define EVL_NETDEV_IOCBASE  0xef
+ 
++/* Obtain the status of an oob port. */
++struct evl_net_devstat {
++	__u64 rx_packets;
++	__u64 rx_bytes;
++	__u64 tx_packets;
++	__u64 tx_bytes;
++	__u32 skb_size;
++	__u32 skb_free;
++	__u32 skb_total;
++	__u8 oob_capable:1;	/* Driver is oob_capable */
++};
++
+ #define EVL_NDEVIOC_SETRXEBPF	_IOW(EVL_NETDEV_IOCBASE, 0, __s32 /* fd */)
+ #define EVL_NDEVIOC_SWITCHOFF	_IO(EVL_NETDEV_IOCBASE, 1)
++#define EVL_NDEVIOC_GETSTAT	_IOW(EVL_NETDEV_IOCBASE, 2, struct evl_net_devstat)
+ 
+ #endif /* !_EVL_UAPI_NET_DEVICE_ABI_H */
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 0e61c3a761..679352fb49 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -601,9 +601,32 @@ static int set_rx_filter(struct net_device *dev, unsigned long arg)
+ 	return 0;
+ }
+ 
++#define _distance(a, b)	(s32)((a) - (b))
++
++static int get_dev_stat(struct net_device *dev, struct evl_net_devstat *devs)
++{
++	struct net_device *real_dev = evl_net_real_dev(dev);
++	struct evl_netdev_state *est = real_dev->oob_state.estate;
++	u64 alloc_count, release_count;
++
++	devs->oob_capable = netdev_is_oob_capable(real_dev);
++	devs->rx_packets = evl_counter_read_careful(&est->stats.rx_packets);
++	devs->rx_bytes = evl_counter_read_careful(&est->stats.rx_bytes);
++	devs->tx_packets = evl_counter_read_careful(&est->stats.tx_packets);
++	devs->tx_bytes = evl_counter_read_careful(&est->stats.tx_bytes);
++	devs->skb_size = est->buf_size;
++	alloc_count = evl_counter_read_careful(&est->stats.pool_alloc_count);
++	release_count = evl_counter_read_careful(&est->stats.pool_release_count);
++	devs->skb_free = est->pool_max - _distance(alloc_count, release_count);
++	devs->skb_total = est->pool_max;
++
++	return 0;
++}
++
+ static long netdev_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+ {
++	struct evl_net_devstat devs = { 0 }, __user *u_devs;
+ 	struct net_device *dev = filp->private_data;
+ 	int ret = -ENOTTY;
+ 
+@@ -614,6 +637,15 @@ static long netdev_ioctl(struct file *filp, unsigned int cmd,
+ 	case EVL_NDEVIOC_SWITCHOFF:
+ 		ret = evl_net_switch_oob_port(dev, NULL);
+ 		break;
++	case EVL_NDEVIOC_GETSTAT:
++		ret = get_dev_stat(dev, &devs);
++		if (ret)
++			return ret;
++		u_devs = (typeof(u_devs))arg;
++		ret = copy_to_user(u_devs, &devs, sizeof(devs));
++		if (ret)
++			return -EFAULT;
++		break;
+ 	}
+ 
+ 	return ret;
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index ad53f62ecd..c9aa66c1c4 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -78,7 +78,9 @@ void evl_net_do_rx(void *arg)
+ 	struct net_device *dev = arg;
+ 	struct evl_netdev_state *est;
+ 	struct sk_buff *skb, *next;
++	unsigned int packets_in;
+ 	LIST_HEAD(list);
++	u64 bytes_in;
+ 	int ret;
+ 
+ 	est = dev->oob_state.estate;
+@@ -100,12 +102,18 @@ void evl_net_do_rx(void *arg)
+ 		 * (RX thread).
+ 		 */
+ 		if (evl_net_move_skb_queue(&est->rx_packets, &list)) {
++			packets_in = 0;
++			bytes_in = 0;
+ 			list_for_each_entry_safe(skb, next, &list, list) {
+ 				if (skb_is_oob_timestamped(skb))
+ 					skb_shinfo_oob(skb)->queuing_time = evl_ktime_monotonic();
+ 				list_del(&skb->list);
++				packets_in++;
++				bytes_in += skb->len;
+ 				EVL_NET_CB(skb)->handler->ingress(skb);
+ 			}
++			evl_counter_add_careful(&est->stats.rx_packets, packets_in);
++			evl_counter_add_careful(&est->stats.rx_bytes, bytes_in);
+ 		}
+ 
+ 		evl_net_ipv4_gc(dev_net(dev));
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 089d4aff3d..239880b9fe 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -111,8 +111,10 @@ void evl_net_do_tx(void *arg)
+ 	struct net_device *dev = arg;
+ 	struct evl_netdev_state *est;
+ 	struct evl_net_qdisc *qdisc;
++	unsigned int packets_out;
+ 	struct sk_buff *skb;
+ 	LIST_HEAD(list);
++	u64 bytes_out;
+ 	int ret;
+ 
+ 	est = dev->oob_state.estate;
+@@ -133,11 +135,18 @@ void evl_net_do_tx(void *arg)
+ 		 * prioritization implemented by the queueing
+ 		 * discipline attached to our device.
+ 		 */
++		packets_out = 0;
++		bytes_out = 0;
+ 		for (;;) {
+ 			bool more;
+ 			skb = qdisc->oob_ops->dequeue(qdisc, &more);
+-			if (skb == NULL)
++			if (skb == NULL) {
++				evl_counter_add_careful(&est->stats.tx_packets, packets_out);
++				evl_counter_add_careful(&est->stats.tx_bytes, bytes_out);
+ 				break;
++			}
++			packets_out++;
++			bytes_out += skb->len;
+ 			do_tx(qdisc, dev, skb, more);
+ 		}
+ 	}
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 62990c456f..cd4643b147 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -104,8 +104,11 @@ static struct page *alloc_bufpage(struct net_device *dev,
+ 		raw_spin_lock_irqsave(&est->tx_wait.wchan.lock, flags);
+ 
+ 		page = page_pool_dev_alloc_pages(est->tx_pages);
+-		if (likely(page))
++		if (likely(page)) {
++			/* Feed statistics under lock. */
++			evl_counter_inc_careful(&est->stats.pool_alloc_count);
+ 			break;
++		}
+ 
+ 		if (timeout == EVL_NONBLOCK) {
+ 			page = ERR_PTR(-EWOULDBLOCK);
+@@ -246,6 +249,9 @@ static void __free_evl_skb(struct sk_buff *skb, struct net_device *dev)
+ 	 */
+ 	raw_spin_lock_irqsave(&est->tx_wait.wchan.lock, flags);
+ 
++	/* Feed statistics under lock. */
++	evl_counter_inc_careful(&est->stats.pool_release_count);
++
+ 	if (evl_wait_active(&est->tx_wait))
+ 		evl_wake_up_head(&est->tx_wait);
+ 
+-- 
+2.30.2
+

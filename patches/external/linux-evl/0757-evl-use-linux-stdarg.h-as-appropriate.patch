@@ -1,0 +1,40 @@
+From 23940de22a5cfa4b094e7048bdc59731909b2c0a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 30 Jan 2022 16:19:00 +0100
+Subject: [PATCH 0757/1010] evl: use <linux/stdarg.h> as appropriate
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/file.c   | 2 +-
+ kernel/evl/thread.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/file.c b/kernel/evl/file.c
+index 2a3f45ad0a..93aa8aa3c2 100644
+--- a/kernel/evl/file.c
++++ b/kernel/evl/file.c
+@@ -4,7 +4,7 @@
+  * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#include <stdarg.h>
++#include <linux/stdarg.h>
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/fs.h>
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index a9ac34dfc6..57b65ae516 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -6,7 +6,7 @@
+  * Copyright (C) 2001, 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#include <stdarg.h>
++#include <linux/stdarg.h>
+ #include <linux/kernel.h>
+ #include <linux/kthread.h>
+ #include <linux/wait.h>
+-- 
+2.30.2
+

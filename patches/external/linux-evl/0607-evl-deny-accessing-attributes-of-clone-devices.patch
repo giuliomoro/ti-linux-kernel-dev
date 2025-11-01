@@ -1,0 +1,123 @@
+From d8f806c2d21a8771faec3eb70ba40267dd8348cb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 13 Feb 2020 15:42:43 +0100
+Subject: [PATCH 0607/1010] evl: deny accessing attributes of clone devices
+
+In essence, clone devices are no actual elements but virtual objects
+to create them, although both kinds belong to the same device
+class. As a result, clone devices have no data associated to their
+attributes visible from /sysfs.  Deny show/store requests on these
+attributes, returning -EIO on error.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h |  4 ++--
+ kernel/evl/monitor.c  |  3 +++
+ kernel/evl/thread.c   | 16 ++++++++++++++++
+ kernel/evl/xbuf.c     |  2 ++
+ 4 files changed, 23 insertions(+), 2 deletions(-)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index dc4ac92bf1..6fa23b614e 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -118,8 +118,8 @@ __evl_get_element_by_fundle(struct evl_factory *fac,
+ #define evl_get_element_by_dev(__dev, __type)				\
+ 	({								\
+ 		struct evl_element *__e = dev_get_drvdata(__dev);	\
+-		evl_get_element(__e);					\
+-		container_of(__e, __type, element);			\
++		__e ? ({ evl_get_element(__e);				\
++			container_of(__e, __type, element); }) : NULL;	\
+ 	})
+ 
+ void evl_put_element(struct evl_element *e);
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index f36a9e4c11..5fc9772336 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -896,6 +896,9 @@ static ssize_t state_show(struct device *dev,
+ 	fundle_t fun;
+ 
+ 	mon = evl_get_element_by_dev(dev, struct evl_monitor);
++	if (mon == NULL)
++		return -EIO;
++
+ 	state = mon->state;
+ 
+ 	if (mon->type == EVL_MONITOR_EVENT) {
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 77a98fca8c..3c1bbe187e 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2095,7 +2095,11 @@ static ssize_t state_show(struct device *dev,
+ 	ssize_t ret;
+ 
+ 	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
++
+ 	ret = snprintf(buf, PAGE_SIZE, "%#x\n", thread->state);
++
+ 	evl_put_element(&thread->element);
+ 
+ 	return ret;
+@@ -2113,6 +2117,8 @@ static ssize_t sched_show(struct device *dev,
+ 	ssize_t ret, _ret;
+ 
+ 	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
+ 
+ 	evl_spin_lock_irqsave(&thread->lock, flags);
+ 
+@@ -2157,6 +2163,8 @@ static ssize_t stats_show(struct device *dev,
+ 	int usage;
+ 
+ 	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
+ 
+ 	evl_spin_lock_irqsave(&thread->lock, flags);
+ 
+@@ -2224,8 +2232,12 @@ static ssize_t timeout_show(struct device *dev,
+ 	ssize_t ret;
+ 
+ 	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
++
+ 	ret = snprintf(buf, PAGE_SIZE, "%Lu\n",
+ 		ktime_to_ns(evl_get_thread_timeout(thread)));
++
+ 	evl_put_element(&thread->element);
+ 
+ 	return ret;
+@@ -2240,7 +2252,11 @@ static ssize_t pid_show(struct device *dev,
+ 	ssize_t ret;
+ 
+ 	thread = evl_get_element_by_dev(dev, struct evl_thread);
++	if (thread == NULL)
++		return -EIO;
++
+ 	ret = snprintf(buf, PAGE_SIZE, "%d\n", evl_get_inband_pid(thread));
++
+ 	evl_put_element(&thread->element);
+ 
+ 	return ret;
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index bf8ee9c731..d8c1e1b0ad 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -732,6 +732,8 @@ static ssize_t rings_show(struct device *dev,
+ 	ssize_t ret;
+ 
+ 	xbuf = evl_get_element_by_dev(dev, struct evl_xbuf);
++	if (xbuf == NULL)
++		return -EIO;
+ 
+ 	ret = snprintf(buf, PAGE_SIZE, "%zu %zu %zu %zu\n",
+ 		xbuf->ibnd.ring.fillsz,
+-- 
+2.30.2
+

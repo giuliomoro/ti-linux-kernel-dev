@@ -1,0 +1,40 @@
+From 7a5edca16689e48b63434eb78424435d951a09c2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 24 Sep 2024 11:34:23 +0200
+Subject: [PATCH 0918/1010] evl/net: ipv4: fix debug format strings
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/fragment.c | 2 +-
+ kernel/evl/net/ipv4/output.c   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/net/ipv4/fragment.c b/kernel/evl/net/ipv4/fragment.c
+index e4a9fcc2f5..005b5dbbf4 100644
+--- a/kernel/evl/net/ipv4/fragment.c
++++ b/kernel/evl/net/ipv4/fragment.c
+@@ -279,7 +279,7 @@ static struct sk_buff *push_frag(struct sk_buff *skb, struct net_device *dev)
+ 	/* If complete, reassemble the datagram. */
+ 	if (ft->flags == (INET_FRAG_FIRST_IN | INET_FRAG_LAST_IN) &&
+ 		ft->len == ft->end) {
+-		netdev_dbg(dev, "completed frag id=%d, len=%d\n", iph->id, ft->len);
++		netdev_dbg(dev, "completed frag id=%d, len=%zu\n", iph->id, ft->len);
+ 		evl_spin_unlock(&ft->lock);
+ 		/*
+ 		 * Stop the timer, then move the frag tree out of the
+diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
+index e3e9fdd168..0fb5a8810e 100644
+--- a/kernel/evl/net/ipv4/output.c
++++ b/kernel/evl/net/ipv4/output.c
+@@ -105,7 +105,7 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
+ 	}
+ 
+ 	netdev_dbg(dev, "build dgram: src=%pI4, dst=%pI4, mtu=%d, "
+-		   " transhdrlen=%zd, maxfraglen=%zd\n",
++		   " transhdrlen=%d, maxfraglen=%zd\n",
+ 		   &ipc->saddr, &ipc->daddr, mtu, ipc->transhdrlen, maxfraglen);
+ 
+ 	for (;;) {
+-- 
+2.30.2
+

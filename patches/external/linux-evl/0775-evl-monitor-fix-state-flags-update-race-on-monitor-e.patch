@@ -1,0 +1,58 @@
+From e694762a338b14d1d2bf3bbe6aaf584afc0f82e3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 25 Sep 2022 11:45:13 +0200
+Subject: [PATCH 0775/1010] evl/monitor: fix state flags update race on monitor
+ exit
+
+When waking up waiters upon exiting a monitor, we assume that
+state->flags cannot be updated from the user side asynchronously
+because we did not drop the mutex guarding the gate just yet, relying
+on the gate spinlock to serialize the kernel side.
+
+Unfortunately, the fast mutex (un)locking scheme may allow a user task
+to grab such mutex immediately from another CPU once
+__evl_unlock_mutex() has cleared the fundle in the atomic guard, then
+fiddle with the state flags, breaking our assumption.
+
+Make sure to drop the gate mutex only after we are done updating the
+state flags to prevent this issue.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 4def50d5a9..abfc96dadc 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -260,13 +260,11 @@ static int exit_monitor(struct evl_monitor *gate)
+ 	 */
+ 	raw_spin_lock_irqsave(&gate->lock, flags);
+ 
+-	__exit_monitor(gate, curr);
+-
++	/*
++	 * While gate.mutex is still held by current, we can
++	 * manipulate the state flags racelessly.
++	 */
+ 	if (state->flags & EVL_MONITOR_SIGNALED) {
+-		/*
+-		 * gate.mutex is held by current, so we are covered
+-		 * against races with userland manipulating the flags.
+-		 */
+ 		state->flags &= ~EVL_MONITOR_SIGNALED;
+ 		list_for_each_entry_safe(event, n, &gate->events, next) {
+ 			raw_spin_lock(&event->wait_queue.lock);
+@@ -276,6 +274,8 @@ static int exit_monitor(struct evl_monitor *gate)
+ 		}
+ 	}
+ 
++	__exit_monitor(gate, curr);
++
+ 	raw_spin_unlock_irqrestore(&gate->lock, flags);
+ 
+ 	evl_schedule();
+-- 
+2.30.2
+

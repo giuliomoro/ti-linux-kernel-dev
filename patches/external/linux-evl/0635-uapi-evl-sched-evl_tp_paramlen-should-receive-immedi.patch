@@ -1,0 +1,53 @@
+From aefb55f06a47d64725bdd331780d2423ef8ea3f1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 11:43:59 +0200
+Subject: [PATCH 0635/1010] uapi/evl: sched: evl_tp_paramlen() should receive
+ immediate parameter
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/sched.h | 5 +++--
+ kernel/evl/control.c     | 4 ++--
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
+index 431514f3c3..549aa86de7 100644
+--- a/include/uapi/evl/sched.h
++++ b/include/uapi/evl/sched.h
+@@ -95,8 +95,9 @@ struct evl_tp_ctlinfo {
+ 	struct __evl_tp_window windows[0];
+ };
+ 
+-#define evl_tp_paramlen(__p)	\
+-	(sizeof(*__p) + (__p)->nr_windows * sizeof((__p)->windows))
++#define evl_tp_paramlen(__nr_windows)		\
++	(sizeof(struct evl_tp_ctlparam) +	\
++		__nr_windows * sizeof(struct __evl_tp_window))
+ 
+ struct evl_sched_attrs {
+ 	int sched_policy;
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index d4e533723e..3df23aace4 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -154,7 +154,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 		if (param.tp.nr_windows > CONFIG_EVL_SCHED_TP_NR_PART)
+ 			return -EINVAL;
+ 
+-		len = evl_tp_paramlen(&param.tp);
++		len = evl_tp_paramlen(param.tp.nr_windows);
+ 		info = evl_alloc(len);
+ 		if (info == NULL)
+ 			return -ENOMEM;
+@@ -165,7 +165,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 		goto out;
+ 
+ 	u_infp = evl_valptr64(ctl->info_ptr, union evl_sched_ctlinfo);
+-	len = evl_tp_paramlen(&info->tp);
++	len = evl_tp_paramlen(info->tp.nr_windows);
+ 	ret = raw_copy_to_user(&u_infp->tp, &info->tp, len);
+ 	if (ret)
+ 		ret = -EFAULT;
+-- 
+2.30.2
+

@@ -1,0 +1,44 @@
+From bb7b342399f64a82bfe630ff9d0c305f611ff5cc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 4 Mar 2024 10:52:21 +0100
+Subject: [PATCH 0873/1010] evl: wait: fix detection of non-blocking timeout
+ value
+
+KTIME_MAX is a positive integer, so checking for negative values in
+order to detect non-blocking timeout specs is a pretty Bad Idea
+(tm). Compare to KTIME_MAX instead, dropping the useless - and fairly
+badly named - timeout_valid() helper in the same move.
+
+Reported-by: elv_user0 (via Element)
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/timeout.h | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/include/evl/timeout.h b/include/evl/timeout.h
+index 75557acf0c..f41ff1045b 100644
+--- a/include/evl/timeout.h
++++ b/include/evl/timeout.h
+@@ -23,17 +23,12 @@
+ 
+ static inline bool timeout_infinite(ktime_t kt)
+ {
+-	return kt == 0;
++	return kt == EVL_INFINITE;
+ }
+ 
+ static inline bool timeout_nonblock(ktime_t kt)
+ {
+-	return kt < 0;
+-}
+-
+-static inline bool timeout_valid(ktime_t kt)
+-{
+-	return kt > 0;
++	return kt == EVL_NONBLOCK;
+ }
+ 
+ /* Timer modes */
+-- 
+2.30.2
+

@@ -1,0 +1,25 @@
+From 8ef182fa6ea0a4e88fbc139de6debcba2bd25b3c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 5 Oct 2019 18:05:06 +0200
+Subject: [PATCH 0514/1010] evl/thread: pull inband sched ABI details from uapi
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index e528065e3f..d8c8756868 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -22,6 +22,7 @@
+ #include <linux/err.h>
+ #include <linux/ptrace.h>
+ #include <linux/math64.h>
++#include <uapi/linux/sched/types.h>
+ #include <evl/sched.h>
+ #include <evl/timer.h>
+ #include <evl/wait.h>
+-- 
+2.30.2
+

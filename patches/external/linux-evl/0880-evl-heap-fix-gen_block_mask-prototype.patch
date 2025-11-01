@@ -1,0 +1,27 @@
+From 5faeb27b63919581ea9a5afed8df989909f6a09c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 18 Jul 2024 18:46:02 +0200
+Subject: [PATCH 0880/1010] evl/heap: fix gen_block_mask() prototype
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/memory.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
+index 232b8900cb..1da5be623d 100644
+--- a/kernel/evl/memory.c
++++ b/kernel/evl/memory.c
+@@ -38,8 +38,7 @@ enum evl_heap_pgtype {
+ 	page_list =2
+ };
+ 
+-static inline u32 __always_inline
+-gen_block_mask(int log2size)
++__always_inline static u32 gen_block_mask(int log2size)
+ {
+ 	return -1U >> (32 - (EVL_HEAP_PAGE_SIZE >> log2size));
+ }
+-- 
+2.30.2
+

@@ -1,0 +1,52 @@
+From 8157e82e0f6031ee34733cc9a51730123b471f49 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 16 Mar 2024 19:45:37 +0100
+Subject: [PATCH 0875/1010] evl: fix missing function declarations
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/latmus.c | 2 +-
+ include/evl/sem.h    | 2 ++
+ kernel/evl/monitor.c | 2 +-
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 65c8cbe512..0e3d744690 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -439,7 +439,7 @@ static struct latmus_runner *create_sirq_runner(int cpu)
+ 	return &sirq_runner->runner;
+ }
+ 
+-void kthread_handler(void *arg)
++static void kthread_handler(void *arg)
+ {
+ 	struct kthread_runner *k_runner = arg;
+ 	ktime_t now;
+diff --git a/include/evl/sem.h b/include/evl/sem.h
+index 9378e38886..43d2b9e779 100644
+--- a/include/evl/sem.h
++++ b/include/evl/sem.h
+@@ -43,4 +43,6 @@ int evl_trydown(struct evl_ksem *ksem);
+ 
+ void evl_up(struct evl_ksem *ksem);
+ 
++void evl_broadcast(struct evl_ksem *ksem);
++
+ #endif /* !_EVL_SEM_H */
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 8775bd791a..e41d26d65f 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -58,7 +58,7 @@ struct evl_monitor {
+ 
+ static const struct file_operations monitor_fops;
+ 
+-struct evl_monitor *get_monitor_by_fd(int efd, struct evl_file **efilpp)
++static struct evl_monitor *get_monitor_by_fd(int efd, struct evl_file **efilpp)
+ {
+ 	struct evl_file *efilp = evl_get_file(efd);
+ 
+-- 
+2.30.2
+

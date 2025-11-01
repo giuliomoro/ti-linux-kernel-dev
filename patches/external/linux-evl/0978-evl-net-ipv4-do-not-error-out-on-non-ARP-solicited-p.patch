@@ -1,0 +1,31 @@
+From 93140db229760ac43571e796701320cb997d25f8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 20 Jun 2025 11:02:05 +0200
+Subject: [PATCH 0978/1010] evl/net: ipv4: do not error out on non-ARP
+ solicited peer
+
+Return silently with a success status if we can find a route to the
+solicited peer, which may not be reachable by an ARP request though
+(NUD_NOARP).
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/ipv4/ipv4.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 85036c22c5..ee52967233 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -291,8 +291,6 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 		 */
+ 		if (dev == dev_net(dev)->loopback_dev)
+ 			evl_net_lo_add_arp(dev);
+-		else
+-			ret = -EINVAL;
+ 	}
+ 
+ 	evl_net_put_dev(dev);
+-- 
+2.30.2
+

@@ -1,0 +1,218 @@
+From a693c2c0fad0137f890e351189491d89672e1788 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 21 Oct 2022 11:52:28 +0200
+Subject: [PATCH 0801/1010] evl/mutex: fix mutex counting for T_WOLI|T_WEAK
+
+When T_WOLI/T_WEAK is set for a thread acquiring or releasing a mutex,
+the count of mutexes it holds is tracked. Problem is that in some
+cases, a thread may release a mutex while bearing these bits, although
+it did not have them set when acquiring it, leading to imbalance in
+counting and general havoc due to any decision based on that
+information afterwards.
+
+We fix this by marking every mutex which participates to this counting
+with the new EVL_MUTEX_COUNTED flag, to keep the accounting accurate.
+
+Among several issues, this fixes this kernel splat observed on armv7,
+caused by evl_drop_current_ownership() being denied to unlock a mutex
+because of a bad tracking count, which in turn would cause its caller
+to loop indefinitely:
+
+[   52.576621] WARNING: CPU: 1 PID: 249 at kernel/evl/mutex.c:1383 evl_drop_current_ownership+0x50/0x7c
+[   52.585878] Modules linked in:
+[   52.589006] CPU: 1 PID: 249 Comm: sched-quota-acc Not tainted 5.15.64-00687-g07ee2d347ee9-dirty #572
+[   52.598170] Hardware name: Freescale i.MX6 Quad/DualLite (Device Tree)
+[   52.604718] IRQ stage: Linux
+[   52.607625] [<c0111c28>] (unwind_backtrace) from [<c010bc44>] (show_stack+0x10/0x14)
+[   52.615411] [<c010bc44>] (show_stack) from [<c0ebaedc>] (dump_stack_lvl+0xac/0xfc)
+[   52.623017] [<c0ebaedc>] (dump_stack_lvl) from [<c01271e4>] (__warn+0xd4/0x154)
+[   52.630357] [<c01271e4>] (__warn) from [<c0eb5018>] (warn_slowpath_fmt+0x60/0xbc)
+[   52.637877] [<c0eb5018>] (warn_slowpath_fmt) from [<c02466b4>] (evl_drop_current_ownership+0x50/0x7c)
+[   52.647130] [<c02466b4>] (evl_drop_current_ownership) from [<c024dc50>] (cleanup_current_thread+0x60/0x3f4)
+[   52.656903] [<c024dc50>] (cleanup_current_thread) from [<c024e83c>] (put_current_thread+0x24/0xc8)
+[   52.665891] [<c024e83c>] (put_current_thread) from [<c025241c>] (thread_ioctl+0xa4/0xd0)
+[   52.674011] [<c025241c>] (thread_ioctl) from [<c0316bc8>] (sys_ioctl+0x5a8/0xef4)
+[   52.681531] [<c0316bc8>] (sys_ioctl) from [<c0100080>] (ret_fast_syscall+0x0/0x1c)
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h  |  1 +
+ include/evl/thread.h |  2 +-
+ kernel/evl/mutex.c   | 35 +++++++++++++++++++++--------------
+ kernel/evl/syscall.c |  4 ++--
+ kernel/evl/thread.c  |  4 ++--
+ kernel/evl/wait.c    |  2 +-
+ 6 files changed, 28 insertions(+), 20 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index 53b9cafc7c..b937166b91 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -23,6 +23,7 @@ struct evl_thread;
+ #define EVL_MUTEX_PP      	BIT(1)
+ #define EVL_MUTEX_CLAIMED	BIT(2)
+ #define EVL_MUTEX_CEILING	BIT(3)
++#define EVL_MUTEX_COUNTED	BIT(4)
+ 
+ struct evl_mutex {
+ 	int wprio;
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 0bf36a6d24..5c182dd044 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -131,7 +131,7 @@ struct evl_thread {
+ 		int nr;
+ 		int active;
+ 	} poll_context;
+-	atomic_t inband_disable_count;
++	atomic_t held_mutex_count;
+ 	struct irq_work inband_work;
+ 	struct {
+ 		struct evl_counter isw;	/* in-band switches */
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index ba59debfd9..6d11f94ac3 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -53,23 +53,31 @@ static inline int get_ceiling_value(struct evl_mutex *mutex)
+ 	return clamp(*mutex->ceiling_ref, 1U, (u32)EVL_FIFO_MAX_PRIO);
+ }
+ 
+-static inline void disable_inband_switch(struct evl_thread *curr)
++/* mutex->wchan.lock held, irqs off. */
++static inline
++void disable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
+ {
+ 	/*
+ 	 * Track mutex locking depth: 1) to prevent weak threads from
+ 	 * being switched back to in-band context on return from OOB
+ 	 * syscalls, 2) when locking consistency is being checked.
+ 	 */
+-	if (curr->state & (T_WEAK|T_WOLI))
+-		atomic_inc(&curr->inband_disable_count);
++	if (unlikely(curr->state & (T_WEAK|T_WOLI))) {
++		atomic_inc(&curr->held_mutex_count);
++		mutex->flags |= EVL_MUTEX_COUNTED;
++	}
+ }
+ 
+-static inline void enable_inband_switch(struct evl_thread *curr)
++/* mutex->wchan.lock held, irqs off. */
++static inline
++void enable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
+ {
+-	if ((curr->state & (T_WEAK|T_WOLI)) &&
+-		atomic_dec_return(&curr->inband_disable_count) >= 0) {
+-		atomic_set(&curr->inband_disable_count, 0);
+-		EVL_WARN_ON_ONCE(CORE, 1);
++	if (unlikely(mutex->flags & EVL_MUTEX_COUNTED)) {
++		mutex->flags &= ~EVL_MUTEX_COUNTED;
++		if (atomic_dec_return(&curr->held_mutex_count) < 0) {
++			atomic_set(&curr->held_mutex_count, 0);
++			EVL_WARN_ON_ONCE(CORE, 1);
++		}
+ 	}
+ }
+ 
+@@ -626,10 +634,9 @@ static int fast_grab_mutex(struct evl_mutex *mutex)
+ 	 */
+ 	set_mutex_owner(mutex, curr);
+ 	raw_spin_unlock(&curr->lock);
++	disable_inband_switch(curr, mutex);
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+ 
+-	disable_inband_switch(curr);
+-
+ 	return 0;
+ }
+ 
+@@ -1181,7 +1188,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 			   */
+ 			if (set_mutex_owner(mutex, curr)) {
+ 				raw_spin_unlock(&curr->lock);
+-				disable_inband_switch(curr);
++				disable_inband_switch(curr, mutex);
+ 				finish_slow_grab(mutex, currh);
+ 				raw_spin_unlock(&mutex->wchan.lock);
+ 				evl_adjust_wait_priority(curr);
+@@ -1273,7 +1280,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	raw_spin_unlock(&curr->rq->lock);
+ grab:
+ 	raw_spin_unlock(&curr->lock);
+-	disable_inband_switch(curr);
++	disable_inband_switch(curr, mutex);
+ 	finish_slow_grab(mutex, currh);
+ out:
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+@@ -1375,10 +1382,10 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 
+ 	trace_evl_mutex_unlock(mutex);
+ 
+-	enable_inband_switch(curr);
+-
+ 	raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+ 
++	enable_inband_switch(curr, mutex);
++
+ 	/*
+ 	 * Priority boost for PP mutex is applied to the owner, unlike
+ 	 * PI boost which is applied to waiters. Therefore, we have to
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index be5b92416f..f303bc4f82 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -305,7 +305,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs,
+ 		if (signal_pending(tsk) || (curr->info & T_KICKED))
+ 			prepare_for_signal(tsk, curr, regs);
+ 		else if ((curr->state & T_WEAK) &&
+-			!atomic_read(&curr->inband_disable_count))
++			!atomic_read(&curr->held_mutex_count))
+ 			evl_switch_inband(EVL_HMDIAG_NONE);
+ 	}
+ 
+@@ -402,7 +402,7 @@ static int do_inband_syscall(struct pt_regs *regs, unsigned int nr,
+ 		if (signal_pending(tsk) || (curr->info & T_KICKED))
+ 			prepare_for_signal(tsk, curr, regs);
+ 		else if ((curr->state & T_WEAK) &&
+-			!atomic_read(&curr->inband_disable_count))
++			!atomic_read(&curr->held_mutex_count))
+ 			evl_switch_inband(EVL_HMDIAG_NONE);
+ 	}
+ done:
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 4647a58b93..88f7194324 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -216,7 +216,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 	thread->wait_data = NULL;
+ 	thread->u_window = NULL;
+ 	thread->observable = iattr->observable;
+-	atomic_set(&thread->inband_disable_count, 0);
++	atomic_set(&thread->held_mutex_count, 0);
+ 	memset(&thread->poll_context, 0, sizeof(thread->poll_context));
+ 	memset(&thread->stat, 0, sizeof(thread->stat));
+ 	memset(&thread->altsched, 0, sizeof(thread->altsched));
+@@ -1909,7 +1909,7 @@ static void handle_retuser_event(void)
+ 	evl_schedule();
+ 
+ 	if ((curr->state & T_WEAK) &&
+-		atomic_read(&curr->inband_disable_count) == 0)
++		atomic_read(&curr->held_mutex_count) == 0)
+ 		evl_switch_inband(EVL_HMDIAG_NONE);
+ }
+ 
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index c2c161a57c..e00307e4a9 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -87,7 +87,7 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
+ 	struct evl_thread *curr = evl_current();
+ 
+ 	if ((curr->state & T_WOLI) &&
+-		atomic_read(&curr->inband_disable_count) > 0)
++		atomic_read(&curr->held_mutex_count) > 0)
+ 		evl_notify_thread(curr, EVL_HMDIAG_LKSLEEP, evl_nil);
+ 
+ 	__evl_add_wait_queue(curr, wq, timeout, timeout_mode);
+-- 
+2.30.2
+

@@ -1,0 +1,26 @@
+From f87322696d5bb876bdde796a83588a0aa5340a26 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 16 Feb 2020 11:22:26 +0100
+Subject: [PATCH 0611/1010] evl/init: fix left over hiding ulat preset value
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index f96d878abb..e6b88439c1 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -1037,7 +1037,7 @@ static void get_default_gravity(struct evl_clock_gravity *p)
+ 	unsigned int ulat = 3000; /* ns, decent default. */
+ 
+ #if CONFIG_EVL_LATENCY_USER != 0
+-	ulat = CONFIG_XENO_OPT_TIMING_SCHEDLAT;
++	ulat = CONFIG_EVL_LATENCY_USER;
+ #endif
+ 	p->user = ulat;
+ 	p->kernel = CONFIG_EVL_LATENCY_KERNEL;
+-- 
+2.30.2
+

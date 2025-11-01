@@ -1,0 +1,27 @@
+From dadd8a06edd5dfc76f5d78fc88b723800664dfc2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 21 Mar 2025 14:55:11 +0100
+Subject: [PATCH 0195/1010] net: dovetail: drop useless skb release hook
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/skbuff.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 325c66ec00..cfda58d900 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -304,9 +304,6 @@ EXPORT_SYMBOL(sysctl_max_oob_skb);
+ __weak void free_skb_oob(struct sk_buff *skb)
+ { }
+ 
+-__weak void free_skb_head_oob(struct sk_buff *skb)
+-{ }
+-
+ bool recycle_skb_oob(struct sk_buff *skb)
+ {
+ 	/*
+-- 
+2.30.2
+

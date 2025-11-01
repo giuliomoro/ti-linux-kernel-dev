@@ -1,0 +1,142 @@
+From d3e107f5fd5b84113a5d02c556726854ee5e3051 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 11 May 2025 17:04:41 +0200
+Subject: [PATCH 0215/1010] net: dovetail: forward set/getsockopt() calls to
+ the oob core
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/net/sock.h | 26 ++++++++++++++++++++++++--
+ net/core/sock.c    | 17 ++++++++++++++++-
+ net/socket.c       | 14 ++++++++++++++
+ 3 files changed, 54 insertions(+), 3 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index b75d7ae1f1..d11dce823e 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1919,6 +1919,14 @@ int sock_oob_bind(struct sock *sk,
+ 
+ int sock_oob_shutdown(struct sock *sk, int how);
+ 
++int sock_inband_setopt_redirect(struct sock *sk,
++				int level, int optname,
++				sockptr_t optval, unsigned int optlen);
++
++int sock_inband_getopt_redirect(struct sock *sk,
++				int level, int optname,
++				sockptr_t optval, int *optlen);
++
+ static inline void sock_oob_destruct(struct sock *sk)
+ {
+ 	void sock_oob_destroy(struct sock *sk);
+@@ -1926,7 +1934,7 @@ static inline void sock_oob_destruct(struct sock *sk)
+ 		sock_oob_destroy(sk);
+ }
+ 
+-#else
++#else  /* !CONFIG_NET_OOB */
+ 
+ static inline bool sock_oob_capable(struct socket *sock)
+ {
+@@ -1944,9 +1952,23 @@ static inline int sock_oob_shutdown(struct sock *sk, int how)
+ 	return 0;
+ }
+ 
++static inline int sock_inband_setopt_redirect(struct sock *sk,
++					int level, int optname,
++					sockptr_t optval, int optlen)
++{
++	return 0;
++}
++
++static inline int sock_inband_getopt_redirect(struct sock *sk,
++					int level, int optname,
++					sockptr_t optval, int *optlen)
++{
++	return 0;
++}
++
+ static inline void sock_oob_destruct(struct sock *sk) { }
+ 
+-#endif
++#endif	/* !CONFIG_NET_OOB */
+ 
+ int sk_setsockopt(struct sock *sk, int level, int optname,
+ 		  sockptr_t optval, unsigned int optlen);
+diff --git a/net/core/sock.c b/net/core/sock.c
+index ab3bb39ba7..de8c4ebf97 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1111,6 +1111,12 @@ int sk_setsockopt(struct sock *sk, int level, int optname,
+ 
+ 	sockopt_lock_sock(sk);
+ 
++	if (sock_oob_capable(sock)) {
++		ret = sock_inband_setopt_redirect(sk, level, optname, optval, optlen);
++		if (ret != -ENOIOCTLCMD)
++			goto out;
++	}
++
+ 	switch (optname) {
+ 	case SO_DEBUG:
+ 		if (val && !sockopt_capable(CAP_NET_ADMIN))
+@@ -1540,6 +1546,7 @@ int sk_setsockopt(struct sock *sk, int level, int optname,
+ 		ret = -ENOPROTOOPT;
+ 		break;
+ 	}
++out:
+ 	sockopt_release_sock(sk);
+ 	return ret;
+ }
+@@ -1609,13 +1616,21 @@ int sk_getsockopt(struct sock *sk, int level, int optname,
+ 	} v;
+ 
+ 	int lv = sizeof(int);
+-	int len;
++	int len, ret;
+ 
+ 	if (copy_from_sockptr(&len, optlen, sizeof(int)))
+ 		return -EFAULT;
+ 	if (len < 0)
+ 		return -EINVAL;
+ 
++	if (sock_oob_capable(sock)) {
++		ret = sock_inband_getopt_redirect(sk, level, optname, optval, &len);
++		if (ret == 0)
++			goto lenout;
++		if (ret != -ENOIOCTLCMD)
++			return ret;
++	}
++
+ 	memset(&v, 0, sizeof(v));
+ 
+ 	switch (optname) {
+diff --git a/net/socket.c b/net/socket.c
+index 4f802611ad..17874834a9 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -181,6 +181,20 @@ long __weak sock_inband_ioctl_redirect(struct sock *sk,
+ 	return -ENOTTY;
+ }
+ 
++int __weak sock_inband_setopt_redirect(struct sock *sk,
++				int level, int optname,
++				sockptr_t optval, unsigned int optlen)
++{
++	return -EINVAL;
++}
++
++int __weak sock_inband_getopt_redirect(struct sock *sk,
++				int level, int optname,
++				sockptr_t optval, int *optlen)
++{
++	return -EINVAL;
++}
++
+ long __weak sock_oob_ioctl(struct file *file,
+ 			unsigned int cmd, unsigned long arg)
+ {
+-- 
+2.30.2
+

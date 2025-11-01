@@ -1,0 +1,943 @@
+From 2da542562ac0e9d0b2ebd139ab43aaad7c71b899 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 17 Apr 2020 09:12:13 +0200
+Subject: [PATCH 0643/1010] evl: factory: add element visibility
+
+Allow users to decide whether a new element should be made public or
+private at creation time, depending on a clone operation attribute.
+
+A public element appears as a cdev in the /dev/evl hierarchy, which
+means that it is visible to other processes (which was the static
+default before this change). On the contrary, a private element is
+only known from the process creating it, although it does appear in
+the /sysfs hierarchy regardless.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c       |   9 +-
+ drivers/evl/latmus.c       |   8 +-
+ include/evl/clock.h        |  10 +-
+ include/evl/factory.h      |  26 +++-
+ include/evl/thread.h       |  14 +-
+ include/uapi/evl/control.h |   4 +-
+ include/uapi/evl/factory.h |   8 ++
+ kernel/evl/clock.c         |  14 +-
+ kernel/evl/factory.c       | 268 +++++++++++++++++++++++++++++--------
+ kernel/evl/monitor.c       |   5 +-
+ kernel/evl/proxy.c         |   5 +-
+ kernel/evl/thread.c        |  12 +-
+ kernel/evl/xbuf.c          |   5 +-
+ 13 files changed, 287 insertions(+), 101 deletions(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index a0af8889c2..b20c483d38 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -442,10 +442,11 @@ static int rtswitch_create_kthread(struct rtswitch_context *ctx,
+ 	task = &ctx->tasks[ptask->index];
+ 	task->ctx = ctx;
+ 	err = evl_run_kthread_on_cpu(&task->kthread, ctx->cpu,
+-				     rtswitch_kthread, 1,
+-				     "rtk%d@%u:%d",
+-				     ptask->index, ctx->cpu,
+-				     task_pid_nr(current));
++				rtswitch_kthread, 1,
++				EVL_CLONE_PUBLIC,
++				"rtk%d@%u:%d",
++				ptask->index, ctx->cpu,
++				task_pid_nr(current));
+ 	/*
+ 	 * On error, clear the flag bits in order to avoid calling
+ 	 * evl_cancel_kthread() for an invalid thread in
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index adcc64bdb9..d77cac1431 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -409,9 +409,11 @@ create_kthread_runner(int priority, int cpu)
+ 	evl_init_flag(&k_runner->barrier);
+ 
+ 	ret = evl_run_kthread_on_cpu(&k_runner->kthread, cpu,
+-				     kthread_handler,
+-				     priority, "latmus-klat:%d",
+-				     task_pid_nr(current));
++				kthread_handler,
++				priority,
++				EVL_CLONE_PUBLIC,
++				"latmus-klat:%d",
++				task_pid_nr(current));
+ 	if (ret) {
+ 		kfree(k_runner);
+ 		return ERR_PTR(ret);
+diff --git a/include/evl/clock.h b/include/evl/clock.h
+index 01132cc56f..fb7f7174d4 100644
+--- a/include/evl/clock.h
++++ b/include/evl/clock.h
+@@ -30,12 +30,10 @@ struct evl_clock_gravity {
+ };
+ 
+ struct evl_clock {
+-	/* (ns) */
+ 	ktime_t resolution;
+-	/* Anticipation values for timer shots. */
+ 	struct evl_clock_gravity gravity;
+-	/* Clock name. */
+ 	const char *name;
++	int flags;
+ 	struct {
+ 		ktime_t (*read)(struct evl_clock *clock);
+ 		u64 (*read_cycles)(struct evl_clock *clock);
+@@ -51,11 +49,9 @@ struct evl_clock {
+ 	} ops;
+ 	struct evl_timerbase *timerdata;
+ 	struct evl_clock *master;
+-	/* Offset from master clock. */
+-	ktime_t offset;
++	ktime_t offset;	/* from master clock. */
+ #ifdef CONFIG_SMP
+-	/* CPU affinity of clock beat. */
+-	struct cpumask affinity;
++	struct cpumask affinity; /* which CPU this clock beats on. */
+ #endif
+ 	struct list_head next;
+ 	struct evl_element element;
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 6fa23b614e..02ee9e52a0 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -21,6 +21,7 @@
+ #include <linux/hashtable.h>
+ #include <evl/file.h>
+ #include <uapi/evl/types.h>
++#include <uapi/evl/factory.h>
+ 
+ #define element_of(__filp, __type)					\
+ 	({								\
+@@ -44,6 +45,7 @@ struct evl_factory {
+ 	struct evl_element *(*build)(struct evl_factory *fac,
+ 				const char *name,
+ 				void __user *u_attrs,
++				int clone_flags,
+ 				u32 *state_offp);
+ 	void (*dispose)(struct evl_element *e);
+ 	const struct attribute_group **attrs;
+@@ -78,10 +80,15 @@ struct evl_element {
+ 	bool zombie;
+ 	hard_spinlock_t ref_lock;
+ 	fundle_t fundle;
++	int clone_flags;
+ 	struct rb_node index_node;
+ 	struct irq_work irq_work;
+ 	struct work_struct work;
+ 	struct hlist_node hash;
++	struct {
++		struct file *filp;
++		int efd;
++	} fpriv;
+ };
+ 
+ static inline const char *
+@@ -94,7 +101,8 @@ evl_element_name(struct evl_element *e)
+ }
+ 
+ int evl_init_element(struct evl_element *e,
+-		struct evl_factory *fac);
++		struct evl_factory *fac,
++		int clone_flags);
+ 
+ void evl_destroy_element(struct evl_element *e);
+ 
+@@ -122,6 +130,16 @@ __evl_get_element_by_fundle(struct evl_factory *fac,
+ 			container_of(__e, __type, element); }) : NULL;	\
+ 	})
+ 
++static inline bool evl_element_is_public(struct evl_element *e)
++{
++	return !!(e->clone_flags & EVL_CLONE_PUBLIC);
++}
++
++static inline bool evl_element_is_core(struct evl_element *e)
++{
++	return !!(e->clone_flags & EVL_CLONE_CORE);
++}
++
+ void evl_put_element(struct evl_element *e);
+ 
+ int evl_open_element(struct inode *inode,
+@@ -130,9 +148,9 @@ int evl_open_element(struct inode *inode,
+ int evl_release_element(struct inode *inode,
+ 			struct file *filp);
+ 
+-int evl_create_element_device(struct evl_element *e,
+-			struct evl_factory *fac,
+-			const char *name);
++int evl_create_core_element_device(struct evl_element *e,
++				struct evl_factory *fac,
++				const char *name);
+ 
+ void evl_remove_element_device(struct evl_element *e);
+ 
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 2f76247a7d..291f774881 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -316,10 +316,10 @@ static inline void evl_propagate_schedparam_change(struct evl_thread *curr)
+ 		__evl_propagate_schedparam_change(curr);
+ }
+ 
+-int __evl_run_kthread(struct evl_kthread *kthread);
++int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 
+ #define _evl_run_kthread(__kthread, __affinity, __fn, __priority,	\
+-			__fmt, __args...)				\
++			 __clone_flags, __fmt, __args...)		\
+ 	({								\
+ 		int __ret;						\
+ 		struct evl_init_thread_attr __iattr = {			\
+@@ -334,19 +334,19 @@ int __evl_run_kthread(struct evl_kthread *kthread);
+ 		__ret = evl_init_thread(&(__kthread)->thread, &__iattr,	\
+ 					NULL, __fmt, ##__args);		\
+ 		if (!__ret)						\
+-			__ret = __evl_run_kthread(__kthread);		\
++			__ret = __evl_run_kthread(__kthread, __clone_flags); \
+ 		__ret;							\
+ 	})
+ 
+ #define evl_run_kthread(__kthread, __fn, __priority,			\
+-			__fmt, __args...)				\
++			__clone_flags, __fmt, __args...)		\
+ 	_evl_run_kthread(__kthread, CPU_MASK_ALL, __fn, __priority,	\
+-			__fmt, ##__args)
++			__clone_flags, __fmt, ##__args)
+ 
+ #define evl_run_kthread_on_cpu(__kthread, __cpu, __fn, __priority,	\
+-			       __fmt, __args...)			\
++			       __clone_flags, __fmt, __args...)		\
+ 	_evl_run_kthread(__kthread, cpumask_of(__cpu), __fn, __priority, \
+-			__fmt, ##__args)
++			__clone_flags, __fmt, ##__args)
+ 
+ static inline void evl_cancel_kthread(struct evl_kthread *kthread)
+ {
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 029a9f6761..8e3caa4208 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -11,14 +11,14 @@
+ #include <uapi/evl/sched.h>
+ 
+ /* Earliest ABI level we support. */
+-#define EVL_ABI_BASE   20
++#define EVL_ABI_BASE   21
+ /*
+  * Current/latest ABI level we support. We may decouple the base and
+  * current ABI levels by providing backward compatibility from the
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  20
++#define EVL_ABI_LEVEL  21
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
+index 28efded622..6e5235499b 100644
+--- a/include/uapi/evl/factory.h
++++ b/include/uapi/evl/factory.h
+@@ -17,10 +17,18 @@ struct evl_element_ids {
+ 	__u32 state_offset;
+ };
+ 
++#define EVL_CLONE_PUBLIC  (1 << 16)
++#define EVL_CLONE_PRIVATE (0 << 16)
++#define EVL_CLONE_CORE    (1 << 31)
++#define EVL_CLONE_MASK    ((__u32)-1 << 16)
++
+ struct evl_clone_req {
+ 	__u64 name_ptr;		/* (const char *name) */
+ 	__u64 attrs_ptr;	/* (void *attrs) */
++	__u32 clone_flags;
++	/* Output on success: */
+ 	struct evl_element_ids eids;
++	__u32 efd;
+ };
+ 
+ #define EVL_IOC_CLONE	_IOWR(EVL_FACTORY_IOCBASE, 0, struct evl_clone_req)
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index dd4b2dc444..0e64118faf 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -34,6 +34,7 @@
+ #include <evl/irq.h>
+ #include <evl/uaccess.h>
+ #include <asm/evl/syscall.h>
++#include <uapi/evl/factory.h>
+ #include <uapi/evl/clock.h>
+ #include <trace/events/evl.h>
+ 
+@@ -153,12 +154,12 @@ void inband_clock_was_set(void)
+ 	mutex_unlock(&clocklist_lock);
+ }
+ 
+-static int init_clock(struct evl_clock *clock,
+-		struct evl_clock *master)
++static int init_clock(struct evl_clock *clock, struct evl_clock *master)
+ {
+ 	int ret;
+ 
+-	ret = evl_init_element(&clock->element, &evl_clock_factory);
++	ret = evl_init_element(&clock->element, &evl_clock_factory,
++			clock->flags & EVL_CLONE_PUBLIC);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -169,7 +170,7 @@ static int init_clock(struct evl_clock *clock,
+ 	 * usable. Make sure all inits have been completed before this
+ 	 * point.
+ 	 */
+-	ret = evl_create_element_device(&clock->element,
++	ret = evl_create_core_element_device(&clock->element,
+ 					&evl_clock_factory,
+ 					clock->name);
+ 	if (ret) {
+@@ -1084,6 +1085,7 @@ static void adjust_realtime_clock(struct evl_clock *clock)
+ struct evl_clock evl_mono_clock = {
+ 	.name = EVL_CLOCK_MONOTONIC_DEV,
+ 	.resolution = 1,	/* nanosecond. */
++	.flags = EVL_CLONE_PUBLIC,
+ 	.ops = {
+ 		.read = read_mono_clock,
+ 		.read_cycles = read_mono_clock_cycles,
+@@ -1100,6 +1102,7 @@ EXPORT_SYMBOL_GPL(evl_mono_clock);
+ struct evl_clock evl_realtime_clock = {
+ 	.name = EVL_CLOCK_REALTIME_DEV,
+ 	.resolution = 1,	/* nanosecond. */
++	.flags = EVL_CLONE_PUBLIC,
+ 	.ops = {
+ 		.read = read_realtime_clock,
+ 		.read_cycles = read_realtime_clock_cycles,
+@@ -1121,8 +1124,7 @@ int __init evl_clock_init(void)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = evl_init_slave_clock(&evl_realtime_clock,
+-				&evl_mono_clock);
++	ret = evl_init_slave_clock(&evl_realtime_clock,	&evl_mono_clock);
+ 	if (ret)
+ 		evl_put_element(&evl_mono_clock.element);
+ 
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 4ca23cb658..5cdbb55d1b 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -19,6 +19,8 @@
+ #include <linux/uaccess.h>
+ #include <linux/hashtable.h>
+ #include <linux/stringhash.h>
++#include <linux/anon_inodes.h>
++#include <linux/file.h>
+ #include <linux/dovetail.h>
+ #include <evl/assert.h>
+ #include <evl/file.h>
+@@ -51,7 +53,8 @@ static struct evl_factory *factories[] = {
+ 
+ static dev_t factory_rdev;
+ 
+-int evl_init_element(struct evl_element *e, struct evl_factory *fac)
++int evl_init_element(struct evl_element *e,
++		struct evl_factory *fac, int clone_flags)
+ {
+ 	int minor;
+ 
+@@ -67,9 +70,13 @@ int evl_init_element(struct evl_element *e, struct evl_factory *fac)
+ 	e->factory = fac;
+ 	e->minor = minor;
+ 	e->refs = 1;
++	e->dev = NULL;
++	e->fpriv.filp = NULL;
++	e->fpriv.efd = -1;
+ 	e->zombie = false;
+ 	e->fundle = EVL_NO_HANDLE;
+ 	e->devname = NULL;
++	e->clone_flags = clone_flags;
+ 	raw_spin_lock_init(&e->ref_lock);
+ 
+ 	return 0;
+@@ -93,9 +100,40 @@ void evl_get_element(struct evl_element *e)
+ 	EVL_WARN_ON(CORE, old_refs == 0);
+ }
+ 
+-int evl_open_element(struct inode *inode, struct file *filp)
++static int bind_file_to_element(struct file *filp, struct evl_element *e)
+ {
+ 	struct evl_file_binding *fbind;
++	int ret;
++
++	fbind = kmalloc(sizeof(*fbind), GFP_KERNEL);
++	if (fbind == NULL)
++		return -ENOMEM;
++
++	ret = evl_open_file(&fbind->efile, filp);
++	if (ret) {
++		kfree(fbind);
++		return ret;
++	}
++
++	fbind->element = e;
++	filp->private_data = fbind;
++
++	return 0;
++}
++
++static struct evl_element *unbind_file_from_element(struct file *filp)
++{
++	struct evl_file_binding *fbind = filp->private_data;
++	struct evl_element *e = fbind->element;
++
++	evl_release_file(&fbind->efile);
++	kfree(fbind);
++
++	return e;
++}
++
++int evl_open_element(struct inode *inode, struct file *filp)
++{
+ 	struct evl_element *e;
+ 	unsigned long flags;
+ 	int ret = 0;
+@@ -120,27 +158,29 @@ int evl_open_element(struct inode *inode, struct file *filp)
+ 	if (ret)
+ 		return ret;
+ 
+-	fbind = kmalloc(sizeof(*fbind), GFP_KERNEL);
+-	if (fbind == NULL)
+-		return -ENOMEM;
+-
+-	ret = evl_open_file(&fbind->efile, filp);
++	ret = bind_file_to_element(filp, e);
+ 	if (ret) {
+-		kfree(fbind);
++		evl_put_element(e);
+ 		return ret;
+ 	}
+ 
+-	fbind->element = e;
+-	filp->private_data = fbind;
+ 	stream_open(inode, filp);
+ 
+ 	return 0;
+ }
+ 
+-static void __put_element(struct evl_element *e)
++static void __do_put_element(struct evl_element *e)
+ {
+ 	struct evl_factory *fac = e->factory;
+ 
++	/*
++	 * We might get there device-less if create_element_device()
++	 * failed installing a file descriptor for a private
++	 * element. Go to disposal immediately if so.
++	 */
++	if (unlikely(!e->dev))
++		goto dispose;
++
+ 	/*
+ 	 * e->minor won't be free for use until evl_destroy_element()
+ 	 * is called from the disposal handler, so there is no risk of
+@@ -151,47 +191,50 @@ static void __put_element(struct evl_element *e)
+ 	 * Serialize with evl_open_element().
+ 	 */
+ 	synchronize_rcu();
++
+ 	/*
+ 	 * CAUTION: the disposal handler should delay the release of
+ 	 * e's container at the next rcu idle period via kfree_rcu(),
+ 	 * because the embedded e->cdev is still needed ahead for
+-	 * completing the file release process (see __fput()).
++	 * completing the file release process of public elements (see
++	 * __fput()).
+ 	 */
++dispose:
+ 	fac->dispose(e);
+ }
+ 
+-static void put_element_work(struct work_struct *work)
++static void do_put_element_work(struct work_struct *work)
+ {
+ 	struct evl_element *e;
+ 
+ 	e = container_of(work, struct evl_element, work);
+-	__put_element(e);
++	__do_put_element(e);
+ }
+ 
+-static void put_element_irq(struct irq_work *work)
++static void do_put_element_irq(struct irq_work *work)
+ {
+ 	struct evl_element *e;
+ 
+ 	e = container_of(work, struct evl_element, irq_work);
+-	INIT_WORK(&e->work, put_element_work);
++	INIT_WORK(&e->work, do_put_element_work);
+ 	schedule_work(&e->work);
+ }
+ 
+-static void put_element(struct evl_element *e)
++static void do_put_element(struct evl_element *e)
+ {
+ 	/*
+ 	 * These trampolines may look like a bit cheesy but we have no
+ 	 * choice but offloading the disposal to an in-band task
+ 	 * context. In (the rare) case the last ref. to an element was
+ 	 * dropped from OOB(-protected) context, we need to go via an
+-	 * irq_work->workqueue chain in order to run __put_element()
+-	 * eventually.
++	 * irq_work->workqueue chain in order to run
++	 * __do_put_element() eventually.
+ 	 */
+ 	if (unlikely(running_oob() || oob_irqs_disabled())) {
+-		init_irq_work(&e->irq_work, put_element_irq);
++		init_irq_work(&e->irq_work, do_put_element_irq);
+ 		irq_work_queue(&e->irq_work);
+ 	} else
+-		__put_element(e);
++		__do_put_element(e);
+ }
+ 
+ void evl_put_element(struct evl_element *e) /* in-band or OOB */
+@@ -218,8 +261,8 @@ void evl_put_element(struct evl_element *e) /* in-band or OOB */
+ 	 * referencing stale @ent memory by a read-side RCU
+ 	 * section. Meanwhile we wait for all read-sides to complete
+ 	 * after calling cdev_del().  Once cdev_del() returns, the
+-	 * device cannot be opened anymore, without affecting the
+-	 * files that might still be opened on this device though.
++	 * device cannot be opened anymore, which does not affect the
++	 * files that might still be active on this device though.
+ 	 *
+ 	 * In the c) case, the last file release will dispose of the
+ 	 * element eventually.
+@@ -232,7 +275,7 @@ void evl_put_element(struct evl_element *e) /* in-band or OOB */
+ 	if (--e->refs == 0) {
+ 		e->zombie = true;
+ 		raw_spin_unlock_irqrestore(&e->ref_lock, flags);
+-		put_element(e);
++		do_put_element(e);
+ 		return;
+ 	}
+ out:
+@@ -241,23 +284,21 @@ void evl_put_element(struct evl_element *e) /* in-band or OOB */
+ 
+ int evl_release_element(struct inode *inode, struct file *filp)
+ {
+-	struct evl_file_binding *fbind = filp->private_data;
+-	struct evl_element *e = fbind->element;
++	struct evl_element *e;
+ 
+-	evl_release_file(&fbind->efile);
+-	kfree(fbind);
++	e = unbind_file_from_element(filp);
+ 	evl_put_element(e);
+ 
+ 	return 0;
+ }
+ 
+-static void release_device(struct device *dev)
++static void release_sys_device(struct device *dev)
+ {
+ 	kfree(dev);
+ }
+ 
+-static struct device *create_device(dev_t rdev, struct evl_factory *fac,
+-				void *drvdata, const char *name)
++static struct device *create_sys_device(dev_t rdev, struct evl_factory *fac,
++					void *drvdata, const char *name)
+ {
+ 	struct device *dev;
+ 	int ret;
+@@ -270,7 +311,7 @@ static struct device *create_device(dev_t rdev, struct evl_factory *fac,
+ 	dev->class = fac->class;
+ 	dev->type = &fac->type;
+ 	dev->groups = fac->attrs;
+-	dev->release = release_device;
++	dev->release = release_sys_device;
+ 	dev_set_drvdata(dev, drvdata);
+ 
+ 	ret = dev_set_name(dev, "%s", name);
+@@ -284,12 +325,94 @@ static struct device *create_device(dev_t rdev, struct evl_factory *fac,
+ 	return dev;
+ 
+ fail:
+-	put_device(dev); /* ->release_device() */
++	put_device(dev); /* ->release_sys_device() */
+ 
+ 	return ERR_PTR(ret);
+ }
+ 
+-static int create_named_element_device(struct evl_element *e,
++static struct file_operations dummy_fops = {
++	.owner = THIS_MODULE,
++};
++
++static int do_element_visibility(struct evl_element *e,
++				struct evl_factory *fac,
++				dev_t *rdev)
++{
++	struct file *filp;
++	int ret, efd;
++
++	if (EVL_WARN_ON(CORE, !evl_element_is_core(e) && !current->mm))
++		e->clone_flags |= EVL_CLONE_CORE;
++
++	/*
++	 * Unlike a private one, a publically visible element exports
++	 * a cdev in the /dev/evl hierarchy so that any process can
++	 * see it.  Both types are backed by a kernel device object so
++	 * that we can export their state to userland via /sysfs.
++	 */
++
++	if (evl_element_is_public(e)) {
++		*rdev = MKDEV(MAJOR(fac->sub_rdev), e->minor);
++		cdev_init(&e->cdev, fac->fops);
++		return cdev_add(&e->cdev, *rdev, 1);
++	}
++
++	*rdev = MKDEV(0, e->minor);
++
++	if (evl_element_is_core(e))
++		return 0;
++
++	/*
++	 * Create a private user element, passing the real fops so
++	 * that FMODE_CAN_READ/WRITE are set accordingly by the vfs.
++	 */
++	filp = anon_inode_getfile(evl_element_name(e), fac->fops,
++				NULL, O_RDWR);
++	if (IS_ERR(filp)) {
++		ret = PTR_ERR(filp);
++		return ret;
++	}
++
++	/*
++	 * Now switch to dummy fops temporarily, until calling
++	 * evl_release_element() is safe for filp, meaning once
++	 * bind_file_to_element() has returned successfully.
++	 */
++	replace_fops(filp, &dummy_fops);
++
++	/*
++	 * There will be no open() call for this new private element
++	 * since we have no associated cdev, bind it to the anon file
++	 * immediately.
++	 */
++	ret = bind_file_to_element(filp, e);
++	if (ret) {
++		filp_close(filp, current->files);
++		/*
++		 * evl_release_element() was not called: do a manual
++		 * disposal.
++		 */
++		fac->dispose(e);
++		return ret;
++	}
++
++	/* Back to the real fops for this element class. */
++	replace_fops(filp, fac->fops);
++
++	efd = get_unused_fd_flags(O_RDWR|O_CLOEXEC);
++	if (efd < 0) {
++		filp_close(filp, current->files);
++		ret = efd;
++		return ret;
++	}
++
++	e->fpriv.filp = filp;
++	e->fpriv.efd = efd;
++
++	return 0;
++}
++
++static int create_element_device(struct evl_element *e,
+ 				struct evl_factory *fac)
+ {
+ 	struct evl_element *n;
+@@ -299,11 +422,12 @@ static int create_named_element_device(struct evl_element *e,
+ 	int ret;
+ 
+ 	/*
+-	 * Do a quick hash check on the new device name, to make sure
++	 * Do a quick hash check on the new element name, to make sure
+ 	 * device_register() won't trigger a kernel log splash because
+ 	 * of a naming conflict.
+ 	 */
+ 	hlen = hashlen_string("EVL", e->devname->name);
++
+ 	mutex_lock(&fac->hash_lock);
+ 
+ 	hash_for_each_possible(fac->name_hash, n, hash, hlen)
+@@ -316,25 +440,39 @@ static int create_named_element_device(struct evl_element *e,
+ 
+ 	mutex_unlock(&fac->hash_lock);
+ 
+-	rdev = MKDEV(MAJOR(fac->sub_rdev), e->minor);
+-	cdev_init(&e->cdev, fac->fops);
+-	ret = cdev_add(&e->cdev, rdev, 1);
++	ret = do_element_visibility(e, fac, &rdev);
+ 	if (ret)
+-		goto fail_cdev;
++		goto fail_visibility;
+ 
+-	dev = create_device(rdev, fac, e, evl_element_name(e));
++	dev = create_sys_device(rdev, fac, e, evl_element_name(e));
+ 	if (IS_ERR(dev)) {
+ 		ret = PTR_ERR(dev);
+-		goto fail_dev;
++		goto fail_device;
++	}
++
++	/*
++	 * Install fd on a private user element file only when we
++	 * cannot fail creating the device anymore. First take a
++	 * reference then install fd (which is a membar).
++	 */
++	if (!evl_element_is_public(e) && !evl_element_is_core(e)) {
++		e->refs++;
++		fd_install(e->fpriv.efd, e->fpriv.filp);
+ 	}
+ 
+ 	e->dev = dev;
+ 
+ 	return 0;
+ 
+-fail_dev:
+-	cdev_del(&e->cdev);
+-fail_cdev:
++fail_device:
++	if (evl_element_is_public(e)) {
++		cdev_del(&e->cdev);
++	} else if (!evl_element_is_core(e)) {
++		put_unused_fd(e->fpriv.efd);
++		filp_close(e->fpriv.filp, current->files);
++	}
++
++fail_visibility:
+ 	mutex_lock(&fac->hash_lock);
+ 	hash_del(&e->hash);
+ 	mutex_unlock(&fac->hash_lock);
+@@ -342,9 +480,9 @@ static int create_named_element_device(struct evl_element *e,
+ 	return ret;
+ }
+ 
+-int evl_create_element_device(struct evl_element *e,
+-			struct evl_factory *fac,
+-			const char *name)
++int evl_create_core_element_device(struct evl_element *e,
++				struct evl_factory *fac,
++				const char *name)
+ {
+ 	struct filename *devname;
+ 
+@@ -352,9 +490,10 @@ int evl_create_element_device(struct evl_element *e,
+ 	if (devname == NULL)
+ 		return PTR_ERR(devname);
+ 
++	e->clone_flags |= EVL_CLONE_CORE;
+ 	e->devname = devname;
+ 
+-	return create_named_element_device(e, fac);
++	return create_element_device(e, fac);
+ }
+ 
+ void evl_remove_element_device(struct evl_element *e)
+@@ -363,7 +502,10 @@ void evl_remove_element_device(struct evl_element *e)
+ 	struct device *dev = e->dev;
+ 
+ 	device_unregister(dev);
+-	cdev_del(&e->cdev);
++
++	if (evl_element_is_public(e))
++		cdev_del(&e->cdev);
++
+ 	mutex_lock(&fac->hash_lock);
+ 	hash_del(&e->hash);
+ 	mutex_unlock(&fac->hash_lock);
+@@ -395,16 +537,20 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ 	if (ret)
+ 		return -EFAULT;
+ 
++	if (req.clone_flags & ~EVL_CLONE_MASK)
++		return -EINVAL;
++
+ 	if (req.name_ptr) {
+ 		devname = getname(evl_valptr64(req.name_ptr, const char));
+ 		if (IS_ERR(devname))
+ 			return PTR_ERR(devname);
+-	}
++	} else if (req.clone_flags & EVL_CLONE_PUBLIC)
++		return -EINVAL;
+ 
+ 	fac = container_of(filp->f_inode->i_cdev, struct evl_factory, cdev);
+ 	u_attrs = evl_valptr64(req.attrs_ptr, void);
+ 	e = fac->build(fac, devname ? devname->name : NULL,
+-		u_attrs, &state_offset);
++		u_attrs, req.clone_flags, &state_offset);
+ 	if (IS_ERR(e)) {
+ 		if (devname)
+ 			putname(devname);
+@@ -428,19 +574,27 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ 	filp->private_data = e;
+ 	barrier();
+ 
+-	ret = create_named_element_device(e, fac);
++	ret = create_element_device(e, fac);
+ 	if (ret) {
+ 		/* release_clone_device() must skip cleanup. */
+ 		filp->private_data = NULL;
+-		fac->dispose(e);
++		/*
++		 * If we failed to create a private element,
++		 * evl_release_element() did run via filp_close(), so
++		 * the disposal has taken place already.
++		 */
++		if (req.clone_flags & EVL_CLONE_PUBLIC)
++			fac->dispose(e);
+ 		return ret;
+ 	}
+ 
+ 	val = e->minor;
+-	ret |= put_user(val, &u_req->eids.minor) ? -EFAULT : 0;
++	ret |= put_user(val, &u_req->eids.minor);
+ 	val = e->fundle;
+-	ret |= put_user(val, &u_req->eids.fundle) ? -EFAULT : 0;
+-	ret |= put_user(state_offset, &u_req->eids.state_offset) ? -EFAULT : 0;
++	ret |= put_user(val, &u_req->eids.fundle);
++	ret |= put_user(state_offset, &u_req->eids.state_offset);
++	val = e->fpriv.efd;
++	ret |= put_user(val, &u_req->efd);
+ 
+ 	return ret ? -EFAULT : 0;
+ }
+@@ -675,7 +829,7 @@ static int create_factory(struct evl_factory *fac, dev_t rdev)
+ 		if (ret)
+ 			goto fail_cdev;
+ 
+-		dev = create_device(rdev, fac, NULL, idevname);
++		dev = create_sys_device(rdev, fac, NULL, idevname);
+ 		if (IS_ERR(dev))
+ 			goto fail_dev;
+ 	}
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index c15f2332b1..6f4674e341 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -762,7 +762,7 @@ static const struct file_operations monitor_fops = {
+ 
+ static struct evl_element *
+ monitor_factory_build(struct evl_factory *fac, const char *name,
+-		void __user *u_attrs, u32 *state_offp)
++		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct evl_monitor_state *state;
+ 	struct evl_monitor_attrs attrs;
+@@ -814,7 +814,8 @@ monitor_factory_build(struct evl_factory *fac, const char *name,
+ 		goto fail_alloc;
+ 	}
+ 
+-	ret = evl_init_element(&mon->element, &evl_monitor_factory);
++	ret = evl_init_element(&mon->element, &evl_monitor_factory,
++			clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index b159722652..a0abc2531f 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -290,7 +290,7 @@ static const struct file_operations proxy_fops = {
+ 
+ static struct evl_element *
+ proxy_factory_build(struct evl_factory *fac, const char *name,
+-		void __user *u_attrs, u32 *state_offp)
++		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct workqueue_struct *wq = NULL;
+ 	struct evl_proxy_attrs attrs;
+@@ -344,7 +344,8 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
+ 		}
+ 	}
+ 
+-	ret = evl_init_element(&proxy->element, &evl_proxy_factory);
++	ret = evl_init_element(&proxy->element,
++			&evl_proxy_factory, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index a1f8f3a50e..2de803f686 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -425,17 +425,18 @@ static int kthread_trampoline(void *arg)
+ 	return 0;
+ }
+ 
+-int __evl_run_kthread(struct evl_kthread *kthread)
++int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)
+ {
+ 	struct evl_thread *thread = &kthread->thread;
+ 	struct task_struct *p;
+ 	int ret;
+ 
+-	ret = evl_init_element(&thread->element, &evl_thread_factory);
++	ret = evl_init_element(&thread->element,
++			&evl_thread_factory, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+-	ret = evl_create_element_device(&thread->element,
++	ret = evl_create_core_element_device(&thread->element,
+ 					&evl_thread_factory,
+ 					thread->name);
+ 	if (ret)
+@@ -2234,7 +2235,7 @@ static void discard_unmapped_uthread(struct evl_thread *thread)
+ 
+ static struct evl_element *
+ thread_factory_build(struct evl_factory *fac, const char *name,
+-		void __user *u_attrs, u32 *state_offp)
++		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct task_struct *tsk = current;
+ 	struct evl_init_thread_attr iattr;
+@@ -2252,7 +2253,8 @@ thread_factory_build(struct evl_factory *fac, const char *name,
+ 	if (curr == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	ret = evl_init_element(&curr->element, &evl_thread_factory);
++	ret = evl_init_element(&curr->element,
++			&evl_thread_factory, clone_flags);
+ 	if (ret) {
+ 		kfree(curr);
+ 		return ERR_PTR(ret);
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index 4b46548927..aaa37032da 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -628,7 +628,7 @@ EXPORT_SYMBOL_GPL(evl_write_xbuf);
+ 
+ static struct evl_element *
+ xbuf_factory_build(struct evl_factory *fac, const char *name,
+-		void __user *u_attrs, u32 *state_offp)
++		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	void *i_bufmem = NULL, *o_bufmem = NULL;
+ 	struct evl_xbuf_attrs attrs;
+@@ -665,7 +665,8 @@ xbuf_factory_build(struct evl_factory *fac, const char *name,
+ 		}
+ 	}
+ 
+-	ret = evl_init_element(&xbuf->element, &evl_xbuf_factory);
++	ret = evl_init_element(&xbuf->element,
++			&evl_xbuf_factory, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+-- 
+2.30.2
+

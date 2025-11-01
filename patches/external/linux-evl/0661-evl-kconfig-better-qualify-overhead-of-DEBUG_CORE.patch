@@ -1,0 +1,26 @@
+From 85ba88b831f39c7ec1916bfd0eb96d6c509f9285 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 26 May 2020 16:13:53 +0200
+Subject: [PATCH 0661/1010] evl: kconfig: better qualify overhead of DEBUG_CORE
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index 39dd05b6a6..86d1af5b30 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -180,7 +180,7 @@ config EVL_DEBUG_CORE
+ 	bool "Core runtime assertions"
+ 	help
+ 	  This option activates various assertions inside the EVL
+-	  core. This option has limited overhead.
++	  core. This option has moderate overhead.
+ 
+ config EVL_DEBUG_MEMORY
+ 	bool "Memory checks"
+-- 
+2.30.2
+

@@ -1,0 +1,165 @@
+From 848afb1b17be4e8abb9d3ee24b93542096439963 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 6 Feb 2021 12:54:04 +0100
+Subject: [PATCH 0725/1010] evl/timer: add linear indexing method
+
+Add (back) the ability to index timers either in a rb-tree or linked
+to a basic linked list.
+
+The latter delivers lower latency to applications systems with very
+few active timers at any point in time (typically less than 10 active
+timers, e.g. not more than a couple of timed loops, very few timed
+syscalls).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/timer.h | 72 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/evl/Kconfig  | 22 ++++++++++++++
+ kernel/evl/timer.c  |  4 +++
+ 3 files changed, 98 insertions(+)
+
+diff --git a/include/evl/timer.h b/include/evl/timer.h
+index f666135655..7feec6c44f 100644
+--- a/include/evl/timer.h
++++ b/include/evl/timer.h
+@@ -31,6 +31,76 @@
+ #define EVL_TIMER_GRAVITY_MASK	(EVL_TIMER_KGRAVITY|EVL_TIMER_UGRAVITY)
+ #define EVL_TIMER_INIT_MASK	EVL_TIMER_GRAVITY_MASK
+ 
++#ifdef CONFIG_EVL_TIMER_LIST
++
++struct evl_tnode {
++	ktime_t date;
++	struct list_head next;
++};
++
++struct evl_tqueue {
++	struct list_head q;
++};
++
++static inline void evl_init_tqueue(struct evl_tqueue *tq)
++{
++	INIT_LIST_HEAD(&tq->q);
++}
++
++#define evl_destroy_tqueue(__tq)	do { } while (0)
++
++static inline bool evl_tqueue_is_empty(struct evl_tqueue *tq)
++{
++	return list_empty(&tq->q);
++}
++
++static inline
++struct evl_tnode *evl_get_tqueue_head(struct evl_tqueue *tq)
++{
++	if (list_empty(&tq->q))
++		return NULL;
++
++	return list_first_entry(&tq->q, struct evl_tnode, next);
++}
++
++static inline
++struct evl_tnode *evl_get_tqueue_next(struct evl_tqueue *tq,
++				struct evl_tnode *node)
++{
++	if (list_is_last(&node->next, &tq->q))
++		return NULL;
++
++	return list_entry(node->next.next, struct evl_tnode, next);
++}
++
++static inline
++void evl_insert_tnode(struct evl_tqueue *tq,
++		struct evl_tnode *node)
++{
++	struct evl_tnode *n;
++
++	if (list_empty(&tq->q)) {
++		list_add(&node->next, &tq->q);
++	} else {
++		list_for_each_entry_reverse(n, &tq->q, next) {
++			if (n->date <= node->date)
++				break;
++		}
++		list_add(&node->next, &n->next);
++	}
++}
++
++static inline
++void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
++{
++	list_del(&node->next);
++}
++
++#define for_each_evl_tnode(__node, __tq)	\
++	list_for_each_entry(__node, &(__tq)->q, next)
++
++#else /* CONFIG_EVL_TIMER_RBTREE */
++
+ struct evl_tnode {
+ 	struct rb_node rb;
+ 	ktime_t date;
+@@ -81,6 +151,8 @@ void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ 	for ((__node) = evl_get_tqueue_head(__tq); (__node);	\
+ 	     (__node) = evl_get_tqueue_next(__tq, __node))
+ 
++#endif /* CONFIG_EVL_TIMER_LIST */
++
+ struct evl_rq;
+ 
+ struct evl_timerbase {
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index e549e25c6e..bbac32c394 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -38,6 +38,28 @@ config EVL_SCHED_TP_NR_PART
+ 	Define the maximum number of temporal partitions the TP
+ 	scheduler may have to handle.
+ 
++choice
++	prompt "Timer indexing method"
++	default EVL_TIMER_LIST
++	help
++	This option selects the underlying data structure
++	which indexes the software timers managed by the EVL core.
++
++config EVL_TIMER_LIST
++	bool "Linear"
++	help
++	Use a linked list. Albeit O(N), a basic list is	particularly efficient
++	when only a few software timers are concurrently active (typically less
++	than 10).
++
++config EVL_TIMER_RBTREE
++	bool "Tree"
++	help
++	Use a red-black tree. This data structure delivers better performance
++	when a high number of software timers are concurrently active.
++
++endchoice
++
+ config EVL_RUNSTATS
+ 	bool "Collect runtime statistics"
+ 	default y
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 1d6e320871..4e4a24d8e6 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -455,6 +455,8 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
+ }
+ EXPORT_SYMBOL_GPL(evl_get_timer_overruns);
+ 
++#ifdef CONFIG_EVL_TIMER_RBTREE
++
+ static __always_inline
+ bool date_is_earlier(struct evl_tnode *left,
+ 		struct evl_tnode *right)
+@@ -485,3 +487,5 @@ void evl_insert_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ 	rb_link_node(&node->rb, parent, new);
+ 	rb_insert_color(&node->rb, &tq->root);
+ }
++
++#endif
+-- 
+2.30.2
+

@@ -1,0 +1,67 @@
+From b7c049fe63c6faf093d4b834aecaf083c657f20c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 14 Nov 2023 14:59:39 +0100
+Subject: [PATCH 0890/1010] evl/work: return work enqueuing status
+
+This comes in handy when we need to manage references into the posted
+data manually. Returns true if the in-band worker was triggered as a
+result of calling evl_call_inband*(), false otherwise.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/work.h |  6 +++---
+ kernel/evl/work.c  | 11 ++++++++---
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/include/evl/work.h b/include/evl/work.h
+index 48fe6b2e62..647e45f910 100644
+--- a/include/evl/work.h
++++ b/include/evl/work.h
+@@ -40,12 +40,12 @@ void evl_init_work_safe(struct evl_work *work,
+ void evl_init_sync_work(struct evl_sync_work *sync_work,
+ 			int (*handler)(struct evl_sync_work *sync_work));
+ 
+-void evl_call_inband_from(struct evl_work *work,
++bool evl_call_inband_from(struct evl_work *work,
+ 			struct workqueue_struct *wq);
+ 
+-static inline void evl_call_inband(struct evl_work *work)
++static inline bool evl_call_inband(struct evl_work *work)
+ {
+-	evl_call_inband_from(work, system_wq);
++	return evl_call_inband_from(work, system_wq);
+ }
+ 
+ static inline
+diff --git a/kernel/evl/work.c b/kernel/evl/work.c
+index 4a7f4a0acc..cc9759f737 100644
+--- a/kernel/evl/work.c
++++ b/kernel/evl/work.c
+@@ -71,7 +71,7 @@ void evl_init_sync_work(struct evl_sync_work *sync_work,
+ }
+ EXPORT_SYMBOL_GPL(evl_init_sync_work);
+ 
+-void evl_call_inband_from(struct evl_work *work,
++bool evl_call_inband_from(struct evl_work *work,
+ 			struct workqueue_struct *wq)
+ {
+ 	work->wq = wq;
+@@ -84,8 +84,13 @@ void evl_call_inband_from(struct evl_work *work,
+ 	if (work->element)
+ 		evl_get_element(work->element);
+ 
+-	if (!irq_work_queue(&work->irq_work) && work->element)
+-		evl_put_element(work->element);
++	if (!irq_work_queue(&work->irq_work)) {
++		if (work->element)
++			evl_put_element(work->element);
++		return false;
++	}
++
++	return true;
+ }
+ EXPORT_SYMBOL_GPL(evl_call_inband_from);
+ 
+-- 
+2.30.2
+

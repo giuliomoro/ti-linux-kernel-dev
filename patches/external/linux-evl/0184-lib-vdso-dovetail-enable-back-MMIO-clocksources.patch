@@ -1,0 +1,33 @@
+From e60ff474c6541d8d87f66c68b5de84892c38c959 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 27 May 2025 10:52:55 +0200
+Subject: [PATCH 0184/1010] lib/vdso: dovetail: enable back MMIO clocksources
+
+Access to clocksources with generic MMIO support via the vDSO was
+unexpectedly disabled for several releases for ARM, due to wrong
+build conditionals.
+
+Fix the related conditional expression in order to skip the access
+support code when building the vDSO32 compat object only.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ lib/vdso/gettimeofday.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/vdso/gettimeofday.c b/lib/vdso/gettimeofday.c
+index 520ddf88dc..547082fb61 100644
+--- a/lib/vdso/gettimeofday.c
++++ b/lib/vdso/gettimeofday.c
+@@ -22,7 +22,7 @@ static inline bool vdso_cycles_ok(u64 cycles)
+ }
+ #endif
+ 
+-#if defined(CONFIG_GENERIC_CLOCKSOURCE_VDSO) && !defined(BUILD_VDSO32)
++#if defined(CONFIG_GENERIC_CLOCKSOURCE_VDSO) && (!defined(CONFIG_COMPAT_VDSO) || !defined(BUILD_VDSO32))
+ 
+ #include <linux/fcntl.h>
+ #include <linux/io.h>
+-- 
+2.30.2
+

@@ -1,0 +1,32 @@
+From 5bbde0dc8cd8447a162b821837cb83675e44f3f5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 11 Feb 2019 09:37:02 +0100
+Subject: [PATCH 0325/1010] evl/wait: remove superfluous checks for list
+ emptiness
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/wait.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
+index 6205394850..9044dae51f 100644
+--- a/kernel/evenless/wait.c
++++ b/kernel/evenless/wait.c
+@@ -83,11 +83,8 @@ void evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
+ 
+ 	trace_evl_wait_flush(wq);
+ 
+-	if (!list_empty(&wq->wait_list)) {
+-		list_for_each_entry_safe(waiter, tmp,
+-					&wq->wait_list, wait_next)
+-			evl_wakeup_thread(waiter, T_PEND, reason);
+-	}
++	list_for_each_entry_safe(waiter, tmp, &wq->wait_list, wait_next)
++		evl_wakeup_thread(waiter, T_PEND, reason);
+ }
+ EXPORT_SYMBOL_GPL(evl_flush_wait_locked);
+ 
+-- 
+2.30.2
+

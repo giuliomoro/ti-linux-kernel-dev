@@ -1,0 +1,43 @@
+From 808d218337196d7d30949c5d8e3aa465f5a31ffb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 13 Aug 2020 10:23:30 +0200
+Subject: [PATCH 0675/1010] drivers/evl: latmus: do not expect argument to
+ EVL_LATIOC_RESET
+
+Suggested-by: lio <liu.hailong6@zte.com.cn>
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/latmus.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 3633d8460c..f90e88c7e1 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -1018,6 +1018,13 @@ static long latmus_ioctl(struct file *filp, unsigned int cmd,
+ 	struct latmus_runner *runner;
+ 	int ret;
+ 
++	if (cmd == EVL_LATIOC_RESET) {
++		evl_reset_clock_gravity(&evl_mono_clock);
++		return 0;
++	}
++
++	/* All other cmds require a setup struct to be passed. */
++
+ 	if (copy_from_user(&setup_data, (struct latmus_setup __user *)arg,
+ 			   sizeof(setup_data)))
+ 		return -EFAULT;
+@@ -1026,9 +1033,6 @@ static long latmus_ioctl(struct file *filp, unsigned int cmd,
+ 		return -EINVAL;
+ 
+ 	switch (cmd) {
+-	case EVL_LATIOC_RESET:
+-		evl_reset_clock_gravity(&evl_mono_clock);
+-		return 0;
+ 	case EVL_LATIOC_TUNE:
+ 		setup = setup_tuning;
+ 		run = run_tuning;
+-- 
+2.30.2
+

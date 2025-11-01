@@ -1,0 +1,27 @@
+From d87af73153a41f86132791bc786fac23437c67f5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 9 Feb 2019 11:35:39 +0100
+Subject: [PATCH 0314/1010] evl/thread: do not force convert SCHED_WEAK,0 to
+ SCHED_NORMAL
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/thread.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
+index bc07ac9696..47973a1974 100644
+--- a/kernel/evenless/thread.c
++++ b/kernel/evenless/thread.c
+@@ -2046,8 +2046,6 @@ static void __get_sched_attrs(struct evl_sched_class *sched_class,
+ 			struct evl_sched_attrs *attrs)
+ {
+ 	attrs->sched_policy = sched_class->policy;
+-	if (attrs->sched_priority == 0) /* SCHED_FIFO/SCHED_WEAK */
+-		attrs->sched_policy = SCHED_NORMAL;
+ 
+ 	if (sched_class == &evl_sched_rt) {
+ 		if (thread->state & T_RRB) {
+-- 
+2.30.2
+

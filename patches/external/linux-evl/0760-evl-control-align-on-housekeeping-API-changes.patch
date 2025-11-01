@@ -1,0 +1,26 @@
+From c106dbb2c323d2732d6212ca8bd538d9b2780041 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 9 Apr 2022 17:04:28 +0200
+Subject: [PATCH 0760/1010] evl/control: align on housekeeping API changes
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/control.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 2aea3fb57e..9c50a507ab 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -247,7 +247,7 @@ static int do_cpu_state(struct evl_cpu_state *cpst)
+ 	if (is_evl_cpu(cpu))
+ 		state |= EVL_CPU_OOB;
+ 
+-	if (!housekeeping_cpu(cpu, HK_FLAG_DOMAIN))
++	if (!housekeeping_cpu(cpu, HK_TYPE_DOMAIN))
+ 		state |= EVL_CPU_ISOL;
+ 
+ 	return raw_copy_to_user_ptr64(cpst->state_ptr, &state,
+-- 
+2.30.2
+

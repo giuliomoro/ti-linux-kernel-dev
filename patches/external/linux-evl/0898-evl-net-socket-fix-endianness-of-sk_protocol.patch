@@ -1,0 +1,26 @@
+From 97e00cb1d3015555ce18f73b51c1ed646859f91b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 22 Nov 2023 15:49:57 +0100
+Subject: [PATCH 0898/1010] evl/net: socket: fix endianness of sk_protocol
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/socket.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index bb298e7c32..74f647602d 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -652,7 +652,7 @@ static int create_evl_socket(struct net *net, struct socket *sock,
+ 	 * Protocol is checked for validity when the socket is
+ 	 * attached to the out-of-band core in sock_oob_attach().
+ 	 */
+-	sk->sk_protocol = protocol;
++	sk->sk_protocol = htons(protocol);
+ 	sk_refcnt_debug_inc(sk);
+ 	sk->sk_destruct	= destroy_evl_socket;
+ 
+-- 
+2.30.2
+

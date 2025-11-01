@@ -1,0 +1,46 @@
+From 5a19fe1e291d0a2f42754e8bcd7ecd0a68e369b6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 12 Nov 2023 12:09:18 +0100
+Subject: [PATCH 0149/1010] net: dovetail: add missing argument to
+ sock_oob_connect()
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/socket.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index 66a4a4b847..a5f3e3cffb 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -165,7 +165,8 @@ int __weak sock_oob_bind(struct socket *sock, struct sockaddr *addr, int len)
+ 	return 0;
+ }
+ 
+-int __weak sock_oob_connect(struct socket *sock, struct sockaddr *addr, int len)
++int __weak sock_oob_connect(struct socket *sock,
++			struct sockaddr *addr, int len, int flags)
+ {
+ 	return 0;
+ }
+@@ -221,7 +222,7 @@ static inline int sock_oob_bind(struct socket *sock,
+ }
+ 
+ static inline int sock_oob_connect(struct socket *sock,
+-				struct sockaddr *addr, int len)
++				struct sockaddr *addr, int len, int flags)
+ {
+ 	return 0;
+ }
+@@ -2132,7 +2133,7 @@ int __sys_connect_file(struct file *file, struct sockaddr_storage *address,
+ 
+ 	if (!err && sock_oob_capable(sock))
+ 		err = sock_oob_connect(sock, (struct sockaddr *)address,
+-				addrlen);
++				addrlen, sock->file->f_flags | file_flags);
+ out:
+ 	return err;
+ }
+-- 
+2.30.2
+

@@ -1,0 +1,37 @@
+From d5a0521fe738a8b8c7d97e078ec207ff6eb5e491 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 21 Nov 2022 12:03:16 +0100
+Subject: [PATCH 0828/1010] evl/mutex: detect inconsistent owner upon inner
+ unlocking
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 3217d841de..3eac51cbb6 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -754,6 +754,9 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 
+ 	raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+ 
++	if (EVL_WARN_ON(CORE, mutex->wchan.owner != curr))
++		goto out;
++
+ 	enable_inband_switch(curr, mutex);
+ 
+ 	/*
+@@ -794,7 +797,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	 * once the kernel state is in sync.
+ 	 */
+ 	atomic_set(mutex->fastlock, EVL_NO_HANDLE);
+-
++out:
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+ 
+ 	/*
+-- 
+2.30.2
+

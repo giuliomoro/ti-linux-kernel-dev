@@ -1,0 +1,102 @@
+From e768d6163deb5834d55e94eb1858286739135e34 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 25 Jun 2025 09:01:59 +0200
+Subject: [PATCH 0246/1010] net: dovetail: init oob markers at skb setup
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/skbuff.h | 19 +++++++++++++++++++
+ net/core/skbuff.c      |  5 +++++
+ 2 files changed, 24 insertions(+)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 417baf1398..94a8959ca6 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -5164,6 +5164,16 @@ struct sk_buff *get_oob_skb(void);
+ 
+ void put_oob_skb(struct sk_buff *skb);
+ 
++/**
++ * skb_init_inband - Set up the oob markers appropriately for an
++ * in-band skb.
++ */
++static inline void skb_init_inband(struct sk_buff *skb)
++{
++	skb->oob = 0;
++	skb->oob_released = 0;
++}
++
+ /**
+  * skb_is_oob - Whether the buffer shell was allocated from the oob
+  * pool. Caution: this is distinct from a skb which storage is managed
+@@ -5189,6 +5199,11 @@ static inline void skb_mark_oob_released(struct sk_buff *skb)
+ 	skb->oob_released = 1;
+ }
+ 
++static inline void skb_clear_oob_released(struct sk_buff *skb)
++{
++	skb->oob_released = 0;
++}
++
+ /**
+  * skb_is_oob_timestamped - Whether the buffer is timestamped by a
+  * companion core, in which case the timestamps should be stored in
+@@ -5273,6 +5288,10 @@ static inline bool __skb_oob_free_head(struct sk_buff *skb)
+ 
+ #else  /* !CONFIG_NET_OOB */
+ 
++static inline void skb_init_inband(struct sk_buff *skb)
++{
++}
++
+ static inline bool skb_is_oob(const struct sk_buff *skb)
+ {
+ 	return false;
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 844e33d5c7..cb45cb48c5 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -367,6 +367,7 @@ struct sk_buff *get_oob_skb(void)
+ 		raw_spin_unlock_irqrestore(&c->lock, flags);
+ 		memset(skb, 0, offsetof(struct sk_buff, tail));
+ 		skb_mark_oob(skb);
++		skb_clear_oob_released(skb);
+ 	} else {
+ 		raw_spin_unlock_irqrestore(&c->lock, flags);
+ 	}
+@@ -1337,6 +1338,7 @@ static struct sk_buff *__skb_clone(struct sk_buff *n, struct sk_buff *skb)
+ 	C(data);
+ 	C(truesize);
+ 	refcount_set(&n->users, 1);
++	skb_init_inband(n);
+ 
+ 	atomic_inc(&(skb_shinfo(skb)->dataref));
+ 	skb->cloned = 1;
+@@ -2040,6 +2042,7 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
+ 	skb->hdr_len  = 0;
+ 	skb->nohdr    = 0;
+ 	atomic_set(&skb_shinfo(skb)->dataref, 1);
++	skb_init_inband(skb);
+ 
+ 	skb_metadata_clear(skb);
+ 
+@@ -6403,6 +6406,7 @@ static int pskb_carve_inside_header(struct sk_buff *skb, const u32 off,
+ 	skb->hdr_len = 0;
+ 	skb->nohdr = 0;
+ 	atomic_set(&skb_shinfo(skb)->dataref, 1);
++	skb_init_inband(skb);
+ 
+ 	return 0;
+ }
+@@ -6539,6 +6543,7 @@ static int pskb_carve_inside_nonlinear(struct sk_buff *skb, const u32 off,
+ 	skb->len -= off;
+ 	skb->data_len = skb->len;
+ 	atomic_set(&skb_shinfo(skb)->dataref, 1);
++	skb_init_inband(skb);
+ 
+ 	return 0;
+ }
+-- 
+2.30.2
+

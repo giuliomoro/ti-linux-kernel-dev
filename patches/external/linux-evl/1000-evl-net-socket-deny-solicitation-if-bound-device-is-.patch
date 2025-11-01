@@ -1,0 +1,64 @@
+From 2cef3f3863eaa8d764334fef58f454e85f55ecf0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 27 Jun 2025 22:07:26 +0200
+Subject: [PATCH 1000/1010] evl/net: socket: deny solicitation if bound device
+ is invalid
+
+So far, we passed a null device pointer to the solicitation service in
+case the device bound to the socket did exist but was not an oob
+port. This could yield an ambiguous error status, such as receiving
+-ENETUNREACH from ip_output_route(), although the existing device
+should be usable for in-band routing to the given address.
+
+Fix this by denying the solicitation entirely if the bound device is
+not an oob port, returning -ENODEV, which is the conventional error
+code in this situation.
+
+In addition, ensure that evl_net_ipv4_solicit() also declines to
+search for a route if given a valid device which is not an oob port,
+returning -ENODEV as well.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/ipv4/ipv4.c | 3 +++
+ kernel/evl/net/socket.c    | 9 ++++++++-
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index a4e76fd86a..700b6610f8 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -261,6 +261,9 @@ int evl_net_ipv4_solicit(struct net *net,
+ 	if (flags & ~(EVL_NEIGH_PERMANENT|EVL_NEIGH_MAYROUTE))
+ 		return -EINVAL;
+ 
++	if (dev && !netif_oob_port(dev))
++		return -ENODEV;
++
+ 	ipaddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
+ 
+ 	/*
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 96a58db4ff..8340af0f29 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -722,8 +722,15 @@ static int socket_solicit_peer(struct evl_socket *esk,
+ 		return -ENOTSUPP;
+ 
+ 	ifindex = READ_ONCE(sk->sk_bound_dev_if);
+-	if (ifindex)
++	if (ifindex) {
++		/*
++		 * If a device is bound, it must provide an enabled
++		 * oob port.
++		 */
+ 		dev = evl_net_get_dev_by_index(net, ifindex);
++		if (!dev)
++			return -ENODEV;
++	}
+ 
+ 	ret = esk->proto->solicit(net, dev, addr, flags);
+ 	if (dev)
+-- 
+2.30.2
+

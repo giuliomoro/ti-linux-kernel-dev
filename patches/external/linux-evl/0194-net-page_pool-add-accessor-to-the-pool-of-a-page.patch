@@ -1,0 +1,73 @@
+From 27c3459c63c38c01fce8f443038fd39695a3ed5d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 20 Mar 2025 16:03:45 +0100
+Subject: [PATCH 0194/1010] net/page_pool: add accessor to the pool of a page
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/net/page_pool.h |  2 ++
+ net/core/page_pool.c    | 20 ++++++++++++++------
+ 2 files changed, 16 insertions(+), 6 deletions(-)
+
+diff --git a/include/net/page_pool.h b/include/net/page_pool.h
+index 43052bfeb2..2a66ce0d48 100644
+--- a/include/net/page_pool.h
++++ b/include/net/page_pool.h
+@@ -250,6 +250,8 @@ bool page_pool_return_skb_page(struct page *page);
+ 
+ struct page_pool *page_pool_create(const struct page_pool_params *params);
+ 
++struct page_pool *page_pool_get_page_pool(struct page *page);
++
+ struct xdp_mem_info;
+ 
+ #ifdef CONFIG_PAGE_POOL
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index 641e23e24e..dcb06579df 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -1058,10 +1058,8 @@ void page_pool_update_nid(struct page_pool *pool, int new_nid)
+ }
+ EXPORT_SYMBOL(page_pool_update_nid);
+ 
+-bool page_pool_return_skb_page(struct page *page)
++struct page_pool *page_pool_get_page_pool(struct page *page)
+ {
+-	struct page_pool *pp;
+-
+ 	page = compound_head(page);
+ 
+ 	/* page->pp_magic is OR'ed with PP_SIGNATURE after the allocation
+@@ -1072,16 +1070,26 @@ bool page_pool_return_skb_page(struct page *page)
+ 	 * to avoid recycling the pfmemalloc page.
+ 	 */
+ 	if (unlikely((page->pp_magic & ~0x3UL) != PP_SIGNATURE))
+-		return false;
++		return NULL;
++
++	return page->pp;
++}
++EXPORT_SYMBOL(page_pool_get_page_pool);
++
++bool page_pool_return_skb_page(struct page *page)
++{
++	struct page_pool *pp;
+ 
+-	pp = page->pp;
++	pp = page_pool_get_page_pool(page);
++	if (!pp)
++		return false;
+ 
+ 	/* Driver set this to memory recycling info. Reset it on recycle.
+ 	 * This will *not* work for NIC using a split-page memory model.
+ 	 * The page will be returned to the pool here regardless of the
+ 	 * 'flipped' fragment being in use or not.
+ 	 */
+-	page_pool_put_full_page(pp, page, false);
++	page_pool_put_full_page(pp, compound_head(page), false);
+ 
+ 	return true;
+ }
+-- 
+2.30.2
+

@@ -1,0 +1,73 @@
+From 7150adcb1c965fae56ebb95c6a23f9c1d8585d1b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 29 Apr 2025 11:38:00 +0200
+Subject: [PATCH 0946/1010] evl/net: output: acquire the stax for xmit
+
+Since we want the inband stack to acquire the xmit stax lock directly
+from __netif_txq_lock() instead of leaving this to each oob-capable
+netdev, we need to acquire that same lock for oob output.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/output.c | 25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 279aaedd05..28abe93aea 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -26,23 +26,38 @@ DEFINE_IRQ_WORK(oob_xmit_work, xmit_inband);
+ static DEFINE_PER_CPU(struct evl_net_skb_queue, oob_tx_relay);
+ 
+ static inline netdev_tx_t
+-oob_start_xmit(struct net_device *dev, struct sk_buff *skb)
++oob_start_xmit(struct net_device *dev, struct sk_buff *skb, bool more)
+ {
++	struct netdev_queue *txq;
++	netdev_tx_t ret;
++
++	/*
++	 * We don't check the queue index using netdev_cap_txqueue(),
++	 * assuming the inband code does so routinely for in-band
++	 * traffic.
++	 */
++	txq = netdev_get_tx_queue(dev, skb_get_queue_mapping(skb));
++
+ 	/*
+ 	 * If we got there, @dev is deemed oob-capable
+ 	 * (IFF_OOB_CAPABLE, see evl_net_transmit()). The driver should
+ 	 * check the current execution stage for handling the
+ 	 * out-of-band packet properly.
+ 	 */
+-	return dev->netdev_ops->ndo_start_xmit(skb, dev);
++	netif_tx_lock_oob(txq);
++	ret = netdev_start_xmit(skb, dev, txq, more);
++	netif_tx_unlock_oob(txq);
++
++	return ret;
+ }
+ 
+ static inline void do_tx(struct evl_net_qdisc *qdisc,
+-			struct net_device *dev, struct sk_buff *skb)
++			struct net_device *dev, struct sk_buff *skb,
++			bool more)
+ {
+ 	evl_net_uncharge_skb_wmem(skb);
+ 
+-	switch (oob_start_xmit(dev, skb)) {
++	switch (oob_start_xmit(dev, skb, more)) {
+ 	case NETDEV_TX_OK:
+ 		break;
+ 	default: /* busy, or whatever */
+@@ -85,7 +100,7 @@ void evl_net_do_tx(void *arg)
+ 			skb = qdisc->oob_ops->dequeue(qdisc);
+ 			if (skb == NULL)
+ 				break;
+-			do_tx(qdisc, dev, skb);
++			do_tx(qdisc, dev, skb, false); /* FIXME: more? */
+ 		}
+ 	}
+ }
+-- 
+2.30.2
+

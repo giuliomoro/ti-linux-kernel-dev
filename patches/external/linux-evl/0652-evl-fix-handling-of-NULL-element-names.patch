@@ -1,0 +1,397 @@
+From 57de0f22f666b873ba87a7ad4f90710b05ab1eb0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 3 May 2020 19:13:43 +0200
+Subject: [PATCH 0652/1010] evl: fix handling of NULL element names
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h    |  7 +++-
+ include/evl/observable.h |  3 +-
+ kernel/evl/factory.c     | 72 +++++++++++++++++++++++-----------------
+ kernel/evl/monitor.c     |  6 ++--
+ kernel/evl/observable.c  | 13 ++++----
+ kernel/evl/proxy.c       | 25 +++++++-------
+ kernel/evl/thread.c      | 22 +++++++-----
+ kernel/evl/xbuf.c        |  6 ++--
+ 8 files changed, 89 insertions(+), 65 deletions(-)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 7238acf000..a2d2d5c062 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -49,7 +49,7 @@ struct evl_factory {
+ 	const struct file_operations *fops;
+ 	unsigned int nrdev;
+ 	struct evl_element *(*build)(struct evl_factory *fac,
+-				const char *name,
++				const char __user *u_name,
+ 				void __user *u_attrs,
+ 				int clone_flags,
+ 				u32 *state_offp);
+@@ -106,6 +106,11 @@ int evl_init_element(struct evl_element *e,
+ 		struct evl_factory *fac,
+ 		int clone_flags);
+ 
++int evl_init_user_element(struct evl_element *e,
++			struct evl_factory *fac,
++			const char __user *u_name,
++			int clone_flags);
++
+ void evl_destroy_element(struct evl_element *e);
+ 
+ void evl_get_element(struct evl_element *e);
+diff --git a/include/evl/observable.h b/include/evl/observable.h
+index f0766a4455..9846f2e3a6 100644
+--- a/include/evl/observable.h
++++ b/include/evl/observable.h
+@@ -34,7 +34,8 @@ struct evl_observable {
+ 
+ void evl_drop_subscriptions(struct evl_subscriber *subscriber);
+ 
+-struct evl_observable *evl_alloc_observable(int clone_flags);
++struct evl_observable *evl_alloc_observable(const char __user *u_name,
++					int clone_flags);
+ 
+ void evl_flush_observable(struct evl_observable *observable);
+ 
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 53212c521b..037d43b13e 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -83,6 +83,37 @@ int evl_init_element(struct evl_element *e,
+ 	return 0;
+ }
+ 
++int evl_init_user_element(struct evl_element *e,
++			struct evl_factory *fac,
++			const char __user *u_name,
++			int clone_flags)
++{
++	struct filename *devname;
++	char tmpbuf[32];
++	int ret;
++
++	ret = evl_init_element(e, fac, clone_flags);
++	if (ret)
++		return ret;
++
++	if (u_name) {
++		devname = getname(u_name);
++	} else {
++		snprintf(tmpbuf, sizeof(tmpbuf), "%s%%%d",
++			fac->name, e->minor);
++		devname = getname_kernel(tmpbuf);
++	}
++
++	if (IS_ERR(devname)) {
++		evl_destroy_element(e);
++		return PTR_ERR(devname);
++	}
++
++	e->devname = devname;
++
++	return 0;
++}
++
+ void evl_destroy_element(struct evl_element *e)
+ {
+ 	clear_bit(e->minor, e->factory->minor_map);
+@@ -488,12 +519,14 @@ int evl_create_core_element_device(struct evl_element *e,
+ {
+ 	struct filename *devname;
+ 
+-	devname = getname_kernel(name);
+-	if (devname == NULL)
+-		return PTR_ERR(devname);
++	if (name) {
++		devname = getname_kernel(name);
++		if (devname == NULL)
++			return PTR_ERR(devname);
++		e->devname = devname;
++	}
+ 
+ 	e->clone_flags |= EVL_CLONE_COREDEV;
+-	e->devname = devname;
+ 
+ 	return create_element_device(e, fac);
+ }
+@@ -518,11 +551,10 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ {
+ 	struct evl_element *e = filp->private_data;
+ 	struct evl_clone_req req, __user *u_req;
+-	struct filename *devname = NULL;
+ 	__u32 val, state_offset = -1U;
++	const char __user *u_name;
+ 	struct evl_factory *fac;
+ 	void __user *u_attrs;
+-	char tmpbuf[16];
+ 	int ret;
+ 
+ 	if (cmd != EVL_IOC_CLONE)
+@@ -539,35 +571,15 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ 	if (ret)
+ 		return -EFAULT;
+ 
+-	if (req.name_ptr) {
+-		devname = getname(evl_valptr64(req.name_ptr, const char));
+-		if (IS_ERR(devname))
+-			return PTR_ERR(devname);
+-	} else if (req.clone_flags & EVL_CLONE_PUBLIC)
++	u_name = evl_valptr64(req.name_ptr, const char);
++	if (u_name == NULL && req.clone_flags & EVL_CLONE_PUBLIC)
+ 		return -EINVAL;
+ 
+ 	u_attrs = evl_valptr64(req.attrs_ptr, void);
+ 	fac = container_of(filp->f_inode->i_cdev, struct evl_factory, cdev);
+-	e = fac->build(fac, devname ? devname->name : NULL,
+-		u_attrs, req.clone_flags, &state_offset);
+-	if (IS_ERR(e)) {
+-		if (devname)
+-			putname(devname);
++	e = fac->build(fac, u_name, u_attrs, req.clone_flags, &state_offset);
++	if (IS_ERR(e))
+ 		return PTR_ERR(e);
+-	}
+-
+-	if (!devname) {
+-		/* If no name specified, default to device minor. */
+-		snprintf(tmpbuf, sizeof(tmpbuf), "%d", e->minor);
+-		devname = getname_kernel(tmpbuf);
+-		if (IS_ERR(devname)) {
+-			fac->dispose(e);
+-			return PTR_ERR(devname);
+-		}
+-	}
+-
+-	/* The device name is valid throughout the element's lifetime. */
+-	e->devname = devname;
+ 
+ 	/* This must be set before the device appears. */
+ 	filp->private_data = e;
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index ad04d304c0..fb6145d099 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -761,7 +761,7 @@ static const struct file_operations monitor_fops = {
+ };
+ 
+ static struct evl_element *
+-monitor_factory_build(struct evl_factory *fac, const char *name,
++monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct evl_monitor_state *state;
+@@ -817,8 +817,8 @@ monitor_factory_build(struct evl_factory *fac, const char *name,
+ 		goto fail_alloc;
+ 	}
+ 
+-	ret = evl_init_element(&mon->element, &evl_monitor_factory,
+-			clone_flags);
++	ret = evl_init_user_element(&mon->element, &evl_monitor_factory,
++				u_name, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
+index 78e8ab9a66..e79041e5a7 100644
+--- a/kernel/evl/observable.c
++++ b/kernel/evl/observable.c
+@@ -1078,7 +1078,8 @@ static const struct file_operations observable_fops = {
+ #endif
+ };
+ 
+-struct evl_observable *evl_alloc_observable(int clone_flags)
++struct evl_observable *evl_alloc_observable(const char __user *u_name,
++					int clone_flags)
+ {
+ 	struct evl_observable *observable;
+ 	int ret;
+@@ -1087,9 +1088,9 @@ struct evl_observable *evl_alloc_observable(int clone_flags)
+ 	if (observable == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	ret = evl_init_element(&observable->element,
+-			&evl_observable_factory,
+-			clone_flags | EVL_CLONE_OBSERVABLE);
++	ret = evl_init_user_element(&observable->element,
++				&evl_observable_factory, u_name,
++				clone_flags | EVL_CLONE_OBSERVABLE);
+ 	if (ret) {
+ 		kfree(observable);
+ 		return ERR_PTR(ret);
+@@ -1109,7 +1110,7 @@ struct evl_observable *evl_alloc_observable(int clone_flags)
+ }
+ 
+ static struct evl_element *
+-observable_factory_build(struct evl_factory *fac, const char *name,
++observable_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct evl_observable *observable;
+@@ -1117,7 +1118,7 @@ observable_factory_build(struct evl_factory *fac, const char *name,
+ 	if (clone_flags & ~EVL_OBSERVABLE_CLONE_FLAGS)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	observable = evl_alloc_observable(clone_flags);
++	observable = evl_alloc_observable(u_name, clone_flags);
+ 	if (IS_ERR(observable))
+ 		return ERR_PTR(PTR_ERR(observable));
+ 
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 05dd4849e2..b3f7250e53 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -303,7 +303,7 @@ static const struct file_operations proxy_fops = {
+ };
+ 
+ static struct evl_element *
+-proxy_factory_build(struct evl_factory *fac, const char *name,
++proxy_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct workqueue_struct *wq = NULL;
+@@ -343,6 +343,11 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
+ 		goto fail_proxy;
+ 	}
+ 
++	ret = evl_init_user_element(&proxy->element,
++				&evl_proxy_factory, u_name, clone_flags);
++	if (ret)
++		goto fail_element;
++
+ 	/*
+ 	 * Buffer size is optional as we may need the mapping facility
+ 	 * only, without any provision for writing to the proxied
+@@ -354,18 +359,14 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
+ 			ret = -ENOMEM;
+ 			goto fail_bufmem;
+ 		}
+-		wq = create_singlethread_workqueue(name);
+-		if (!wq) {
++		wq = create_singlethread_workqueue(
++			evl_element_name(&proxy->element));
++		if (wq == NULL) {
+ 			ret = -ENOMEM;
+ 			goto fail_wq;
+ 		}
+ 	}
+ 
+-	ret = evl_init_element(&proxy->element,
+-			&evl_proxy_factory, clone_flags);
+-	if (ret)
+-		goto fail_element;
+-
+ 	proxy->filp = filp;
+ 	out = &proxy->output;
+ 	out->wq = wq;
+@@ -382,13 +383,11 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
+ 
+ 	return &proxy->element;
+ 
+-fail_element:
+-	if (wq)
+-		destroy_workqueue(wq);
+ fail_wq:
+-	if (bufmem)
+-		kfree(bufmem);
++	kfree(bufmem);
+ fail_bufmem:
++	evl_destroy_element(&proxy->element);
++fail_element:
+ 	kfree(proxy);
+ fail_proxy:
+ 	fput(filp);
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 836f0ded4b..c35b03f6c7 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2385,7 +2385,7 @@ static void discard_unmapped_uthread(struct evl_thread *thread)
+ }
+ 
+ static struct evl_element *
+-thread_factory_build(struct evl_factory *fac, const char *name,
++thread_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	struct evl_observable *observable = NULL;
+@@ -2408,8 +2408,8 @@ thread_factory_build(struct evl_factory *fac, const char *name,
+ 	if (curr == NULL)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	ret = evl_init_element(&curr->element,
+-			&evl_thread_factory, clone_flags);
++	ret = evl_init_user_element(&curr->element, &evl_thread_factory,
++				u_name, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+@@ -2422,15 +2422,19 @@ thread_factory_build(struct evl_factory *fac, const char *name,
+ 		 * the observable itself.
+ 		 */
+ 		observable = evl_alloc_observable(
+-			clone_flags & ~EVL_CLONE_PUBLIC);
++			u_name, clone_flags & ~EVL_CLONE_PUBLIC);
+ 		if (IS_ERR(observable)) {
+ 			ret = PTR_ERR(observable);
+ 			goto fail_observable;
+ 		}
++		/*
++		 * Element name was already set from user input by
++		 * evl_alloc_observable(). evl_create_core_element_device()
++		 * is told to skip name assignment (NULL name).
++		 */
+ 		ret = evl_create_core_element_device(
+ 			&observable->element,
+-			&evl_observable_factory,
+-			name);
++			&evl_observable_factory, NULL);
+ 		if (ret)
+ 			goto fail_observable_dev;
+ 		observable = observable;
+@@ -2443,7 +2447,8 @@ thread_factory_build(struct evl_factory *fac, const char *name,
+ 	iattr.observable = observable;
+ 	iattr.sched_class = &evl_sched_weak;
+ 	iattr.sched_param.weak.prio = 0;
+-	ret = evl_init_thread(curr, &iattr, NULL, "%s", name);
++	ret = evl_init_thread(curr, &iattr, NULL, "%s",
++			evl_element_name(&curr->element));
+ 	if (ret)
+ 		goto fail_thread;
+ 
+@@ -2464,7 +2469,8 @@ thread_factory_build(struct evl_factory *fac, const char *name,
+ 	 */
+ 	evl_get_element(&curr->element);
+ 
+-	strncpy(tsk->comm, name, sizeof(tsk->comm));
++	strncpy(tsk->comm, evl_element_name(&curr->element),
++		sizeof(tsk->comm));
+ 	tsk->comm[sizeof(tsk->comm) - 1] = '\0';
+ 
+ 	return &curr->element;
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index 8e8d427538..8bfcca3553 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -627,7 +627,7 @@ ssize_t evl_write_xbuf(struct evl_xbuf *xbuf, const void *buf,
+ EXPORT_SYMBOL_GPL(evl_write_xbuf);
+ 
+ static struct evl_element *
+-xbuf_factory_build(struct evl_factory *fac, const char *name,
++xbuf_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		void __user *u_attrs, int clone_flags, u32 *state_offp)
+ {
+ 	void *i_bufmem = NULL, *o_bufmem = NULL;
+@@ -668,8 +668,8 @@ xbuf_factory_build(struct evl_factory *fac, const char *name,
+ 		}
+ 	}
+ 
+-	ret = evl_init_element(&xbuf->element,
+-			&evl_xbuf_factory, clone_flags);
++	ret = evl_init_user_element(&xbuf->element, &evl_xbuf_factory,
++				u_name, clone_flags);
+ 	if (ret)
+ 		goto fail_element;
+ 
+-- 
+2.30.2
+

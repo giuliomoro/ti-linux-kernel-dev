@@ -1,0 +1,83 @@
+From b7a80fd08a10857b323eab9e995815b445d3f023 Mon Sep 17 00:00:00 2001
+From: Qichen Qiu <ruiqurm@gmail.com>
+Date: Tue, 17 Dec 2024 14:40:15 +0000
+Subject: [PATCH 0928/1010] evl/memory: allow system heap inspection using GDB
+
+GDB was unable to inspect the evl shared heap mapping regions(i.e.
+__current_evl_window) due to limitations imposed by the VM_IO flag when
+ptrace accesses memory regions that were mapped using remap_pfn_range.
+This restriction hindered effective debugging.
+
+To resolve this issue, the shared heap is now allocated using `vzalloc`,
+and the memory is mapped with `vm_insert_page`, which work seamlessly
+with GDB and ptrace.
+
+Signed-off-by: Qichen Qiu <ruiqurm@gmail.com>
+---
+ kernel/evl/control.c | 15 +++++++++++++--
+ kernel/evl/memory.c  |  6 +++---
+ 2 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 2d1b44f3b0..ebbb38a026 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -338,13 +338,24 @@ static long control_ioctl(struct file *filp, unsigned int cmd,
+ static int control_mmap(struct file *filp, struct vm_area_struct *vma)
+ {
+ 	void *p = evl_get_heap_base(&evl_shared_heap);
+-	unsigned long pfn = __pa(p) >> PAGE_SHIFT;
+ 	size_t len = vma->vm_end - vma->vm_start;
++	unsigned long addr = vma->vm_start;
++	int err;
++	struct page *page;
+ 
+ 	if (len != evl_shm_size)
+ 		return -EINVAL;
+ 
+-	return remap_pfn_range(vma, vma->vm_start, pfn, len, PAGE_SHARED);
++	while (addr < vma->vm_end) {
++		page = vmalloc_to_page(p);
++		err = vm_insert_page(vma, addr, page);
++		if (err < 0)
++			return err;
++		addr += PAGE_SIZE;
++		p += PAGE_SIZE;
++	}
++
++	return 0;
+ }
+ 
+ static const struct file_operations control_fops = {
+diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
+index 1da5be623d..acd5d6e264 100644
+--- a/kernel/evl/memory.c
++++ b/kernel/evl/memory.c
+@@ -630,13 +630,13 @@ static int init_shared_heap(void)
+ 		CONFIG_EVL_NR_MONITORS *
+ 		sizeof(struct evl_monitor_state);
+ 	size = PAGE_ALIGN(size);
+-	mem = kzalloc(size, GFP_KERNEL);
++	mem = vzalloc(size);
+ 	if (mem == NULL)
+ 		return -ENOMEM;
+ 
+ 	ret = evl_init_heap(&evl_shared_heap, mem, size);
+ 	if (ret) {
+-		kfree(mem);
++		vfree(mem);
+ 		return ret;
+ 	}
+ 
+@@ -650,7 +650,7 @@ static void cleanup_shared_heap(void)
+ 	void *membase = evl_get_heap_base(&evl_shared_heap);
+ 
+ 	evl_destroy_heap(&evl_shared_heap);
+-	kfree(membase);
++	vfree(membase);
+ }
+ 
+ static int init_system_heap(void)
+-- 
+2.30.2
+

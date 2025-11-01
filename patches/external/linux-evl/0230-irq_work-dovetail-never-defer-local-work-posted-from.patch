@@ -1,0 +1,92 @@
+From d925292e9dfe591098f7e5fffad861b71ae44c09 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 13 Jun 2025 09:50:35 +0200
+Subject: [PATCH 0230/1010] irq_work: dovetail: never defer local work posted
+ from oob
+
+There is the assumption by oob callers that any work set pending on
+the local CPU is going to be handled immediately on return to inband
+mode, therefore forced deferral to lazy mode when PREEMPT_RT is
+enabled should only apply to inband callers.
+
+This change prevents the following kernel splat from occurring on RT
+builds when IRQ threading is forced (threadirqs):
+
+[   72.743525] WARNING: CPU: 2 PID: 35 at kernel/softirq.c:751 __raise_softirq_irqoff+0xcc/0x110
+[   72.743546] Modules linked in:
+[   72.743564] CPU: 2 UID: 0 PID: 35 Comm: irq_work/2 Not tainted 6.15.0+ #124 PREEMPT_{RT,(lazy)}
+[   72.743573] Hardware name: TQ-Group TQMxE39M/Type2 - Board Product Name, BIOS 5.12.09.16.05 07/26/2017
+[   72.743579] IRQ stage: Linux
+[   72.743586] RIP: 0010:__raise_softirq_irqoff+0xcc/0x110
+[   72.743598] Code: ff e9 7b ff ff ff 9c 58 f6 c4 02 0f 84 6e ff ff ff 65 f6 05 38 b2 16 02 02 75 0f 65 8b 05 a0 e8 16 02 85 c0 0f 84 55 ff ff ff <0f> 0b e9 4e ff ff ff e8 08 1c 0b 00 84 c0 0f 85 62 ff ff ff 80 3d
+[   72.743606] RSP: 0018:ffffa1bb0017be80 EFLAGS: 00010202
+net.ipv4.ping_gr[   72.743616] RAX: 0000000000000001 RBX: 0000000000000003 RCX: 0000000000000000
+[   72.743622] RDX: 0000000000000001 RSI: ffffffff9f7b5598 RDI: 0000000000000003
+[   72.743628] RBP: 0000000000000022 R08: 0000000000000001 R09: 0000000000000000
+[   72.743634] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000023
+oup_range = 0 0
+[   72.743640] R13: ffff8f0f80838000 R14: ffffffff9e3f2900 R15: ffff8f0f80048360
+[   72.743646] FS:  0000000000000000(0000) GS:ffff8f105b7ef000(0000) knlGS:0000000000000000
+[   72.743653] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   72.743659] CR2: 00007ffed37c86a0 CR3: 0000000102d9e000 CR4: 00000000003526f0
+[   72.743666] Call Trace:
+[   72.743676]  <TASK>
+[   72.743690]  irq_work_single+0x75/0x90
+[   72.743724]  run_irq_workd+0x3c/0x50
+root@corei7-64-e[   72.743746]  smpboot_thread_fn+0xfd/0x270
+[   72.743779]  kthread+0xfd/0x220
+[   72.743802]  ? __pfx_kthread+0x10/0x10
+[   72.743832]  ret_from_fork+0x30/0x50
+vl:/sys/kernel/t[   72.743844]  ? __pfx_kthread+0x10/0x10
+[   72.743864]  ret_from_fork_asm+0x1a/0x30
+[   72.743983]  </TASK>
+[   72.743989] irq event stamp: 1759
+[   72.743995] hardirqs last  enabled at (1759): [<ffffffff9e3fb061>] finish_task_switch+0xb1/0x290
+[   72.744007] hardirqs last disabled at (1758): [<ffffffff9f032af3>] __schedule+0x2a3/0xf30
+[   72.744019] softirqs last  enabled at (0): [<ffffffff9e3ac6b9>] copy_process+0x9d9/0x2890
+[   72.744031] softirqs last disabled at (0): [<0000000000000000>] 0x0
+[   72.744047] ---[ end trace 0000000000000000 ]---
+racing# cat trace
+[   77.574900] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.578033] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.579456] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.581778] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.583875] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.592746] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.597372] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.605323] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+[   77.608127] NOHZ tick-stop error: local softirq work is pending, handler #08!!!
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq_work.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 60d860f05e..6a28614781 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -79,7 +79,11 @@ void __weak irq_local_work_raise(void)
+ 	arch_irq_work_raise();
+ }
+ 
+-/* Enqueue on current CPU, work must already be claimed and preempt disabled */
++/* Enqueue on current CPU, work must already be claimed and preempt
++   disabled.  Dovetail: there is the assumption by oob callers that
++   any work set pending on the local CPU is going to be handled
++   immediately on return to inband mode, therefore rt_lazy_work only
++   applies to inband callers. */
+ static void __irq_work_queue_local(struct irq_work *work)
+ {
+ 	struct llist_head *list;
+@@ -91,6 +95,7 @@ static void __irq_work_queue_local(struct irq_work *work)
+ 	if (work_flags & IRQ_WORK_LAZY)
+ 		lazy_work = true;
+ 	else if (IS_ENABLED(CONFIG_PREEMPT_RT) &&
++		 running_inband() &&
+ 		 !(work_flags & IRQ_WORK_HARD_IRQ))
+ 		rt_lazy_work = true;
+ 
+-- 
+2.30.2
+

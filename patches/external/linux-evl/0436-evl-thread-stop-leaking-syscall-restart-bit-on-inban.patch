@@ -1,0 +1,34 @@
+From d2824c85316707dd3927b2646a5bc1e2424012ca Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 12 Jun 2019 18:57:23 +0200
+Subject: [PATCH 0436/1010] evl/thread: stop leaking syscall restart bit on
+ inband switch
+
+The inband kernel does not attempt to restart an interrupted syscall
+upon signal delivery, we should not either. Since signal delivery
+requires switching inband, clear T_SYSRST in evl_switch_inband() to
+prevent this.
+
+This is a port of a Cobalt fix for the same issue by Jan Kiszka
+<jan.kiszka@siemens.com>.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index d013344521..763f6be480 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -665,6 +665,7 @@ void evl_switch_inband(int cause)
+ 	xnlock_get(&nklock);
+ 	curr->info &= ~EVL_THREAD_INFO_MASK;
+ 	curr->state |= T_INBAND;
++	curr->local_info &= ~T_SYSRST;
+ 	rq = curr->rq;
+ 	evl_set_resched(rq);
+ 	dovetail_leave_oob();
+-- 
+2.30.2
+

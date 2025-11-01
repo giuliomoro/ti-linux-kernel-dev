@@ -1,0 +1,30 @@
+From dd7167eddf0a5d0eebd664e0254029c91d3933ff Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 27 Jan 2020 17:54:40 +0100
+Subject: [PATCH 0602/1010] evl/thread: fix locking imbalance for
+ INBAND_TASK_SCHEDULE
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 8d653c14a8..77a98fca8c 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1554,9 +1554,10 @@ static void handle_schedule_event(struct task_struct *next_task)
+ 		evl_spin_unlock(&next->rq->lock);
+ 		next->local_info |= T_HICCUP;
+ 	}
+-	evl_spin_unlock_irqrestore(&next->lock, flags);
+ 
+ check:
++	evl_spin_unlock_irqrestore(&next->lock, flags);
++
+ 	/*
+ 	 * Do basic sanity checks on the incoming thread state.
+ 	 * NOTE: we allow ptraced threads to run shortly in order to
+-- 
+2.30.2
+

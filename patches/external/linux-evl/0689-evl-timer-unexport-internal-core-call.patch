@@ -1,0 +1,22 @@
+From 214947de1eef1a5dc4e3890faadd346fa59493f7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 31 Oct 2020 11:40:46 +0100
+Subject: [PATCH 0689/1010] evl/timer: unexport internal core call
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/timer.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 5eba693801..6baca052b3 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -485,4 +485,3 @@ void evl_insert_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ 	rb_link_node(&node->rb, parent, new);
+ 	rb_insert_color(&node->rb, &tq->root);
+ }
+-EXPORT_SYMBOL_GPL(evl_insert_tnode);
+-- 
+2.30.2
+

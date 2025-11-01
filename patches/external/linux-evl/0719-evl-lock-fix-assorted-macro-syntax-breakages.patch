@@ -1,0 +1,45 @@
+From 6a05fd8339a2c6db92847bdacf59ee9648311963 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 2 Jan 2021 11:43:45 +0100
+Subject: [PATCH 0719/1010] evl/lock: fix assorted macro syntax breakages
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/lock.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/evl/lock.h b/include/evl/lock.h
+index a9b1a186aa..cd5ebd7f6d 100644
+--- a/include/evl/lock.h
++++ b/include/evl/lock.h
+@@ -96,13 +96,13 @@ typedef struct evl_spinlock {
+ #define _evl_spin_lock(__lock)				\
+ 	do {						\
+ 		_evl_spin_lock_check();			\
+-		__evl_spin_lock(&(__lock)->_lock);	\
++		__evl_spin_lock(__lock);		\
+ 	} while (0)
+ 
+-#define _evl_spin_lock_nested(__lock, __subclass)			\
+-	do {								\
+-		_evl_spin_lock_check();					\
+-		__evl_spin_lock_nested(&(__lock)->_lock, __subclass);	\
++#define _evl_spin_lock_nested(__lock, __subclass)		\
++	do {							\
++		_evl_spin_lock_check();				\
++		__evl_spin_lock_nested(__lock, __subclass);	\
+ 	} while (0)
+ 
+ #define _evl_spin_trylock(__lock)			\
+@@ -139,7 +139,7 @@ typedef struct evl_spinlock {
+ 
+ #define evl_spin_unlock(__lock)				\
+ 	do {						\
+-		raw_spin_unlock(&(__lock)->_lock)	\
++		raw_spin_unlock(&(__lock)->_lock);	\
+ 		evl_enable_preempt();			\
+ 	} while (0)
+ 
+-- 
+2.30.2
+

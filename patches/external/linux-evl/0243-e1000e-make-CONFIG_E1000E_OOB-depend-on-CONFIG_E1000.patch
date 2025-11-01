@@ -1,0 +1,27 @@
+From 4aa922f77efa01ba695d25b04deffaee7e0cc3b1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 09:01:21 +0200
+Subject: [PATCH 0243/1010] e1000e: make CONFIG_E1000E_OOB depend on
+ CONFIG_E1000E
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/net/ethernet/intel/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
+index 635f7f3025..4e44740d45 100644
+--- a/drivers/net/ethernet/intel/Kconfig
++++ b/drivers/net/ethernet/intel/Kconfig
+@@ -86,7 +86,7 @@ config E1000E_HWTS
+ 
+ config E1000E_OOB
+ 	bool "Out-of-band support for Intel(R) e1000e Gigabit Ethernet"
+-	depends on NET_OOB
++	depends on E1000E && NET_OOB
+ 	help
+ 	  Enable out-of-band I/O. Say Y if a companion kernel may divert
+ 	  the network traffic going through e1000e devices for real-time delivery.
+-- 
+2.30.2
+

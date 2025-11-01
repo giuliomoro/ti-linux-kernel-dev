@@ -1,0 +1,27 @@
+From 19877d98c8390f0b54904cc202498a15d82c5695 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 10 Nov 2020 14:21:31 +0100
+Subject: [PATCH 0690/1010] evl/clock: use common NMI-safe real-time clock read
+ call
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/clock.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index abfffa52b7..9bb72511a4 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -1065,7 +1065,7 @@ static u64 read_mono_clock_cycles(struct evl_clock *clock)
+ 
+ static ktime_t read_realtime_clock(struct evl_clock *clock)
+ {
+-	return ktime_get_real_fast();
++	return ns_to_ktime(ktime_get_real_fast_ns());
+ }
+ 
+ static u64 read_realtime_clock_cycles(struct evl_clock *clock)
+-- 
+2.30.2
+

@@ -1,0 +1,42 @@
+From 241182629db30be5a43e4c5b20b3b5c0254d1513 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 4 Mar 2023 18:55:26 +0100
+Subject: [PATCH 0097/1010] arm: dovetail: fix early exit path for traps
+ handled oob
+
+Every call to oob_trap_notify() must be paired with a call to
+oob_trap_unwind() to close the trap handling section, even when the
+in-band side decides to leave it unhandled because the companion core
+did not switch in-band.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/include/asm/dovetail.h | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/dovetail.h b/arch/arm/include/asm/dovetail.h
+index f8fe64a18e..795a1fb903 100644
+--- a/arch/arm/include/asm/dovetail.h
++++ b/arch/arm/include/asm/dovetail.h
+@@ -36,10 +36,14 @@ static inline void arch_dovetail_switch_finish(bool enter_inband)
+  * Pass the trap event to the companion core. Return true if running
+  * in-band afterwards.
+  */
+-#define mark_cond_trap_entry(__trapnr, __regs)		\
+-	({						\
+-		oob_trap_notify(__trapnr, __regs);	\
+-		running_inband();			\
++#define mark_cond_trap_entry(__trapnr, __regs)			\
++	({							\
++	  	bool __ret;					\
++		oob_trap_notify(__trapnr, __regs);		\
++		__ret = running_inband();			\
++		if (!__ret)					\
++			oob_trap_unwind(__trapnr, __regs);	\
++		__ret;						\
+ 	})
+ 
+ /*
+-- 
+2.30.2
+

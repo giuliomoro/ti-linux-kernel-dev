@@ -1,0 +1,35 @@
+From e221bd1ceef9d95e4a50e6b97a8c1953eb9ba201 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 May 2020 12:48:24 +0200
+Subject: [PATCH 0656/1010] evl/proxy: fix handling of POLLIN by the in-band
+ poll handler
+
+Testing the input ring buffer for (non-)emptiness tells us nothing
+about the readability of the target file, which may have data
+available we did not pull into the buffer yet. We have to relay such
+request to the driver actually handling this file in addition to
+checking the ring buffer.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index fd0c31bc23..b44d3dd89b 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -533,6 +533,10 @@ static __poll_t proxy_poll(struct file *filp, poll_table *wait)
+ 		poll_wait(filp, &iring->inband_wait, wait);
+ 		if (atomic_read(&iring->fillsz) > 0)
+ 			ret |= POLLIN|POLLRDNORM;
++		else if (proxy->filp->f_op->poll) {
++			ret = proxy->filp->f_op->poll(proxy->filp, wait);
++			ret &= POLLIN|POLLRDNORM;
++		}
+ 	}
+ 
+ 	return ret;
+-- 
+2.30.2
+

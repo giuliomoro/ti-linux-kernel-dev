@@ -1,0 +1,45 @@
+From 0396a52a9b3dc352ef10e6a9d2ed096718ef5d80 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 27 Sep 2025 19:31:42 +0200
+Subject: [PATCH 1007/1010] arm64/evl: fpsimd: enable full oob preemption
+ testing
+
+Since Dovetail now supports in-kernel preemption of the kernel_neon*
+(in-band) section by oob threads using the fpsimd unit concurrently,
+let's allow the hectic driver to test this feature too.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/include/asm/evl/fptest.h | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/include/asm/evl/fptest.h b/arch/arm64/include/asm/evl/fptest.h
+index a853b1206d..d7780e2769 100644
+--- a/arch/arm64/include/asm/evl/fptest.h
++++ b/arch/arm64/include/asm/evl/fptest.h
+@@ -3,14 +3,20 @@
+ #define _EVL_ARM64_ASM_FPTEST_H
+ 
+ #include <linux/cpufeature.h>
++#include <asm/neon.h>
+ #include <uapi/asm/evl/fptest.h>
+ 
+ static inline bool evl_begin_fpu(void)
+ {
+-	return false;
++	kernel_neon_begin();
++
++	return true;
+ }
+ 
+-static inline void evl_end_fpu(void) { }
++static inline void evl_end_fpu(void)
++{
++	kernel_neon_end();
++}
+ 
+ static inline u32 evl_detect_fpu(void)
+ {
+-- 
+2.30.2
+

@@ -1,0 +1,77 @@
+From 55dc752026449f9598cc2c73b9ccbff3deb8ef51 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 3 Oct 2022 16:26:14 +0200
+Subject: [PATCH 0779/1010] evl/thread: lockdep: enable tracking for
+ thread->lock
+
+Help lockdep in disambiguating thread locks by defining a per-thread
+lock class. To this end, add a per-thread lock key, which the thread's
+spinlock guard is indexed on.
+
+This fully enables lockdep for tracking spinlock issues in the EVL
+mutex support code.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h  |  1 +
+ include/evl/thread.h |  1 +
+ kernel/evl/thread.c  | 12 ++++++++++++
+ 3 files changed, 14 insertions(+)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 952517370d..279ef6442b 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -79,6 +79,7 @@ struct evl_rq {
+ 	struct evl_sched_tp tp;
+ #endif
+ 	struct evl_thread root_thread;
++	struct lock_class_key root_lock_key;
+ #ifdef CONFIG_EVL_RUNSTATS
+ 	ktime_t last_account_switch;
+ 	struct evl_account *current_account;
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index bf663949cd..fa8ce163e5 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -58,6 +58,7 @@ struct evl_init_thread_attr {
+ 
+ struct evl_thread {
+ 	hard_spinlock_t lock;
++	struct lock_class_key lock_key;	/* lockdep disambiguation */
+ 
+ 	/*
+ 	 * Shared thread-specific data, covered by ->lock.
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 75c98781da..59dffe6610 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -249,6 +249,15 @@ int evl_init_thread(struct evl_thread *thread,
+ 	if (ret)
+ 		goto err_out;
+ 
++	if (flags & T_ROOT) {
++		lockdep_set_class_and_name(&thread->lock, &rq->root_lock_key,
++					thread->name);
++	} else {
++		lockdep_register_key(&thread->lock_key);
++		lockdep_set_class_and_name(&thread->lock, &thread->lock_key,
++					thread->name);
++	}
++
+ 	trace_evl_init_thread(thread, iattr, ret);
+ 
+ 	return 0;
+@@ -276,6 +285,9 @@ static void uninit_thread(struct evl_thread *thread)
+ 	evl_forget_thread(thread);
+ 	evl_put_thread_rq(thread, rq, flags);
+ 
++	if (!(thread->state & T_ROOT))
++		lockdep_unregister_key(&thread->lock_key);
++
+ 	kfree(thread->name);
+ }
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,249 @@
+From 04d2e8bd905cfcdd55d4ecbe566f8e5efb41cd24 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 13 Feb 2024 15:16:31 +0100
+Subject: [PATCH 0155/1010] net: dovetail: merge inband+oob bind, connect,
+ shutdown ops
+
+Guarantee that binding, shutting down a socket on the oob side is part
+of the section locked by the inband side to serialize updates to the
+network socket.
+
+For this reason, those operations must now be done on a per-domain
+basis, cannot be performed globally for all types of sockets. We start
+providing support for AF_INET and AF_PACKET. Theses changes cause the
+related hooks to receive the network socket from the inband stack,
+instead of the BSD socket as originally.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/net/sock.h     | 30 +++++++++++++++++++++++++++
+ net/ipv4/af_inet.c     |  5 +++++
+ net/packet/af_packet.c |  7 ++++++-
+ net/socket.c           | 47 +++++++++---------------------------------
+ 4 files changed, 51 insertions(+), 38 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 57d376c09c..479edd10b5 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1908,14 +1908,44 @@ void sock_pfree(struct sk_buff *skb);
+ #endif
+ 
+ #ifdef CONFIG_NET_OOB
++
++static inline bool sock_oob_capable(struct socket *sock)
++{
++	return sock && sock->sk && sock->file && sock->file->oob_data;
++}
++
++int sock_oob_bind(struct sock *sk,
++		struct sockaddr *addr, int len);
++
++int sock_oob_shutdown(struct sock *sk, int how);
++
+ static inline void sock_oob_destruct(struct sock *sk)
+ {
+ 	void sock_oob_destroy(struct sock *sk);
+ 	if (sk->oob_data)
+ 		sock_oob_destroy(sk);
+ }
++
+ #else
++
++static inline bool sock_oob_capable(struct socket *sock)
++{
++	return false;
++}
++
++static inline int sock_oob_bind(struct sock *sk,
++				struct sockaddr *addr, int len)
++{
++	return 0;
++}
++
++static inline int sock_oob_shutdown(struct sock *sk, int how)
++{
++	return 0;
++}
++
+ static inline void sock_oob_destruct(struct sock *sk) { }
++
+ #endif
+ 
+ int sk_setsockopt(struct sock *sk, int level, int optname,
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 4f3c932e37..4ce2c62585 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -549,6 +549,8 @@ int __inet_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len,
+ 	inet->inet_dport = 0;
+ 	sk_dst_reset(sk);
+ 	err = 0;
++	if (sock_oob_capable(sk->sk_socket))
++		err = sock_oob_bind(sk, uaddr, addr_len);
+ out_release_sock:
+ 	if (flags & BIND_WITH_LOCK)
+ 		release_sock(sk);
+@@ -944,6 +946,9 @@ int inet_shutdown(struct socket *sock, int how)
+ 		break;
+ 	}
+ 
++	if (!err && sock_oob_capable(sock))
++		err = sock_oob_shutdown(sk, how);
++
+ 	/* Wake up anyone sleeping in poll. */
+ 	sk->sk_state_change(sk);
+ 	release_sock(sk);
+diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
+index fac636671d..4d4e4cbf7d 100644
+--- a/net/packet/af_packet.c
++++ b/net/packet/af_packet.c
+@@ -3355,6 +3355,7 @@ static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len
+ {
+ 	struct sockaddr_ll *sll = (struct sockaddr_ll *)uaddr;
+ 	struct sock *sk = sock->sk;
++	int ret;
+ 
+ 	/*
+ 	 *	Check legality
+@@ -3365,7 +3366,11 @@ static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len
+ 	if (sll->sll_family != AF_PACKET)
+ 		return -EINVAL;
+ 
+-	return packet_do_bind(sk, NULL, sll->sll_ifindex, sll->sll_protocol);
++	ret = packet_do_bind(sk, NULL, sll->sll_ifindex, sll->sll_protocol);
++	if (sock_oob_capable(sk->sk_socket))
++		ret = sock_oob_bind(sk, uaddr, addr_len);
++
++	return ret;
+ }
+ 
+ static struct proto packet_proto = {
+diff --git a/net/socket.c b/net/socket.c
+index 54fc990a04..4f802611ad 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -146,11 +146,6 @@ static void sock_show_fdinfo(struct seq_file *m, struct file *f)
+ 
+ #ifdef CONFIG_NET_OOB
+ 
+-static inline bool sock_oob_capable(struct socket *sock)
+-{
+-	return sock->file && sock->file->oob_data;
+-}
+-
+ int __weak sock_oob_attach(struct socket *sock)
+ {
+ 	return 0;
+@@ -164,23 +159,23 @@ void __weak sock_oob_destroy(struct sock *sk)
+ {
+ }
+ 
+-int __weak sock_oob_bind(struct socket *sock, struct sockaddr *addr, int len)
++int __weak sock_oob_bind(struct sock *sk, struct sockaddr *addr, int len)
+ {
+ 	return 0;
+ }
+ 
+-int __weak sock_oob_connect(struct socket *sock,
+-			struct sockaddr *addr, int len, int flags)
++int __weak sock_oob_shutdown(struct sock *sk, int how)
+ {
+ 	return 0;
+ }
+ 
+-int __weak sock_oob_shutdown(struct socket *sock, int how)
++int __weak sock_oob_connect(struct sock *sk,
++			struct sockaddr *addr, int len, int flags)
+ {
+ 	return 0;
+ }
+ 
+-long __weak sock_inband_ioctl_redirect(struct socket *sock,
++long __weak sock_inband_ioctl_redirect(struct sock *sk,
+ 				unsigned int cmd, unsigned long arg)
+ {
+ 	return -ENOTTY;
+@@ -214,11 +209,6 @@ __poll_t __weak sock_oob_poll(struct file *filp,
+ 
+ #else	/* !CONFIG_NET_OOB */
+ 
+-static inline bool sock_oob_capable(struct socket *sock)
+-{
+-	return false;
+-}
+-
+ static inline int sock_oob_attach(struct socket *sock)
+ {
+ 	return 0;
+@@ -228,24 +218,13 @@ static inline void sock_oob_release(struct socket *sock)
+ {
+ }
+ 
+-static inline int sock_oob_bind(struct socket *sock,
+-				struct sockaddr *addr, int len)
+-{
+-	return 0;
+-}
+-
+-static inline int sock_oob_connect(struct socket *sock,
++static inline int sock_oob_connect(struct sock *sk,
+ 				struct sockaddr *addr, int len, int flags)
+ {
+ 	return 0;
+ }
+ 
+-static inline int sock_oob_shutdown(struct socket *sock, int how)
+-{
+-	return 0;
+-}
+-
+-static inline long sock_inband_ioctl_redirect(struct socket *sock,
++static inline long sock_inband_ioctl_redirect(struct sock *sk,
+ 					unsigned int cmd, unsigned long arg)
+ {
+ 	return -ENOTTY;
+@@ -1451,7 +1430,7 @@ static long sock_ioctl(struct file *file, unsigned cmd, unsigned long arg)
+ 
+ 		default:
+ 			if (sock_oob_capable(sock)) {
+-				err = sock_inband_ioctl_redirect(sock, cmd, arg);
++				err = sock_inband_ioctl_redirect(sock->sk, cmd, arg);
+ 				if (!err || err != -ENOIOCTLCMD)
+ 					break;
+ 			}
+@@ -1949,9 +1928,6 @@ int __sys_bind(int fd, struct sockaddr __user *umyaddr, int addrlen)
+ 				err = sock->ops->bind(sock,
+ 						      (struct sockaddr *)
+ 						      &address, addrlen);
+-			if (!err && sock_oob_capable(sock))
+-				err = sock_oob_bind(sock, (struct sockaddr *)
+-						&address, addrlen);
+ 		}
+ 		fput_light(sock->file, fput_needed);
+ 	}
+@@ -2153,7 +2129,7 @@ int __sys_connect_file(struct file *file, struct sockaddr_storage *address,
+ 				 sock->file->f_flags | file_flags);
+ 
+ 	if (!err && sock_oob_capable(sock))
+-		err = sock_oob_connect(sock, (struct sockaddr *)address,
++		err = sock_oob_connect(sock->sk, (struct sockaddr *)address,
+ 				addrlen, sock->file->f_flags | file_flags);
+ out:
+ 	return err;
+@@ -2501,11 +2477,8 @@ int __sys_shutdown_sock(struct socket *sock, int how)
+ 	int err;
+ 
+ 	err = security_socket_shutdown(sock, how);
+-	if (!err) {
++	if (!err)
+ 		err = sock->ops->shutdown(sock, how);
+-		if (!err && sock_oob_capable(sock))
+-			err = sock_oob_shutdown(sock, how);
+-	}
+ 
+ 	return err;
+ }
+-- 
+2.30.2
+

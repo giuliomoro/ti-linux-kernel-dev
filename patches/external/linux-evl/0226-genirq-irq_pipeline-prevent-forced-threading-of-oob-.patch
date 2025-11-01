@@ -1,0 +1,27 @@
+From bc331f70ddd0d63085ef38691d0fd3ff5da4e94c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Jun 2025 16:12:37 +0200
+Subject: [PATCH 0226/1010] genirq: irq_pipeline: prevent forced threading of
+ oob IRQ
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq/manage.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 343bcd0d9f..90ac6bb0d9 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1416,7 +1416,7 @@ static int irq_setup_forced_threading(struct irqaction *new)
+ {
+ 	if (!force_irqthreads())
+ 		return 0;
+-	if (new->flags & (IRQF_NO_THREAD | IRQF_PERCPU | IRQF_ONESHOT))
++	if (new->flags & (IRQF_NO_THREAD | IRQF_PERCPU | IRQF_ONESHOT | IRQF_OOB))
+ 		return 0;
+ 
+ 	/*
+-- 
+2.30.2
+

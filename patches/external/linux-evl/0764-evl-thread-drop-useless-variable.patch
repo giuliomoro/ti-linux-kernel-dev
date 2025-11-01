@@ -1,0 +1,34 @@
+From 34fe9e3061d36623477f18a1b623685b4929c569 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 19 Jun 2022 19:14:43 +0200
+Subject: [PATCH 0764/1010] evl/thread: drop useless variable
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 9670b37402..606f24b902 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -820,7 +820,6 @@ int evl_set_period(struct evl_clock *clock,
+ {
+ 	struct evl_thread *curr = evl_current();
+ 	unsigned long flags;
+-	int ret = 0;
+ 
+ 	if (curr == NULL)
+ 		return -EPERM;
+@@ -849,7 +848,7 @@ int evl_set_period(struct evl_clock *clock,
+ 
+ 	raw_spin_unlock_irqrestore(&curr->lock, flags);
+ 
+-	return ret;
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(evl_set_period);
+ 
+-- 
+2.30.2
+

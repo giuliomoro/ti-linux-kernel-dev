@@ -1,0 +1,94 @@
+From a3c7afc24389b05d9b2f927d96696ec5b26dd241 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 25 Nov 2023 15:36:08 +0100
+Subject: [PATCH 0870/1010] evl/thread: add details to T_WOSS notification on
+ trap
+
+When a user thread is demoted to the in-band stage as a result of
+taking a trap, pass the faulting $pc as details of the T_WOSS
+notification message, only when the thread's observable receives the
+notification.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h     |  2 ++
+ kernel/evl/sched/core.c | 10 ++++++++--
+ kernel/evl/thread.c     |  7 ++++++-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 0285dbc32a..b774eeb3bc 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -322,6 +322,8 @@ int evl_switch_oob(void);
+ 
+ void evl_switch_inband(int cause);
+ 
++void evl_switch_inband_details(int cause, union evl_value details);
++
+ static inline int evl_preempt_count(void)
+ {
+ 	return dovetail_current_state()->preempt_count;
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index be5c9923e7..a74186d950 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1158,7 +1158,7 @@ int evl_switch_oob(void)
+ }
+ EXPORT_SYMBOL_GPL(evl_switch_oob);
+ 
+-void evl_switch_inband(int cause)
++void evl_switch_inband_details(int cause, union evl_value details)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 	struct evl_rq *this_rq;
+@@ -1261,7 +1261,7 @@ void evl_switch_inband(int cause)
+ 		 * an HM event.
+ 		 */
+ 		if (curr->state & EVL_T_WOSS)
+-			evl_notify_thread(curr, cause, evl_nil);
++			evl_notify_thread(curr, cause, details);
+ 
+ 		/* May check for locking inconsistency too. */
+ 		if (curr->state & EVL_T_WOLI)
+@@ -1271,6 +1271,12 @@ void evl_switch_inband(int cause)
+ 	/* @curr is now running inband. */
+ 	evl_sync_uwindow(curr);
+ }
++EXPORT_SYMBOL_GPL(evl_switch_inband_details);
++
++void evl_switch_inband(int cause)
++{
++	evl_switch_inband_details(cause, evl_nil);
++}
+ EXPORT_SYMBOL_GPL(evl_switch_inband);
+ 
+ struct evl_sched_class *
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 76d7e8eaad..27c564e3c0 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1556,6 +1556,7 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ {
+ 	struct evl_thread *curr;
+ 	bool is_bp = false;
++	int diag;
+ 
+ 	trace_evl_thread_fault(trapnr, regs);
+ 
+@@ -1595,7 +1596,11 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ 	 * We received a trap on the oob stage, switch to in-band
+ 	 * before handling the exception.
+ 	 */
+-	evl_switch_inband(is_bp ? EVL_HMDIAG_TRAP : EVL_HMDIAG_EXDEMOTE);
++	diag = is_bp ? EVL_HMDIAG_TRAP : EVL_HMDIAG_EXDEMOTE;
++	if (user_mode(regs))
++		evl_switch_inband_details(diag, evl_intval(instruction_pointer(regs)));
++	else
++		evl_switch_inband(diag);
+ }
+ 
+ /* hard irqs off */
+-- 
+2.30.2
+

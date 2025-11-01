@@ -1,0 +1,37 @@
+From 1809d1273f0a9f2618af722c12c1f175d86347d8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 8 May 2019 19:17:18 +0200
+Subject: [PATCH 0402/1010] evl/thread: handle EVL_THRIOC_SWITCH_OOB from OOB
+ context only
+
+The only sane way to issue a request for switching OOB via
+evl_switch_oob() is through oob_ioctl(), not ioctl(). Once the switch
+is done, the .unlocked_ioctl() operation would unwind into the VFS on
+the out-of-band stage, which would certainly be a bad idea.
+
+To reflect this, process EVL_THRIOC_SWITCH_OOB from oob_ioctl()
+exclusively.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index cf0031b8aa..0b15c9319d 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2176,10 +2176,6 @@ static long thread_ioctl(struct file *filp, unsigned int cmd,
+ 		return -ESTALE;
+ 
+ 	switch (cmd) {
+-	case EVL_THRIOC_SWITCH_OOB:
+-		if (thread == curr)
+-			ret = evl_switch_oob();
+-		break;
+ 	case EVL_THRIOC_SWITCH_INBAND:
+ 		if (thread == curr)
+ 			ret = 0;
+-- 
+2.30.2
+

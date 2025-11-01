@@ -1,0 +1,33 @@
+From d7335a1e08eec9adc8f451676b8c6e3a1255d293 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 7 May 2025 14:44:39 +0200
+Subject: [PATCH 0955/1010] spidev: evl: rename uapi header according to
+ standard
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/spi/spidev.c                                | 2 +-
+ include/uapi/evl/devices/{spidev.h => spidev-abi.h} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename include/uapi/evl/devices/{spidev.h => spidev-abi.h} (100%)
+
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 125f03f39a..78446cc6fe 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -25,7 +25,7 @@
+ #include <linux/spi/spidev.h>
+ 
+ #include <linux/uaccess.h>
+-#include <uapi/evl/devices/spidev.h>
++#include <uapi/evl/devices/spidev-abi.h>
+ #include <evl/device.h>
+ 
+ /*
+diff --git a/include/uapi/evl/devices/spidev.h b/include/uapi/evl/devices/spidev-abi.h
+similarity index 100%
+rename from include/uapi/evl/devices/spidev.h
+rename to include/uapi/evl/devices/spidev-abi.h
+-- 
+2.30.2
+

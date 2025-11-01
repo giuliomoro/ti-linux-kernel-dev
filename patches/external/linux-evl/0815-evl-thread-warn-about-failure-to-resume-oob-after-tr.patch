@@ -1,0 +1,40 @@
+From 5e1eb29a74e55b643b93e41a9b294bca1b92a9db Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 12 Nov 2022 16:11:43 +0100
+Subject: [PATCH 0815/1010] evl/thread: warn about failure to resume oob after
+ trap
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index ea320d56d3..6201cb8fab 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1605,6 +1605,7 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 	bool is_bp = false;
++	int ret;
+ 
+ 	if (in_nmi())
+ 		return;
+@@ -1626,9 +1627,11 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 	 * need be.
+ 	 */
+ 	if (!user_mode(regs)) {
+-		evl_switch_oob();
++		ret = evl_switch_oob();
+ 		if ((EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp)
+-			note_trap(curr, trapnr, regs, "resuming out-of-band");
++			note_trap(curr, trapnr, regs,
++				ret ? "failed to resume out-of-band" :
++				"resuming out-of-band");
+ 	}
+ 
+ 	hard_local_irq_disable();
+-- 
+2.30.2
+

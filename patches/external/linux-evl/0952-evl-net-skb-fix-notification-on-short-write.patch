@@ -1,0 +1,34 @@
+From 39aba024902423f3286bdbc7cbfebf19ad0753b6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 5 May 2025 17:20:21 +0200
+Subject: [PATCH 0952/1010] evl/net: skb: fix notification on short write
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/skb.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index ea7f3d3d2c..fdac81837b 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -693,6 +693,8 @@ ssize_t evl_net_skb_to_uio(const struct iovec *iov, size_t iovlen,
+ 		return ret;
+ 	}
+ 
++	*short_write = false;
++
+ 	skb_walk_frags(skb, fskb) {
+ 		if (skip)
+ 			skb_pull_inline(fskb, skip);
+@@ -706,7 +708,5 @@ ssize_t evl_net_skb_to_uio(const struct iovec *iov, size_t iovlen,
+ 		}
+ 	}
+ 
+-	*short_write = false;
+-
+ 	return ret;
+ }
+-- 
+2.30.2
+

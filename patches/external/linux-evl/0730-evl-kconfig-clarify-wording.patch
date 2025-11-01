@@ -1,0 +1,26 @@
+From 0df603fc9d1a13053ce9540392d7f4d488ef9d80 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 7 Feb 2021 11:11:46 +0100
+Subject: [PATCH 0730/1010] evl: kconfig: clarify wording
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index e5c889b388..fff08f1a80 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -15,7 +15,7 @@ config EVL_SCHED_QUOTA
+ 	If in doubt, say N.
+ 
+ config EVL_SCHED_TP
+-	bool "Temporal partitioning policy"
++	bool "Enable temporal partitioning policy"
+ 	default n
+ 	help
+ 	This option enables the SCHED_TP scheduling policy in the
+-- 
+2.30.2
+

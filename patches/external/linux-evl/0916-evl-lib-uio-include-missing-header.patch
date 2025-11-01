@@ -1,0 +1,27 @@
+From 79ac67512bda79be5e95e497912626fc386b3a24 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 23 Sep 2024 12:36:11 +0200
+Subject: [PATCH 0916/1010] evl/lib: uio: include missing header
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/lib/uio.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/evl/lib/uio.c b/kernel/evl/lib/uio.c
+index fdc8b8504f..69fb5c3e01 100644
+--- a/kernel/evl/lib/uio.c
++++ b/kernel/evl/lib/uio.c
+@@ -8,6 +8,9 @@
+ #include <linux/err.h>
+ #include <linux/export.h>
+ #include <linux/uaccess.h>
++#include <linux/compat.h>
++#include <evl/uaccess.h>
++#include <evl/uio.h>
+ #include <evl/memory.h>
+ 
+ static int load_iov_native(struct iovec *iov,
+-- 
+2.30.2
+

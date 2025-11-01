@@ -1,0 +1,100 @@
+From b85a0255f6553d6a187e392e51fb9a21072beefc Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 14 Aug 2023 12:41:20 +0200
+Subject: [PATCH 0102/1010] genirq: irq_pipeline: make lockdep fully check the
+ irq state
+
+check_flags() must test the combined virtual and hardware states
+obtained from test_and_lock_stage() for determining whether the irq
+on/off tracking is unbalanced.
+
+Add stage_disabled_flags() for this purpose, which receives the combo
+irq state to check instead of testing the current one like
+stage_disabled() does.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/irqstage.h |  7 +++++++
+ kernel/irq/pipeline.c    | 27 +++++++++++++++++++++++++++
+ kernel/locking/lockdep.c |  2 +-
+ 3 files changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/irqstage.h b/include/linux/irqstage.h
+index 46bfb84b06..a73b91e909 100644
+--- a/include/linux/irqstage.h
++++ b/include/linux/irqstage.h
+@@ -318,6 +318,8 @@ static __always_inline void oob_irq_restore(unsigned long x)
+ 
+ bool stage_disabled(void);
+ 
++bool stage_disabled_flags(unsigned long irqstate);
++
+ unsigned long test_and_lock_stage(int *irqsoff);
+ 
+ void unlock_stage(unsigned long irqstate);
+@@ -365,6 +367,11 @@ static __always_inline bool stage_disabled(void)
+ 	return irqs_disabled();
+ }
+ 
++static __always_inline bool stage_disabled_flags(unsigned long flags)
++{
++	return irqs_disabled_flags(flags);
++}
++
+ static __always_inline void irq_post_inband(unsigned int irq)
+ {
+ 	call_is_nop_without_pipelining();
+diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
+index aa96ee0db0..dfa8df1338 100644
+--- a/kernel/irq/pipeline.c
++++ b/kernel/irq/pipeline.c
+@@ -455,6 +455,33 @@ noinstr bool stage_disabled(void)
+ }
+ EXPORT_SYMBOL_GPL(stage_disabled);
+ 
++/**
++ *	stage_disabled_flags - test a particular interrupt state
++ *
++ *	Returns non-zero if interrupts are marked as disabled in the
++ *	interrupt state, zero otherwise.
++ *      In other words, returns non-zero either if:
++ *      - interrupts are disabled for the OOB context (i.e. hard disabled),
++ *      - inband interrupts are stalled (meaning that we were running in-band
++ *        when building that interrupt state).
++ *
++ *      CAUTION: in general, you cannot infer from an interrupt state
++ *      value which stage was active at the time such state was
++ *      snapshot. However, as mentioned earlier, you may assume that
++ *      the in-band stage can be reported as stalled only when current
++ *      though, since this is guaranteed by the implementation of
++ *      test_and_lock_stage().
++ */
++noinstr bool stage_disabled_flags(unsigned long irqstate)
++{
++	unsigned long flags;
++	int stalled;
++
++	flags = irqs_split_flags(irqstate, &stalled);
++	return hard_irqs_disabled_flags(flags) || stalled;
++}
++EXPORT_SYMBOL_GPL(stage_disabled_flags);
++
+ /**
+  *	test_and_lock_stage - test and disable interrupts for the current stage
+  *	@irqsoff:	Pointer to boolean denoting stage_disabled()
+diff --git a/kernel/locking/lockdep.c b/kernel/locking/lockdep.c
+index 32dfa923c4..2a360f812f 100644
+--- a/kernel/locking/lockdep.c
++++ b/kernel/locking/lockdep.c
+@@ -5580,7 +5580,7 @@ static noinstr void check_flags(unsigned long flags)
+ 	/* Get the warning out..  */
+ 	instrumentation_begin();
+ 
+-	if (irqs_disabled_flags(flags)) {
++	if (stage_disabled_flags(flags)) {
+ 		if (DEBUG_LOCKS_WARN_ON(lockdep_hardirqs_enabled())) {
+ 			printk("possible reason: unannotated irqs-off.\n");
+ 		}
+-- 
+2.30.2
+

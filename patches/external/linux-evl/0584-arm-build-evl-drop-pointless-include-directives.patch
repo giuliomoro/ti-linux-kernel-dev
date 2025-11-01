@@ -1,0 +1,28 @@
+From d2bf7b535b43666ade21962c0242b68beed110be Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 31 Dec 2019 12:26:15 +0100
+Subject: [PATCH 0584/1010] arm/build: evl: drop pointless include directives
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/Makefile | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index bef9639a38..5906172409 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -236,10 +236,6 @@ TEXT_OFFSET := $(textofs-y)
+ 
+ export	TEXT_OFFSET GZFLAGS MMUEXT
+ 
+-ifeq ($(CONFIG_EVL),y)
+-KBUILD_CFLAGS += -Iarch/$(SRCARCH)/evl/include -Iinclude/evl
+-endif
+-
+ # If we have a machine-specific directory, then include it in the build.
+ core-y				+= $(patsubst %,arch/arm/mach-%/,$(machine-y))
+ # For cleaning
+-- 
+2.30.2
+

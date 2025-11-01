@@ -1,0 +1,41 @@
+From dfdf54338ed0178e5850282a6007007e772f4eb3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 1 Sep 2023 12:12:59 +0200
+Subject: [PATCH 0852/1010] pinctrl/intel: irq_pipeline: fix pipelined
+ interrupt control
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/pinctrl/intel/pinctrl-intel.c | 2 +-
+ drivers/pinctrl/intel/pinctrl-intel.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/pinctrl/intel/pinctrl-intel.c b/drivers/pinctrl/intel/pinctrl-intel.c
+index 8542053d4d..3ca52d2c5b 100644
+--- a/drivers/pinctrl/intel/pinctrl-intel.c
++++ b/drivers/pinctrl/intel/pinctrl-intel.c
+@@ -1181,7 +1181,7 @@ static const struct irq_chip intel_gpio_irq_chip = {
+ 	.irq_unmask = intel_gpio_irq_unmask,
+ 	.irq_set_type = intel_gpio_irq_type,
+ 	.irq_set_wake = intel_gpio_irq_wake,
+-	.flags = IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_IMMUTABLE,
++	.flags = IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_IMMUTABLE | IRQCHIP_PIPELINE_SAFE,
+ 	GPIOCHIP_IRQ_RESOURCE_HELPERS,
+ };
+ 
+diff --git a/drivers/pinctrl/intel/pinctrl-intel.h b/drivers/pinctrl/intel/pinctrl-intel.h
+index 0d45063435..e1754ca991 100644
+--- a/drivers/pinctrl/intel/pinctrl-intel.h
++++ b/drivers/pinctrl/intel/pinctrl-intel.h
+@@ -229,7 +229,7 @@ struct intel_pinctrl_context {
+  */
+ struct intel_pinctrl {
+ 	struct device *dev;
+-	raw_spinlock_t lock;
++	hard_spinlock_t lock;
+ 	struct pinctrl_desc pctldesc;
+ 	struct pinctrl_dev *pctldev;
+ 	struct gpio_chip chip;
+-- 
+2.30.2
+

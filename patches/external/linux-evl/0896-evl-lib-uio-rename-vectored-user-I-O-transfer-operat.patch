@@ -1,0 +1,150 @@
+From 3470b2838c48358d65ad8931ff0a90c8645b5a50 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 21 Nov 2023 09:46:28 +0100
+Subject: [PATCH 0896/1010] evl/lib: uio: rename vectored user I/O transfer
+ operations
+
+user_iov can be abbreviated to uio.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/uio.h              | 10 +++++-----
+ kernel/evl/lib/uio.c           | 16 ++++++++--------
+ kernel/evl/net/packet/packet.c |  6 +++---
+ kernel/evl/net/skb.c           |  1 +
+ kernel/evl/net/socket.c        |  2 +-
+ 5 files changed, 18 insertions(+), 17 deletions(-)
+
+diff --git a/include/evl/uio.h b/include/evl/uio.h
+index 5c2a33971c..00026af6cb 100644
+--- a/include/evl/uio.h
++++ b/include/evl/uio.h
+@@ -12,14 +12,14 @@
+ struct iovec;
+ struct kvec;
+ 
+-ssize_t evl_copy_to_user_iov(const struct iovec *iov, size_t iovlen,
++ssize_t evl_copy_to_uio(const struct iovec *iov, size_t iovlen,
+ 			const void *data, size_t len);
+ 
+-ssize_t evl_copy_from_user_iov(const struct iovec *iov, size_t iovlen,
+-		void *data, size_t len, size_t *remainder);
++ssize_t evl_copy_from_uio(const struct iovec *iov, size_t iovlen,
++			void *data, size_t len, size_t *remainder);
+ 
+-struct iovec *evl_load_user_iov(const struct iovec __user *u_iov,
+-				size_t iovlen, struct iovec *fast_iov);
++struct iovec *evl_load_uio(const struct iovec __user *u_iov,
++			size_t iovlen, struct iovec *fast_iov);
+ 
+ ssize_t evl_copy_from_uio_to_kvec(const struct iovec *iov,
+ 				size_t iovlen, size_t count,
+diff --git a/kernel/evl/lib/uio.c b/kernel/evl/lib/uio.c
+index 3ab8d1e42c..fdc8b8504f 100644
+--- a/kernel/evl/lib/uio.c
++++ b/kernel/evl/lib/uio.c
+@@ -68,8 +68,8 @@ static inline int do_load_iov(struct iovec *iov,
+ 
+ #endif
+ 
+-struct iovec *evl_load_user_iov(const struct iovec __user *u_iov,
+-				size_t iovlen, struct iovec *fast_iov)
++struct iovec *evl_load_uio(const struct iovec __user *u_iov,
++			size_t iovlen, struct iovec *fast_iov)
+ {
+ 	struct iovec *slow_iov;
+ 	int ret;
+@@ -94,9 +94,9 @@ struct iovec *evl_load_user_iov(const struct iovec __user *u_iov,
+ 
+ 	return slow_iov;
+ }
+-EXPORT_SYMBOL_GPL(evl_load_user_iov);
++EXPORT_SYMBOL_GPL(evl_load_uio);
+ 
+-ssize_t evl_copy_to_user_iov(const struct iovec *iov, size_t iovlen,
++ssize_t evl_copy_to_uio(const struct iovec *iov, size_t iovlen,
+ 			const void *data, size_t len)
+ {
+ 	ssize_t written = 0;
+@@ -124,9 +124,9 @@ ssize_t evl_copy_to_user_iov(const struct iovec *iov, size_t iovlen,
+ 
+ 	return written;
+ }
+-EXPORT_SYMBOL_GPL(evl_copy_to_user_iov);
++EXPORT_SYMBOL_GPL(evl_copy_to_uio);
+ 
+-ssize_t evl_copy_from_user_iov(const struct iovec *iov, size_t iovlen,
++ssize_t evl_copy_from_uio(const struct iovec *iov, size_t iovlen,
+ 			void *data, size_t len, size_t *remainder)
+ {
+ 	size_t nbytes, avail = 0;
+@@ -161,7 +161,7 @@ ssize_t evl_copy_from_user_iov(const struct iovec *iov, size_t iovlen,
+ 
+ 	return read;
+ }
+-EXPORT_SYMBOL_GPL(evl_copy_from_user_iov);
++EXPORT_SYMBOL_GPL(evl_copy_from_uio);
+ 
+ /*
+  * Copy the content referred to by a user I/O vector to a linear area,
+@@ -178,7 +178,7 @@ ssize_t evl_copy_from_uio_to_kvec(const struct iovec *iov, size_t iovlen,
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	ret = evl_copy_from_user_iov(iov, iovlen, data, count, NULL);
++	ret = evl_copy_from_uio(iov, iovlen, data, count, NULL);
+ 	if (ret <= 0) {
+ 		evl_free(data);
+ 	} else {
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index ed78129c45..9f25c25707 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -466,8 +466,8 @@ static ssize_t send_packet(struct evl_socket *esk,
+ 	skb->dev = real_dev;
+ 	skb->priority = esk->sk->sk_priority;
+ 
+-	count = evl_copy_from_user_iov(iov, iovlen, skb->data, skb_tailroom(skb), &rem);
+-	if (rem || count > dev->mtu + dev->hard_header_len + VLAN_HLEN)
++	count = evl_copy_from_uio(iov, iovlen, skb->data, skb_tailroom(skb), &rem);
++	if (rem || count > READ_ONCE(dev->mtu) + dev->hard_header_len + VLAN_HLEN)
+ 		ret = -EMSGSIZE;
+ 	else if (!dev_validate_header(dev, skb->data, count))
+ 		ret = -EINVAL;
+@@ -549,7 +549,7 @@ static ssize_t copy_packet_to_user(struct user_oob_msghdr __user *u_msghdr,
+ 		return -EFAULT;
+ 
+ copy_data:
+-	count = evl_copy_to_user_iov(iov, iovlen, skb->data, skb->len);
++	count = evl_copy_to_uio(iov, iovlen, skb->data, skb->len);
+ 	if (count < skb->len)
+ 		msg_flags |= MSG_TRUNC;
+ 
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index e9ee0c60af..39f324abba 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -11,6 +11,7 @@
+ #include <linux/dma-mapping.h>
+ #include <linux/if_vlan.h>
+ #include <linux/err.h>
++#include <evl/uio.h>
+ #include <evl/net.h>
+ #include <evl/lock.h>
+ #include <evl/list.h>
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index fbd680cdc4..bb298e7c32 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -396,7 +396,7 @@ static int socket_send_recv(struct evl_socket *esk,
+ 		return -EFAULT;
+ 
+ 	u_iov = evl_valptr64(iov_ptr, struct iovec);
+-	iov = evl_load_user_iov(u_iov, iovlen, fast_iov);
++	iov = evl_load_uio(u_iov, iovlen, fast_iov);
+ 	if (IS_ERR(iov))
+ 		return PTR_ERR(iov);
+ 
+-- 
+2.30.2
+

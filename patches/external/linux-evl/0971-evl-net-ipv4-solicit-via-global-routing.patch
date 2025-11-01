@@ -1,0 +1,26 @@
+From f33d164d5c510dfcc62aab071aabb418ea5f3e40 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 11 Jun 2025 16:49:03 +0200
+Subject: [PATCH 0971/1010] evl/net: ipv4: solicit via global routing
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/ipv4.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 7219f297d0..459c746105 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -252,7 +252,7 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 	if (flags & ~EVL_NEIGH_PERMANENT)
+ 		return -EINVAL;
+ 
+-	rt = ip_route_output(sock_net(esk->sk), ipaddr, 0, RTO_ONLINK, 0);
++	rt = ip_route_output(sock_net(esk->sk), ipaddr, 0, 0, 0);
+ 	if (IS_ERR(rt))
+ 		return PTR_ERR(rt);
+ 
+-- 
+2.30.2
+

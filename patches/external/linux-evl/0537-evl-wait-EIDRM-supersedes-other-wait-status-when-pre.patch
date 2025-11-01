@@ -1,0 +1,35 @@
+From 996e753c4938585c023deca79a101065281e4844 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 9 Oct 2019 18:52:17 +0200
+Subject: [PATCH 0537/1010] evl/wait: EIDRM supersedes other wait status when
+ present
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index d97de7d522..ff1b8e18b0 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -57,12 +57,12 @@ struct evl_wait_queue {
+ 	no_ugly_lock();							\
+ 	evl_schedule();							\
+ 	__info = evl_current()->info;					\
+-	if (__info & T_BREAK)						\
+-		__ret = -EINTR;						\
++	if (__info & T_RMID)						\
++		__ret = -EIDRM;						\
+ 	else if (__info & T_TIMEO)					\
+ 		__ret = -ETIMEDOUT;					\
+-	else if (__info & T_RMID)					\
+-		__ret = -EIDRM;						\
++	else if (__info & T_BREAK)					\
++		__ret = -EINTR;						\
+ 	__ret;								\
+ })
+ 
+-- 
+2.30.2
+

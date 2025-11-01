@@ -1,0 +1,63 @@
+From c3e118ec3c08ae59eaf9e94c1149250199a68fc4 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 17:48:30 +0100
+Subject: [PATCH 0192/1010] net: dovetail: add hook on TX wake queue event from
+ the oob stage
+
+Call the netif_tx_wake_oob() hook to inform the companion core about
+requests to wake up a stalled TX queue.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h | 5 +++++
+ net/core/dev.c            | 4 ++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 324fe05222..9d7712f5b5 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4374,6 +4374,7 @@ void napi_complete_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
++void netif_tx_wake_oob(struct netdev_queue *txq); /* rcu_read locked */
+ void process_inband_tx_backlog(struct softnet_data *sd);
+ 
+ #else  /* !CONFIG_NET_OOB */
+@@ -4410,6 +4411,10 @@ static inline void netif_tx_unlock_oob(struct netdev_queue *txq)
+ {
+ }
+ 
++static inline void netif_tx_wake_oob(struct netdev_queue *txq)
++{
++}
++
+ #endif  /* !CONFIG_NET_OOB */
+ 
+ /*
+diff --git a/net/core/dev.c b/net/core/dev.c
+index eb02b104d0..35459d4f16 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3184,6 +3184,7 @@ void netif_tx_wake_queue(struct netdev_queue *dev_queue)
+ 		struct Qdisc *q;
+ 
+ 		rcu_read_lock();
++		netif_tx_wake_oob(dev_queue);
+ 		q = rcu_dereference(dev_queue->qdisc);
+ 		__netif_schedule(q);
+ 		rcu_read_unlock();
+@@ -5110,6 +5111,9 @@ static void kick_rx_inband(struct irq_work *irq_work)
+ 	__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+ }
+ 
++__weak void netif_tx_wake_oob(struct netdev_queue *txq)
++{ }
++
+ #else
+ 
+ static inline bool netif_receive_oob_list(struct list_head *head)
+-- 
+2.30.2
+

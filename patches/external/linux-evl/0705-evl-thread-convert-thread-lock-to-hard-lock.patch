@@ -1,0 +1,751 @@
+From 11822a45506b35711a7472f2ced0eab08c6c6d51 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 25 Dec 2020 18:46:05 +0100
+Subject: [PATCH 0705/1010] evl/thread: convert thread lock to hard lock
+
+Out-of-band IRQs and EVL thread contexts may compete for such lock,
+which would require hard irqs to be disabled while holding it.
+Therefore we would not benefit from the preemption disabling feature
+we are going to add to the EVL-specific spinlock. Make it a hard lock
+to clarify the intent.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/assert.h    |  2 +-
+ include/evl/sched.h     |  5 +--
+ include/evl/thread.h    |  2 +-
+ kernel/evl/monitor.c    |  8 ++--
+ kernel/evl/mutex.c      | 85 +++++++++++++++++++++--------------------
+ kernel/evl/sched/core.c | 50 ++++++++++++------------
+ kernel/evl/thread.c     | 26 ++++++-------
+ kernel/evl/wait.c       |  4 +-
+ 8 files changed, 91 insertions(+), 91 deletions(-)
+
+diff --git a/include/evl/assert.h b/include/evl/assert.h
+index d24b9a2adb..d20d09b012 100644
+--- a/include/evl/assert.h
++++ b/include/evl/assert.h
+@@ -45,7 +45,7 @@
+ 
+ #define assert_thread_pinned(__thread)			\
+ 	do {						\
+-		assert_evl_lock(&(__thread)->lock);	\
++		assert_hard_lock(&(__thread)->lock);	\
+ 		assert_hard_lock(&(__thread)->rq->lock);\
+ 	} while (0)
+ 
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 2f4bfd6a21..a6ade43eea 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -11,7 +11,6 @@
+ #include <linux/percpu.h>
+ #include <linux/list.h>
+ #include <linux/irq_pipeline.h>
+-#include <evl/lock.h>
+ #include <evl/thread.h>
+ #include <evl/sched/queue.h>
+ #include <evl/sched/weak.h>
+@@ -374,7 +373,7 @@ static inline bool evl_cannot_block(void)
+ #define evl_get_thread_rq(__thread, __flags)				\
+ 	({								\
+ 		struct evl_rq *__rq;					\
+-		evl_spin_lock_irqsave(&(__thread)->lock, __flags);	\
++		raw_spin_lock_irqsave(&(__thread)->lock, __flags);	\
+ 		__rq = (__thread)->rq;					\
+ 		raw_spin_lock(&__rq->lock);				\
+ 		__rq;							\
+@@ -383,7 +382,7 @@ static inline bool evl_cannot_block(void)
+ #define evl_put_thread_rq(__thread, __rq, __flags)			\
+ 	do {								\
+ 		raw_spin_unlock(&(__rq)->lock);				\
+-		evl_spin_unlock_irqrestore(&(__thread)->lock, __flags);	\
++		raw_spin_unlock_irqrestore(&(__thread)->lock, __flags);	\
+ 	} while (0)
+ 
+ bool evl_set_effective_thread_priority(struct evl_thread *thread,
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index aa34855f05..2b13b78306 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -59,7 +59,7 @@ struct evl_init_thread_attr {
+ };
+ 
+ struct evl_thread {
+-	evl_spinlock_t lock;
++	hard_spinlock_t lock;
+ 
+ 	/*
+ 	 * Shared thread-specific data, covered by ->lock.
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index bddc9ebf89..c4dd4accfa 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -83,11 +83,11 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ 		evl_spin_lock_irqsave(&event->wait_queue.lock, flags);
+ 		event->state->flags |= (EVL_MONITOR_TARGETED|
+ 					EVL_MONITOR_SIGNALED);
+-		evl_spin_lock(&target->lock);
++		raw_spin_lock(&target->lock);
+ 		raw_spin_lock(&target->rq->lock);
+ 		target->info |= T_SIGNAL;
+ 		raw_spin_unlock(&target->rq->lock);
+-		evl_spin_unlock(&target->lock);
++		raw_spin_unlock(&target->lock);
+ 		evl_spin_unlock_irqrestore(&event->wait_queue.lock, flags);
+ 	}
+ out:
+@@ -506,11 +506,11 @@ static int wait_monitor(struct file *filp,
+ 
+ 	evl_add_wait_queue(&event->wait_queue, timeout, tmode);
+ 
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 	raw_spin_lock(&curr->rq->lock);
+ 	curr->info &= ~T_SIGNAL;
+ 	raw_spin_unlock(&curr->rq->lock);
+-	evl_spin_unlock(&curr->lock);
++	raw_spin_unlock(&curr->lock);
+ 	evl_spin_unlock(&event->wait_queue.lock);
+ 	__exit_monitor(gate, curr);
+ 	evl_spin_unlock_irqrestore(&gate->lock, flags);
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 6673a59c64..0d996de4ed 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -58,7 +58,7 @@ static inline bool enable_inband_switch(struct evl_thread *curr)
+ /* owner->lock held, irqs off. */
+ static void raise_boost_flag(struct evl_thread *owner)
+ {
+-	assert_evl_lock(&owner->lock);
++	assert_hard_lock(&owner->lock);
+ 
+ 	raw_spin_lock(&owner->rq->lock);
+ 
+@@ -79,8 +79,8 @@ static int inherit_thread_priority(struct evl_thread *owner,
+ 	struct evl_wait_channel *wchan;
+ 	int ret = 0;
+ 
+-	assert_evl_lock(&owner->lock);
+-	assert_evl_lock(&contender->lock);
++	assert_hard_lock(&owner->lock);
++	assert_hard_lock(&contender->lock);
+ 
+ 	/* Apply the scheduling policy of @contender to @owner */
+ 	evl_track_thread_policy(owner, contender);
+@@ -139,7 +139,7 @@ static int adjust_boost(struct evl_thread *owner,
+ 	 * At each stage, wchan->reorder_wait() fixes up the priority
+ 	 * for @owner before walking deeper into PI chain.
+ 	 */
+-	assert_evl_lock(&owner->lock);
++	assert_hard_lock(&owner->lock);
+ 	assert_evl_lock(&origin->lock);
+ 
+ 	/*
+@@ -177,10 +177,10 @@ static int adjust_boost(struct evl_thread *owner,
+ 		if (contender == NULL) {
+ 			contender = list_first_entry(&mutex->wchan.wait_list,
+ 						struct evl_thread, wait_next);
+-			evl_spin_lock(&contender->lock);
++			raw_spin_lock(&contender->lock);
+ 			ret = inherit_thread_priority(owner, contender,
+ 						originator);
+-			evl_spin_unlock(&contender->lock);
++			raw_spin_unlock(&contender->lock);
+ 		} else { /* Otherwise @contender is already locked. */
+ 			ret = inherit_thread_priority(owner, contender,
+ 						originator);
+@@ -220,7 +220,7 @@ static void ceil_owner_priority(struct evl_mutex *mutex,
+ 	 * current weighted priority below the ceiling value, until we
+ 	 * eventually release this mutex.
+ 	 */
+-	evl_spin_lock(&owner->lock);
++	raw_spin_lock(&owner->lock);
+ 
+ 	list_add_priff(mutex, &owner->boosters, wprio, next_booster);
+ 	raise_boost_flag(owner);
+@@ -229,7 +229,7 @@ static void ceil_owner_priority(struct evl_mutex *mutex,
+ 	if (wprio > owner->wprio)
+ 		adjust_boost(owner, NULL, mutex, originator);
+ 
+-	evl_spin_unlock(&owner->lock);
++	raw_spin_unlock(&owner->lock);
+ }
+ 
+ /* mutex->lock held, irqs off */
+@@ -348,7 +348,7 @@ static void clear_boost_locked(struct evl_mutex *mutex,
+ 			int flag)
+ {
+ 	assert_evl_lock(&mutex->lock);
+-	assert_evl_lock(&owner->lock);
++	assert_hard_lock(&owner->lock);
+ 
+ 	mutex->flags &= ~flag;
+ 
+@@ -369,9 +369,9 @@ static void clear_boost(struct evl_mutex *mutex,
+ {
+ 	assert_evl_lock(&mutex->lock);
+ 
+-	evl_spin_lock(&owner->lock);
++	raw_spin_lock(&owner->lock);
+ 	clear_boost_locked(mutex, owner, flag);
+-	evl_spin_unlock(&owner->lock);
++	raw_spin_unlock(&owner->lock);
+ }
+ 
+ /*
+@@ -416,7 +416,7 @@ void evl_detect_boost_drop(void)
+ 	struct evl_mutex *mutex;
+ 	unsigned long flags;
+ 
+-	evl_spin_lock_irqsave(&curr->lock, flags);
++	raw_spin_lock_irqsave(&curr->lock, flags);
+ 
+ 	/*
+ 	 * Iterate over waiters of each mutex we got boosted for due
+@@ -435,7 +435,7 @@ void evl_detect_boost_drop(void)
+ 		evl_spin_unlock(&mutex->lock);
+ 	}
+ 
+-	evl_spin_unlock_irqrestore(&curr->lock, flags);
++	raw_spin_unlock_irqrestore(&curr->lock, flags);
+ }
+ 
+ void __evl_init_mutex(struct evl_mutex *mutex,
+@@ -592,14 +592,14 @@ static void finish_mutex_wait(struct evl_mutex *mutex)
+ 	contender = list_first_entry(&mutex->wchan.wait_list,
+ 				struct evl_thread, wait_next);
+ 
+-	evl_spin_lock(&owner->lock);
+-	evl_spin_lock(&contender->lock);
++	raw_spin_lock(&owner->lock);
++	raw_spin_lock(&contender->lock);
+ 	mutex->wprio = contender->wprio;
+ 	list_del(&mutex->next_booster);	/* owner->boosters */
+ 	list_add_priff(mutex, &owner->boosters, wprio, next_booster);
+ 	adjust_boost(owner, contender, mutex, owner);
+-	evl_spin_unlock(&contender->lock);
+-	evl_spin_unlock(&owner->lock);
++	raw_spin_unlock(&contender->lock);
++	raw_spin_unlock(&owner->lock);
+ }
+ 
+ /* owner->lock + originator->lock held, irqs off */
+@@ -608,8 +608,8 @@ static int check_lock_chain(struct evl_thread *owner,
+ {
+ 	struct evl_wait_channel *wchan;
+ 
+-	assert_evl_lock(&owner->lock);
+-	assert_evl_lock(&originator->lock);
++	assert_hard_lock(&owner->lock);
++	assert_hard_lock(&originator->lock);
+ 
+ 	wchan = owner->wchan;
+ 	if (wchan)
+@@ -646,7 +646,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 
+ 	ret = 0;
+ 	evl_spin_lock_irqsave(&mutex->lock, flags);
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 
+ 	/*
+ 	 * Set claimed bit.  In case it appears to be set already,
+@@ -667,7 +667,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	test_no_owner:
+ 		if (oldh == EVL_NO_HANDLE) {
+ 			/* Lock released from another cpu. */
+-			evl_spin_unlock(&curr->lock);
++			raw_spin_unlock(&curr->lock);
+ 			evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ 			goto redo;
+ 		}
+@@ -685,7 +685,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	 */
+ 	if (owner == NULL) {
+ 		untrack_owner(mutex);
+-		evl_spin_unlock(&curr->lock);
++		raw_spin_unlock(&curr->lock);
+ 		evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ 		return -EOWNERDEAD;
+ 	}
+@@ -717,7 +717,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		 */
+ 		evl_put_element(&owner->element);
+ 
+-	evl_spin_lock(&owner->lock);
++	raw_spin_lock(&owner->lock);
+ 
+ 	if (unlikely(curr->state & T_WOLI))
+ 		detect_inband_owner(mutex, curr);
+@@ -729,7 +729,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 			raw_spin_lock(&owner->rq->lock);
+ 			owner->info |= T_ROBBED;
+ 			raw_spin_unlock(&owner->rq->lock);
+-			evl_spin_unlock(&owner->lock);
++			raw_spin_unlock(&owner->lock);
+ 			goto grab;
+ 		}
+ 
+@@ -762,21 +762,22 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		ret = check_lock_chain(owner, curr);
+ 	}
+ 
+-	evl_spin_unlock(&owner->lock);
++	raw_spin_unlock(&owner->lock);
+ 
+ 	if (likely(!ret)) {
+ 		raw_spin_lock(&curr->rq->lock);
+ 		evl_sleep_on_locked(timeout, timeout_mode, mutex->clock, &mutex->wchan);
+ 		raw_spin_unlock(&curr->rq->lock);
+-		evl_spin_unlock(&curr->lock);
++		raw_spin_unlock(&curr->lock);
+ 		evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ 		ret = wait_mutex_schedule(mutex);
+ 		evl_spin_lock_irqsave(&mutex->lock, flags);
+-	} else
+-		evl_spin_unlock(&curr->lock);
++	} else {
++		raw_spin_unlock(&curr->lock);
++	}
+ 
+ 	finish_mutex_wait(mutex);
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 	curr->wwake = NULL;
+ 	raw_spin_lock(&curr->rq->lock);
+ 	curr->info &= ~T_WAKEN;
+@@ -798,7 +799,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		if (timeout_mode != EVL_REL ||
+ 			timeout_infinite(timeout) ||
+ 			evl_get_stopped_timer_delta(&curr->rtimer) != 0) {
+-			evl_spin_unlock(&curr->lock);
++			raw_spin_unlock(&curr->lock);
+ 			evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ 			goto redo;
+ 		}
+@@ -815,7 +816,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 
+ 	atomic_set(lockp, get_owner_handle(currh, mutex));
+ out:
+-	evl_spin_unlock(&curr->lock);
++	raw_spin_unlock(&curr->lock);
+ 	evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ 
+ 	return ret;
+@@ -848,10 +849,10 @@ static void transfer_ownership(struct evl_mutex *mutex,
+ 	 * set_current_owner_locked() to run before
+ 	 * evl_wakeup_thread() is called.
+ 	 */
+-	evl_spin_lock(&n_owner->lock);
++	raw_spin_lock(&n_owner->lock);
+ 	n_owner->wwake = &mutex->wchan;
+ 	n_owner->wchan = NULL;
+-	evl_spin_unlock(&n_owner->lock);
++	raw_spin_unlock(&n_owner->lock);
+ 	list_del_init(&n_owner->wait_next);
+ 	set_current_owner_locked(mutex, n_owner);
+ 	evl_wakeup_thread(n_owner, T_PEND, T_WAKEN);
+@@ -893,7 +894,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	 * locklessly.
+ 	 */
+ 	evl_spin_lock_irqsave(&mutex->lock, flags);
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 
+ 	if (mutex->flags & EVL_MUTEX_CEILING)
+ 		clear_boost_locked(mutex, curr, EVL_MUTEX_CEILING);
+@@ -909,7 +910,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 		untrack_owner(mutex);
+ 	}
+ 
+-	evl_spin_unlock(&curr->lock);
++	raw_spin_unlock(&curr->lock);
+ 	evl_spin_unlock_irqrestore(&mutex->lock, flags);
+ }
+ 
+@@ -975,8 +976,8 @@ int evl_reorder_mutex_wait(struct evl_thread *waiter,
+ 	struct evl_thread *owner;
+ 	int ret;
+ 
+-	assert_evl_lock(&waiter->lock);
+-	assert_evl_lock(&originator->lock);
++	assert_hard_lock(&waiter->lock);
++	assert_hard_lock(&originator->lock);
+ 
+ 	evl_spin_lock(&mutex->lock);
+ 
+@@ -1002,7 +1003,7 @@ int evl_reorder_mutex_wait(struct evl_thread *waiter,
+ 	/* Update the PI chain. */
+ 
+ 	mutex->wprio = waiter->wprio;
+-	evl_spin_lock(&owner->lock);
++	raw_spin_lock(&owner->lock);
+ 
+ 	if (mutex->flags & EVL_MUTEX_CLAIMED) {
+ 		list_del(&mutex->next_booster);
+@@ -1013,7 +1014,7 @@ int evl_reorder_mutex_wait(struct evl_thread *waiter,
+ 
+ 	list_add_priff(mutex, &owner->boosters, wprio, next_booster);
+ 	ret = adjust_boost(owner, waiter, mutex, originator);
+-	evl_spin_unlock(&owner->lock);
++	raw_spin_unlock(&owner->lock);
+ out:
+ 	evl_spin_unlock(&mutex->lock);
+ 
+@@ -1030,7 +1031,7 @@ int evl_follow_mutex_depend(struct evl_wait_channel *wchan,
+ 	struct evl_thread *waiter;
+ 	int ret = 0;
+ 
+-	assert_evl_lock(&originator->lock);
++	assert_hard_lock(&originator->lock);
+ 
+ 	evl_spin_lock(&mutex->lock);
+ 
+@@ -1040,7 +1041,7 @@ int evl_follow_mutex_depend(struct evl_wait_channel *wchan,
+ 	}
+ 
+ 	for_each_evl_mutex_waiter(waiter, mutex) {
+-		evl_spin_lock(&waiter->lock);
++		raw_spin_lock(&waiter->lock);
+ 		/*
+ 		 * Yes, this is no flat traversal, we do eat stack as
+ 		 * we progress in the dependency chain. Overflowing
+@@ -1050,7 +1051,7 @@ int evl_follow_mutex_depend(struct evl_wait_channel *wchan,
+ 		depend = waiter->wchan;
+ 		if (depend)
+ 			ret = depend->follow_depend(depend, originator);
+-		evl_spin_unlock(&waiter->lock);
++		raw_spin_unlock(&waiter->lock);
+ 		if (ret)
+ 			break;
+ 	}
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 10a252c5cb..449af6fbf1 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -101,11 +101,11 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
+ 		return;
+ 
+ 	if (curr->state & T_USER) {
+-		evl_spin_lock(&curr->lock);
++		raw_spin_lock(&curr->lock);
+ 		raw_spin_lock(&this_rq->lock);
+ 		curr->info |= T_KICKED;
+ 		raw_spin_unlock(&this_rq->lock);
+-		evl_spin_unlock(&curr->lock);
++		raw_spin_unlock(&curr->lock);
+ 		evl_notify_thread(curr, EVL_HMDIAG_WATCHDOG, evl_nil);
+ 		dovetail_send_mayday(current);
+ 		printk(EVL_WARNING "watchdog triggered on CPU #%d -- runaway thread "
+@@ -121,11 +121,11 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
+ 		 * T_BREAK condition, and T_CANCELD so that @curr
+ 		 * exits next time it invokes evl_test_cancel().
+ 		 */
+-		evl_spin_lock(&curr->lock);
++		raw_spin_lock(&curr->lock);
+ 		raw_spin_lock(&this_rq->lock);
+ 		curr->info |= (T_KICKED|T_CANCELD);
+ 		raw_spin_unlock(&this_rq->lock);
+-		evl_spin_unlock(&curr->lock);
++		raw_spin_unlock(&curr->lock);
+ 	}
+ }
+ 
+@@ -303,7 +303,7 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)
+ /* thread->lock held, hard irqs off. @thread must be running in-band. */
+ void evl_migrate_thread(struct evl_thread *thread, struct evl_rq *dst_rq)
+ {
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 
+ 	if (thread->rq == dst_rq)
+ 		return;
+@@ -328,7 +328,7 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off *
+ 	int cpu = task_cpu(p);
+ 	struct evl_rq *rq = evl_cpu_rq(cpu);
+ 
+-	evl_spin_lock(&thread->lock);
++	raw_spin_lock(&thread->lock);
+ 
+ 	if (likely(rq == thread->rq))
+ 		goto out;
+@@ -373,7 +373,7 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off *
+ 
+ 	evl_migrate_thread(thread, rq);
+ out:
+-	evl_spin_unlock(&thread->lock);
++	raw_spin_unlock(&thread->lock);
+ }
+ 
+ #else
+@@ -388,10 +388,10 @@ static inline void check_cpu_affinity(struct task_struct *p)
+ 
+ #endif	/* CONFIG_SMP */
+ 
+-/* thread->lock + thread->rq->lock held, irqs off. */
++/* thread->lock + thread->rq->lock held, hard irqs off. */
+ void evl_putback_thread(struct evl_thread *thread)
+ {
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&thread->rq->lock);
+ 
+ 	if (thread->state & T_READY)
+@@ -403,7 +403,7 @@ void evl_putback_thread(struct evl_thread *thread)
+ 	evl_set_resched(thread->rq);
+ }
+ 
+-/* thread->lock + thread->rq->lock held, irqs off. */
++/* thread->lock + thread->rq->lock held, hard irqs off. */
+ int evl_set_thread_policy_locked(struct evl_thread *thread,
+ 				struct evl_sched_class *sched_class,
+ 				const union evl_sched_param *p)
+@@ -412,7 +412,7 @@ int evl_set_thread_policy_locked(struct evl_thread *thread,
+ 	bool effective;
+ 	int ret;
+ 
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&thread->rq->lock);
+ 
+ 	/* Check parameters early on. */
+@@ -507,12 +507,12 @@ int evl_set_thread_policy(struct evl_thread *thread,
+ 	return ret;
+ }
+ 
+-/* thread->lock + thread->rq->lock held, irqs off. */
++/* thread->lock + thread->rq->lock held, hard irqs off. */
+ bool evl_set_effective_thread_priority(struct evl_thread *thread, int prio)
+ {
+ 	int wprio = evl_calc_weighted_prio(thread->base_class, prio);
+ 
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&thread->rq->lock);
+ 
+ 	thread->bprio = prio;
+@@ -536,14 +536,14 @@ bool evl_set_effective_thread_priority(struct evl_thread *thread, int prio)
+ 	return true;
+ }
+ 
+-/* thread->lock + target->lock held, irqs off */
++/* thread->lock + target->lock held, hard irqs off */
+ void evl_track_thread_policy(struct evl_thread *thread,
+ 			struct evl_thread *target)
+ {
+ 	union evl_sched_param param;
+ 
+-	assert_evl_lock(&thread->lock);
+-	assert_evl_lock(&target->lock);
++	assert_hard_lock(&thread->lock);
++	assert_hard_lock(&target->lock);
+ 
+ 	evl_double_rq_lock(thread->rq, target->rq);
+ 
+@@ -586,10 +586,10 @@ void evl_track_thread_policy(struct evl_thread *thread,
+ 	evl_double_rq_unlock(thread->rq, target->rq);
+ }
+ 
+-/* thread->lock, irqs off */
++/* thread->lock, hard irqs off */
+ void evl_protect_thread_priority(struct evl_thread *thread, int prio)
+ {
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 
+ 	raw_spin_lock(&thread->rq->lock);
+ 
+@@ -781,7 +781,7 @@ static struct evl_thread *__pick_next_thread(struct evl_rq *rq)
+ 	return NULL; /* NOT REACHED (idle class). */
+ }
+ 
+-/* rq->curr->lock + rq->lock held, irqs off. */
++/* rq->curr->lock + rq->lock held, hard irqs off. */
+ static struct evl_thread *pick_next_thread(struct evl_rq *rq)
+ {
+ 	struct oob_mm_state *oob_mm;
+@@ -923,12 +923,12 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	 * but we grab curr->lock in advance in order to keep the
+ 	 * locking order safe from ABBA deadlocking.
+ 	 */
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 	raw_spin_lock(&this_rq->lock);
+ 
+ 	if (unlikely(!test_resched(this_rq))) {
+ 		raw_spin_unlock(&this_rq->lock);
+-		evl_spin_unlock_irqrestore(&curr->lock, flags);
++		raw_spin_unlock_irqrestore(&curr->lock, flags);
+ 		return;
+ 	}
+ 
+@@ -941,7 +941,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 				evl_program_local_tick(&evl_mono_clock);
+ 		}
+ 		raw_spin_unlock(&this_rq->lock);
+-		evl_spin_unlock_irqrestore(&curr->lock, flags);
++		raw_spin_unlock_irqrestore(&curr->lock, flags);
+ 		return;
+ 	}
+ 
+@@ -963,7 +963,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 
+ 	evl_switch_account(this_rq, &next->stat.account);
+ 	evl_inc_counter(&next->stat.csw);
+-	evl_spin_unlock(&prev->lock);
++	raw_spin_unlock(&prev->lock);
+ 
+ 	prepare_rq_switch(this_rq, next);
+ 	inband_tail = dovetail_context_switch(&prev->altsched,
+@@ -1112,7 +1112,7 @@ void evl_switch_inband(int cause)
+ 	hard_local_irq_disable();
+ 	irq_work_queue(&curr->inband_work);
+ 
+-	evl_spin_lock(&curr->lock);
++	raw_spin_lock(&curr->lock);
+ 	this_rq = curr->rq;
+ 	raw_spin_lock(&this_rq->lock);
+ 
+@@ -1144,7 +1144,7 @@ void evl_switch_inband(int cause)
+ 	evl_set_resched(this_rq);
+ 
+ 	raw_spin_unlock(&this_rq->lock);
+-	evl_spin_unlock(&curr->lock);
++	raw_spin_unlock(&curr->lock);
+ 
+ 	/*
+ 	 * CAVEAT: dovetail_leave_oob() must run _before_ the in-band
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index fd6d4e7a4a..dd08ecd5fd 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -155,9 +155,9 @@ static void pin_to_initial_cpu(struct evl_thread *thread)
+ 	 * out-of-band CPU.
+ 	 */
+ 	rq = evl_cpu_rq(cpu);
+-	evl_spin_lock_irqsave(&thread->lock, flags);
++	raw_spin_lock_irqsave(&thread->lock, flags);
+ 	evl_migrate_thread(thread, rq);
+-	evl_spin_unlock_irqrestore(&thread->lock, flags);
++	raw_spin_unlock_irqrestore(&thread->lock, flags);
+ }
+ 
+ int evl_init_thread(struct evl_thread *thread,
+@@ -227,7 +227,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 	INIT_LIST_HEAD(&thread->boosters);
+ 	INIT_LIST_HEAD(&thread->trackers);
+ 	raw_spin_lock_init(&thread->tracking_lock);
+-	evl_spin_lock_init(&thread->lock);
++	raw_spin_lock_init(&thread->lock);
+ 	init_completion(&thread->exited);
+ 	INIT_LIST_HEAD(&thread->ptsync_next);
+ 	thread->oob_mm = NULL;
+@@ -490,7 +490,7 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,
+ 	struct evl_rq *rq = curr->rq;
+ 	unsigned long oldstate;
+ 
+-	assert_evl_lock(&curr->lock);
++	assert_hard_lock(&curr->lock);
+ 	assert_hard_lock(&rq->lock);
+ 
+ 	trace_evl_sleep_on(timeout, timeout_mode, clock, wchan);
+@@ -568,7 +568,7 @@ static void evl_wakeup_thread_locked(struct evl_thread *thread,
+ 	struct evl_rq *rq = thread->rq;
+ 	unsigned long oldstate;
+ 
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&thread->rq->lock);
+ 
+ 	if (EVL_WARN_ON(CORE, mask & ~(T_DELAY|T_PEND|T_WAIT)))
+@@ -671,7 +671,7 @@ static void evl_release_thread_locked(struct evl_thread *thread,
+ 	struct evl_rq *rq = thread->rq;
+ 	unsigned long oldstate;
+ 
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&thread->rq->lock);
+ 
+ 	if (EVL_WARN_ON(CORE, mask & ~(T_SUSP|T_HALT|T_INBAND|T_DORMANT|T_PTSYNC)))
+@@ -836,7 +836,7 @@ int evl_set_period(struct evl_clock *clock,
+ 	if (period < evl_get_clock_gravity(clock, kernel))
+ 		return -EINVAL;
+ 
+-	evl_spin_lock_irqsave(&curr->lock, flags);
++	raw_spin_lock_irqsave(&curr->lock, flags);
+ 
+ 	evl_prepare_timed_wait(&curr->ptimer, clock, evl_thread_rq(curr));
+ 
+@@ -845,7 +845,7 @@ int evl_set_period(struct evl_clock *clock,
+ 
+ 	evl_start_timer(&curr->ptimer, idate, period);
+ 
+-	evl_spin_unlock_irqrestore(&curr->lock, flags);
++	raw_spin_unlock_irqrestore(&curr->lock, flags);
+ 
+ 	return ret;
+ }
+@@ -1933,7 +1933,7 @@ static int set_time_slice(struct evl_thread *thread, ktime_t quantum)
+ {
+ 	struct evl_rq *rq = thread->rq;
+ 
+-	assert_evl_lock(&thread->lock);
++	assert_hard_lock(&thread->lock);
+ 	assert_hard_lock(&rq->lock);
+ 
+ 	thread->rrperiod = quantum;
+@@ -2578,7 +2578,7 @@ static ssize_t sched_show(struct device *dev,
+ 	if (thread == NULL)
+ 		return -EIO;
+ 
+-	evl_spin_lock_irqsave(&thread->lock, flags);
++	raw_spin_lock_irqsave(&thread->lock, flags);
+ 
+ 	sched_class = thread->sched_class;
+ 	bprio = thread->bprio;
+@@ -2600,7 +2600,7 @@ static ssize_t sched_show(struct device *dev,
+ 	/* overwrites trailing whitespace */
+ 	buf[ret - 1] = '\n';
+ out:
+-	evl_spin_unlock_irqrestore(&thread->lock, flags);
++	raw_spin_unlock_irqrestore(&thread->lock, flags);
+ 	evl_put_element(&thread->element);
+ 
+ 	return ret;
+@@ -2624,7 +2624,7 @@ static ssize_t stats_show(struct device *dev,
+ 	if (thread == NULL)
+ 		return -EIO;
+ 
+-	evl_spin_lock_irqsave(&thread->lock, flags);
++	raw_spin_lock_irqsave(&thread->lock, flags);
+ 
+ 	rq = evl_thread_rq(thread);
+ 
+@@ -2642,7 +2642,7 @@ static ssize_t stats_show(struct device *dev,
+ 	thread->stat.lastperiod.total = total;
+ 	thread->stat.lastperiod.start = rq->last_account_switch;
+ 
+-	evl_spin_unlock_irqrestore(&thread->lock, flags);
++	raw_spin_unlock_irqrestore(&thread->lock, flags);
+ 
+ 	if (account) {
+ 		while (account > 0xffffffffUL) {
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index 0314774598..b053adbaeb 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -115,8 +115,8 @@ int evl_reorder_wait(struct evl_thread *waiter, struct evl_thread *originator)
+ {
+ 	struct evl_wait_queue *wq = wchan_to_wait_queue(waiter->wchan);
+ 
+-	assert_evl_lock(&waiter->lock);
+-	assert_evl_lock(&originator->lock);
++	assert_hard_lock(&waiter->lock);
++	assert_hard_lock(&originator->lock);
+ 
+ 	evl_spin_lock(&wq->lock);
+ 
+-- 
+2.30.2
+

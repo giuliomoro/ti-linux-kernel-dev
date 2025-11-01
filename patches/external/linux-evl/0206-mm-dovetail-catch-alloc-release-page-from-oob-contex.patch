@@ -1,0 +1,50 @@
+From e71f14c6242d2567845ad94cc7ac3ee84c0771e5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 16 Apr 2025 16:05:35 +0200
+Subject: [PATCH 0206/1010] mm: dovetail: catch alloc/release page from oob
+ context
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/gfp.h | 4 ++--
+ mm/page_alloc.c     | 2 ++
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index e2ccb47c42..1f1cfb20c4 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -231,7 +231,7 @@ static inline void warn_if_node_offline(int this_node, gfp_t gfp_mask)
+ static inline struct page *
+ __alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
+ {
+-	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
++	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES || running_oob());
+ 	warn_if_node_offline(nid, gfp_mask);
+ 
+ 	return __alloc_pages(gfp_mask, order, nid, NULL);
+@@ -240,7 +240,7 @@ __alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
+ static inline
+ struct folio *__folio_alloc_node(gfp_t gfp, unsigned int order, int nid)
+ {
+-	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
++	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES || running_oob());
+ 	warn_if_node_offline(nid, gfp);
+ 
+ 	return __folio_alloc(gfp, order, nid, NULL);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 5a2bae590e..77d86616d9 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -750,6 +750,8 @@ static inline bool pcp_allowed_order(unsigned int order)
+ 
+ static inline void free_the_page(struct page *page, unsigned int order)
+ {
++	VM_BUG_ON(running_oob());
++
+ 	if (pcp_allowed_order(order))		/* Via pcp? */
+ 		free_unref_page(page, order);
+ 	else
+-- 
+2.30.2
+

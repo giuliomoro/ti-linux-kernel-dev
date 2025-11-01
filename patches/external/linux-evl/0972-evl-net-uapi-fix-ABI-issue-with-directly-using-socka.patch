@@ -1,0 +1,52 @@
+From ea5210eb97b8284a039059c6299c794290927992 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 11 Jun 2025 20:57:07 +0200
+Subject: [PATCH 0972/1010] evl/net: uapi: fix ABI issue with directly using
+ sockaddr
+
+Detected by hdrtest.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/net/socket-abi.h | 3 ++-
+ kernel/evl/net/socket.c           | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
+index f41882f9b2..0393a81a10 100644
+--- a/include/uapi/evl/net/socket-abi.h
++++ b/include/uapi/evl/net/socket-abi.h
+@@ -7,6 +7,7 @@
+ #ifndef _EVL_UAPI_NET_SOCKET_ABI_H
+ #define _EVL_UAPI_NET_SOCKET_ABI_H
+ 
++#include <linux/socket.h>
+ #include <evl/types-abi.h>
+ 
+ #define AF_OOB		46	/* Out-of-band domain sockets */
+@@ -53,7 +54,7 @@ struct evl_netdev_activation {
+ #define EVL_NEIGH_PERMANENT  0x1
+ 
+ struct evl_net_solicit {
+-	struct sockaddr addr;
++	struct __kernel_sockaddr_storage addr;
+ 	__u32 flags;
+ };
+ 
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index dd1a5b4326..e85d52dcd8 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -819,7 +819,8 @@ static long sock_inband_ioctl(struct sock *sk, unsigned int cmd,
+ 			return -EFAULT;
+ 		ret = -ENOTSUPP;
+ 		if (esk->proto->solicit)
+-			ret = esk->proto->solicit(esk, &solreq.addr,
++			ret = esk->proto->solicit(esk,
++				(struct sockaddr *)&solreq.addr,
+ 				solreq.flags);
+ 		break;
+ 	default:
+-- 
+2.30.2
+

@@ -1,0 +1,39 @@
+From 3ddaacf278f59f7e9b86f944a7b3c862f5eb0968 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 15 Apr 2025 10:59:53 +0200
+Subject: [PATCH 0200/1010] net: dovetail: disable netpoll when diverting oob
+ traffic
+
+Locking out the companion core from receiving oob traffic due to
+netpoll operating from the in-band stage would be a very bad idea
+latency-wise.
+
+Make sure to leave the busy loop immediately if the napi struct is
+owned by a device currently operating in oob mode.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/dev.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 8d647c530d..06c0921745 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6445,6 +6445,13 @@ void napi_busy_loop(unsigned int napi_id,
+ 	if (!napi)
+ 		goto out;
+ 
++	/*
++	 * Dovetail: can't compete with an oob-enabled device
++	 * currently diverting traffic to a companion core.
++	 */
++	if (netif_oob_diversion(napi->dev) && netdev_is_oob_capable(napi->dev))
++		goto out;
++
+ 	preempt_disable();
+ 	for (;;) {
+ 		int work = 0;
+-- 
+2.30.2
+

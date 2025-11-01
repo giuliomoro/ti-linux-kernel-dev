@@ -1,0 +1,30 @@
+From fa6331beb25f68d1fb8740a0fd43feb395a72679 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 3 Dec 2022 12:52:18 +0100
+Subject: [PATCH 0837/1010] evl/wait: drop debug leftover
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 74312448c8..db54e55870 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -32,10 +32,10 @@ struct evl_wait_channel {
+ struct evl_lock_key_addr {
+ 	struct lock_class_key *addr;
+ };
+-#define __EVL_LOCK_KEY_ADDR_INITIALIZER  (struct foo){ .addr = NULL }
++#define __EVL_LOCK_KEY_ADDR_INITIALIZER  (struct evl_lock_key_addr){ .addr = NULL }
+ #else
+ struct evl_lock_key_addr { };
+-#define __EVL_LOCK_KEY_ADDR_INITIALIZER  (struct foo){ }
++#define __EVL_LOCK_KEY_ADDR_INITIALIZER  (struct evl_lock_key_addr){ }
+ #endif
+ 
+ struct evl_wait_queue {
+-- 
+2.30.2
+

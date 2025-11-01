@@ -1,0 +1,60 @@
+From 6e42587b22d911b4b87f46523d85dbc7fd54536a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 13 Jun 2025 16:33:32 +0200
+Subject: [PATCH 0227/1010] igb: postpone oob mode message to until after
+ actual switch
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/net/ethernet/intel/igb/igb_main.c | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 0a1d9a7d4b..b499891240 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -779,20 +779,21 @@ static int igb_enable_oob(struct net_device *netdev)
+ 			return -ENOMEM;
+ 
+ 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
+-		pr_info("%s: enabling out-of-band I/O mode (MSI-X)\n", netdev_name(netdev));
+ 		for (n = 0; n <= adapter->num_q_vectors && n <= MAX_Q_VECTORS; n++) {
+ 			ret = irq_switch_oob(adapter->msix_entries[n].vector, true);
+ 			if (ret) {
+ 				while (--n >= 0)
+ 					irq_switch_oob(adapter->msix_entries[n].vector, false);
+-				break;
++				return ret;
+ 			}
+ 		}
++		pr_info("%s: enabled out-of-band I/O mode (MSI-X)\n", netdev_name(netdev));
+ 	} else {
+ 		ret = irq_switch_oob(adapter->pdev->irq, true);
+-		pr_info("%s: enabling out-of-band I/O mode (%s)\n",
+-			netdev_name(netdev),
+-			adapter->flags & IGB_FLAG_HAS_MSI ? "MSI" : "legacy-int");
++		if (!ret)
++			pr_info("%s: enabled out-of-band I/O mode (%s)\n",
++				netdev_name(netdev),
++				adapter->flags & IGB_FLAG_HAS_MSI ? "MSI" : "legacy-int");
+ 	}
+ 
+ 	return ret;
+@@ -804,12 +805,12 @@ static void igb_disable_oob(struct net_device *netdev)
+ 	int n;
+ 
+ 	if (adapter->flags & IGB_FLAG_HAS_MSIX) {
+-		pr_info("%s: disabling out-of-band I/O mode (MSI-X)\n", netdev_name(netdev));
+ 		for (n = 0; n <= adapter->num_q_vectors && n <= MAX_Q_VECTORS; n++)
+ 			irq_switch_oob(adapter->msix_entries[n].vector, false);
++		pr_info("%s: disabled out-of-band I/O mode (MSI-X)\n", netdev_name(netdev));
+ 	} else {
+ 		irq_switch_oob(adapter->pdev->irq, false);
+-		pr_info("%s: disabling out-of-band I/O mode (%s)\n",
++		pr_info("%s: disabled out-of-band I/O mode (%s)\n",
+ 			netdev_name(netdev),
+ 			adapter->flags & IGB_FLAG_HAS_MSI ? "MSI" : "legacy-int");
+ 	}
+-- 
+2.30.2
+

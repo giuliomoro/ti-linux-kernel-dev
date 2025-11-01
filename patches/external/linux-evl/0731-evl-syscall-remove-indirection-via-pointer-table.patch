@@ -1,0 +1,104 @@
+From e9f5ddd1c2fed4794907d23b2914de688f77413c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 7 Feb 2021 11:30:34 +0100
+Subject: [PATCH 0731/1010] evl/syscall: remove indirection via pointer table
+
+We have only very few syscalls, prefer a plain switch to a pointer
+indirection which ends up being fairly costly due to exploit
+mitigations.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/syscall.h |  2 ++
+ kernel/evl/syscall.c       | 47 ++++++++++++++++++++------------------
+ 2 files changed, 27 insertions(+), 22 deletions(-)
+
+diff --git a/include/uapi/evl/syscall.h b/include/uapi/evl/syscall.h
+index e181464b14..1378aeb6d7 100644
+--- a/include/uapi/evl/syscall.h
++++ b/include/uapi/evl/syscall.h
+@@ -11,4 +11,6 @@
+ #define sys_evl_write	1	/* oob_write() */
+ #define sys_evl_ioctl	2	/* oob_ioctl() */
+ 
++#define NR_EVL_SYSCALLS 3
++
+ #endif /* !_EVL_UAPI_SYSCALL_H */
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index 544b8251c3..3724b82869 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -111,19 +111,6 @@ static EVL_SYSCALL(ioctl, (int fd, unsigned int request, unsigned long arg))
+ 	return ret;
+ }
+ 
+-typedef long (*evl_syshand)(unsigned long arg1, unsigned long arg2,
+-			unsigned long arg3, unsigned long arg4,
+-			unsigned long arg5);
+-
+-#define __EVL_CALL_ENTRY(__name)  \
+-	[sys_evl_ ## __name] = ((evl_syshand)(EVL_ ## __name))
+-
+-static const evl_syshand evl_systbl[] = {
+-	   __EVL_CALL_ENTRY(read),
+-	   __EVL_CALL_ENTRY(write),
+-	   __EVL_CALL_ENTRY(ioctl),
+-};
+-
+ #define __EVL_CALL_NAME(__name)  \
+ 	[sys_evl_ ## __name] = #__name
+ 
+@@ -136,17 +123,33 @@ static const char *evl_sysnames[] = {
+ #define SYSCALL_PROPAGATE   0
+ #define SYSCALL_STOP        1
+ 
+-static inline void invoke_syscall(unsigned int nr, struct pt_regs *regs)
++static __always_inline
++void invoke_syscall(unsigned int nr, struct pt_regs *regs)
+ {
+-	evl_syshand handler;
+ 	long ret;
+ 
+-	handler = evl_systbl[array_index_nospec(nr, ARRAY_SIZE(evl_systbl))];
+-	ret = handler(oob_arg1(regs),
+-		oob_arg2(regs),
+-		oob_arg3(regs),
+-		oob_arg4(regs),
+-		oob_arg5(regs));
++	/*
++	 * We have only very few syscalls, prefer a plain switch to a
++	 * pointer indirection which ends up being fairly costly due
++	 * to exploit mitigations.
++	 */
++	switch (nr) {
++	case sys_evl_read:
++		ret = EVL_read((int)oob_arg1(regs),
++			(char __user *)oob_arg2(regs),
++			(size_t)oob_arg3(regs));
++		break;
++	case sys_evl_write:
++		ret = EVL_write((int)oob_arg1(regs),
++				(const char __user *)oob_arg2(regs),
++				(size_t)oob_arg3(regs));
++		break;
++	case sys_evl_ioctl:
++		ret = EVL_ioctl((int)oob_arg1(regs),
++				(unsigned int)oob_arg2(regs),
++				oob_arg3(regs));
++		break;
++	}
+ 
+ 	set_oob_retval(regs, ret);
+ }
+@@ -267,7 +270,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 		goto do_inband;
+ 
+ 	nr = oob_syscall_nr(regs);
+-	if (nr >= ARRAY_SIZE(evl_systbl))
++	if (nr >= NR_EVL_SYSCALLS)
+ 		goto bad_syscall;
+ 
+ 	curr = evl_current();
+-- 
+2.30.2
+

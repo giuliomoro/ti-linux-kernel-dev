@@ -1,0 +1,26 @@
+From 333ef9c92cc20529c698816e9ab1dba50ac268e5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 6 Mar 2020 17:19:33 +0100
+Subject: [PATCH 0622/1010] scripts: evl: fix misnomer
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ scripts/git-evlabi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/git-evlabi b/scripts/git-evlabi
+index 32227196e5..d9016c3e81 100755
+--- a/scripts/git-evlabi
++++ b/scripts/git-evlabi
+@@ -117,7 +117,7 @@ if $GIT rev-parse -q --no-revs --verify $object:include/uapi/evl/control.h; then
+     result=$(scan_history EVL_ABI_LEVEL include/uapi/evl/control.h)
+     test -n "$result" && echo "$result"
+ elif $GIT rev-parse -q --no-revs --verify $object:include/evl/evl.h; then
+-    result=$(scan_history EVL_KABI_PREREQ include/evl/evl.h)
++    result=$(scan_history EVL_ABI_PREREQ include/evl/evl.h)
+     test -n "$result" && echo "$result"
+ else
+    echo "cannot parse - either tree or $object is wrong"
+-- 
+2.30.2
+

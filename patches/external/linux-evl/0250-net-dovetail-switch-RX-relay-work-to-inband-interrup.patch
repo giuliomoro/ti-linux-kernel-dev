@@ -1,0 +1,32 @@
+From 202a78fa911c9edc45b5a06887b48e8233ce5778 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 19 Jul 2025 16:26:47 +0200
+Subject: [PATCH 0250/1010] net: dovetail: switch RX relay work to inband
+ interrupt context
+
+We want kick_rx_inband() to run from inband interrupt context,
+including when full preemption is enabled.
+
+To this end, tag the related work struct with IRQ_WORK_HARD_IRQ.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/dev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 88b424c1f8..45dc3d28a3 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -11796,7 +11796,7 @@ static int __init net_dev_init(void)
+ #endif
+ #ifdef CONFIG_NET_OOB
+ 		INIT_LIST_HEAD(&sd->inband_rx_list);
+-		init_irq_work(&sd->inband_rx_work, kick_rx_inband);
++		sd->inband_rx_work = IRQ_WORK_INIT_HARD(kick_rx_inband);
+ #endif
+ 		INIT_CSD(&sd->defer_csd, trigger_rx_softirq, sd);
+ 		spin_lock_init(&sd->defer_lock);
+-- 
+2.30.2
+

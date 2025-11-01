@@ -1,0 +1,68 @@
+From 1f19112c6295c98b929c91e45b6553eaa5135dc4 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 12:56:33 +0200
+Subject: [PATCH 0636/1010] uapi/evl: sched: follow common naming scheme for
+ control ops
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/sched.h | 10 +++++-----
+ kernel/evl/sched/tp.c    | 10 +++++-----
+ 2 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
+index 549aa86de7..4b54405279 100644
+--- a/include/uapi/evl/sched.h
++++ b/include/uapi/evl/sched.h
+@@ -77,11 +77,11 @@ struct __evl_tp_window {
+ };
+ 
+ enum evl_tp_ctlop {
+-	evl_install_tp,
+-	evl_uninstall_tp,
+-	evl_start_tp,
+-	evl_stop_tp,
+-	evl_get_tp,
++	evl_tp_install,
++	evl_tp_uninstall,
++	evl_tp_start,
++	evl_tp_stop,
++	evl_tp_get,
+ };
+ 
+ struct evl_tp_ctlparam {
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index 2d5a0444d8..73a2ea6b2e 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -329,22 +329,22 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	evl_spin_lock_irqsave(&rq->lock, flags);
+ 
+ 	switch (pt->op) {
+-	case evl_install_tp:
++	case evl_tp_install:
+ 		if (pt->nr_windows > 0)
+ 			goto install_schedule;
+ 		/* fall-through. */
+-	case evl_uninstall_tp:
++	case evl_tp_uninstall:
+ 		gps = NULL;
+ 		goto switch_schedule;
+-	case evl_start_tp:
++	case evl_tp_start:
+ 		start_tp_schedule(rq);
+ 		evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 		return 0;
+-	case evl_stop_tp:
++	case evl_tp_stop:
+ 		stop_tp_schedule(rq);
+ 		evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 		return 0;
+-	case evl_get_tp:
++	case evl_tp_get:
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+2.30.2
+

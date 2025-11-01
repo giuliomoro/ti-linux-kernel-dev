@@ -1,0 +1,77 @@
+From e4b2ee57024687b16f07376202b465972f763167 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 3 May 2020 11:27:30 +0200
+Subject: [PATCH 0651/1010] evl/thread: trap observability issues
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 7b4d64d7c2..836f0ded4b 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2223,6 +2223,9 @@ static ssize_t thread_oob_read(struct file *filp,
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return -EPERM;
++
+ 	return evl_read_observable(thread->observable, u_buf, count,
+ 				!(filp->f_flags & O_NONBLOCK));
+ }
+@@ -2232,6 +2235,9 @@ static ssize_t thread_oob_write(struct file *filp,
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return -EPERM;
++
+ 	return evl_write_observable(thread->observable, u_buf, count);
+ }
+ 
+@@ -2240,6 +2246,9 @@ static __poll_t thread_oob_poll(struct file *filp,
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return POLLERR;
++
+ 	return evl_oob_poll_observable(thread->observable, wait);
+ }
+ 
+@@ -2248,6 +2257,9 @@ static ssize_t thread_write(struct file *filp, const char __user *u_buf,
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return -EPERM;
++
+ 	return evl_write_observable(thread->observable, u_buf, count);
+ }
+ 
+@@ -2256,6 +2268,9 @@ static ssize_t thread_read(struct file *filp, char __user *u_buf,
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return -EPERM;
++
+ 	return evl_read_observable(thread->observable, u_buf, count,
+ 				!(filp->f_flags & O_NONBLOCK));
+ }
+@@ -2264,6 +2279,9 @@ static __poll_t thread_poll(struct file *filp, poll_table *pt)
+ {
+ 	struct evl_thread *thread = element_of(filp, struct evl_thread);
+ 
++	if (thread->observable == NULL)
++		return POLLERR;
++
+ 	return evl_poll_observable(thread->observable, filp, pt);
+ }
+ 
+-- 
+2.30.2
+

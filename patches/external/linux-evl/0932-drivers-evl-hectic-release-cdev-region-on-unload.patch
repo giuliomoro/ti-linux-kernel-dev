@@ -1,0 +1,25 @@
+From c16b693c384b73d789cb648fb7af343086d3bcd2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 1 Feb 2025 12:55:59 +0100
+Subject: [PATCH 0932/1010] drivers/evl: hectic: release cdev region on unload
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 4b0e0c526c..659f6784df 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -711,6 +711,7 @@ static void __exit hectic_exit(void)
+ {
+ 	device_destroy(&hectic_class, MKDEV(MAJOR(hectic_devt), 0));
+ 	cdev_del(&hectic_cdev);
++	unregister_chrdev_region(hectic_devt, 1);
+ 	class_unregister(&hectic_class);
+ }
+ module_exit(hectic_exit);
+-- 
+2.30.2
+

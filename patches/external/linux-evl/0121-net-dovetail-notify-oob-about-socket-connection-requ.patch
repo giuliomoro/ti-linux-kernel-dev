@@ -1,0 +1,65 @@
+From 62a56315e6610920714771ed8d46792312119659 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 20 Oct 2023 12:42:13 +0200
+Subject: [PATCH 0121/1010] net: dovetail: notify oob about socket connection
+ requests
+
+A companion core providing a network stack extension to existing
+protocols may want to receive connect() requests for sockets. Call the
+new sock_oob_connect() handler with user-originated requests for this
+purpose.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/socket.c | 21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index 3a41c04311..e6bbb039ba 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -165,6 +165,11 @@ int __weak sock_oob_bind(struct socket *sock, struct sockaddr *addr, int len)
+ 	return 0;
+ }
+ 
++int __weak sock_oob_connect(struct socket *sock, struct sockaddr *addr, int len)
++{
++	return 0;
++}
++
+ long __weak sock_inband_ioctl_redirect(struct socket *sock,
+ 				unsigned int cmd, unsigned long arg)
+ {
+@@ -209,8 +214,14 @@ static inline int sock_oob_attach(struct socket *sock)
+ 	return 0;
+ }
+ 
+-static int sock_oob_bind(struct socket *sock,
+-			struct sockaddr *addr, int len)
++static inline int sock_oob_bind(struct socket *sock,
++				struct sockaddr *addr, int len)
++{
++	return 0;
++}
++
++static inline int sock_oob_connect(struct socket *sock,
++				struct sockaddr *addr, int len)
+ {
+ 	return 0;
+ }
+@@ -2116,6 +2127,12 @@ int __sys_connect_file(struct file *file, struct sockaddr_storage *address,
+ 	if (err)
+ 		goto out;
+ 
++	if (sock_oob_capable(sock))
++		err = sock_oob_connect(sock, (struct sockaddr *)address,
++				addrlen);
++	if (err)
++		goto out;
++
+ 	err = sock->ops->connect(sock, (struct sockaddr *)address, addrlen,
+ 				 sock->file->f_flags | file_flags);
+ out:
+-- 
+2.30.2
+

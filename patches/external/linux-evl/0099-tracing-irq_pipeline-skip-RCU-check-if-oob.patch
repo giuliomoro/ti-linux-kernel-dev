@@ -1,0 +1,27 @@
+From 53ed2ee7dc2c91596455874f6ced41354ba9e239 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 4 Mar 2023 18:55:26 +0100
+Subject: [PATCH 0099/1010] tracing: irq_pipeline: skip RCU check if oob
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/tracepoint.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index 73adb1458c..7e58173591 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -251,7 +251,8 @@ static inline struct tracepoint *tracepoint_ptr_deref(tracepoint_ptr_t *p)
+ 			__DO_TRACE(name,				\
+ 				TP_ARGS(args),				\
+ 				TP_CONDITION(cond), 0);			\
+-		if (IS_ENABLED(CONFIG_LOCKDEP) && (cond)) {		\
++		if (IS_ENABLED(CONFIG_LOCKDEP) &&			\
++			running_inband() && (cond)) {			\
+ 			WARN_ON_ONCE(!rcu_is_watching());		\
+ 		}							\
+ 	}								\
+-- 
+2.30.2
+

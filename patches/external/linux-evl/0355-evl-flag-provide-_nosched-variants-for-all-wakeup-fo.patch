@@ -1,0 +1,46 @@
+From 40f3e34548a20c13e954ef87593d47e768e376c8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 23 Feb 2019 19:32:30 +0100
+Subject: [PATCH 0355/1010] evl/flag: provide _nosched variants for all wakeup
+ forms
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evenless/flag.h | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/include/evenless/flag.h b/include/evenless/flag.h
+index c95258be86..4510708e8f 100644
+--- a/include/evenless/flag.h
++++ b/include/evenless/flag.h
+@@ -77,15 +77,25 @@ static inline void evl_raise_flag(struct evl_flag *wf)
+ 	evl_schedule();
+ }
+ 
+-static inline void evl_pulse_flag(struct evl_flag *wf)
++static inline void evl_pulse_flag_nosched(struct evl_flag *wf)
+ {
+ 	evl_flush_wait(&wf->wait, T_BCAST);
++}
++
++static inline void evl_pulse_flag(struct evl_flag *wf)
++{
++	evl_pulse_flag_nosched(wf);
+ 	evl_schedule();
+ }
+ 
+-static inline void evl_flush_flag(struct evl_flag *wf, int reason)
++static inline void evl_flush_flag_nosched(struct evl_flag *wf, int reason)
+ {
+ 	evl_flush_wait(&wf->wait, reason);
++}
++
++static inline void evl_flush_flag(struct evl_flag *wf, int reason)
++{
++	evl_flush_flag_nosched(wf, reason);
+ 	evl_schedule();
+ }
+ 
+-- 
+2.30.2
+

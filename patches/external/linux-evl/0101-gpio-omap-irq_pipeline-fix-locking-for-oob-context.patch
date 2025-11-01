@@ -1,0 +1,27 @@
+From 159eb8c211d769547449846c0660a33e70d9c030 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 20 May 2023 18:31:25 +0200
+Subject: [PATCH 0101/1010] gpio: omap: irq_pipeline: fix locking for oob
+ context
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/gpio/gpio-omap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
+index 25e13faa28..55f4d6611b 100644
+--- a/drivers/gpio/gpio-omap.c
++++ b/drivers/gpio/gpio-omap.c
+@@ -56,7 +56,7 @@ struct gpio_bank {
+ 	u32 level_mask;
+ 	u32 toggle_mask;
+ 	hard_spinlock_t lock;
+-	raw_spinlock_t wa_lock;
++	hard_spinlock_t wa_lock;
+ 	struct gpio_chip chip;
+ 	struct clk *dbck;
+ 	struct notifier_block nb;
+-- 
+2.30.2
+

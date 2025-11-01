@@ -1,0 +1,39 @@
+From de11e14b6b87fca95a5ce8d4f411398509d7930d Mon Sep 17 00:00:00 2001
+From: Dani Sanz <sbrk.modules@gmail.com>
+Date: Wed, 12 Apr 2023 19:09:27 +0200
+Subject: [PATCH 0100/1010] spi: bcm2835: fix NULL pointer deref for OOB
+ transfers
+
+There was a problem when calling ioctl(fd, SPI_IOC_ENABLE_OOB_MODE,
+oob_spi_setup) to use spidev in OOB mode after setting up the spidev.
+
+The kernel crashed because on function
+bcm2835_spi_start_oob_transfer(struct spi_controller *ctlr, struct
+spi_oob_transfer *xfer), it tried to access bs->slv->prepare_cs,
+however bs->slv was NULL.
+
+This patch sets the bs->slv value to the correct bcm2835_spidev object
+during bcm2835_spi_setup(struct spi_device *spi), so the NULL pointer
+dereference that happened later is avoided.
+
+Signed-off-by: Dani Sanz <sbrk.modules@gmail.com>
+---
+ drivers/spi/spi-bcm2835.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/spi/spi-bcm2835.c b/drivers/spi/spi-bcm2835.c
+index 2626abfc0a..1051482df9 100644
+--- a/drivers/spi/spi-bcm2835.c
++++ b/drivers/spi/spi-bcm2835.c
+@@ -1244,6 +1244,8 @@ static int bcm2835_spi_setup(struct spi_device *spi)
+ 
+ 		spi_set_ctldata(spi, slv);
+ 
++		bs->slv = slv;
++
+ 		ret = bcm2835_spi_setup_dma(ctlr, spi, bs, slv);
+ 		if (ret)
+ 			goto err_cleanup;
+-- 
+2.30.2
+

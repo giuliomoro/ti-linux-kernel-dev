@@ -1,0 +1,31 @@
+From f4ec632a45e47290e296451a272e6dd8dbc01295 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Jun 2025 13:10:39 +0200
+Subject: [PATCH 0223/1010] igb: prevent wrong detection of oob page
+
+igb_is_oob_page() may be called with no oob RX pool allocated, in
+which case both compared pointers can only be NULL. Make sure to
+prevent such false positive.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/net/ethernet/intel/igb/igb_main.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index c0932a3cb2..0a1d9a7d4b 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -843,7 +843,8 @@ static void igb_create_oob_pool(struct igb_ring *ring)
+ static inline bool igb_is_oob_page(struct igb_ring *rx_ring,
+ 				struct page *page)
+ {
+-	return page_pool_get_page_pool(page) == rx_ring->rx_oob_pool;
++	return rx_ring->rx_oob_pool &&
++		page_pool_get_page_pool(page) == rx_ring->rx_oob_pool;
+ }
+ 
+ static void igb_rx_inband_work(struct irq_work *irq_work)
+-- 
+2.30.2
+

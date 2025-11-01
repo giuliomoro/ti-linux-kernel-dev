@@ -1,0 +1,148 @@
+From 25666229a57ffe6c103147517f7ccd57d4759d83 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 22 Dec 2020 17:11:23 +0100
+Subject: [PATCH 0698/1010] evl/thread: allow passing user-defined arg to
+ kthread
+
+We need more flexibility in the argument passed to the thread
+function. Change for an opaque pointer passed to evl_run_kthread() and
+variants instead of the current kthread descriptor.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c |  7 +++----
+ drivers/evl/latmus.c |  8 +++-----
+ include/evl/thread.h | 22 ++++++++++++----------
+ kernel/evl/thread.c  |  2 +-
+ 4 files changed, 19 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 01c2f42810..bec9ca0584 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -394,13 +394,12 @@ static int rtswitch_register_task(struct rtswitch_context *ctx,
+ 	return 0;
+ }
+ 
+-static void rtswitch_kthread(struct evl_kthread *kthread)
++static void rtswitch_kthread(void *arg)
+ {
++	struct rtswitch_task *task = arg;
+ 	struct rtswitch_context *ctx;
+-	struct rtswitch_task *task;
+ 	unsigned int to, i = 0;
+ 
+-	task = container_of(kthread, struct rtswitch_task, kthread);
+ 	ctx = task->ctx;
+ 
+ 	to = task->base.index;
+@@ -443,7 +442,7 @@ static int rtswitch_create_kthread(struct rtswitch_context *ctx,
+ 	task = &ctx->tasks[ptask->index];
+ 	task->ctx = ctx;
+ 	err = evl_run_kthread_on_cpu(&task->kthread, ctx->cpu,
+-				rtswitch_kthread, 1,
++				rtswitch_kthread, task, 1,
+ 				EVL_CLONE_PUBLIC,
+ 				"rtk%d@%u:%d",
+ 				ptask->index, ctx->cpu,
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 134e29109a..65c8cbe512 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -439,14 +439,12 @@ static struct latmus_runner *create_sirq_runner(int cpu)
+ 	return &sirq_runner->runner;
+ }
+ 
+-void kthread_handler(struct evl_kthread *kthread)
++void kthread_handler(void *arg)
+ {
+-	struct kthread_runner *k_runner;
++	struct kthread_runner *k_runner = arg;
+ 	ktime_t now;
+ 	int ret = 0;
+ 
+-	k_runner = container_of(kthread, struct kthread_runner, kthread);
+-
+ 	for (;;) {
+ 		if (evl_kthread_should_stop())
+ 			break;
+@@ -542,7 +540,7 @@ create_kthread_runner(int priority, int cpu)
+ 	evl_init_flag(&k_runner->barrier);
+ 
+ 	ret = evl_run_kthread_on_cpu(&k_runner->kthread, cpu,
+-				kthread_handler,
++				kthread_handler, k_runner,
+ 				priority,
+ 				EVL_CLONE_PUBLIC,
+ 				"latmus-klat:%d",
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 40b14418ea..4cdc0479c5 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -329,15 +329,16 @@ int activate_oob_mm_state(struct oob_mm_state *p);
+ struct evl_kthread {
+ 	struct evl_thread thread;
+ 	struct completion done;
+-	void (*threadfn)(struct evl_kthread *kthread);
++	void (*threadfn)(void *arg);
+ 	int status;
++	void *arg;
+ 	struct irq_work irq_work;
+ };
+ 
+ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 
+-#define _evl_run_kthread(__kthread, __affinity, __fn, __priority,	\
+-			 __clone_flags, __fmt, __args...)		\
++#define _evl_run_kthread(__kthread, __affinity, __fn, __arg,		\
++			__priority, __clone_flags, __fmt, __args...)	\
+ 	({								\
+ 		int __ret;						\
+ 		struct evl_init_thread_attr __iattr = {			\
+@@ -348,6 +349,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 			.sched_param.fifo.prio = __priority,		\
+ 		};							\
+ 		(__kthread)->threadfn = __fn;				\
++		(__kthread)->arg = __arg;				\
+ 		(__kthread)->status = 0;				\
+ 		init_completion(&(__kthread)->done);			\
+ 		__ret = evl_init_thread(&(__kthread)->thread, &__iattr,	\
+@@ -357,15 +359,15 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 		__ret;							\
+ 	})
+ 
+-#define evl_run_kthread(__kthread, __fn, __priority,			\
++#define evl_run_kthread(__kthread, __fn, __arg, __priority,		\
+ 			__clone_flags, __fmt, __args...)		\
+-	_evl_run_kthread(__kthread, &evl_oob_cpus, __fn, __priority,	\
+-			__clone_flags, __fmt, ##__args)
++	_evl_run_kthread(__kthread, &evl_oob_cpus, __fn, __arg,		\
++			__priority, __clone_flags, __fmt, ##__args)
+ 
+-#define evl_run_kthread_on_cpu(__kthread, __cpu, __fn, __priority,	\
+-			       __clone_flags, __fmt, __args...)		\
+-	_evl_run_kthread(__kthread, cpumask_of(__cpu), __fn, __priority, \
+-			__clone_flags, __fmt, ##__args)
++#define evl_run_kthread_on_cpu(__kthread, __cpu, __fn, __arg,		\
++			__priority, __clone_flags, __fmt, __args...)	\
++	_evl_run_kthread(__kthread, cpumask_of(__cpu), __fn, __arg,	\
++			__priority, __clone_flags, __fmt, ##__args)
+ 
+ void evl_set_kthread_priority(struct evl_kthread *kthread,
+ 			int priority);
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 354f58e2b6..d6c002bc94 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -428,7 +428,7 @@ static int kthread_trampoline(void *arg)
+ 	ret = map_kthread_self(kthread);
+ 	if (!ret) {
+ 		trace_evl_kthread_entry(curr);
+-		kthread->threadfn(kthread);
++		kthread->threadfn(kthread->arg);
+ 	}
+ 
+ 	/* Handles nitty-gritty details like in-band switch. */
+-- 
+2.30.2
+

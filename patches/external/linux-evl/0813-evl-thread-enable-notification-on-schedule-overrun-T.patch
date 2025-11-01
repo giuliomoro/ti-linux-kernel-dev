@@ -1,0 +1,103 @@
+From b0d2345b7575b6ed90935a19c977f140b31c18d2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 5 Nov 2022 17:08:43 +0100
+Subject: [PATCH 0813/1010] evl/thread: enable notification on schedule overrun
+ (T_WOSO)
+
+Some scheduler policies may want to notify a thread which overruns its
+allotted runtime. Introduce a new HM event - namely EVL_HMDIAG_OVERRUN
+- which can be received via the common HM delivery channels (signal or
+observable).
+
+Notification is enabled by turning on the T_WOSO flag in the thread
+mode.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/thread.h       | 2 +-
+ include/trace/events/evl.h | 3 ++-
+ include/uapi/evl/control.h | 2 +-
+ include/uapi/evl/thread.h  | 2 ++
+ kernel/evl/thread.c        | 4 ++--
+ 5 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 24350bf978..dee22479aa 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -32,7 +32,7 @@
+ /* Information bits an EVL thread may receive from a blocking op. */
+ #define EVL_THREAD_INFO_MASK	(T_RMID|T_TIMEO|T_BREAK|T_KICKED|T_BCAST|T_NOMEM)
+ /* Mode bits configurable via EVL_THRIOC_SET/CLEAR_MODE. */
+-#define EVL_THREAD_MODE_BITS	(T_WOSS|T_WOLI|T_WOSX|T_HMSIG|T_HMOBS)
++#define EVL_THREAD_MODE_BITS	(T_WOSS|T_WOLI|T_WOSX|T_WOSO|T_HMSIG|T_HMOBS)
+ 
+ /*
+  * These are special internal values of HM diags which are never sent
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index acb254cde0..e5894d0440 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -824,7 +824,8 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
+ 		{T_HMSIG, "hmsig"},	\
+ 		{T_WOSX, "wosx"},	\
+ 		{T_WOSS, "woss"},	\
+-		{T_WOLI, "woli"})
++		{T_WOLI, "woli"},	\
++		{T_WOSO, "woso"})
+ 
+ TRACE_EVENT(evl_thread_update_mode,
+ 	TP_PROTO(struct evl_thread *thread, int mode, bool set),
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 0d601c4eff..950b9e2486 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -18,7 +18,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  29
++#define EVL_ABI_LEVEL  30
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
+index 2dbe7f77fe..e039b6f216 100644
+--- a/include/uapi/evl/thread.h
++++ b/include/uapi/evl/thread.h
+@@ -37,6 +37,7 @@
+ #define T_OBSERV  0x00080000 /* Observable (only for export to userland) */
+ #define T_HMSIG   0x00100000 /* Notify HM events via SIGDEBUG */
+ #define T_HMOBS   0x00200000 /* Notify HM events via observable */
++#define T_WOSO    0x00400000 /* Schedule overrun */
+ 
+ /* Information flags (shared) */
+ 
+@@ -95,6 +96,7 @@
+ #define EVL_HMDIAG_LKIMBALANCE	6
+ #define EVL_HMDIAG_LKSLEEP	7
+ #define EVL_HMDIAG_STAGEX	8
++#define EVL_HMDIAG_OVERRUN	9
+ 
+ struct evl_user_window {
+ 	__u32 state;
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 4a3c6b5bb9..ea320d56d3 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2145,10 +2145,10 @@ static int update_mode(struct evl_thread *thread, __u32 mask,
+ 			thread->state |= mask;
+ 		} else {
+ 			thread->state &= ~mask;
+-			if (!(thread->state & (T_WOSS|T_WOLI|T_WOSX)))
++			if (!(thread->state & (T_WOSS|T_WOLI|T_WOSX|T_WOSO)))
+ 				thread->state &= ~(T_HMSIG|T_HMOBS);
+ 			else if (!(thread->state & (T_HMSIG|T_HMOBS)))
+-				thread->state &= ~(T_WOSS|T_WOLI|T_WOSX);
++				thread->state &= ~(T_WOSS|T_WOLI|T_WOSX|T_WOSO);
+ 		}
+ 	}
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,74 @@
+From 4c188315b49ca98d52566a6948d009e83592925a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 14 Apr 2025 11:43:28 +0200
+Subject: [PATCH 0199/1010] net: dovetail: fold napi_complete_oob() into
+ napi_schedule_oob()
+
+So far, napi_schedule_oob() was invoked from the oob stage
+exclusively, aimed at queuing a NAPI struct for RX handling by the
+companion core from the oob stage.
+
+On the other hand, napi_complete_oob() was expected to schedule the RX
+handling of the packets accepted (in-band) by netif_deliver_oob() from
+a non oob-capable device diverting traffic to the companion core, so
+that it passes those packets to the proper protocol handlers in the
+oob netstack.
+
+We can ask the companion core to fold the logic of napi_complete_oob()
+into napi_schedule_oob() by checking the current execution stage,
+requiring a single hook for both cases.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h | 1 -
+ net/core/dev.c            | 8 +-------
+ 2 files changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 9d7712f5b5..f609d6a869 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4370,7 +4370,6 @@ static inline void netif_disable_oob_port(struct net_device *dev)
+ 
+ /* Out-of-band hooks implemented by the companion core. */
+ void napi_schedule_oob(struct napi_struct *n);
+-void napi_complete_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 5e7ed00489..8d647c530d 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5106,9 +5106,6 @@ static void process_inband_rx_backlog(struct softnet_data *sd)
+ __weak void napi_schedule_oob(struct napi_struct *n)
+ { }
+ 
+-__weak void napi_complete_oob(struct napi_struct *n)
+-{ }
+-
+ __weak void process_inband_tx_backlog(struct softnet_data *sd)
+ { }
+ 
+@@ -5130,9 +5127,6 @@ static inline bool netif_receive_oob_list(struct list_head *head)
+ static inline void napi_schedule_oob(struct napi_struct *n)
+ { }
+ 
+-static inline void napi_complete_oob(struct napi_struct *n)
+-{ }
+-
+ static inline void process_inband_tx_backlog(struct softnet_data *sd)
+ { }
+ 
+@@ -6303,7 +6297,7 @@ bool napi_complete_done(struct napi_struct *n, int work_done)
+ 	if (netif_oob_diversion(n->dev)) {
+ 		if (net_running_oob())
+ 			return true;
+-		napi_complete_oob(n);
++		napi_schedule_oob(n);
+ 	}
+ 
+ 	/*
+-- 
+2.30.2
+

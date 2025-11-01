@@ -1,0 +1,30 @@
+From 174e34350b7e7555e13bd16e9135edb63ed06a4e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 27 Sep 2025 16:25:39 +0200
+Subject: [PATCH 0252/1010] genirq: irq_pipeline: fix build with IRQ_PIPELINE
+ disabled
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq/chip.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 815f5482f5..0fd49c9bec 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -698,6 +698,11 @@ static bool irq_active_on_this_cpu(struct irq_desc *desc)
+ 
+ 	return true;
+ }
++#else
++static inline bool irq_active_on_this_cpu(struct irq_desc *desc)
++{
++	return false;
++}
+ #endif
+ 
+ static bool irq_may_run(struct irq_desc *desc)
+-- 
+2.30.2
+

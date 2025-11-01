@@ -1,0 +1,47 @@
+From 3eb2815c3ad1d4af7e68dc2da07997776365349f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 24 Mar 2021 19:01:32 +0100
+Subject: [PATCH 0724/1010] evl/sched: stop referring to obsolete
+ MAX_USER_RT_PRIO
+
+Since #ae18ad281e, MAX_RT_PRIO should be used instead.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched/fifo.h  | 2 +-
+ include/evl/sched/queue.h | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
+index 89a6b8995e..69dbb995b3 100644
+--- a/include/evl/sched/fifo.h
++++ b/include/evl/sched/fifo.h
+@@ -18,7 +18,7 @@
+  * couple of levels more, from EVL_CORE_MIN_PRIO to EVL_CORE_MAX_PRIO.
+  */
+ #define EVL_FIFO_MIN_PRIO  1
+-#define EVL_FIFO_MAX_PRIO  (MAX_USER_RT_PRIO - 1)
++#define EVL_FIFO_MAX_PRIO  (MAX_RT_PRIO - 1)
+ 
+ extern struct evl_sched_class evl_sched_fifo;
+ 
+diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
+index 8e3519e276..8b8f432e28 100644
+--- a/include/evl/sched/queue.h
++++ b/include/evl/sched/queue.h
+@@ -15,9 +15,9 @@
+  * EVL core priority scale. We reserve a couple of additional priority
+  * levels above the highest inband kthread priority (MAX_RT_PRIO-1),
+  * which is guaranteed not to be less than the highest EVL user task
+- * priority (MAX_USER_RT_PRIO-1) we use for SCHED_FIFO. Those extra
+- * levels can be used for EVL kthreads which must top the priority of
+- * any userland thread.
++ * priority (MAX_RT_PRIO-1) we use for SCHED_FIFO. Those extra levels
++ * can be used for EVL kthreads which must top the priority of any
++ * userland thread.
+  */
+ #define EVL_CORE_MIN_PRIO  0
+ #define EVL_CORE_MAX_PRIO  (MAX_RT_PRIO + 1)
+-- 
+2.30.2
+

@@ -1,0 +1,26 @@
+From 34276b3017f09e03471bbde6673517af998ad13b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 24 Aug 2023 12:28:19 +0200
+Subject: [PATCH 0851/1010] spidev: evl: include missing header
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/devices/spidev.h | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/include/uapi/evl/devices/spidev.h b/include/uapi/evl/devices/spidev.h
+index a4b3f97f38..78ab4e7096 100644
+--- a/include/uapi/evl/devices/spidev.h
++++ b/include/uapi/evl/devices/spidev.h
+@@ -5,6 +5,8 @@
+ #ifndef _EVL_UAPI_DEVICES_SPIDEV_H
+ #define _EVL_UAPI_DEVICES_SPIDEV_H
+ 
++#include <linux/types.h>
++
+ /* Manage out-of-band mode (master only) */
+ struct spi_ioc_oob_setup {
+ 	/* Input */
+-- 
+2.30.2
+

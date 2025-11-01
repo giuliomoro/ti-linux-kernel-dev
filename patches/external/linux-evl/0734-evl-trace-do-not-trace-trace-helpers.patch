@@ -1,0 +1,42 @@
+From d8f7bd10b6c573080486f89c55c9e3576ca83ff1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 12 Jun 2021 18:32:20 +0200
+Subject: [PATCH 0734/1010] evl/trace: do not trace trace helpers
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 4 ++--
+ kernel/evl/thread.c     | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 5b4720e0de..f3bba2e572 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1294,8 +1294,8 @@ evl_find_sched_class(union evl_sched_param *param,
+ 
+ #ifdef CONFIG_TRACING
+ 
+-const char *evl_trace_sched_attrs(struct trace_seq *p,
+-				struct evl_sched_attrs *attrs)
++notrace const char *evl_trace_sched_attrs(struct trace_seq *p,
++					struct evl_sched_attrs *attrs)
+ {
+ 	const char *ret = trace_seq_buffer_ptr(p);
+ 
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 950af5e872..75278b0567 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1415,7 +1415,7 @@ int evl_killall(int mask)
+ }
+ EXPORT_SYMBOL_GPL(evl_killall);
+ 
+-pid_t evl_get_inband_pid(struct evl_thread *thread)
++notrace pid_t evl_get_inband_pid(struct evl_thread *thread)
+ {
+ 	if (thread->state & (T_ROOT|T_DORMANT|T_ZOMBIE))
+ 		return 0;
+-- 
+2.30.2
+
