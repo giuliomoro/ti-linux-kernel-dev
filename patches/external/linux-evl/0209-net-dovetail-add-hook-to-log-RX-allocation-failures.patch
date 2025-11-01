@@ -1,0 +1,43 @@
+From 79adf3b6b18b1802649d99dc6ecc6b974ab66246 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 1 Jul 2025 12:38:55 +0200
+Subject: [PATCH 209/985] net: dovetail: add hook to log RX allocation failures
+
+The out-of-band core needs to export to oob-capable drivers an
+interface for reporting allocation failures on the RX path.
+
+Provide a placeholder for netif_rx_nomem_oob() the core should
+substitute its own implementation to.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index d5b9289d9..7561c79ea 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4434,6 +4434,7 @@ int napi_poll_oob(struct napi_struct *n, struct list_head *repoll);
+ void napi_schedule_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
+ void netif_schedule_oob(struct net_device *dev);
++void netif_rx_nomem_oob(struct net_device *dev);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
+ void netif_tx_wake_oob(struct netdev_queue *txq); /* rcu_read locked */
+@@ -4482,6 +4483,11 @@ static inline void netif_schedule_oob(struct net_device *dev)
+ {
+ }
+ 
++static inline void netif_rx_nomem_oob(struct net_device *dev)
++{
++	BUG();
++}
++
+ static inline bool netif_oob_diversion(const struct net_device *dev)
+ {
+ 	return false;
+-- 
+2.30.2
+

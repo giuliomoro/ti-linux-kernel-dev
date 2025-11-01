@@ -1,0 +1,96 @@
+From 3ba251cd14e33b00e8f935d2b30fab8c8f6c68f2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 20 Jun 2025 06:12:15 +0200
+Subject: [PATCH 951/985] evl/net: ipv4: add generic routing service
+
+Given an IPv4 address, evl_net_route_ipv4_output() performs a look up
+into the oob route cache in order to find an egress path via an oob
+port.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/ipv4/route.h |  2 ++
+ kernel/evl/net/ipv4/route.c  | 20 ++++++++++++++++++++
+ kernel/evl/net/ipv4/udp.c    | 26 +++++++++++---------------
+ 3 files changed, 33 insertions(+), 15 deletions(-)
+
+diff --git a/include/evl/net/ipv4/route.h b/include/evl/net/ipv4/route.h
+index cf40ef21d..76c16ca0d 100644
+--- a/include/evl/net/ipv4/route.h
++++ b/include/evl/net/ipv4/route.h
+@@ -26,4 +26,6 @@ void evl_net_flush_ipv4_routes(struct net *net, struct net_device *dev);
+ 
+ struct evl_net_route *evl_net_get_ipv4_route(struct net *net, __be32 daddr);
+ 
++struct evl_net_route *evl_net_route_ipv4_output(struct net *net, __be32 daddr);
++
+ #endif /* !_EVL_NET_IPV4_ROUTE_H */
+diff --git a/kernel/evl/net/ipv4/route.c b/kernel/evl/net/ipv4/route.c
+index 8d0e8839a..2c48d6254 100644
+--- a/kernel/evl/net/ipv4/route.c
++++ b/kernel/evl/net/ipv4/route.c
+@@ -151,3 +151,23 @@ void evl_net_flush_ipv4_routes(struct net *net, struct net_device *dev)
+ {
+ 	flush_route_cache(net, dev);
+ }
++
++/*
++ * Given an IPv4 address, perform a look up into our route cache in
++ * order to find an egress path via an oob port.
++ */
++struct evl_net_route *evl_net_route_ipv4_output(struct net *net, __be32 daddr)
++{
++	struct evl_net_route *ert = evl_net_get_ipv4_route(net, daddr);
++	struct net_device *dev;
++
++	if (ert) {
++		dev = ert->rt->dst.dev;
++		if (dev && netif_oob_port(dev))
++			return ert;
++		evl_net_put_route(ert);
++	}
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(evl_net_route_ipv4_output);
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index c97f4505b..320d32a30 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -198,22 +198,18 @@ static ssize_t offload_send_udp(struct evl_socket *esk,
+ static bool find_egress_path(struct evl_socket *esk, __be32 daddr,
+ 			struct evl_net_route **ertp, struct evl_net_arp_entry **earpp)
+ {
+-	struct evl_net_arp_entry *_earp;
+-	struct evl_net_route *_ert;
+-	struct net_device *dev;
+-
+-	_ert = evl_net_get_ipv4_route(sock_net(esk->sk), daddr);
+-	if (likely(_ert)) {
+-		dev = _ert->rt->dst.dev;
+-		if (netif_oob_port(dev)) {
+-			_earp = evl_net_get_arp_entry(dev, daddr);
+-			if (likely(_earp))  {
+-				*ertp = _ert;
+-				*earpp = _earp;
+-				return true;
+-			}
++	struct evl_net_arp_entry *earp;
++	struct evl_net_route *ert;
++
++	ert = evl_net_route_ipv4_output(sock_net(esk->sk), daddr);
++	if (likely(ert)) {
++		earp = evl_net_get_arp_entry(ert->rt->dst.dev, daddr);
++		if (likely(earp))  {
++			*ertp = ert;
++			*earpp = earp;
++			return true;
+ 		}
+-		evl_net_put_route(_ert);
++		evl_net_put_route(ert);
+ 	}
+ 
+ 	return false;
+-- 
+2.30.2
+

@@ -1,0 +1,27 @@
+From 8bd6444df111302787dfbcae4dcd64253e5872a3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 1 Nov 2021 12:21:00 +0100
+Subject: [PATCH 715/985] uapi/evl: net: realign AF_OOB value with
+ linux/socket.h
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/net/socket.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/uapi/evl/net/socket.h b/include/uapi/evl/net/socket.h
+index 1117aa016..aee01982c 100644
+--- a/include/uapi/evl/net/socket.h
++++ b/include/uapi/evl/net/socket.h
+@@ -10,7 +10,7 @@
+ #include <uapi/evl/types.h>
+ #include <uapi/evl/fcntl.h>
+ 
+-#define AF_OOB		45	/* Out-of-band domain sockets */
++#define AF_OOB		46	/* Out-of-band domain sockets */
+ 
+ #define SOCK_OOB	O_OOB	/* Request out-of-band capabilities */
+ 
+-- 
+2.30.2
+

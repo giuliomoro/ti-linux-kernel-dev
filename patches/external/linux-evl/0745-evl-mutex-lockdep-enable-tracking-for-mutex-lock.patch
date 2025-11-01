@@ -1,0 +1,89 @@
+From 9fbebc1cb9d11e47628746f5b3dfc9cb34dbb4bf Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 4 Oct 2022 11:32:08 +0200
+Subject: [PATCH 745/985] evl/mutex: lockdep: enable tracking for mutex->lock
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h | 9 ++++-----
+ kernel/evl/mutex.c  | 9 +++++++++
+ 2 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index faa3ee3e4..bb1f93573 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -25,13 +25,14 @@ struct evl_thread;
+ #define EVL_MUTEX_CEILING	BIT(3)
+ 
+ struct evl_mutex {
++	hard_spinlock_t lock;
++	struct lock_class_key lock_key;	/* lockdep disambiguation */
+ 	int wprio;
+ 	int flags;
+ 	struct evl_thread *owner;
+ 	struct evl_clock *clock;
+ 	atomic_t *fastlock;
+ 	u32 *ceiling_ref;
+-	hard_spinlock_t lock;
+ 	struct evl_wait_channel wchan;
+ 	struct list_head next_booster; /* thread->boosters */
+ 	struct list_head next_tracker;   /* thread->trackers */
+@@ -44,18 +45,16 @@ void __evl_init_mutex(struct evl_mutex *mutex,
+ 
+ #define evl_init_mutex_pi(__mutex, __clock, __fastlock)			\
+ 	do {								\
+-		static struct lock_class_key __key;			\
+ 		__evl_init_mutex(__mutex, __clock, __fastlock, NULL);	\
+ 		lockdep_set_class_and_name(&(__mutex)->lock,		\
+-					&__key, #__mutex);		\
++				&(__mutex)->lock_key, #__mutex); 	\
+ 	} while (0)
+ 
+ #define evl_init_mutex_pp(__mutex, __clock, __fastlock, __ceiling)	\
+ 	do {								\
+-		static struct lock_class_key __key;			\
+ 		__evl_init_mutex(__mutex, __clock, __fastlock, __ceiling); \
+ 		lockdep_set_class_and_name(&(__mutex)->lock,		\
+-					&__key, #__mutex);		\
++				&(__mutex)->lock_key, #__mutex); 	\
+ 	} while (0)
+ 
+ void evl_destroy_mutex(struct evl_mutex *mutex);
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 3d3ffca20..7f8721d08 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -442,6 +442,7 @@ void __evl_init_mutex(struct evl_mutex *mutex,
+ 		atomic_t *fastlock, u32 *ceiling_ref)
+ {
+ 	int type = ceiling_ref ? EVL_MUTEX_PP : EVL_MUTEX_PI;
++	unsigned long flags __maybe_unused;
+ 
+ 	mutex->fastlock = fastlock;
+ 	atomic_set(fastlock, EVL_NO_HANDLE);
+@@ -454,6 +455,13 @@ void __evl_init_mutex(struct evl_mutex *mutex,
+ 	mutex->wchan.follow_depend = evl_follow_mutex_depend;
+ 	INIT_LIST_HEAD(&mutex->wchan.wait_list);
+ 	raw_spin_lock_init(&mutex->lock);
++#ifdef CONFIG_PROVE_LOCKING
++	lockdep_register_key(&mutex->lock_key);
++	lockdep_set_class_and_name(&mutex->lock, &mutex->lock_key, name);
++	local_irq_save(flags);
++	might_lock(&mutex->lock);
++	local_irq_restore(flags);
++#endif
+ }
+ EXPORT_SYMBOL_GPL(__evl_init_mutex);
+ 
+@@ -497,6 +505,7 @@ void evl_destroy_mutex(struct evl_mutex *mutex)
+ 	untrack_owner(mutex);
+ 	flush_mutex_locked(mutex, T_RMID);
+ 	raw_spin_unlock_irqrestore(&mutex->lock, flags);
++	lockdep_unregister_key(&mutex->lock_key);
+ }
+ EXPORT_SYMBOL_GPL(evl_destroy_mutex);
+ 
+-- 
+2.30.2
+

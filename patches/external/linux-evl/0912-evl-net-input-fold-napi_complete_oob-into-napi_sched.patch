@@ -1,0 +1,99 @@
+From 34b810be8f10240eacb6f49da6df4ce6eed2d78a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 14 Apr 2025 11:43:28 +0200
+Subject: [PATCH 912/985] evl/net: input: fold napi_complete_oob() into
+ napi_schedule_oob()
+
+The generic oob interface now expects us to provide a single
+napi_schedule_oob() hook, covering the logic of napi_complete_oob() as
+well.
+
+This patch also fixes an outstanding issue with the former
+implementation of napi_complete_oob() which did not raise the
+EVL_NETDEV_POLL_SCHED bit as it should have done.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/input.c | 38 +++++++++++++++-----------------------
+ 1 file changed, 15 insertions(+), 23 deletions(-)
+
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index d07c3566f..b72d09177 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -101,6 +101,7 @@ void evl_net_do_rx(void *arg)
+ 				break;
+ 		}
+ 
++		/* Poll oob-capable drivers for feeding rx_packets. */
+ 		napi_poll_oob(est);
+ 
+ 		if (evl_net_move_skb_queue(&est->rx_packets, &list)) {
+@@ -118,6 +119,7 @@ void evl_net_wake_rx(struct net_device *dev)
+ {
+ 	struct evl_netdev_state *est = dev->oob_state.estate;
+ 
++	set_bit(EVL_NETDEV_POLL_SCHED, &est->flags);
+ 	evl_raise_flag(&est->rx_flag);
+ }
+ EXPORT_SYMBOL_GPL(evl_net_wake_rx);
+@@ -191,11 +193,18 @@ void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq)
+  * The RX kthread is resumed so that it polls the associated device
+  * for ingress packets directly from the oob stage.
+  *
++ * This routine is usually called out-of-band in order to schedule the
++ * RX thread for handling the packets accepted by netif_deliver_oob()
++ * directly from the oob stage. When called in-band though, the RX
++ * thread is resumed to process the packets received (in-band) from a
++ * non oob-capable device diverting traffic to EVL, so that it passes
++ * those packets to the proper protocol handlers in our netstack.
++ *
+  * @n is the NAPI instance associated to a device for which oob packet
+  * diversion is enabled. An earlier call to napi_schedule_prep() is
+  * expected to have been issued for @n.
+  */
+-void napi_schedule_oob(struct napi_struct *n) /* oob */
++void napi_schedule_oob(struct napi_struct *n) /* inband/oob */
+ {
+ 	struct net_device *dev = n->dev;
+ 	struct evl_netdev_state *est = dev->oob_state.estate;
+@@ -211,31 +220,14 @@ void napi_schedule_oob(struct napi_struct *n) /* oob */
+ 	 * napi_poll_oob() for an explanation about the requirement
+ 	 * for atomic bitops (EVL_NETDEV_POLL_SCHED).
+ 	 */
+-	raw_spin_lock_irqsave(&est->rx_lock, flags);
+-	list_add(&n->poll_list, &est->rx_poll);
+-	set_bit(EVL_NETDEV_POLL_SCHED, &est->flags);
+-	raw_spin_unlock_irqrestore(&est->rx_lock, flags);
++	if (running_oob()) {
++		raw_spin_lock_irqsave(&est->rx_lock, flags);
++		list_add(&n->poll_list, &est->rx_poll);
++		raw_spin_unlock_irqrestore(&est->rx_lock, flags);
++	}
+ 	evl_net_wake_rx(dev);
+ }
+ 
+-/**
+- * napi_complete_oob - release a NAPI instance.
+- *
+- * May be called in-band exclusively. Resumes the RX thread to process
+- * the packets received in-band from a non oob-capable device
+- * diverting traffic to EVL, so that it passes those packets to the
+- * proper protocol handlers in our netstack.
+- *
+- * @n is the NAPI instance associated to a device for which packet
+- * diversion is enabled, without oob handling capability though.
+- */
+-void napi_complete_oob(struct napi_struct *n) /* inband */
+-{
+-	EVL_WARN_ON(NET, running_oob());
+-
+-	evl_net_wake_rx(n->dev);
+-}
+-
+ /**
+  * netif_deliver_oob - receive a network packet from the hardware.
+  *
+-- 
+2.30.2
+

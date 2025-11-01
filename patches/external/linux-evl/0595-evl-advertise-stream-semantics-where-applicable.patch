@@ -1,0 +1,119 @@
+From 67811af82c06db83cf0976f1e3a27cba8329a9a5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 2 Apr 2020 18:43:42 +0200
+Subject: [PATCH 595/985] evl: advertise stream semantics where applicable
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c | 1 +
+ drivers/evl/latmus.c | 1 +
+ kernel/evl/clock.c   | 1 +
+ kernel/evl/control.c | 2 ++
+ kernel/evl/factory.c | 2 ++
+ kernel/evl/poll.c    | 1 +
+ kernel/evl/trace.c   | 3 ++-
+ 7 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 35c31fdcb..a0af8889c 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -619,6 +619,7 @@ static int hectic_open(struct inode *inode, struct file *filp)
+ 	evl_init_stax(&ctx->stax);
+ 
+ 	filp->private_data = ctx;
++	stream_open(inode, filp);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 1a320ddeb..adcc64bdb 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -992,6 +992,7 @@ static int latmus_open(struct inode *inode, struct file *filp)
+ 		kfree(ls);
+ 
+ 	filp->private_data = ls;
++	stream_open(inode, filp);
+ 
+ 	return ret;
+ }
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 294536021..8d68b6d7d 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -721,6 +721,7 @@ static int timerfd_release(struct inode *inode, struct file *filp)
+ }
+ 
+ static const struct file_operations timerfd_fops = {
++	.open		= stream_open,
+ 	.release	= timerfd_release,
+ 	.oob_ioctl	= timerfd_common_ioctl,
+ 	.oob_read	= timerfd_oob_read,
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index a10118805..0a1e8a6d9 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -278,6 +278,8 @@ static int control_open(struct inode *inode, struct file *filp)
+ 	if (!test_and_set_bit(EVL_MM_INIT_BIT, &oob_mm->flags))
+ 		ret = activate_oob_mm_state(oob_mm);
+ 
++	stream_open(inode, filp);
++
+ 	return ret;
+ }
+ 
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index d2228f512..4ca23cb65 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -132,6 +132,7 @@ int evl_open_element(struct inode *inode, struct file *filp)
+ 
+ 	fbind->element = e;
+ 	filp->private_data = fbind;
++	stream_open(inode, filp);
+ 
+ 	return 0;
+ }
+@@ -461,6 +462,7 @@ static int open_clone_device(struct inode *inode, struct file *filp)
+ 	fac = container_of(filp->f_inode->i_cdev, struct evl_factory, cdev);
+ 	fac->kuid = inode->i_uid;
+ 	fac->kgid = inode->i_gid;
++	stream_open(inode, filp);
+ 
+ 	return 0;
+ }
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index ffda2e96f..950283955 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -568,6 +568,7 @@ static int poll_open(struct inode *inode, struct file *filp)
+ 	evl_init_kmutex(&group->item_lock);
+ 	evl_spin_lock_init(&group->wait_lock);
+ 	filp->private_data = group;
++	stream_open(inode, filp);
+ 
+ 	return ret;
+ }
+diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
+index 224480947..aaf3d3f3d 100644
+--- a/kernel/evl/trace.c
++++ b/kernel/evl/trace.c
+@@ -76,12 +76,13 @@ ssize_t trace_write(struct file *filp,
+ }
+ 
+ static const struct file_operations trace_fops = {
++	.open		= 	stream_open,
+ 	.unlocked_ioctl	=	trace_ioctl,
+ 	.write		=	trace_write,
+ 	.oob_ioctl	=	trace_oob_ioctl,
+ 	.oob_write	=	trace_oob_write,
+ #ifdef CONFIG_COMPAT
+-	.compat_ioctl  =	compat_ptr_ioctl,
++	.compat_ioctl	=	compat_ptr_ioctl,
+ 	.compat_oob_ioctl  =	compat_ptr_oob_ioctl,
+ #endif
+ };
+-- 
+2.30.2
+

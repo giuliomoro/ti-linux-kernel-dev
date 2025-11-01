@@ -1,0 +1,45 @@
+From 753d1aeb6a4802c10d32bc63954b7873593c8355 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 13 Jun 2021 12:55:56 +0200
+Subject: [PATCH 701/985] evl/thread: trace trap exit in debug mode only
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 75278b056..4313ed83f 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1528,6 +1528,7 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ {
+ 	struct evl_thread *curr = evl_current();
++	bool is_bp = false;
+ 
+ 	if (in_nmi())
+ 		return;
+@@ -1536,6 +1537,9 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 
+ 	curr->local_info &= ~T_INFAULT;
+ 
++	if (current->ptrace & PT_PTRACED)
++		is_bp = evl_is_breakpoint(trapnr);
++
+ 	/*
+ 	 * Switch back to the oob stage only after recovering from a
+ 	 * trap in kernel space, which ensures a consistent execution
+@@ -1545,7 +1549,8 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 	 * syscall barrier is there to reinstate the proper stage if
+ 	 * need be.
+ 	 */
+-	if (!user_mode(regs) && !evl_is_breakpoint(trapnr)) {
++	if (!user_mode(regs) &&
++	    (EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp) {
+ 		evl_switch_oob();
+ 		note_trap(curr, trapnr, regs, "resuming out-of-band");
+ 	}
+-- 
+2.30.2
+

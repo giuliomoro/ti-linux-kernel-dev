@@ -1,0 +1,29 @@
+From c696fc514e9b29615723817826d1707a94334ddf Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 9 May 2019 18:17:02 +0200
+Subject: [PATCH 370/985] evl/tick: advertise the real device min/max delta
+ values
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/tick.c | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
+index 05747c202..3a285e614 100644
+--- a/kernel/evl/tick.c
++++ b/kernel/evl/tick.c
+@@ -144,10 +144,6 @@ static void setup_proxy(struct clock_proxy_device *dev)
+ 
+ 	dev->handle_oob_event = clock_event_handler;
+ 	proxy_dev->features |= CLOCK_EVT_FEAT_KTIME;
+-	proxy_dev->min_delta_ns = 1;
+-	proxy_dev->max_delta_ns = KTIME_MAX;
+-	proxy_dev->min_delta_ticks = 1;
+-	proxy_dev->max_delta_ticks = ULONG_MAX;
+ 	proxy_dev->set_next_ktime = proxy_set_next_ktime;
+ 	if (proxy_dev->set_state_oneshot_stopped)
+ 		proxy_dev->set_state_oneshot_stopped = proxy_set_oneshot_stopped;
+-- 
+2.30.2
+

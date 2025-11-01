@@ -1,0 +1,71 @@
+From 7935b5e2949a74a46797f0dc31c43c43beebdbb9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 21 Mar 2021 12:13:17 +0100
+Subject: [PATCH 688/985] evl/thread: drop call to obsolete
+ force_commit_memory()
+
+A process is now marked for COW-breaking on fork() upon the first call
+to dovetail_init_altsched(), and must ensure its memory is locked via
+a call to mlockall(MCL_CURRENT|MCL_FUTURE) as usual.
+
+As a result, force_commit_memory() became pointless and was removed
+from the Dovetail interface.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 29 ++++-------------------------
+ 1 file changed, 4 insertions(+), 25 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 36c930f96..950af5e87 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1361,27 +1361,6 @@ void evl_notify_thread(struct evl_thread *thread,
+ }
+ EXPORT_SYMBOL_GPL(evl_notify_thread);
+ 
+-#ifdef CONFIG_MMU
+-
+-static inline int commit_process_memory(void)
+-{
+-	struct task_struct *p = current;
+-
+-	if (!(p->mm->def_flags & VM_LOCKED))
+-		return -EINVAL;
+-
+-	return force_commit_memory();
+-}
+-
+-#else /* !CONFIG_MMU */
+-
+-static inline int commit_process_memory(void)
+-{
+-	return 0;
+-}
+-
+-#endif /* !CONFIG_MMU */
+-
+ int evl_killall(int mask)
+ {
+ 	int nrkilled = 0, nrthreads, count;
+@@ -2321,13 +2300,13 @@ static const struct file_operations thread_fops = {
+ 
+ static int map_uthread_self(struct evl_thread *thread)
+ {
++	struct mm_struct *mm = current->mm;
+ 	struct evl_user_window *u_window;
+ 	struct cred *newcap;
+-	int ret;
+ 
+-	ret = commit_process_memory();
+-	if (ret)
+-		return ret;
++	/* mlockall(MCL_FUTURE) required. */
++	if (!(mm->def_flags & VM_LOCKED))
++		return -EINVAL;
+ 
+ 	u_window = evl_zalloc_chunk(&evl_shared_heap, sizeof(*u_window));
+ 	if (u_window == NULL)
+-- 
+2.30.2
+

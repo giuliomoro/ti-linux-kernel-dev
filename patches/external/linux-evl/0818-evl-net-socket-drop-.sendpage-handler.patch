@@ -1,0 +1,28 @@
+From 699b1acffbebaa64eec6bef97f7a308274148dbb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 22 Jul 2023 18:40:59 +0200
+Subject: [PATCH 818/985] evl/net: socket: drop .sendpage handler
+
+Since v6.5-rc1, sendmsg(MSG_SPLICE_PAGES) replaces sendpage(). Drop
+the nop entry for the obsolete handler.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/socket.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 74c7a1751..a905a6ed0 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -746,7 +746,6 @@ static const struct proto_ops netproto_ops = {
+ 	.sendmsg =	sock_no_sendmsg,
+ 	.recvmsg =	sock_no_recvmsg,
+ 	.mmap =		sock_no_mmap,
+-	.sendpage =	sock_no_sendpage,
+ };
+ 
+ /*
+-- 
+2.30.2
+

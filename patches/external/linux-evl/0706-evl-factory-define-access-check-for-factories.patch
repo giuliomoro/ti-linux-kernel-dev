@@ -1,0 +1,62 @@
+From 825ba1f4f30dcc880cfa64cf2f106723b53fe9b4 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 4 Jul 2021 18:29:54 +0200
+Subject: [PATCH 706/985] evl/factory: define access check for factories
+
+Some operations on factories started from /sys may be sensitive. Add a
+predicate to check whether the caller is authorized to perform such
+type of operation on a given factory.
+
+Access is granted for CAP_SYS_ADMIN-capable users, and/or users whose
+euid matches the kuid of the factory's clone device.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h |  2 ++
+ kernel/evl/factory.c  | 10 ++++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 7847158dd..847250a80 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -192,6 +192,8 @@ int evl_create_factory(struct evl_factory *fac, dev_t rdev);
+ 
+ void evl_delete_factory(struct evl_factory *fac);
+ 
++bool evl_may_access_factory(struct evl_factory *fac);
++
+ int evl_early_init_factories(void);
+ 
+ void evl_early_cleanup_factories(void);
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 241634b8b..2f3a8bfbd 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -21,6 +21,8 @@
+ #include <linux/stringhash.h>
+ #include <linux/anon_inodes.h>
+ #include <linux/file.h>
++#include <linux/capability.h>
++#include <linux/cred.h>
+ #include <linux/dovetail.h>
+ #include <evl/assert.h>
+ #include <evl/file.h>
+@@ -888,6 +890,14 @@ void evl_delete_factory(struct evl_factory *fac)
+ }
+ EXPORT_SYMBOL_GPL(evl_delete_factory);
+ 
++bool evl_may_access_factory(struct evl_factory *fac)
++{
++	const struct cred *cred = current_cred();
++
++	return capable(CAP_SYS_ADMIN) || uid_eq(cred->euid, fac->kuid);
++}
++EXPORT_SYMBOL_GPL(evl_may_access_factory);
++
+ static char *evl_devnode(struct device *dev, umode_t *mode)
+ {
+ 	return kasprintf(GFP_KERNEL, "evl/%s", dev_name(dev));
+-- 
+2.30.2
+

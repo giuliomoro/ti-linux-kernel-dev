@@ -1,0 +1,182 @@
+From fb14aaa88ec3325cacaf4e07548701713efc3b7e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 25 Sep 2022 12:48:39 +0200
+Subject: [PATCH 741/985] evl/monitor: fix deadlock on gated event wait queue
+
+Safe locking order shared with the mutex implementation is thread lock
+first, wait queue lock last. evl_signal_monitor_targeted() and
+wait_monitor() were ignoring this rule, leading to a deadlock if the
+guarded wait queue was found while walking the PI chain for boosting
+the owner of a mutex.
+
+Looking at the guarded bits closely enough, we don't actually need to
+involve any additional locking beyond the gate mutex, which has to be
+held by the user task signaling a thread. So we may drop the guarded
+section around the state flags update entirely, fixing the ABBA
+situation for evl_signal_monitor_targeted().
+
+wait_monitor() does have to lock the wait queue in order to check its
+state before queuing the caller, but does not have to - and must not -
+acquire the wait queue lock while holding the calling thread lock. To
+fix this, first enqueue the caller to the wait queue atomically, then
+fix up the thread state separately.
+
+See https://lore.kernel.org/xenomai/87pmfncw9u.fsf@xenomai.org/T/#t
+
+Reported-by: Russell Johnson <russell.johnson@kratosdefense.com>
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h  | 15 +++++++++++++++
+ kernel/evl/monitor.c | 40 +++++++++++++++++++++-------------------
+ 2 files changed, 36 insertions(+), 19 deletions(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 232be199b..952517370 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -385,6 +385,21 @@ static inline bool evl_cannot_block(void)
+ 		raw_spin_unlock_irqrestore(&(__thread)->lock, __flags);	\
+ 	} while (0)
+ 
++#define evl_get_thread_rq_noirq(__thread)				\
++	({								\
++		struct evl_rq *__rq;					\
++		raw_spin_lock(&(__thread)->lock);			\
++		__rq = (__thread)->rq;					\
++		raw_spin_lock(&__rq->lock);				\
++		__rq;							\
++	})
++
++#define evl_put_thread_rq_noirq(__thread, __rq)				\
++	do {								\
++		raw_spin_unlock(&(__rq)->lock);				\
++		raw_spin_unlock(&(__thread)->lock);			\
++	} while (0)
++
+ bool evl_set_effective_thread_priority(struct evl_thread *thread,
+ 				       int prio);
+ 
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index abfc96dad..bb51ee056 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -35,7 +35,7 @@ struct evl_monitor {
+ 		};
+ 		struct {
+ 			struct evl_wait_queue wait_queue;
+-			struct evl_monitor *gate;
++			struct evl_monitor *gate; /* only valid during active wait. */
+ 			struct evl_poll_head poll_head;
+ 			struct list_head next; /* in ->events */
+ 		};
+@@ -61,6 +61,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ 	struct evl_monitor *event;
+ 	struct evl_file *efilp;
+ 	unsigned long flags;
++	struct evl_rq *rq;
+ 	int ret = 0;
+ 
+ 	event = get_monitor_by_fd(monfd, &efilp);
+@@ -78,15 +79,11 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ 	 * loosing events. Too bad.
+ 	 */
+ 	if (target->wchan == &event->wait_queue.wchan) {
+-		raw_spin_lock_irqsave(&event->wait_queue.lock, flags);
+ 		event->state->flags |= (EVL_MONITOR_TARGETED|
+ 					EVL_MONITOR_SIGNALED);
+-		raw_spin_lock(&target->lock);
+-		raw_spin_lock(&target->rq->lock);
++		rq = evl_get_thread_rq(target, flags);
+ 		target->info |= T_SIGNAL;
+-		raw_spin_unlock(&target->rq->lock);
+-		raw_spin_unlock(&target->lock);
+-		raw_spin_unlock_irqrestore(&event->wait_queue.lock, flags);
++		evl_put_thread_rq(target, rq, flags);
+ 	}
+ out:
+ 	evl_put_file(efilp);
+@@ -167,18 +164,18 @@ static void wakeup_waiters(struct evl_monitor *event)
+ 	 * the thread heading the wait queue is readied.
+ 	 */
+ 	if (evl_wait_active(&event->wait_queue)) {
+-		if (bcast)
++		if (bcast) {
+ 			evl_flush_wait_locked(&event->wait_queue, 0);
+-		else if (state->flags & EVL_MONITOR_TARGETED) {
++		} else if (state->flags & EVL_MONITOR_TARGETED) {
+ 			evl_for_each_waiter_safe(waiter, n,
+ 						&event->wait_queue) {
+ 				if (waiter->info & T_SIGNAL)
+ 					evl_wake_up(&event->wait_queue,
+ 						waiter, 0);
+ 			}
+-		} else
++		} else {
+ 			evl_wake_up_head(&event->wait_queue);
+-
++		}
+ 		__untrack_event(event);
+ 	} /* Otherwise, spurious wakeup (fine, might happen). */
+ 
+@@ -274,6 +271,11 @@ static int exit_monitor(struct evl_monitor *gate)
+ 		}
+ 	}
+ 
++	/*
++	 * The whole wakeup+exit sequence must appear as atomic, drop
++	 * the gate lock last so that we are fully covered until the
++	 * monitor is released.
++	 */
+ 	__exit_monitor(gate, curr);
+ 
+ 	raw_spin_unlock_irqrestore(&gate->lock, flags);
+@@ -448,6 +450,7 @@ static int wait_monitor(struct file *filp,
+ 	struct evl_file *efilp;
+ 	enum evl_tmode tmode;
+ 	unsigned long flags;
++	struct evl_rq *rq;
+ 	ktime_t timeout;
+ 
+ 	if (event->type != EVL_MONITOR_EVENT) {
+@@ -483,7 +486,6 @@ static int wait_monitor(struct file *filp,
+ 	}
+ 
+ 	raw_spin_lock_irqsave(&gate->lock, flags);
+-	raw_spin_lock(&event->wait_queue.lock);
+ 
+ 	/*
+ 	 * Track event monitors the gate protects. When multiple
+@@ -497,7 +499,6 @@ static int wait_monitor(struct file *filp,
+ 		event->gate = gate;
+ 		event->state->u.event.gate_offset = evl_shared_offset(gate->state);
+ 	} else if (event->gate != gate) {
+-		raw_spin_unlock(&event->wait_queue.lock);
+ 		raw_spin_unlock_irqrestore(&gate->lock, flags);
+ 		op_ret = -EBADFD;
+ 		goto put;
+@@ -508,15 +509,16 @@ static int wait_monitor(struct file *filp,
+ 	 * called later on, do not perform the WOLI checks when
+ 	 * enqueuing.
+ 	 */
++	raw_spin_lock(&event->wait_queue.lock);
+ 	evl_add_wait_queue_unchecked(&event->wait_queue, timeout, tmode);
++	raw_spin_unlock(&event->wait_queue.lock);
+ 
+-	raw_spin_lock(&curr->lock);
+-	raw_spin_lock(&curr->rq->lock);
++	rq = evl_get_thread_rq_noirq(curr);
+ 	curr->info &= ~T_SIGNAL;
+-	raw_spin_unlock(&curr->rq->lock);
+-	raw_spin_unlock(&curr->lock);
+-	raw_spin_unlock(&event->wait_queue.lock);
+-	__exit_monitor(gate, curr);
++	evl_put_thread_rq_noirq(curr, rq);
++
++	__exit_monitor(gate, curr); /* See comment in exit_monitor(). */
++
+ 	raw_spin_unlock_irqrestore(&gate->lock, flags);
+ 
+ 	/*
+-- 
+2.30.2
+

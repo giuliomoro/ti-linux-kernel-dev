@@ -1,0 +1,60 @@
+From 52b93e9d68a9799f65e6b0fea7b3593e985c36a8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 13 Dec 2020 18:55:40 +0100
+Subject: [PATCH 661/985] evl/clock: fix discrepancies in set_time() handler
+
+This is an internal interface which should deal with ktime directly,
+not timespec64. In addition, rename to set() in order to match the
+converse short form read() call.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/clock.h | 10 ++++------
+ kernel/evl/clock.c  |  2 +-
+ 2 files changed, 5 insertions(+), 7 deletions(-)
+
+diff --git a/include/evl/clock.h b/include/evl/clock.h
+index fb7f7174d..8822ea7af 100644
+--- a/include/evl/clock.h
++++ b/include/evl/clock.h
+@@ -37,8 +37,7 @@ struct evl_clock {
+ 	struct {
+ 		ktime_t (*read)(struct evl_clock *clock);
+ 		u64 (*read_cycles)(struct evl_clock *clock);
+-		int (*set_time)(struct evl_clock *clock,
+-				const struct timespec64 *ts);
++		int (*set)(struct evl_clock *clock, ktime_t date);
+ 		void (*program_local_shot)(struct evl_clock *clock);
+ 		void (*program_remote_shot)(struct evl_clock *clock,
+ 					struct evl_rq *rq);
+@@ -102,11 +101,10 @@ static inline ktime_t evl_read_clock(struct evl_clock *clock)
+ }
+ 
+ static inline int
+-evl_set_clock_time(struct evl_clock *clock,
+-		const struct timespec64 *ts)
++evl_set_clock_time(struct evl_clock *clock, ktime_t date)
+ {
+-	if (clock->ops.set_time)
+-		return clock->ops.set_time(clock, ts);
++	if (clock->ops.set)
++		return clock->ops.set(clock, date);
+ 
+ 	return -EOPNOTSUPP;
+ }
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 9bb72511a..dc7119d35 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -527,7 +527,7 @@ static int set_clock_time(struct evl_clock *clock,
+ {
+ 	trace_evl_clock_settime(clock, &ts);
+ 
+-	return evl_set_clock_time(clock, &ts);
++	return evl_set_clock_time(clock, timespec64_to_ktime(ts));
+ }
+ 
+ static void get_timer_value(struct evl_timer *__restrict__ timer,
+-- 
+2.30.2
+

@@ -1,0 +1,28 @@
+From 8d5572cae2080c01e430b54c55b858dbbed382a3 Mon Sep 17 00:00:00 2001
+From: Zhang Kun <zhangkun@cdjrlc.com>
+Date: Sat, 6 Mar 2021 13:23:46 +0100
+Subject: [PATCH 687/985] evl/thread: Fix duplicate included factory.h
+
+evl/factory.h is included more than once, remove the one that isn't
+necessary.
+
+Signed-off-by: Zhang Kun <zhangkun@cdjrlc.com>
+---
+ kernel/evl/thread.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 173b036d0..36c930f96 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -32,7 +32,6 @@
+ #include <evl/thread.h>
+ #include <evl/memory.h>
+ #include <evl/file.h>
+-#include <evl/factory.h>
+ #include <evl/monitor.h>
+ #include <evl/mutex.h>
+ #include <evl/poll.h>
+-- 
+2.30.2
+

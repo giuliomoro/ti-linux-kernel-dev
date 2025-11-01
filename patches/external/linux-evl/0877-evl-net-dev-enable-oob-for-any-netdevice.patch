@@ -1,0 +1,542 @@
+From 4e2f219b3829a0f056e98a26d9ff3f2d9880e6c1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 21 Feb 2024 11:58:35 +0100
+Subject: [PATCH 877/985] evl/net: dev: enable oob for any netdevice
+
+So far, turning on oob diversion was available to VLAN devices
+only. The rationale behind this restriction was that the VLAN id could
+be used as a discriminator for oob traffic, feeding the EVL netstack
+instead of the inband one.
+
+In preparation for supporting per-device eBPF module in the netstack
+which would serve as a user-defined traffic filter, we can lift most
+of this general restriction.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/device.h         |  10 +++
+ include/evl/net/socket.h         |   4 +-
+ kernel/evl/net/dev.c             | 111 ++++++++++++++-----------------
+ kernel/evl/net/ethernet/input.c  |   6 +-
+ kernel/evl/net/ethernet/output.c |   4 +-
+ kernel/evl/net/ipv4/output.c     |  11 +--
+ kernel/evl/net/output.c          |   5 +-
+ kernel/evl/net/packet/packet.c   |  36 +++++-----
+ kernel/evl/net/skb.c             |   2 +-
+ 9 files changed, 93 insertions(+), 96 deletions(-)
+
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+index 99ebde529..51bc61612 100644
+--- a/include/evl/net/device.h
++++ b/include/evl/net/device.h
+@@ -9,6 +9,8 @@
+ 
+ #ifdef CONFIG_EVL_NET
+ 
++#include <linux/if_vlan.h>
++
+ struct evl_socket;
+ struct evl_netdev_activation;
+ struct notifier_block;
+@@ -28,6 +30,14 @@ void evl_net_put_dev(struct net_device *dev);
+ 
+ void evl_net_wake_rx(struct net_device *dev);
+ 
++static inline struct net_device *evl_net_real_dev(struct net_device *dev)
++{
++	if (is_vlan_dev(dev))
++		return vlan_dev_real_dev(dev);
++
++	return dev;
++}
++
+ #endif
+ 
+ #endif /* !_EVL_NET_DEVICE_H */
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+index 5f16040c7..fbe6c73fe 100644
+--- a/include/evl/net/socket.h
++++ b/include/evl/net/socket.h
+@@ -83,8 +83,8 @@ struct evl_socket {
+ 		/* Packet interface data. */
+ 		struct {
+ 			int real_ifindex;
+-			int vlan_ifindex;
+-			u16 vlan_id;
++			int ifindex; /* Same as real_ifindex or vlan ifindex */
++			u16 vlan_id; /* non-zero if vlan device, zero otherwise */
+ 			u32 proto_hash;
+ 		} packet;
+ 		/* Used by all IP protocols we support. */
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 556391629..47528b3e5 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -52,12 +52,12 @@
+ #define EVL_MAX_NETDEV_BUFSZ   8192
+ 
+ /*
+- * The list of active oob port devices (i.e. VLAN devices which can be
+- * used to send/receive oob traffic).
++ * The list of network devices which are usable for sending/receiving
++ * oob traffic.
+  */
+-static LIST_HEAD(active_port_devices);
++static LIST_HEAD(oob_netdev_list);
+ 
+-static DEFINE_HARD_SPINLOCK(active_port_lock);
++static DEFINE_HARD_SPINLOCK(oob_netdev_lock);
+ 
+ static struct evl_kthread *
+ start_handler_thread(struct net_device *dev,
+@@ -81,51 +81,48 @@ start_handler_thread(struct net_device *dev,
+ 	return kt;
+ }
+ 
++/*
++ * enable_oob_port - @dev is a device which we want to enable as a
++ * port for channeling out-of-band traffic.
++ */
+ static int enable_oob_port(struct net_device *dev,
+ 			struct evl_netdev_activation *act) /* inband, rtnl_lock held */
+ {
+-	struct oob_netdev_state *nds, *vnds;
++	struct oob_netdev_state *rnds, *nds;
+ 	struct evl_netdev_state *pest, *est;
+-	struct net_device *real_dev;
++	struct net_device *real_dev = dev;
+ 	struct evl_kthread *kt;
+ 	unsigned long flags;
+ 	unsigned int mtu;
+ 	int ret;
+ 
+-	if (EVL_WARN_ON(NET, !is_vlan_dev(dev)))
+-		return -ENXIO;
+-
+-	/*
+-	 * @dev is a VLAN device which we want to enable as a port for
+-	 * channeling out-of-band traffic.
+-	 */
+ 	if (netdev_is_oob_port(dev))
+ 		return 0;	/* Already enabled. */
+ 
+ 	/*
+-	 * Diversion is turned on for the real device a VLAN device
+-	 * sits on top of, so that the EVL stack is given a chance to
+-	 * pick the ingress traffic to be routed to the oob stage. We
+-	 * (only) need a valid crossing on the VLAN device, so that
+-	 * oob operations can hold references on it using
+-	 * evl_net_get_dev(). More resources are needed by the real
+-	 * device backing it.
++	 * If @dev is a VLAN device, diversion is turned on for the
++	 * real device it sits on top of, so that the EVL stack is
++	 * given a chance to pick the ingress traffic to be routed to
++	 * the oob stage. The resources we need are allocated only for
++	 * the real device.
+ 	 *
+ 	 * NOTE: the diversion flag is set for a real device only,
+ 	 * _never_ for a VLAN device.
+ 	 */
+-	real_dev = vlan_dev_real_dev(dev);
+-	nds = &real_dev->oob_context.dev_state;
+-	est = pest = nds->estate;
++	if (is_vlan_dev(dev))
++		real_dev = vlan_dev_real_dev(dev);
++
++	rnds = &real_dev->oob_context.dev_state;
++	est = pest = rnds->estate;
+ 	if (pest == NULL) {
+ 		est = kzalloc(sizeof(*est), GFP_KERNEL);
+ 		if (est == NULL)
+ 			return -ENOMEM;
+-		nds->estate = est;
++		rnds->estate = est;
+ 	}
+ 
+-	vnds = &dev->oob_context.dev_state;
+-	evl_init_crossing(&vnds->crossing);
++	nds = &dev->oob_context.dev_state;
++	evl_init_crossing(&nds->crossing);
+ 
+ 	if (est->refs++ > 0)
+ 		goto queue;
+@@ -179,16 +176,15 @@ static int enable_oob_port(struct net_device *dev,
+ 		est->tx_handler = kt;
+ 	}
+ 
+-	evl_init_crossing(&nds->crossing);
++	evl_init_crossing(&rnds->crossing);
+ 
+ 	netif_enable_oob_diversion(real_dev);
+-
+ queue:
+ 	netdev_enable_oob_port(dev);
+ 
+-	raw_spin_lock_irqsave(&active_port_lock, flags);
+-	list_add(&vnds->next, &active_port_devices);
+-	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++	raw_spin_lock_irqsave(&oob_netdev_lock, flags);
++	list_add(&nds->next, &oob_netdev_list);
++	raw_spin_unlock_irqrestore(&oob_netdev_lock, flags);
+ 
+ 	return 0;
+ 
+@@ -207,25 +203,25 @@ static int enable_oob_port(struct net_device *dev,
+ fail_alloc_qdisc:
+ 	if (!pest) {
+ 		kfree(est);
+-		nds->estate = NULL;
++		rnds->estate = NULL;
+ 	}
+ 
+ 	return ret;
+ }
+ 
+-static void disable_oob_port(struct net_device *dev)
++static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held */
+ {
+-	struct oob_netdev_state *vnds;
++	struct oob_netdev_state *nds, *rnds;
++	struct net_device *real_dev = dev;
+ 	struct evl_netdev_state *est;
+-	struct net_device *real_dev;
+ 	unsigned long flags;
+ 
+-	if (EVL_WARN_ON(NET, !is_vlan_dev(dev)))
+-		return;
+-
+ 	if (!netdev_is_oob_port(dev))
+ 		return;
+ 
++	if (is_vlan_dev(dev))
++		real_dev = vlan_dev_real_dev(dev);
++
+ 	/*
+ 	 * Make sure that no evl_down_crossing() can be issued after
+ 	 * we attempt to pass the crossing. Since the former can only
+@@ -233,22 +229,22 @@ static void disable_oob_port(struct net_device *dev)
+ 	 * list, first unlink the latter _then_ pass the crossing
+ 	 * next.
+ 	 */
+-	vnds = &dev->oob_context.dev_state;
+-	raw_spin_lock_irqsave(&active_port_lock, flags);
+-	list_del(&vnds->next);
+-	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++	nds = &dev->oob_context.dev_state;
++	raw_spin_lock_irqsave(&oob_netdev_lock, flags);
++	list_del(&nds->next);
++	raw_spin_unlock_irqrestore(&oob_netdev_lock, flags);
+ 
+ 	/*
+ 	 * Ok, now we may attempt to pass the crossing, waiting until
+ 	 * all in-flight oob operations holding a reference on the
+-	 * vlan device acting as an oob port have completed.
++	 * network device acting as an oob port have completed.
+ 	 */
+-	evl_pass_crossing(&vnds->crossing);
++	evl_pass_crossing(&nds->crossing);
+ 
+ 	netdev_disable_oob_port(dev);
+ 
+-	real_dev = vlan_dev_real_dev(dev);
+-	est = real_dev->oob_context.dev_state.estate;
++	rnds = &real_dev->oob_context.dev_state;
++	est = rnds->estate;
+ 
+ 	if (EVL_WARN_ON(NET, est->refs <= 0))
+ 		return;
+@@ -261,7 +257,6 @@ static void disable_oob_port(struct net_device *dev)
+ 	 * the extension for the latter. Start with unblocking all the
+ 	 * waiters.
+ 	 */
+-
+ 	evl_signal_poll_events(&est->poll_head, POLLERR);
+ 	evl_flush_wait(&est->pool_wait, EVL_T_RMID);
+ 	evl_schedule();
+@@ -275,7 +270,7 @@ static void disable_oob_port(struct net_device *dev)
+ 	evl_net_dev_purge_pool(real_dev);
+ 	evl_net_free_qdisc(est->qdisc);
+ 	kfree(est);
+-	real_dev->oob_context.dev_state.estate = NULL;
++	rnds->estate = NULL;
+ }
+ 
+ static int switch_oob_port(struct net_device *dev,
+@@ -326,7 +321,6 @@ int evl_net_switch_oob_port(struct evl_socket *esk,
+ }
+ EXPORT_SYMBOL_GPL(evl_net_switch_oob_port);
+ 
+-/* Always returns a pointer to a VLAN device. */
+ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ {
+ 	struct net_device *dev, *ret = NULL;
+@@ -336,9 +330,9 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 	if (!ifindex)
+ 		return NULL;
+ 
+-	raw_spin_lock_irqsave(&active_port_lock, flags);
++	raw_spin_lock_irqsave(&oob_netdev_lock, flags);
+ 
+-	list_for_each_entry(nds, &active_port_devices, next) {
++	list_for_each_entry(nds, &oob_netdev_list, next) {
+ 		dev = container_of(nds, struct net_device,
+ 				oob_context.dev_state);
+ 		if (dev_net(dev) == net && dev->ifindex == ifindex) {
+@@ -348,7 +342,7 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 		}
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&active_port_lock, flags);
++	raw_spin_unlock_irqrestore(&oob_netdev_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -370,15 +364,15 @@ void evl_net_put_dev(struct net_device *dev)
+ }
+ 
+ /**
+- *	netif_oob_switch_port - switch the oob port state of a VLAN
++ *	netif_oob_switch_port - turn on oob capability for a network
+  *	device.
+  *
+  *	This call is invoked from the net-sysfs interface in order to
+- *	change the state of the oob port of a VLAN device. The default
+- *	pool and buffer size are used when enabling.
++ *	change the state of the oob port of a network device. The
++ *	default pool and buffer size are used when enabling.
+  *
+  *	@dev The network device for which the oob port should be
+- *	switched on/off. The request must be issued for a VLAN device.
++ *	switched on/off.
+  *
+  *	@enabled The new oob port state.
+  *
+@@ -391,9 +385,6 @@ int netif_oob_switch_port(struct net_device *dev, bool enabled)
+ 		.bufsz = 0,
+ 	};
+ 
+-	if (!is_vlan_dev(dev))
+-		return -ENXIO;
+-
+ 	return switch_oob_port(dev, enabled ? &act : NULL);
+ }
+ 
+@@ -430,7 +421,7 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ 	struct net_device *dev = netdev_notifier_info_to_dev(ptr);
+ 
+ 	/*
+-	 * Disable the oob port enabled on a VLAN device before the
++	 * Disable the oob port enabled on a network device before the
+ 	 * latter goes down. rtnl_lock is held.
+ 	 */
+ 	if (event == NETDEV_GOING_DOWN && netdev_is_oob_port(dev)) {
+diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
+index 0929551d0..356a5f771 100644
+--- a/kernel/evl/net/ethernet/input.c
++++ b/kernel/evl/net/ethernet/input.c
+@@ -20,9 +20,9 @@ static struct evl_net_handler evl_net_ether;
+  * evl_net_ether_accept - Stage dispatcher for ethernet packets
+  *
+  * Decide whether an incoming ethernet packet should be delivered via
+- * the out-of-band networking stack instead of the in-band one. Since
+- * all out-of-band ethernet traffic is required to go through VLANs,
+- * all we need to do is checking whether the VLAN information stored
++ * the out-of-band networking stack instead of the in-band one. Our
++ * primary selector for out-of-band ethernet traffic is VLAN tagging,
++ * all we need to do is checking whether some VLAN information stored
+  * into the packet matches a VID reserved for such traffic.
+  *
+  * Currently, we only deal with IP input on ethernet medium.
+diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
+index e154554f5..c4bc0f4e8 100644
+--- a/kernel/evl/net/ethernet/output.c
++++ b/kernel/evl/net/ethernet/output.c
+@@ -7,8 +7,8 @@
+ #include <linux/errno.h>
+ #include <linux/netdevice.h>
+ #include <linux/skbuff.h>
+-#include <linux/if_vlan.h>
+ #include <evl/net/socket.h>
++#include <evl/net/device.h>
+ #include <evl/net/output.h>
+ 
+ /**
+@@ -44,7 +44,7 @@ static int ether_transmit_one(struct net_device *dev, struct sk_buff *skb,
+ 	eth = skb_push(skb, ETH_HLEN);
+ 	skb_reset_mac_header(skb);
+ 	eth->h_proto = skb->protocol;
+-	ether_addr_copy(eth->h_source, vlan_dev_real_dev(dev)->dev_addr);
++	ether_addr_copy(eth->h_source, evl_net_real_dev(dev)->dev_addr);
+ 	ether_addr_copy(eth->h_dest, hw_dst);
+ 
+ 	return evl_net_ether_transmit_raw(dev, skb);
+diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
+index a8b664b4e..bffa85de7 100644
+--- a/kernel/evl/net/ipv4/output.c
++++ b/kernel/evl/net/ipv4/output.c
+@@ -11,6 +11,7 @@
+ #include <net/ip.h>
+ #include <evl/random.h>
+ #include <evl/net/socket.h>
++#include <evl/net/device.h>
+ #include <evl/net/skb.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/route.h>
+@@ -69,8 +70,10 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
+ 				ktime_t timeout,
+ 				struct evl_net_ipv4_cookie *ipc)
+ {
+-	struct net_device *dev = vlan_dev_real_dev(evl_net_route_dev(ert));
+-	size_t maxfraglen, chunksz, i_offset = 0, offset = 0, thdrlen = 0;
++	struct net_device *dev = evl_net_route_dev(ert),
++		*real_dev = evl_net_real_dev(dev);
++	size_t maxfraglen, chunksz, i_offset = 0,
++		offset = 0, thdrlen = 0;
+ 	struct sk_buff *head = NULL, *skb, **skbp = NULL;
+ 	struct dst_entry *dst = evl_net_route_dst(ert);
+ 	struct sock *sk = esk->sk;
+@@ -88,7 +91,7 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
+ 	if (EVL_WARN_ON(NET, datalen == 0))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	mtu = ip_sk_use_pmtu(sk) ? dst_mtu(dst) : READ_ONCE(dev->mtu);
++	mtu = ip_sk_use_pmtu(sk) ? dst_mtu(dst) : READ_ONCE(real_dev->mtu);
+ 	if (!inetdev_valid_mtu(mtu))
+ 		return ERR_PTR(-ENETUNREACH); /* Smaller than min ipv4 MTU? */
+ 
+@@ -105,7 +108,7 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
+ 		   &ipc->saddr, &ipc->daddr, mtu, ipc->transhdrlen, maxfraglen);
+ 
+ 	for (;;) {
+-		skb = evl_net_wget_skb(esk, dev, timeout);
++		skb = evl_net_wget_skb(esk, real_dev, timeout);
+ 		if (IS_ERR(skb)) {
+ 			ret = PTR_ERR(skb);
+ 			goto fail;
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 70b514536..eb8892fb1 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -151,7 +151,7 @@ static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
+  *	Add an outgoing packet to the out-of-band transmit queue, so
+  *	that it will be handed over to the device referred to by
+  *	@skb->dev. The packet is complete (e.g. the VLAN tag is set if
+- *	@skb->dev is an ethernet device).
++ *	@skb->dev is a VLAN device).
+  *
+  *	@skb the packet to queue. Must not be linked to any upstream
+  *	queue.
+@@ -172,9 +172,6 @@ int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
+ 	if (EVL_WARN_ON(NET, !dev))
+ 		return -EINVAL;
+ 
+-	if (EVL_WARN_ON(NET, is_vlan_dev(dev)))
+-		return -EINVAL;
+-
+ 	if (EVL_WARN_ON(NET, skb->sk))
+ 		return -EINVAL;
+ 
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index 5651a9217..eedae58f0 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -80,7 +80,7 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,
+ 			if (ifindex != dev->ifindex)
+ 				continue;
+ 			vlan_id = READ_ONCE(esk->u.packet.vlan_id);
+-			if (skb_vlan_tag_get_id(skb) != vlan_id)
++			if (vlan_id && skb_vlan_tag_get_id(skb) != vlan_id)
+ 				continue;
+ 		}
+ 
+@@ -293,29 +293,25 @@ static int bind_packet_socket(struct evl_socket *esk,
+ 
+ 	mutex_lock(&esk->lock);
+ 
+-	old_ifindex = esk->u.packet.vlan_ifindex;
++	old_ifindex = esk->u.packet.ifindex;
+ 	if (new_ifindex != old_ifindex) {
+ 		if (new_ifindex) {
+-			/* @dev has to be a VLAN device. */
+ 			dev = evl_net_get_dev_by_index(esk->net, new_ifindex);
+ 			if (dev == NULL)
+ 				return -EINVAL;
+-			vlan_id = vlan_dev_vlan_id(dev);
+-			real_ifindex = vlan_dev_real_dev(dev)->ifindex;
++			if (is_vlan_dev(dev)) {
++				vlan_id = vlan_dev_vlan_id(dev);
++				real_ifindex = vlan_dev_real_dev(dev)->ifindex;
++			} else {
++				vlan_id = 0;
++				real_ifindex = dev->ifindex;
++			}
+ 		} else {
+ 			vlan_id = 0;
+ 			real_ifindex = 0;
+ 		}
+ 	}
+ 
+-	/*
+-	 * We precede the regular AF_PACKET bind handler which makes
+-	 * no sense of bindings to VLAN devices unlike we do. Fix up
+-	 * the address accordingly, pointing at the real device
+-	 * instead.
+-	 */
+-	sll->sll_ifindex = real_ifindex;
+-
+ 	if (esk->protocol != ntohs(sll->sll_protocol)) {
+ 		destroy_packet_socket(esk);
+ 		/*
+@@ -342,7 +338,7 @@ static int bind_packet_socket(struct evl_socket *esk,
+ 		/* First change the real interface, next the vid. */
+ 		WRITE_ONCE(esk->u.packet.real_ifindex, real_ifindex);
+ 		esk->u.packet.vlan_id = vlan_id;
+-		WRITE_ONCE(esk->u.packet.vlan_ifindex, new_ifindex);
++		WRITE_ONCE(esk->u.packet.ifindex, new_ifindex);
+ 	}
+ 	raw_spin_unlock_irqrestore(&esk->oob_lock, flags);
+ 
+@@ -358,7 +354,7 @@ static int bind_packet_socket(struct evl_socket *esk,
+ static struct net_device *get_netif_packet(struct evl_socket *esk)
+ {
+ 	return  evl_net_get_dev_by_index(esk->net,
+-					esk->u.packet.vlan_ifindex);
++					esk->u.packet.ifindex);
+ }
+ 
+ static struct net_device *find_xmit_device(struct evl_socket *esk,
+@@ -448,13 +444,13 @@ static ssize_t send_packet(struct evl_socket *esk,
+ 		return PTR_ERR(dev);
+ 
+ 	/*
+-	 * Since @dev is a VLAN device, then @real_dev cannot be stale
++	 * If @dev is a VLAN device, then @real_dev cannot be stale
+ 	 * until @dev goes down per the in-band refcounting
+-	 * guarantee. Since we hold a crossing reference on @dev, it
+-	 * cannot go down as it would need to pass the crossing first,
+-	 * so @real_dev cannot go stale until we are done.
++	 * guarantee. Since we hold a crossing reference on @real_dev,
++	 * it cannot go down as it would need to pass the crossing
++	 * first, so @real_dev cannot go stale until we are done.
+ 	 */
+-	real_dev = vlan_dev_real_dev(dev);
++	real_dev = evl_net_real_dev(dev);
+ 	skb = evl_net_dev_alloc_skb(real_dev, timeout, tmode);
+ 	if (IS_ERR(skb)) {
+ 		ret = PTR_ERR(skb);
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 7d8cead47..2c71fa205 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -125,7 +125,7 @@ static void skb_recycler(struct evl_work *work)
+  * get_headroom - Get the headroom length for a buffer.
+  *
+  * The current assumption is that we are going to deal with ethernet
+- * devices. Therefore the length of a VLAN header is included in the
++ * devices. Therefore the length of a VLAN header is added to the
+  * headroom, so that the lower layers never have to reallocate because
+  * of the 802.1q encapsulation.
+  */
+-- 
+2.30.2
+

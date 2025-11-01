@@ -1,0 +1,309 @@
+From 15f5d82f819d690ad884b235faef0e78876d5d90 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 24 Jun 2025 16:22:55 +0200
+Subject: [PATCH 969/985] evl/net: arp: simplify pseudo-entry handling
+
+We currently maintain a full-fledged, dynamically allowed, refcounted
+and semi-permanent ARP entry for the loopback address. This is 100%
+overkill.
+
+We only need the user to provide a pseudo-entry descriptor upon cache
+lookup, which we would fill on the fly if the loopback address is
+matched since the resolved output in that case is constant.
+
+Simplify the implementation accordingly, fixing up its sole user at
+the moment (UDP).
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/evl/net.h |  8 ---
+ include/evl/net/ipv4/arp.h    | 10 ++--
+ kernel/evl/net/ipv4/arp.c     | 95 +++++++++--------------------------
+ kernel/evl/net/ipv4/ipv4.c    | 32 ++++--------
+ kernel/evl/net/ipv4/udp.c     | 15 ++++--
+ 5 files changed, 47 insertions(+), 113 deletions(-)
+
+diff --git a/include/asm-generic/evl/net.h b/include/asm-generic/evl/net.h
+index f1005430c..845639c1b 100644
+--- a/include/asm-generic/evl/net.h
++++ b/include/asm-generic/evl/net.h
+@@ -78,14 +78,6 @@ struct oob_net_state {
+ 		struct evl_cache routes;
+ 		/* Cache of active UDP4 receivers. */
+ 		struct evl_cache udp;
+-		/* ARP pseudo-entries. */
+-		struct {
+-			/* ARP pseudo-entry to current loopback device. */
+-			struct evl_net_arp_entry *lo;
+-			/* Lock guarding the pseudo-entries for add/removal. */
+-			hard_spinlock_t lock;
+-		} pseudo_arp;
+-		/* Lock guarding pseudo entries. */
+ 	} ipv4;
+ };
+ 
+diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
+index aa8a0b967..f6715ce7e 100644
+--- a/include/evl/net/ipv4/arp.h
++++ b/include/evl/net/ipv4/arp.h
+@@ -34,15 +34,13 @@ void evl_net_cleanup_arp(struct net *net);
+ 
+ void evl_net_flush_arp(struct net *net);
+ 
+-int evl_net_set_pseudo_arp(struct net_device *dev, __be32 addr,
+-			struct evl_net_arp_entry **earpp);
+-
+-void evl_net_drop_pseudo_arp(struct net *net,
+-			struct evl_net_arp_entry **earpp);
+-
+ struct evl_net_arp_entry *
+ evl_net_get_arp_entry(struct net_device *dev, __be32 addr);
+ 
++struct evl_net_arp_entry *
++evl_net_get_arp_entry_or_pseudo(struct net_device *dev, __be32 addr,
++				struct evl_net_arp_entry *pseudo_earp);
++
+ static inline void evl_net_put_arp_entry(struct evl_net_arp_entry *earp)
+ {
+ 	evl_put_cache_entry(&earp->entry);
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index 59f5272a1..a447a077a 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -199,28 +199,37 @@ struct evl_net_arp_entry *evl_net_get_arp_entry(struct net_device *dev, __be32 a
+ 		.dev = dev,
+ 	};
+ 	struct oob_net_state *nets = &dev_net(dev)->oob;
+-	struct evl_net_arp_entry *earp;
+ 	struct evl_cache_entry *entry;
+-	unsigned long flags;
+-
+-	if (unlikely(ipv4_is_loopback(addr))) {
+-		raw_spin_lock_irqsave(&nets->ipv4.pseudo_arp.lock, flags);
+-		earp = nets->ipv4.pseudo_arp.lo;
+-		if (likely(earp))
+-			evl_get_cache_entry(&earp->entry);
+-		raw_spin_unlock_irqrestore(&nets->ipv4.pseudo_arp.lock, flags);
+-		return earp;
+-	}
+ 
+ 	entry = evl_lookup_cache(&nets->ipv4.arp, &key);
+-	if (likely(entry)) {
+-		earp = container_of(entry, struct evl_net_arp_entry, entry);
+-		return earp;
+-	}
++	if (likely(entry))
++		return container_of(entry, struct evl_net_arp_entry, entry);
+ 
+ 	return NULL;
+ }
+ 
++struct evl_net_arp_entry *
++evl_net_get_arp_entry_or_pseudo(struct net_device *dev, __be32 addr,
++				struct evl_net_arp_entry *pseudo_earp)
++{
++	struct evl_net_arp_entry *earp = NULL;
++
++	/*
++	 * We don't grab any reference on the device for which a
++	 * pseudo-ARP entry is resolved, the caller is supposed to
++	 * have one already, and expected not to put back this
++	 * temporary entry.
++	 */
++	if (unlikely(ipv4_is_loopback(addr))) {
++		earp = pseudo_earp;
++		earp->key.dev = dev;
++		earp->key.addr = addr;
++	}
++
++	/* Not a pseudo-ARP, look up into the cache. */
++	return earp ?: evl_net_get_arp_entry(dev, addr);
++}
++
+ static struct notifier_block netevent_notifier __read_mostly = {
+ 	.notifier_call = netevent_handler,
+ };
+@@ -248,9 +257,6 @@ int evl_net_init_arp(struct net *net)
+ 	if (ret)
+ 		return ret;
+ 
+-	raw_spin_lock_init(&nets->ipv4.pseudo_arp.lock);
+-	might_hard_lock(&nets->ipv4.pseudo_arp.lock);
+-
+ 	register_netevent_notifier(&netevent_notifier);
+ 
+ 	return 0;
+@@ -258,59 +264,6 @@ int evl_net_init_arp(struct net *net)
+ 
+ void evl_net_cleanup_arp(struct net *net)
+ {
+-	struct oob_net_state *nets = &net->oob;
+-
+ 	unregister_netevent_notifier(&netevent_notifier);
+-	evl_net_drop_pseudo_arp(net, &nets->ipv4.pseudo_arp.lo);
+ 	evl_net_flush_arp(net);
+ }
+-
+-static void swap_pseudo_entry(struct oob_net_state *nets,
+-			struct evl_net_arp_entry *new_arp,
+-			struct evl_net_arp_entry **earpp)
+-{
+-	struct evl_net_arp_entry *old_arp;
+-	unsigned long flags;
+-
+-	/*
+-	 * Unfortunately, plain xchg() is not an option because we
+-	 * have to serialize with evl_net_get_arp_entry() testing for
+-	 * nullness _and_ taking a reference atomically.
+-	 */
+-	raw_spin_lock_irqsave(&nets->ipv4.pseudo_arp.lock, flags);
+-	old_arp = *earpp;
+-	*earpp = new_arp;
+-	raw_spin_unlock_irqrestore(&nets->ipv4.pseudo_arp.lock, flags);
+-	if (old_arp)
+-		evl_put_cache_entry(&old_arp->entry);
+-}
+-
+-/* Create an ARP pseudo-entry for a special oob-capable device. */
+-int evl_net_set_pseudo_arp(struct net_device *dev, __be32 addr,
+-			struct evl_net_arp_entry **earpp)
+-{
+-	struct oob_net_state *nets = &dev_net(dev)->oob;
+-	struct evl_net_arp_entry *earp;
+-
+-	earp = alloc_arp_entry(dev, addr, NULL);
+-	if (!earp)
+-		return -ENOMEM;
+-
+-	/*
+-	 * CAUTION: We won't actually index this pseudo-entry into the
+-	 * cache, but we still have to provide a valid cache pointer
+-	 * so that release can happen via the cache->ops.drop handler.
+-	 */
+-	evl_init_cache_entry(&earp->entry, &nets->ipv4.arp);
+-
+-	swap_pseudo_entry(nets, earp, earpp);
+-
+-	return 0;
+-}
+-
+-/* Drop a pseudo-ARP entry. */
+-void evl_net_drop_pseudo_arp(struct net *net,
+-			struct evl_net_arp_entry **earpp)
+-{
+-	swap_pseudo_entry(&net->oob, NULL, earpp);
+-}
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 2d0b0e891..76510ba98 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -315,40 +315,26 @@ int evl_net_ipv4_solicit(struct net *net,
+ 	return ret;
+ }
+ 
+-/* Declare a new oob-enabled device to the routing system. */
++/*
++ * Declare a new oob-enabled device to the routing system. Although
++ * unused at the moment, keep this in place for future needs.
++ */
+ int evl_net_ipv4_add_device(struct net_device *dev)
+ {
+-	struct oob_net_state *nets = &dev_net(dev)->oob;
+-	int ret = 0;
+-
+ 	/*
+ 	 * EVL performs output routing only so far, which targets
+-	 * oob-enabled devices exclusively. So complain then bail out
+-	 * if oob mode is not active for the device received.
++	 * oob-enabled devices exclusively. So complain if oob mode is
++	 * not active for the device received.
+ 	 */
+-	if (EVL_WARN_ON(NET, !netif_oob_port(dev)))
+-		return 0;
+-
+-	/* Set an ARP pseudo-entry for the current loopback device. */
+-	if (dev == dev_net(dev)->loopback_dev)
+-		ret = evl_net_set_pseudo_arp(dev, htonl(INADDR_LOOPBACK),
+-					&nets->ipv4.pseudo_arp.lo);
+-
+-	return ret;
++	EVL_WARN_ON(NET, !netif_oob_port(dev));
++	return 0;
+ }
+ 
+-/* Remove a downed device from the routing system. */
++/* Remove a disabled device from the routing system. */
+ void evl_net_ipv4_remove_device(struct net_device *dev)
+ {
+-	struct net *net = dev_net(dev);
+-	struct oob_net_state *nets = &net->oob;
+-
+ 	if (EVL_WARN_ON(NET, !netif_oob_port(dev)))
+ 		return;
+-
+-	if (dev == net->loopback_dev)
+-		/* The current loopback device is going down. */
+-		evl_net_drop_pseudo_arp(net, &nets->ipv4.pseudo_arp.lo);
+ }
+ 
+ static struct evl_net_proto *match_ipv4_domain(int type, int protocol)
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index 6cdb83777..ad1758b67 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -214,14 +214,17 @@ static ssize_t offload_send_udp(struct evl_socket *esk,
+  * datagram to the in-band stack.
+  */
+ static bool find_egress_path(struct evl_socket *esk, __be32 daddr,
+-			struct evl_net_route **ertp, struct evl_net_arp_entry **earpp)
++			struct evl_net_route **ertp,
++			struct evl_net_arp_entry **earpp,
++			struct evl_net_arp_entry *pseudo_earp)
+ {
+ 	struct evl_net_arp_entry *earp;
+ 	struct evl_net_route *ert;
+ 
+ 	ert = evl_net_route_ipv4_output(sock_net(esk->sk), daddr);
+ 	if (likely(ert)) {
+-		earp = evl_net_get_arp_entry(ert->rt->dst.dev, daddr);
++		earp = evl_net_get_arp_entry_or_pseudo(ert->rt->dst.dev, daddr,
++						pseudo_earp);
+ 		if (likely(earp))  {
+ 			*ertp = ert;
+ 			*earpp = earp;
+@@ -290,11 +293,11 @@ static ssize_t send_udp(struct evl_socket *esk,
+ 			struct iovec *iov,
+ 			size_t iovlen)
+ {
++	struct evl_net_arp_entry *earp, pseudo_earp = { 0 };
+ 	struct sockaddr_in in_addr, *u_in_addr;
+ 	struct sock *sk = esk->sk;
+ 	struct inet_sock *inet = inet_sk(sk);
+ 	struct evl_net_ipv4_cookie ipc;
+-	struct evl_net_arp_entry *earp;
+ 	struct evl_net_route *ert;
+ 	struct msghdr msg = { 0 };
+ 	struct __evl_timespec uts;
+@@ -372,7 +375,7 @@ static ssize_t send_udp(struct evl_socket *esk,
+ 	 * none, then offload the packet to the inband stack (as a
+ 	 * result, we may receive the missing information eventually).
+ 	 */
+-	if (!find_egress_path(esk, daddr, &ert, &earp)) {
++	if (!find_egress_path(esk, daddr, &ert, &earp, &pseudo_earp)) {
+ 		/*
+ 		 * We always charge the socket even when offloading to
+ 		 * the in-band stack although we won't consume any
+@@ -433,7 +436,9 @@ static ssize_t send_udp(struct evl_socket *esk,
+ 	ret = send_datagram(skb, ert->rt->dst.dev, earp, &ipc,
+ 			dport, inet->inet_sport, datalen);
+ out:
+-	evl_net_put_arp_entry(earp);
++	if (likely(earp != &pseudo_earp))
++		evl_net_put_arp_entry(earp);
++
+ 	evl_net_put_route(ert);
+ 
+ 	return ret ?: datalen;
+-- 
+2.30.2
+

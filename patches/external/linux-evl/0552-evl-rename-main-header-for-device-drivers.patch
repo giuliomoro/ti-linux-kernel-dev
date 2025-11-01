@@ -1,0 +1,38 @@
+From 6e3c5aa52969b16f7a749469c10e1b43587b4a76 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 11 Jan 2020 17:31:08 +0100
+Subject: [PATCH 552/985] evl: rename main header for device drivers
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/{devices.h => device.h} | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+ rename include/evl/{devices.h => device.h} (86%)
+
+diff --git a/include/evl/devices.h b/include/evl/device.h
+similarity index 86%
+rename from include/evl/devices.h
+rename to include/evl/device.h
+index 29b168dd0..59a2b0e54 100644
+--- a/include/evl/devices.h
++++ b/include/evl/device.h
+@@ -4,8 +4,8 @@
+  * Copyright (C) 2019 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_DEVICES_H
+-#define _EVL_DEVICES_H
++#ifndef _EVL_DEVICE_H
++#define _EVL_DEVICE_H
+ 
+ #ifdef CONFIG_EVL
+ 
+@@ -29,4 +29,4 @@ static inline bool evl_enabled(void)
+ 	return IS_ENABLED(CONFIG_EVL);
+ }
+ 
+-#endif /* !_EVL_DEVICES_H */
++#endif /* !_EVL_DEVICE_H */
+-- 
+2.30.2
+

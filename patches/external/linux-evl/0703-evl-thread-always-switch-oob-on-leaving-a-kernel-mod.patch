@@ -1,0 +1,35 @@
+From 5c97846b661d25947cc439c8b534aeff25402cc6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 4 Aug 2021 16:21:42 +0200
+Subject: [PATCH 703/985] evl/thread: always switch oob on leaving a kernel
+ mode fault
+
+This does not depend on CONFIG_EVL_DEBUG_CORE. We entered oob
+(trap_entry), we must leave that way (trap_exit).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 4313ed83f..5926cdd61 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1549,10 +1549,10 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 	 * syscall barrier is there to reinstate the proper stage if
+ 	 * need be.
+ 	 */
+-	if (!user_mode(regs) &&
+-	    (EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp) {
++	if (!user_mode(regs)) {
+ 		evl_switch_oob();
+-		note_trap(curr, trapnr, regs, "resuming out-of-band");
++		if ((EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp)
++			note_trap(curr, trapnr, regs, "resuming out-of-band");
+ 	}
+ 
+ 	hard_local_irq_disable();
+-- 
+2.30.2
+

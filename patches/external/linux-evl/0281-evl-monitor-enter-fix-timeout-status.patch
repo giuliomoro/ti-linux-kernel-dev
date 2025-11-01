@@ -1,0 +1,26 @@
+From fbad329af159358daab55f869cddeb843c455aee Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 9 Feb 2019 15:34:15 +0100
+Subject: [PATCH 281/985] evl/monitor: enter: fix timeout status
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/monitor.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
+index b53aba0f4..14f586704 100644
+--- a/kernel/evenless/monitor.c
++++ b/kernel/evenless/monitor.c
+@@ -184,7 +184,7 @@ static int __enter_monitor(struct evl_monitor *gate,
+ 	if (info) {
+ 		if (info & T_BREAK)
+ 			return -EINTR;
+-		return info & T_TIMEO ? -EAGAIN : -EINVAL;
++		return info & T_TIMEO ? -ETIMEDOUT : -EINVAL;
+ 	}
+ 
+ 	return 0;
+-- 
+2.30.2
+

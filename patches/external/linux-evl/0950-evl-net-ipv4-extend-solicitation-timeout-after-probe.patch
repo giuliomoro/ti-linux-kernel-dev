@@ -1,0 +1,44 @@
+From fb1acd2f9808cab11b7184f765b8bdc6799503e6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 13 Jun 2025 12:38:39 +0200
+Subject: [PATCH 950/985] evl/net: ipv4: extend solicitation timeout after
+ probe delay
+
+We must wait for a neighbour response to our solicitation for at least
+its probe delay.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/ipv4.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index b44138922..143012375 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -270,13 +270,16 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 	}
+ 
+ 	if (likely(!(neigh->nud_state & NUD_NOARP))) {
+-		if (!(neigh->nud_state & (NUD_VALID & ~NUD_STALE)))
+-			neigh_event_send(neigh, NULL);
+-
+-		/* Wait up to 5s for the ARP entry to enter the cache. */
++		/*
++		 * Solicit the peer which should respond to ARP
++		 * requests. Wait for a response for at least the ARP
++		 * probe delay time.
++		 */
++		neigh_event_send(neigh, NULL);
+ 		ret = wait_event_interruptible_timeout(evl_arp_event,
+-					(e = evl_net_get_arp_entry(dev, ipaddr)),
+-					HZ * 5);
++			       (e = evl_net_get_arp_entry(dev, ipaddr)),
++				NEIGH_VAR(neigh->parms, DELAY_PROBE_TIME) + HZ
++			);
+ 		ret = e ? 0 : -ETIMEDOUT;
+ 	} else {
+ 		/*
+-- 
+2.30.2
+

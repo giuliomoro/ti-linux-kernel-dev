@@ -1,0 +1,246 @@
+From a16e0da26e6c344f63b5994e25b879d85808338a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 15:29:02 +0200
+Subject: [PATCH 605/985] evl/sched: tp: fix handling of input/output setup
+ data
+
+tp_control() did not receive the proper input on tp_install requests,
+neither did it return the proper information on tp_get. Great, fix
+the mess.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h      |  4 +--
+ include/uapi/evl/sched.h |  8 ++++--
+ kernel/evl/control.c     | 61 +++++++++++++++++++++++++++-------------
+ kernel/evl/sched/quota.c |  4 +--
+ kernel/evl/sched/tp.c    | 22 +++++++--------
+ 5 files changed, 62 insertions(+), 37 deletions(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index fe1909511..05f6250a8 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -163,8 +163,8 @@ struct evl_sched_class {
+ 	void (*sched_kick)(struct evl_thread *thread);
+ 	ssize_t (*sched_show)(struct evl_thread *thread,
+ 			      char *buf, ssize_t count);
+-	int (*sched_control)(int cpu, union evl_sched_ctlparam *ctlp,
+-			union evl_sched_ctlinfo *infp);
++	ssize_t (*sched_control)(int cpu, union evl_sched_ctlparam *ctlp,
++				union evl_sched_ctlinfo *infp);
+ 	int nthreads;
+ 	struct evl_sched_class *next;
+ 	int weight;
+diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
+index 4b5440527..534673c78 100644
+--- a/include/uapi/evl/sched.h
++++ b/include/uapi/evl/sched.h
+@@ -90,13 +90,17 @@ struct evl_tp_ctlparam {
+ 	struct __evl_tp_window windows[0];
+ };
+ 
++#define evl_tp_paramlen(__nr_windows)		\
++	(sizeof(struct evl_tp_ctlparam) +	\
++		__nr_windows * sizeof(struct __evl_tp_window))
++
+ struct evl_tp_ctlinfo {
+ 	int nr_windows;
+ 	struct __evl_tp_window windows[0];
+ };
+ 
+-#define evl_tp_paramlen(__nr_windows)		\
+-	(sizeof(struct evl_tp_ctlparam) +	\
++#define evl_tp_infolen(__nr_windows)		\
++	(sizeof(struct evl_tp_ctlinfo) +	\
+ 		__nr_windows * sizeof(struct __evl_tp_window))
+ 
+ struct evl_sched_attrs {
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 3df23aace..919058063 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -139,39 +139,60 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
+ 
+ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ {
++	union evl_sched_ctlparam _param, *param = &_param, __user *u_ctlp;
+ 	union evl_sched_ctlinfo *info = NULL, __user *u_infp;
+-	union evl_sched_ctlparam param, __user *u_ctlp;
++	ssize_t ret;
+ 	size_t len;
+-	int ret;
+ 
+ 	u_ctlp = evl_valptr64(ctl->param_ptr, union evl_sched_ctlparam);
+-	ret = raw_copy_from_user(&param.tp, &u_ctlp->tp, sizeof(param.tp));
++	ret = raw_copy_from_user(&_param.tp, &u_ctlp->tp, sizeof(_param.tp));
+ 	if (ret)
+ 		return -EFAULT;
+ 
+-	if (ctl->info_ptr) {
+-		/* Quick check to prevent creepy memalloc. */
+-		if (param.tp.nr_windows > CONFIG_EVL_SCHED_TP_NR_PART)
+-			return -EINVAL;
++	/* Check now to prevent creepy memalloc down the road. */
++	if ((_param.tp.op == evl_tp_install || _param.tp.op == evl_tp_get) &&
++		(_param.tp.nr_windows <= 0 ||
++		_param.tp.nr_windows > CONFIG_EVL_SCHED_TP_NR_PART))
++		return -EINVAL;
+ 
+-		len = evl_tp_paramlen(param.tp.nr_windows);
+-		info = evl_alloc(len);
+-		if (info == NULL)
++	if (_param.tp.op == evl_tp_install) {
++		len = evl_tp_paramlen(_param.tp.nr_windows);
++		param = evl_alloc(len);
++		if (param == NULL)
+ 			return -ENOMEM;
++		ret = raw_copy_from_user(&param->tp, &u_ctlp->tp, len);
++		if (ret)
++			goto out;
+ 	}
+ 
+-	ret = evl_sched_tp.sched_control(ctl->cpu, &param, info);
+-	if (ret || info == NULL)
+-		goto out;
++	if (ctl->info_ptr) {
++		len = evl_tp_infolen(param->tp.nr_windows);
++		/*
++		 * No need to zalloc, only the updated portion of the
++		 * info buffer is going to be returned.
++		 */
++		info = evl_alloc(len);
++		if (info == NULL) {
++			ret = -ENOMEM;
++			goto out;
++		}
++	}
+ 
+-	u_infp = evl_valptr64(ctl->info_ptr, union evl_sched_ctlinfo);
+-	len = evl_tp_paramlen(info->tp.nr_windows);
+-	ret = raw_copy_to_user(&u_infp->tp, &info->tp, len);
+-	if (ret)
+-		ret = -EFAULT;
+-out:
+-	if (info)
++	ret = evl_sched_tp.sched_control(ctl->cpu, param, info);
++
++	if (info) {
++		if (ret > 0) {
++			u_infp = evl_valptr64(ctl->info_ptr,
++					union evl_sched_ctlinfo);
++			ret = raw_copy_to_user(&u_infp->tp, &info->tp, ret);
++			if (ret)
++				ret = -EFAULT;
++		}
+ 		evl_free(info);
++	}
++out:
++	if (param != &_param)
++		evl_free(param);
+ 
+ 	return ret;
+ }
+diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
+index 8daa51fbd..836c74e77 100644
+--- a/kernel/evl/sched/quota.c
++++ b/kernel/evl/sched/quota.c
+@@ -647,7 +647,7 @@ find_quota_group(struct evl_rq *rq, int tgid)
+ 	return NULL;
+ }
+ 
+-static int quota_control(int cpu, union evl_sched_ctlparam *ctlp,
++static ssize_t quota_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 			union evl_sched_ctlinfo *infp)
+ {
+ 	struct evl_quota_ctlparam *pq = &ctlp->quota;
+@@ -726,7 +726,7 @@ static int quota_control(int cpu, union evl_sched_ctlparam *ctlp,
+ done:
+ 	evl_schedule();
+ 
+-	return 0;
++	return sizeof(*iq);
+ bad_tgid:
+ 	evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index 83c562541..2d371e212 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -294,6 +294,8 @@ get_tp_schedule(struct evl_rq *rq)
+ {
+ 	struct evl_tp_schedule *gps = rq->tp.gps;
+ 
++	assert_evl_lock(&rq->lock);
++
+ 	if (gps == NULL)
+ 		return NULL;
+ 
+@@ -308,7 +310,7 @@ static void put_tp_schedule(struct evl_tp_schedule *gps)
+ 		evl_free(gps);
+ }
+ 
+-static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
++static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 		union evl_sched_ctlinfo *infp)
+ {
+ 	struct evl_tp_ctlparam *pt = &ctlp->tp;
+@@ -319,7 +321,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	struct evl_tp_ctlinfo *it;
+ 	unsigned long flags;
+ 	struct evl_rq *rq;
+-	int n;
++	int n, nr_windows;
+ 
+ 	if (cpu < 0 || !cpu_present(cpu) || !is_threading_cpu(cpu))
+ 		return -EINVAL;
+@@ -353,7 +355,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	gps = get_tp_schedule(rq);
+ 	evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 	if (gps == NULL)
+-		return 0;
++		goto done;
+ 
+ 	if (infp == NULL) {
+ 		put_tp_schedule(gps);
+@@ -361,14 +363,11 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	}
+ 
+ 	it = &infp->tp;
+-	if (it->nr_windows < gps->pwin_nr) {
+-		put_tp_schedule(gps);
+-		return -ENOSPC;
+-	}
++	nr_windows = min(pt->nr_windows, gps->pwin_nr);
++	it->nr_windows = gps->pwin_nr; /* Actual count is returned. */
+ 
+-	it->nr_windows = gps->pwin_nr;
+ 	for (n = 0, pp = p = it->windows, pw = w = gps->pwins;
+-	     n < gps->pwin_nr; pp = p, p++, pw = w, w++, n++) {
++	     n < nr_windows; pp = p, p++, pw = w, w++, n++) {
+ 		p->offset = ktime_to_u_timespec(w->w_offset);
+ 		pp->duration = ktime_to_u_timespec(
+ 				     ktime_sub(w->w_offset, pw->w_offset));
+@@ -380,7 +379,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 
+ 	put_tp_schedule(gps);
+ 
+-	return 0;
++	return evl_tp_infolen(nr_windows);
+ 
+ install_schedule:
+ 	evl_spin_unlock_irqrestore(&rq->lock, flags);
+@@ -405,8 +404,9 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 			goto fail;
+ 
+ 		if (p->ptid < -1 ||
+-		    p->ptid >= CONFIG_EVL_SCHED_TP_NR_PART)
++			p->ptid >= CONFIG_EVL_SCHED_TP_NR_PART) {
+ 			goto fail;
++		}
+ 
+ 		w->w_offset = next_offset;
+ 		w->w_part = p->ptid;
+-- 
+2.30.2
+

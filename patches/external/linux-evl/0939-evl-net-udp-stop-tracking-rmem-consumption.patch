@@ -1,0 +1,100 @@
+From 401dab9041e11caf5f1541c79fb4f28d5ae09c0e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 6 Jun 2025 10:41:58 +0200
+Subject: [PATCH 939/985] evl/net: udp: stop tracking rmem consumption
+
+We had an imbalance between rmem get vs put operations in
+receive_udp() (i.e. put without prior get), causing the rmem check in
+evl_net_uncharge_skb_rmem() to trip.
+
+Incoming UDP traffic is queued on receiver structs, each of which may
+be consumed by multiple sockets. Therefore, there is no way to charge
+a specific socket for rmem until it consumes a buffer, delivering it
+immediately to userland. As a result, there is no point in tracking
+rmem consumption on the UDP receive side.
+
+In the same move, drop evl_net_rput_skb() which has no more user.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/skb.h     |  2 --
+ kernel/evl/net/ipv4/udp.c | 14 ++++++++++----
+ kernel/evl/net/skb.c      | 17 -----------------
+ 3 files changed, 10 insertions(+), 23 deletions(-)
+
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+index 7b3b0a735..23744e793 100644
+--- a/include/evl/net/skb.h
++++ b/include/evl/net/skb.h
+@@ -63,8 +63,6 @@ struct sk_buff *evl_net_wget_skb(struct evl_socket *esk,
+ 
+ void evl_net_wput_skb(struct sk_buff *skb);
+ 
+-void evl_net_rput_skb(struct sk_buff *skb);
+-
+ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 				      ktime_t timeout,
+ 				      enum evl_tmode tmode);
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index 48cec3ab3..aeed5634a 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -364,9 +364,10 @@ static ssize_t send_udp(struct evl_socket *esk,
+ 	 */
+ 	if (!find_egress_path(esk, daddr, &ert, &earp)) {
+ 		/*
+-		 * We charge the socket for the offloaded data
+-		 * although we won't consume any oob skb for
+-		 * transmit. This allows for contention management.
++		 * We always charge the socket even when offloading to
++		 * the in-band stack although we won't consume any
++		 * oob skb for transmit in that case. This allows for
++		 * contention management.
+ 		 */
+ 		ret = evl_charge_socket_wmem(esk, datalen, timeout, tmode);
+ 		if (ret)
+@@ -577,7 +578,12 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 				ret = evl_copy_iots_rx(skb, u_msghdr);
+ 			if (likely(!ret))
+ 				ret = copy_datagram_to_user(u_msghdr, iov, iovlen, skb);
+-			evl_net_rput_skb(skb); /* Uncharge rmem and free. */
++			/*
++			 * We did not charge for rmem because multiple
++			 * sockets may listen on the same receiver, so
++			 * we may free the buffer directly.
++			 */
++			evl_net_free_skb(skb);
+ 			goto out;
+ 		}
+ 
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 820f1861c..b6caa1830 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -608,23 +608,6 @@ void evl_net_wput_skb(struct sk_buff *skb)
+ 	evl_net_free_skb(skb);
+ }
+ 
+-/*
+- * evl_net_rput_skb - deallocate a buffer obtained from the ingress
+- * path.
+- *
+- * Fragments are deallocated if present.
+- */
+-void evl_net_rput_skb(struct sk_buff *skb)
+-{
+-	struct sk_buff *fskb;
+-
+-	skb_walk_frags(skb, fskb) {
+-		evl_net_uncharge_skb_rmem(fskb);
+-	}
+-	evl_net_uncharge_skb_rmem(skb);
+-	evl_net_free_skb(skb);
+-}
+-
+ static ssize_t __skb_to_uio(const struct iovec *iov, size_t iovlen,
+ 			size_t *vpos, size_t *bpos,
+ 			const void *data, size_t len)
+-- 
+2.30.2
+

@@ -1,0 +1,63 @@
+From ccf924bf5e30b540b19e7369db810594b38e2d40 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 17:48:30 +0100
+Subject: [PATCH 154/985] net: dovetail: add hook on TX wake queue event from
+ the oob stage
+
+Call the netif_tx_wake_oob() hook to inform the companion core about
+requests to wake up a stalled TX queue.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h | 5 +++++
+ net/core/dev.c            | 4 ++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 9f7bc88b7..5d5806292 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4425,6 +4425,7 @@ void napi_complete_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
++void netif_tx_wake_oob(struct netdev_queue *txq); /* rcu_read locked */
+ void process_inband_tx_backlog(struct softnet_data *sd);
+ int netif_oob_switch_port(struct net_device *dev, bool enabled);
+ bool netif_oob_get_port(struct net_device *dev);
+@@ -4489,6 +4490,10 @@ static inline void netif_tx_unlock_oob(struct netdev_queue *txq)
+ {
+ }
+ 
++static inline void netif_tx_wake_oob(struct netdev_queue *txq)
++{
++}
++
+ #endif  /* !CONFIG_NET_OOB */
+ 
+ /*
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e92013b3a..116f98b73 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3242,6 +3242,7 @@ void netif_tx_wake_queue(struct netdev_queue *dev_queue)
+ 		struct Qdisc *q;
+ 
+ 		rcu_read_lock();
++		netif_tx_wake_oob(dev_queue);
+ 		q = rcu_dereference(dev_queue->qdisc);
+ 		__netif_schedule(q);
+ 		rcu_read_unlock();
+@@ -5345,6 +5346,9 @@ static void kick_rx_inband(struct irq_work *irq_work)
+ 	__raise_softirq_irqoff(NET_RX_SOFTIRQ);
+ }
+ 
++__weak void netif_tx_wake_oob(struct netdev_queue *txq)
++{ }
++
+ #else
+ 
+ static inline bool netif_receive_oob_list(struct list_head *head)
+-- 
+2.30.2
+

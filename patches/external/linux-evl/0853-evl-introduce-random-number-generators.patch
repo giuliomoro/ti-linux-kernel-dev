@@ -1,0 +1,314 @@
+From 132633e1f9f39511a70af17e4521782a74ff9766 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 29 Nov 2023 09:11:11 +0100
+Subject: [PATCH 853/985] evl: introduce random number generators
+
+Random number generation is a requirement for some real-time
+applications. Unfortunately, the WCET and jitter of the generators
+available from the 'random' chardev implementation are not acceptable
+for the typical EVL use cases.
+
+To address this, we introduce three generators producing u8, u16 and
+u32 random values. These generators can be read both from the
+in-band and out-of-band I/O interfaces.
+
+Signed-off-by: Lionel Minne <lionel.minne@exail.com>
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/factory.h         |   1 +
+ include/evl/random.h          |  24 +++++
+ include/uapi/evl/random-abi.h |  20 +++++
+ kernel/evl/Makefile           |   1 +
+ kernel/evl/factory.c          |   1 +
+ kernel/evl/init.c             |   4 +
+ kernel/evl/random.c           | 163 ++++++++++++++++++++++++++++++++++
+ 7 files changed, 214 insertions(+)
+ create mode 100644 include/evl/random.h
+ create mode 100644 include/uapi/evl/random-abi.h
+ create mode 100644 kernel/evl/random.c
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 1a116e4e6..2b8f696e3 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -233,5 +233,6 @@ extern struct evl_factory evl_trace_factory;
+ extern struct evl_factory evl_xbuf_factory;
+ extern struct evl_factory evl_proxy_factory;
+ extern struct evl_factory evl_observable_factory;
++extern struct evl_factory evl_rng_factory;
+ 
+ #endif /* !_EVL_FACTORY_H */
+diff --git a/include/evl/random.h b/include/evl/random.h
+new file mode 100644
+index 000000000..ec852cb3a
+--- /dev/null
++++ b/include/evl/random.h
+@@ -0,0 +1,24 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2023 Lionel Minne  <lionel.minne@exail.com>
++ * Copyright (C) 2023 Philippe Gerum  <rpm@xenomai.org>
++ *
++ * A fast and efficient random number generator usable from the
++ * out-of-band stage.
++ */
++
++#ifndef _EVL_RANDOM_H
++#define _EVL_RANDOM_H
++
++#include <linux/types.h>
++
++void evl_init_rng(void);
++
++u8 evl_read_rng_u8(void);
++
++u16 evl_read_rng_u16(void);
++
++u32 evl_read_rng_u32(void);
++
++#endif /* !_EVL_RANDOM_H */
+diff --git a/include/uapi/evl/random-abi.h b/include/uapi/evl/random-abi.h
+new file mode 100644
+index 000000000..5a2afe981
+--- /dev/null
++++ b/include/uapi/evl/random-abi.h
+@@ -0,0 +1,20 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2023 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_RANDOM_ABI_H
++#define _EVL_UAPI_RANDOM_ABI_H
++
++#include <linux/types.h>
++
++#define EVL_RANDOM_DEV	"random"
++
++#define EVL_RANDOM_IOCBASE  'r'
++
++#define EVL_RNGIOC_U8		_IOR(EVL_RANDOM_IOCBASE, 0, __u8)
++#define EVL_RNGIOC_U16		_IOR(EVL_RANDOM_IOCBASE, 1, __u16)
++#define EVL_RNGIOC_U32		_IOR(EVL_RANDOM_IOCBASE, 2, __u32)
++
++#endif /* !_EVL_UAPI_RANDOM_ABI_H */
+diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
+index 1e3bcf7e1..f18fba5eb 100644
+--- a/kernel/evl/Makefile
++++ b/kernel/evl/Makefile
+@@ -12,6 +12,7 @@ evl-y :=		\
+ 	observable.o	\
+ 	poll.o		\
+ 	proxy.o		\
++	random.o	\
+ 	sem.o		\
+ 	stax.o		\
+ 	syscall.o	\
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 977946e42..ed5f84e44 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -47,6 +47,7 @@ static struct evl_factory *factories[] = {
+ 	&evl_xbuf_factory,
+ 	&evl_proxy_factory,
+ 	&evl_observable_factory,
++	&evl_rng_factory,
+ #ifdef CONFIG_FTRACE
+ 	&evl_trace_factory,
+ #endif
+diff --git a/kernel/evl/init.c b/kernel/evl/init.c
+index 247e79568..03e677523 100644
+--- a/kernel/evl/init.c
++++ b/kernel/evl/init.c
+@@ -15,6 +15,7 @@
+ #include <evl/file.h>
+ #include <evl/factory.h>
+ #include <evl/control.h>
++#include <evl/random.h>
+ #include <evl/net.h>
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/evl.h>
+@@ -190,6 +191,9 @@ static int __init evl_init(void)
+ 	if (ret)
+ 		goto fail;
+ 
++	/* Set up the random generators. */
++	evl_init_rng();
++
+ 	printk(EVL_INFO "core started %s%s%s\n",
+ 		boot_debug_notice,
+ 		boot_trace_notice,
+diff --git a/kernel/evl/random.c b/kernel/evl/random.c
+new file mode 100644
+index 000000000..da2a1edd5
+--- /dev/null
++++ b/kernel/evl/random.c
+@@ -0,0 +1,163 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2023 Lionel Minne  <lionel.minne@exail.com>
++ * Copyright (C) 2023 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/types.h>
++#include <evl/factory.h>
++#include <evl/random.h>
++#include <evl/uaccess.h>
++#include <uapi/evl/random-abi.h>
++
++static const u64 EVL_RNG_PRIME_u8 = 409;
++
++static const u64 EVL_RNG_PRIME_u16 = 106013;
++
++static const u64 EVL_RNG_PRIME_u32 = 949402981;
++
++#define EVL_RNG_SIZE	55
++#define EVL_RNG_J	24
++#define EVL_RNG_K	EVL_RNG_SIZE
++
++#define EVL_DEFINE_RNG(__type)						\
++	static struct evl_rng_ ## __type {				\
++		__type array[EVL_RNG_SIZE];				\
++		size_t index;						\
++	} evl_rng_ ## __type;						\
++									\
++	static void init_rng_ ## __type(struct evl_rng_ ## __type *rng, __type seed) \
++	{								\
++		u64 val;						\
++		size_t n;						\
++									\
++		rng->array[0] = seed;					\
++		for (n = 0, val = seed; n < ARRAY_SIZE(rng->array); n++) { \
++			val += EVL_RNG_PRIME_ ## __type;		\
++			rng->array[n] = (__type)val;			\
++		}							\
++	}								\
++									\
++	static __type read_rng_ ## __type(struct evl_rng_ ## __type *rng) \
++	{								\
++		size_t n_j, n_k;					\
++		__type res;						\
++									\
++		n_j = rng->index - EVL_RNG_J;				\
++		if (EVL_RNG_J > rng->index)				\
++			n_j += ARRAY_SIZE(rng->array);			\
++									\
++		n_k = rng->index - EVL_RNG_K;				\
++		if (EVL_RNG_K > rng->index)				\
++			n_k += ARRAY_SIZE(rng->array);			\
++									\
++		res = (__type)((u64)rng->array[n_j] + (u64)rng->array[n_k]); \
++		rng->array[rng->index] = res;				\
++		rng->index = (rng->index + 1) % ARRAY_SIZE(rng->array);	\
++									\
++		return res;						\
++	}								\
++									\
++	__type evl_read_rng_ ## __type(void)				\
++	{								\
++		return read_rng_ ## __type(&evl_rng_ ## __type);	\
++	}
++
++EVL_DEFINE_RNG(u8);
++EVL_DEFINE_RNG(u16);
++EVL_DEFINE_RNG(u32);
++
++static ssize_t rng_common_read(struct file *filp,
++			char __user *u_buf, size_t count)
++{
++	u32 val32;
++
++	if (count != sizeof(val32))
++		return -EINVAL;
++
++	val32 = evl_read_rng_u32();
++
++	if (raw_put_user(val32, (u32 __user *)u_buf))
++		return -EFAULT;
++
++	return count;
++}
++
++static ssize_t rng_oob_read(struct file *filp,
++			char __user *u_buf, size_t count)
++{
++	return rng_common_read(filp, u_buf, count);
++}
++
++static ssize_t rng_read(struct file *filp, char __user *u_buf,
++			size_t count, loff_t *ppos)
++{
++	return rng_common_read(filp, u_buf, count);
++}
++
++static long rng_common_ioctl(struct file *filp, unsigned int cmd,
++			unsigned long arg)
++{
++	__u32 val32;
++	__u16 val16;
++	__u8 val8;
++	int ret;
++
++	switch (cmd) {
++	case EVL_RNGIOC_U8:
++		val8 = evl_read_rng_u8();
++		ret = raw_put_user(val8, (u8 __user *)arg);
++		break;
++	case EVL_RNGIOC_U16:
++		val16 = evl_read_rng_u16();
++		ret = raw_put_user(val16, (u16 __user *)arg);
++		break;
++	case EVL_RNGIOC_U32:
++		val32 = evl_read_rng_u32();
++		ret = raw_put_user(val32, (u32 __user *)arg);
++		break;
++	default:
++		ret = -ENOTTY;
++	}
++
++	return ret > 0 ? -EFAULT : ret;
++}
++
++static long rng_oob_ioctl(struct file *filp, unsigned int cmd,
++			unsigned long arg)
++{
++	return rng_common_ioctl(filp, cmd, arg);
++}
++
++static long rng_ioctl(struct file *filp, unsigned int cmd,
++			unsigned long arg)
++{
++	return rng_common_ioctl(filp, cmd, arg);
++}
++
++void evl_init_rng(void)
++{
++	u64 now = ktime_get();
++
++	init_rng_u8(&evl_rng_u8, (u8)now);
++	init_rng_u16(&evl_rng_u16, (u16)now);
++	init_rng_u32(&evl_rng_u32, (u32)now);
++}
++
++static const struct file_operations rng_fops = {
++	.oob_ioctl	=	rng_oob_ioctl,
++	.oob_read	=	rng_oob_read,
++	.unlocked_ioctl	=	rng_ioctl,
++	.read		=	rng_read,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	=	compat_ptr_ioctl,
++	.compat_oob_ioctl =	compat_ptr_oob_ioctl,
++#endif
++};
++
++struct evl_factory evl_rng_factory = {
++	.name	=	"random",
++	.fops	=	&rng_fops,
++	.flags	=	EVL_FACTORY_SINGLE,
++};
+-- 
+2.30.2
+

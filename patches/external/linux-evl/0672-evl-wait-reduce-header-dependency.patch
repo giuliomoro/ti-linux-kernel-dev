@@ -1,0 +1,153 @@
+From 574c2305c9c038a3c14f1f5074e4c074e4c894f3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 26 Dec 2020 12:05:58 +0100
+Subject: [PATCH 672/985] evl/wait: reduce header dependency
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/timeout.h | 53 +++++++++++++++++++++++++++++++++++++++++++
+ include/evl/timer.h   | 34 +--------------------------
+ include/evl/wait.h    | 13 ++++-------
+ 3 files changed, 59 insertions(+), 41 deletions(-)
+ create mode 100644 include/evl/timeout.h
+
+diff --git a/include/evl/timeout.h b/include/evl/timeout.h
+new file mode 100644
+index 000000000..a5c9325b7
+--- /dev/null
++++ b/include/evl/timeout.h
+@@ -0,0 +1,53 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_TIMEOUT_H
++#define _EVL_TIMEOUT_H
++
++#include <linux/ktime.h>
++
++/*
++ * Basic assumption throughout the code: ktime_t is a 64bit signed
++ * scalar type holding an internal time unit, which means that:
++ *
++ * - we may compare two ktime_t values using basic relational operators
++ * - we may check for nullness by comparing to 0 directly
++ * - we must use ktime_to_ns()/ns_to_ktime() helpers for converting
++ *   to/from nanoseconds.
++ */
++#define EVL_INFINITE   0
++#define EVL_NONBLOCK   ((s64)((u64)1 << 63))
++
++static inline bool timeout_infinite(ktime_t kt)
++{
++	return kt == 0;
++}
++
++static inline bool timeout_nonblock(ktime_t kt)
++{
++	return kt < 0;
++}
++
++static inline bool timeout_valid(ktime_t kt)
++{
++	return kt > 0;
++}
++
++/* Timer modes */
++enum evl_tmode {
++	EVL_REL,
++	EVL_ABS,
++};
++
++/*
++ * So that readers do not need to pull evl/clock.h for defining timed
++ * object initializers which only refer to the built-in clock
++ * addresses in the common case.
++ */
++extern struct evl_clock evl_mono_clock,
++	evl_realtime_clock;
++
++#endif /* !_EVL_TIMEOUT_H */
+diff --git a/include/evl/timer.h b/include/evl/timer.h
+index 8471f3392..f66613565 100644
+--- a/include/evl/timer.h
++++ b/include/evl/timer.h
+@@ -16,39 +16,7 @@
+ #include <evl/stat.h>
+ #include <evl/list.h>
+ #include <evl/assert.h>
+-
+-/*
+- * Basic assumption throughout the code: ktime_t is a 64bit signed
+- * scalar type holding an internal time unit, which means that:
+- *
+- * - we may compare two ktime_t values using basic relational operators
+- * - we may check for nullness by comparing to 0 directly
+- * - we must use ktime_to_ns()/ns_to_ktime() helpers for converting
+- *   to/from nanoseconds.
+- */
+-#define EVL_INFINITE   0
+-#define EVL_NONBLOCK   ((s64)((u64)1 << 63))
+-
+-static inline bool timeout_infinite(ktime_t kt)
+-{
+-	return kt == 0;
+-}
+-
+-static inline bool timeout_nonblock(ktime_t kt)
+-{
+-	return kt < 0;
+-}
+-
+-static inline bool timeout_valid(ktime_t kt)
+-{
+-	return kt > 0;
+-}
+-
+-/* Timer modes */
+-enum evl_tmode {
+-	EVL_REL,
+-	EVL_ABS,
+-};
++#include <evl/timeout.h>
+ 
+ /* Timer status */
+ #define EVL_TIMER_DEQUEUED  0x00000001
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 36249910b..177518623 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -8,13 +8,10 @@
+ #ifndef _EVL_WAIT_H
+ #define _EVL_WAIT_H
+ 
+-#include <linux/types.h>
+ #include <linux/errno.h>
+-#include <linux/spinlock.h>
+-#include <evl/list.h>
+-#include <evl/timer.h>
+-#include <evl/clock.h>
+-#include <uapi/evl/thread.h>
++#include <linux/list.h>
++#include <evl/assert.h>
++#include <evl/timeout.h>
+ 
+ #define EVL_WAIT_FIFO    0
+ #define EVL_WAIT_PRIO    BIT(0)
+@@ -63,9 +60,9 @@ struct evl_wait_queue {
+ 									\
+ 	raw_spin_lock_irqsave(&(__wq)->lock, __flags);			\
+ 	if (!(__cond)) {						\
+-		if (timeout_nonblock(__timeout))			\
++		if (timeout_nonblock(__timeout)) {			\
+ 			__ret = -EAGAIN;				\
+-		else {							\
++		} else {						\
+ 			do {						\
+ 				evl_add_wait_queue(__wq, __timeout,	\
+ 						__timeout_mode);	\
+-- 
+2.30.2
+

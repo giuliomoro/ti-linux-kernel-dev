@@ -1,0 +1,106 @@
+From de1c692611590a0ea5561c5e0a1b53a52d9f7a9e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 29 Apr 2025 11:52:07 +0200
+Subject: [PATCH 921/985] evl/net: output: accurately hint at more traffic
+ coming
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/qdisc.h     | 2 +-
+ include/evl/net/skb.h       | 3 ++-
+ kernel/evl/net/output.c     | 5 +++--
+ kernel/evl/net/qdisc/fifo.c | 5 +++--
+ kernel/evl/net/skb.c        | 6 ++++--
+ 5 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
+index ebcc9061d..8e2427f38 100644
+--- a/include/evl/net/qdisc.h
++++ b/include/evl/net/qdisc.h
+@@ -19,7 +19,7 @@ struct evl_net_qdisc_ops {
+ 	int (*init)(struct evl_net_qdisc *qdisc);
+ 	void (*destroy)(struct evl_net_qdisc *qdisc);
+ 	int (*enqueue)(struct evl_net_qdisc *qdisc, struct sk_buff *skb);
+-	struct sk_buff *(*dequeue)(struct evl_net_qdisc *qdisc);
++	struct sk_buff *(*dequeue)(struct evl_net_qdisc *qdisc, bool *more);
+ 	struct list_head next;
+ };
+ 
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+index ae6f091db..9103292f2 100644
+--- a/include/evl/net/skb.h
++++ b/include/evl/net/skb.h
+@@ -37,7 +37,8 @@ void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
+ 			struct sk_buff *skb);
+ 
+ struct sk_buff *
+-evl_net_get_skb_queue(struct evl_net_skb_queue *skbq);
++evl_net_get_skb_queue(struct evl_net_skb_queue *skbq,
++		bool *more);
+ 
+ bool evl_net_move_skb_queue(struct evl_net_skb_queue *skbq,
+ 			struct list_head *list);
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 28abe93ae..dfc231be0 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -97,10 +97,11 @@ void evl_net_do_tx(void *arg)
+ 		 * device.
+ 		 */
+ 		for (;;) {
+-			skb = qdisc->oob_ops->dequeue(qdisc);
++			bool more;
++			skb = qdisc->oob_ops->dequeue(qdisc, &more);
+ 			if (skb == NULL)
+ 				break;
+-			do_tx(qdisc, dev, skb, false); /* FIXME: more? */
++			do_tx(qdisc, dev, skb, more);
+ 		}
+ 	}
+ }
+diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
+index 0d4d2448d..c525fdf9d 100644
+--- a/kernel/evl/net/qdisc/fifo.c
++++ b/kernel/evl/net/qdisc/fifo.c
+@@ -40,11 +40,12 @@ static int enqueue_qdisc_fifo(struct evl_net_qdisc *qdisc,
+ 	return 0;
+ }
+ 
+-static struct sk_buff *dequeue_qdisc_fifo(struct evl_net_qdisc *qdisc)
++static struct sk_buff *dequeue_qdisc_fifo(struct evl_net_qdisc *qdisc,
++					bool *more)
+ {
+ 	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
+ 
+-	return evl_net_get_skb_queue(&p->q);
++	return evl_net_get_skb_queue(&p->q, more);
+ }
+ 
+ struct evl_net_qdisc_ops evl_net_qdisc_fifo = {
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index b9c796506..27e99d40a 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -418,15 +418,17 @@ void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
+ 	raw_spin_unlock_irqrestore(&skbq->lock, flags);
+ }
+ 
+-struct sk_buff *evl_net_get_skb_queue(struct evl_net_skb_queue *skbq)
++struct sk_buff *evl_net_get_skb_queue(struct evl_net_skb_queue *skbq, bool *more)
+ {
+ 	struct sk_buff *skb = NULL;
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&skbq->lock, flags);
+ 
+-	if (!list_empty(&skbq->queue))
++	if (!list_empty(&skbq->queue)) {
+ 		skb = list_get_entry(&skbq->queue, struct sk_buff, list);
++		*more = !list_empty(&skbq->queue);
++	}
+ 
+ 	raw_spin_unlock_irqrestore(&skbq->lock, flags);
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,124 @@
+From 03d00d3002c3bcf15509b3612165c5f62dc2ca25 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 24 Mar 2025 10:47:44 +0100
+Subject: [PATCH 155/985] net: dovetail: redirect NAPI allocation requests to
+ oob allocator
+
+Redirect out-of-band requests to allocate/free skbs from the NAPI
+layer to {get, put}_oob_skb(). This enables napi_build_skb() for
+callers running on the out-of-band stage.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/skbuff.h |  9 ++++-----
+ net/core/skbuff.c      | 38 ++++++++++++++++++++++++++++++++------
+ 2 files changed, 36 insertions(+), 11 deletions(-)
+
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 5b7178726..65884f4c4 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -5318,11 +5318,10 @@ static inline void __skb_inband_clone(struct sk_buff *skb)
+ /**
+  *	__skb_oob_free_head - Called from the in-band net core after
+  *      the last reference to the buffer (->users) was dropped, and
+- *      any (shared) data was unref'ed (and possibly freed). By
+- *      construction, this is only called for buffers which refer(red)
+- *      to non-oob storage. Out-of-band allocated buffers which also
+- *      convey out-of-band acessible storage must flow through
+- *      free_skb_oob() instead.
++ *      any (shared) data was unref'ed (and possibly freed).By
++ *      construction, this is only called for skbs which refer to
++ *      non-oob storage. Skbs coming from the oob pool _and_ conveying
++ *      oob storage must flow through free_skb_oob() instead.
+  */
+ static inline bool __skb_oob_free_head(struct sk_buff *skb)
+ {
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 26939e405..8122feaea 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -351,6 +351,9 @@ static struct sk_buff *napi_skb_cache_get(void)
+ 	struct napi_alloc_cache *nc = this_cpu_ptr(&napi_alloc_cache);
+ 	struct sk_buff *skb;
+ 
++	/* oob calls should go through __napi_build_skb() first. */
++	WARN_ON_ONCE(running_oob());
++
+ 	local_lock_nested_bh(&napi_alloc_cache.bh_lock);
+ 	if (unlikely(!nc->skb_count)) {
+ 		nc->skb_count = kmem_cache_alloc_bulk(net_hotdata.skbuff_cache,
+@@ -546,11 +549,18 @@ static struct sk_buff *__napi_build_skb(void *data, unsigned int frag_size)
+ {
+ 	struct sk_buff *skb;
+ 
+-	skb = napi_skb_cache_get();
+-	if (unlikely(!skb))
+-		return NULL;
++	if (running_oob()) {
++		skb = get_oob_skb();
++		if (unlikely(!skb))
++			return NULL;
++	} else {
++		skb = napi_skb_cache_get();
++		if (unlikely(!skb))
++			return NULL;
++
++		memset(skb, 0, offsetof(struct sk_buff, tail));
++	}
+ 
+-	memset(skb, 0, offsetof(struct sk_buff, tail));
+ 	__build_skb_around(skb, data, frag_size);
+ 
+ 	return skb;
+@@ -677,6 +687,11 @@ EXPORT_SYMBOL(put_oob_skb);
+ static inline void init_oob_cache(void)
+ { }
+ 
++static inline void put_oob_skb(struct sk_buff *skb)
++{
++	BUG();
++}
++
+ #endif	/* !CONFIG_NET_OOB */
+ 
+ /*
+@@ -920,6 +935,13 @@ struct sk_buff *napi_alloc_skb(struct napi_struct *napi, unsigned int len)
+ 	bool pfmemalloc;
+ 	void *data;
+ 
++	/*
++	 * Only napi_build_skb() is allowed from the out-of-band
++	 * stage.
++	 */
++	if (WARN_ON_ONCE(running_oob()))
++		return NULL;
++
+ 	DEBUG_NET_WARN_ON_ONCE(!in_softirq());
+ 	len += NET_SKB_PAD + NET_IP_ALIGN;
+ 
+@@ -1562,6 +1584,11 @@ static void napi_skb_cache_put(struct sk_buff *skb)
+ 	struct napi_alloc_cache *nc = this_cpu_ptr(&napi_alloc_cache);
+ 	u32 i;
+ 
++	if (skb_is_oob(skb)) {
++		put_oob_skb(skb);
++		return;
++	}
++
+ 	if (!kasan_mempool_poison_object(skb))
+ 		return;
+ 
+@@ -1628,8 +1655,7 @@ void napi_consume_skb(struct sk_buff *skb, int budget)
+ 		return;
+ 
+ 	skb_release_all(skb, SKB_CONSUMED);
+-	if (!__skb_oob_free_head(skb))
+-		napi_skb_cache_put(skb);
++	napi_skb_cache_put(skb);
+ }
+ EXPORT_SYMBOL(napi_consume_skb);
+ 
+-- 
+2.30.2
+

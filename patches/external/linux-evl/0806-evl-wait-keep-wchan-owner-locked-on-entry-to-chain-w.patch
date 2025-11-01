@@ -1,0 +1,145 @@
+From d3a221bf6156052827920fd60869b6f8c3cabc64 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 4 Dec 2022 11:11:26 +0100
+Subject: [PATCH 806/985] evl/wait: keep wchan owner locked on entry to chain
+ walk
+
+This change establishes an additional invariant regarding the presence
+of EVL_T_BOOST in a thread state and that thread's booster list, so
+that we can now rely on:
+
+- if EVL_T_BOOST is set in thread->state, then thread->boosters is not
+empty.
+
+- if EVL_T_BOOST is cleared in thread->state, then thread->boosters is
+empty.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c |  9 ++++-----
+ kernel/evl/wait.c  | 36 +++++++++++++++++++++++++++++-------
+ 2 files changed, 33 insertions(+), 12 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index f5abc467b..5981c91a2 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -485,9 +485,9 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	 * therefore we need to reconcile the in-kernel descriptor
+ 	 * with the shared handle which has the accurate value. If
+ 	 * both match though, evl_get_factory_element_by_fundle() got
+-	 * us a reference on @owner which the original call to
+-	 * track_mutex_owner() already obtained for that thread, so we
+-	 * need to drop it to rebalance the refcount.
++	 * us another reference on @owner like set_mutex_owner()
++	 * already obtained earlier for that thread, so we need to
++	 * drop it to rebalance the refcount.
+ 	 *
+ 	 * The consistency of this information is guaranteed, because
+ 	 * we just raised the claim bit atomically for this contended
+@@ -522,8 +522,7 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		check_dep_only = false; /* Adjust priorities too. */
+ 	}
+ 
+-	raw_spin_unlock(&owner->lock);
+-
++	/* Walking the chain drops owner->lock. */
+ 	ret = evl_walk_lock_chain(&mutex->wchan, curr, check_dep_only);
+ 	assert_hard_lock(&mutex->wchan.lock);
+ 	assert_hard_lock(&curr->lock);
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index 02aec0a3d..a6465882b 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -254,7 +254,6 @@ void evl_adjust_wait_priority(struct evl_thread *thread)
+ 	EVL_WARN_ON_ONCE(CORE, !hard_irqs_disabled());
+ 
+ 	raw_spin_lock(&thread->lock);
+-
+ 	wchan = evl_get_thread_wchan(thread);
+ 	if (!wchan) {
+ 		raw_spin_unlock(&thread->lock);
+@@ -268,6 +267,9 @@ void evl_adjust_wait_priority(struct evl_thread *thread)
+ 	owner = wchan->owner;
+ 	if (owner) {
+ 		wchan->requeue_wait(wchan, thread);
++		raw_spin_unlock(&thread->lock);
++		evl_double_thread_lock(thread, owner);
++		/* Walking the chain drops owner->lock. */
+ 		evl_walk_lock_chain(wchan, thread, false);
+ 	} else {
+ 		wchan->requeue_wait(wchan, thread);
+@@ -300,7 +302,10 @@ void evl_adjust_wait_priority(struct evl_thread *thread)
+  * 3. there is no rule #3.
+  *
+  * On entry:
+- * orig_wchan->lock held + orig_waiter->lock held, irqs off.
++ *
++ * (orig_wchan->lock + orig_wchan->owner->lock + orig_waiter->lock)
++ * held, irqs off. All these locks may be dropped temporarily during
++ * the walk. orig_wchan->owner->lock is NOT reacquired at exit.
+  */
+ int evl_walk_lock_chain(struct evl_wait_channel *orig_wchan,
+ 			struct evl_thread *orig_waiter,
+@@ -310,16 +315,23 @@ int evl_walk_lock_chain(struct evl_wait_channel *orig_wchan,
+ 	struct evl_wait_channel *wchan = orig_wchan, *next_wchan;
+ 	int ret = 0;
+ 
+-	assert_hard_lock(&orig_wchan->lock);
+-	assert_hard_lock(&orig_waiter->lock);
++	assert_hard_lock(&wchan->lock);
++	assert_hard_lock(&waiter->lock);
+ 
+ 	/* We must have a valid owner for the origin wchan. */
+ 	if (EVL_WARN_ON_ONCE(CORE, !owner))
+ 		return -EIO;
+ 
++	assert_hard_lock(&owner->lock);
++
+ 	/* The chain must be sane on entry. */
+-	if (EVL_WARN_ON_ONCE(CORE, owner == orig_waiter))
++	if (EVL_WARN_ON_ONCE(CORE, owner == orig_waiter)) {
++		raw_spin_unlock(&owner->lock);
+ 		return -EDEADLK;
++	}
++
++	evl_get_element(&orig_waiter->element);
++	raw_spin_unlock(&orig_waiter->lock);
+ 
+ 	/*
+ 	 * Since we drop locks inside the loop, we might have
+@@ -331,8 +343,10 @@ int evl_walk_lock_chain(struct evl_wait_channel *orig_wchan,
+ 	 * it the proper priority at any point in time.
+ 	 */
+ 	for (;;) {
+-		raw_spin_unlock(&waiter->lock);
+-		raw_spin_lock(&owner->lock); /* Grab this before we drop wchan->lock */
++		/*
++		 * We already hold wchan->owner->lock, so dropping
++		 * wchan->lock is safe.
++		 */
+ 		raw_spin_unlock(&wchan->lock);
+ 
+ 		/*
+@@ -375,10 +389,18 @@ int evl_walk_lock_chain(struct evl_wait_channel *orig_wchan,
+ 			ret = -EDEADLK;
+ 			goto unlock_out;
+ 		}
++
++		raw_spin_unlock(&waiter->lock);
++		/*
++		 * We must grab this lock before we drop wchan->lock
++		 * at the next iteration.
++		 */
++		raw_spin_lock(&owner->lock);
+ 	}
+ out:
+ 	raw_spin_lock(&orig_wchan->lock);
+ 	raw_spin_lock(&orig_waiter->lock);
++	evl_put_element(&orig_waiter->element);
+ 
+ 	return ret;
+ 
+-- 
+2.30.2
+

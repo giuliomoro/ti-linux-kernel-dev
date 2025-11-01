@@ -1,0 +1,113 @@
+From 90a6f5c8ebd4f0f9278224ef11a3737d11554fc9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 15 Jul 2022 20:12:51 +0200
+Subject: [PATCH 732/985] evl/wait: prevent LKSLEEP HM notification upon sleep
+ on a gated event
+
+Consistency in manipulating a gated monitor construct is guaranteed by
+the core, although we do enqueue the waiter prior to releasing the
+mutex guarding the event.
+
+Bypass the WOLI check when enqueuing so that we don't spuriously send
+EVL_HMDIAG_LKSLEEP to the waiter.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h   |  4 ++++
+ kernel/evl/monitor.c |  7 ++++++-
+ kernel/evl/wait.c    | 32 ++++++++++++++++++++++++--------
+ 3 files changed, 34 insertions(+), 9 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index b833880a2..3ff58f525 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -86,6 +86,10 @@ void evl_add_wait_queue(struct evl_wait_queue *wq,
+ 			ktime_t timeout,
+ 			enum evl_tmode timeout_mode);
+ 
++void evl_add_wait_queue_unchecked(struct evl_wait_queue *wq,
++				  ktime_t timeout,
++				  enum evl_tmode timeout_mode);
++
+ int evl_wait_schedule(struct evl_wait_queue *wq);
+ 
+ static inline bool evl_wait_active(struct evl_wait_queue *wq)
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index e0b31ecda..9b2aafb96 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -503,7 +503,12 @@ static int wait_monitor(struct file *filp,
+ 		goto put;
+ 	}
+ 
+-	evl_add_wait_queue(&event->wait_queue, timeout, tmode);
++	/*
++	 * Since we still hold the mutex until __exit_monitor() is
++	 * called later on, do not perform the WOLI checks when
++	 * enqueuing.
++	 */
++	evl_add_wait_queue_unchecked(&event->wait_queue, timeout, tmode);
+ 
+ 	raw_spin_lock(&curr->lock);
+ 	raw_spin_lock(&curr->rq->lock);
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index 83144c9e0..da297a148 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -35,19 +35,14 @@ void evl_destroy_wait(struct evl_wait_queue *wq)
+ EXPORT_SYMBOL_GPL(evl_destroy_wait);
+ 
+ /* wq->lock held, hard irqs off */
+-void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
+-			enum evl_tmode timeout_mode)
++static void __evl_add_wait_queue(struct evl_thread *curr,
++				struct evl_wait_queue *wq,
++				ktime_t timeout, enum evl_tmode timeout_mode)
+ {
+-	struct evl_thread *curr = evl_current();
+-
+ 	assert_hard_lock(&wq->lock);
+ 
+ 	trace_evl_wait(wq);
+ 
+-	if ((curr->state & T_WOLI) &&
+-		atomic_read(&curr->inband_disable_count) > 0)
+-		evl_notify_thread(curr, EVL_HMDIAG_LKSLEEP, evl_nil);
+-
+ 	if (!(wq->flags & EVL_WAIT_PRIO))
+ 		list_add_tail(&curr->wait_next, &wq->wchan.wait_list);
+ 	else
+@@ -55,8 +50,29 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
+ 
+ 	evl_sleep_on(timeout, timeout_mode, wq->clock, &wq->wchan);
+ }
++
++void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
++			enum evl_tmode timeout_mode)
++{
++	struct evl_thread *curr = evl_current();
++
++	if ((curr->state & T_WOLI) &&
++		atomic_read(&curr->inband_disable_count) > 0)
++		evl_notify_thread(curr, EVL_HMDIAG_LKSLEEP, evl_nil);
++
++	__evl_add_wait_queue(curr, wq, timeout, timeout_mode);
++
++}
+ EXPORT_SYMBOL_GPL(evl_add_wait_queue);
+ 
++void evl_add_wait_queue_unchecked(struct evl_wait_queue *wq, ktime_t timeout,
++				enum evl_tmode timeout_mode)
++{
++	struct evl_thread *curr = evl_current();
++
++	__evl_add_wait_queue(curr, wq, timeout, timeout_mode);
++}
++
+ /* wq->lock held, hard irqs off */
+ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+ 			struct evl_thread *waiter,
+-- 
+2.30.2
+

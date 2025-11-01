@@ -1,0 +1,293 @@
+From 044bd66d3e20bee6ee7b82e56bbe057e0daff0de Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 25 Mar 2025 15:08:07 +0100
+Subject: [PATCH 908/985] evl/net: provide neighbour solicitation service
+
+We need a way to guarantee zero-delay output to a given IP
+destination, which implies to resolve all routing and neighbour
+solicitation chores beforehand, so that we won't have to pass on the
+initial output to the inband stack, waiting for the oob front caches
+(IP routes and ARP) to be updated on the fly.
+
+To this end, ioctl(EVL_SOCKIOC_SOLICIT) is introduced for any IPv4 EVL
+socket (UDP so far). This request waits for the EVL front caches to
+receive the information needed to complete an output strictly from the
+oob stage, triggering a route resolution and neighbour solicitation as
+required.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/ipv4.h            |  5 +++
+ include/evl/net/ipv4/arp.h        |  3 ++
+ include/evl/net/socket.h          |  2 +
+ include/uapi/evl/control-abi.h    |  2 +-
+ include/uapi/evl/net/socket-abi.h |  8 ++++
+ kernel/evl/net/ipv4/arp.c         |  8 +++-
+ kernel/evl/net/ipv4/ipv4.c        | 66 +++++++++++++++++++++++++++++++
+ kernel/evl/net/ipv4/udp.c         |  1 +
+ kernel/evl/net/socket.c           | 13 +++++-
+ 9 files changed, 104 insertions(+), 4 deletions(-)
+
+diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
+index b2930539b..19c319f96 100644
+--- a/include/evl/net/ipv4.h
++++ b/include/evl/net/ipv4.h
+@@ -13,6 +13,8 @@
+ #include <evl/net/ip.h>
+ 
+ struct sk_buff;
++struct sockaddr;
++struct timespec64;
+ 
+ struct evl_net_ipv4_cookie {
+ 	__be32 saddr;		/* Source IP */
+@@ -37,6 +39,9 @@ int evl_net_init_ipv4(struct net *net);
+ 
+ void evl_net_cleanup_ipv4(struct net *net);
+ 
++int evl_net_ipv4_solicit(struct evl_socket *esk,
++			struct sockaddr *addr, int flags);
++
+ extern struct evl_socket_domain evl_net_ipv4;
+ 
+ #endif /* !_EVL_NET_IPV4_H */
+diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
+index 7c074d49e..ce58cb236 100644
+--- a/include/evl/net/ipv4/arp.h
++++ b/include/evl/net/ipv4/arp.h
+@@ -7,6 +7,7 @@
+ #ifndef _EVL_NET_IPV4_ARP_H
+ #define _EVL_NET_IPV4_ARP_H
+ 
++#include <linux/wait.h>
+ #include <net/neighbour.h>
+ #include <evl/cache.h>
+ 
+@@ -41,4 +42,6 @@ static inline void evl_net_put_arp_entry(struct evl_net_arp_entry *earp)
+ 	evl_put_cache_entry(&earp->entry);
+ }
+ 
++extern struct wait_queue_head evl_arp_event;
++
+ #endif /* !_EVL_NET_IPV4_ARP_H */
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+index fbe6c73fe..6dacc0e6c 100644
+--- a/include/evl/net/socket.h
++++ b/include/evl/net/socket.h
+@@ -39,6 +39,8 @@ struct evl_net_proto {
+ 	int (*shutdown)(struct evl_socket *esk, int how);
+ 	int (*ioctl)(struct evl_socket *esk, unsigned int cmd,
+ 		unsigned long arg);
++	int (*solicit)(struct evl_socket *esk,
++		struct sockaddr *addr, int flags);
+ 	ssize_t (*oob_send)(struct evl_socket *esk,
+ 			const struct user_oob_msghdr __user *u_msghdr,
+ 			struct iovec *iov,
+diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
+index 39e005195..03f298b73 100644
+--- a/include/uapi/evl/control-abi.h
++++ b/include/uapi/evl/control-abi.h
+@@ -17,7 +17,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  37
++#define EVL_ABI_LEVEL  38
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
+index 4973e7d0d..9664c0fb9 100644
+--- a/include/uapi/evl/net/socket-abi.h
++++ b/include/uapi/evl/net/socket-abi.h
+@@ -34,11 +34,19 @@ struct evl_netdev_activation {
+ 	__u64 bufsz;
+ };
+ 
++#define EVL_NEIGH_PERMANENT  0x1
++
++struct evl_net_solicit {
++	struct sockaddr addr;
++	__u32 flags;
++};
++
+ #define EVL_SOCKIOC_ACTIVATE	_IOW(EVL_SOCKET_IOCBASE, 2, struct evl_netdev_activation)
+ #define EVL_SOCKIOC_DEACTIVATE	_IO(EVL_SOCKET_IOCBASE, 3)
+ #define EVL_SOCKIOC_SENDMSG	_IOW(EVL_SOCKET_IOCBASE, 4, struct user_oob_msghdr)
+ #define EVL_SOCKIOC_RECVMSG	_IOWR(EVL_SOCKET_IOCBASE, 5, struct user_oob_msghdr)
+ #define EVL_SOCKIOC_SETRECVSZ	_IOW(EVL_SOCKET_IOCBASE, 6, int)
+ #define EVL_SOCKIOC_SETSENDSZ	_IOW(EVL_SOCKET_IOCBASE, 7, int)
++#define EVL_SOCKIOC_SOLICIT	_IOW(EVL_SOCKET_IOCBASE, 8, struct evl_net_solicit)
+ 
+ #endif /* !_EVL_UAPI_NET_SOCKET_ABI_H */
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index abfaf5715..7c47a113f 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -14,10 +14,13 @@
+ #include <linux/if_ether.h>
+ #include <linux/hash.h>
+ #include <linux/notifier.h>
++#include <linux/wait.h>
+ #include <net/netevent.h>
+ #include <net/arp.h>
+ #include <evl/net/ipv4/arp.h>
+ 
++DECLARE_WAIT_QUEUE_HEAD(evl_arp_event);
++
+ #define EVL_NET_ARP_CACHE_SHIFT  8
+ 
+ static u32 hash_arp_entry(const void *key)
+@@ -131,7 +134,7 @@ static void update_arp_cache(struct neighbour *neigh) /* in-band */
+ 	if (neigh->nud_state & NUD_REACHABLE && netif_oob_port(dev)) {
+ 		/* Cache complete entries from oob-enabled devices. */
+ 		ret = cache_arp_entry(cache, neigh);
+-		if (ret) {
++		if (ret)
+ 			/*
+ 			 * Yeah, well. Nothing useful we can do. Now
+ 			 * the oob cache is out of sync and since the
+@@ -143,7 +146,8 @@ static void update_arp_cache(struct neighbour *neigh) /* in-band */
+ 			 * receiving OOM here anyway.
+ 			 */
+ 			printk(EVL_WARNING "out of memory for ARP cache\n");
+-		}
++		else
++			wake_up_all(&evl_arp_event);
+ 	} else {
+ 		/*
+ 		 * Try uncaching any invalidated, stale or dead entry.
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 3f02f7605..42e8bbb16 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -14,6 +14,7 @@
+ #include <evl/memory.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/skb.h>
++#include <evl/net/device.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/fragment.h>
+ #include <evl/net/ipv4/route.h>
+@@ -228,6 +229,71 @@ void __evl_net_ipv4_gc(struct evl_net_frag_tdir *ftdir)
+ 	evl_unlock_kmutex(&ftdir->lock);
+ }
+ 
++/**
++ * evl_net_ipv4_solicit - Resolve an IPv4 address into a link-layer
++ * address using ARP neighbour solicitation. This call waits for 5s
++ * for the front cache to receive the ARP entry before timing out.
++ */
++int evl_net_ipv4_solicit(struct evl_socket *esk,
++			struct sockaddr *addr, int flags)
++{
++	struct evl_net_arp_entry *e = NULL;
++	struct neighbour *neigh;
++	struct net_device *dev;
++	struct rtable *rt;
++	__be32 ipaddr;
++	long ret;
++
++	if (addr->sa_family != AF_INET)
++		return -EAFNOSUPPORT;
++
++	ipaddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
++
++	if (flags & ~EVL_NEIGH_PERMANENT)
++		return -EINVAL;
++
++	rt = ip_route_output(sock_net(esk->sk), ipaddr, 0, RTO_ONLINK, 0);
++	if (IS_ERR(rt))
++		return PTR_ERR(rt);
++
++	if (!rt->dst.dev || !netif_oob_port(rt->dst.dev))
++		return -ENODEV;
++
++	dev = rt->dst.dev;
++	evl_net_get_dev(dev);
++
++	neigh = dst_neigh_lookup(&rt->dst, &ipaddr);
++	ip_rt_put(rt);
++	if (!neigh) {
++		evl_net_put_dev(dev);
++		return -ENOENT;
++	}
++
++	if (!(neigh->nud_state & (NUD_VALID & ~NUD_STALE)))
++		neigh_event_send(neigh, NULL);
++
++	/* Wait for the ARP entry to enter the cache. */
++	ret = wait_event_interruptible_timeout(evl_arp_event,
++				(e = evl_net_get_arp_entry(dev, ipaddr)),
++				HZ * 5);
++	evl_net_put_dev(dev);
++
++	if (e) {
++		/* We never downgrade the permanent state. */
++		if (flags & EVL_NEIGH_PERMANENT &&
++			!(neigh->nud_state & NUD_PERMANENT)) {
++			ret = neigh_update(neigh, e->ha, NUD_PERMANENT,
++				NEIGH_UPDATE_F_OVERRIDE | NEIGH_UPDATE_F_ADMIN, 0);
++		}
++		evl_net_put_arp_entry(e);
++		ret = 0;
++	}
++
++	neigh_release(neigh);
++
++	return ret <= 0 ? ret : -ETIMEDOUT;
++}
++
+ static struct evl_net_proto *match_ipv4_domain(int type, int protocol)
+ {
+ 	switch (protocol) {
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index f08e54175..bae36f061 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -844,6 +844,7 @@ struct evl_net_proto evl_net_udp_proto = {
+ 	.destroy = destroy_udp_socket,
+ 	.bind = bind_udp_socket,
+ 	.shutdown = shutdown_udp_socket,
++	.solicit = evl_net_ipv4_solicit,
+ 	.oob_send = send_udp,
+ 	.oob_poll = poll_udp,
+ 	.oob_receive = receive_udp,
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 83dea0bae..4157f9821 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -601,11 +601,12 @@ static int socket_set_wmem(struct evl_socket *esk, int __user *u_val)
+ 	return 0;
+ }
+ 
+-static int sock_inband_ioctl(struct sock *sk, unsigned int cmd,
++static long sock_inband_ioctl(struct sock *sk, unsigned int cmd,
+ 			unsigned long arg)
+ {
+ 	struct evl_socket *esk = evl_sk(sk);
+ 	struct evl_netdev_activation act, __user *u_act;
++	struct evl_net_solicit solreq, __user *u_solreq;
+ 	int __user *u_val;
+ 	int ret;
+ 
+@@ -628,6 +629,16 @@ static int sock_inband_ioctl(struct sock *sk, unsigned int cmd,
+ 		u_val = (typeof(u_val))arg;
+ 		ret = socket_set_wmem(esk, u_val);
+ 		break;
++	case EVL_SOCKIOC_SOLICIT:
++		u_solreq = (typeof(u_solreq))arg;
++		ret = copy_from_user(&solreq, u_solreq, sizeof(solreq));
++		if (ret)
++			return -EFAULT;
++		ret = -ENOTSUPP;
++		if (esk->proto->solicit)
++			ret = esk->proto->solicit(esk, &solreq.addr,
++				solreq.flags);
++		break;
+ 	default:
+ 		ret = -ENOTTY;
+ 		if (esk->proto->ioctl)
+-- 
+2.30.2
+

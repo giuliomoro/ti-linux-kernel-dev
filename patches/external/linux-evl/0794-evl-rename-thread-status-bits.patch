@@ -1,0 +1,2488 @@
+From 369cbb56783efad96d2cdf0283f59cb6bd0b77da Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 21 Nov 2022 13:42:03 +0100
+Subject: [PATCH 794/985] evl: rename thread status bits
+
+Rename all state and information bits for EVL threads to prevent
+conflict with mainline symbols. Since these definitions are visible
+from user-space, bump the ABI revision in the same move.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c           |   2 +-
+ include/evl/flag.h             |   6 +-
+ include/evl/sched.h            |   8 +-
+ include/evl/sched/fifo.h       |   8 +-
+ include/evl/sched/idle.h       |   2 +-
+ include/evl/thread.h           |  18 +-
+ include/evl/wait.h             |   2 +-
+ include/trace/events/evl.h     |  14 +-
+ include/uapi/evl/control.h     |   2 +-
+ include/uapi/evl/thread.h      |  86 ++++-----
+ kernel/evl/Kconfig             |   2 +-
+ kernel/evl/clock.c             |   8 +-
+ kernel/evl/control.c           |   2 +-
+ kernel/evl/monitor.c           |  16 +-
+ kernel/evl/mutex.c             |  22 +--
+ kernel/evl/net/dev.c           |   2 +-
+ kernel/evl/net/packet/packet.c |   2 +-
+ kernel/evl/poll.c              |   2 +-
+ kernel/evl/proxy.c             |   4 +-
+ kernel/evl/sched/core.c        | 154 ++++++++--------
+ kernel/evl/sched/fifo.c        |   2 +-
+ kernel/evl/sched/quota.c       |  10 +-
+ kernel/evl/sched/tp.c          |   4 +-
+ kernel/evl/sched/weak.c        |   4 +-
+ kernel/evl/sem.c               |   2 +-
+ kernel/evl/stax.c              |   2 +-
+ kernel/evl/syscall.c           |  28 +--
+ kernel/evl/thread.c            | 316 ++++++++++++++++-----------------
+ kernel/evl/tick.c              |   2 +-
+ kernel/evl/timer.c             |   2 +-
+ kernel/evl/wait.c              |  24 +--
+ kernel/evl/xbuf.c              |   4 +-
+ 32 files changed, 383 insertions(+), 379 deletions(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 92fec7c86..55dc1acdb 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -97,7 +97,7 @@ static void handle_fpu_error(struct rtswitch_context *ctx,
+ 				break;
+ 			}
+ 
+-			evl_hold_thread(&cur->kthread.thread, T_SUSP);
++			evl_hold_thread(&cur->kthread.thread, EVL_T_SUSP);
+ 		}
+ }
+ 
+diff --git a/include/evl/flag.h b/include/evl/flag.h
+index 08c223731..a652b4681 100644
+--- a/include/evl/flag.h
++++ b/include/evl/flag.h
+@@ -127,17 +127,17 @@ static inline void evl_flush_flag(struct evl_flag *wf, int reason)
+ /* wf->wait.wchan.lock held, irqs off */
+ static inline void evl_pulse_flag_locked(struct evl_flag *wf)
+ {
+-	evl_flush_flag_locked(wf, T_BCAST);
++	evl_flush_flag_locked(wf, EVL_T_BCAST);
+ }
+ 
+ static inline void evl_pulse_flag_nosched(struct evl_flag *wf)
+ {
+-	evl_flush_flag_nosched(wf, T_BCAST);
++	evl_flush_flag_nosched(wf, EVL_T_BCAST);
+ }
+ 
+ static inline void evl_pulse_flag(struct evl_flag *wf)
+ {
+-	evl_flush_flag(wf, T_BCAST);
++	evl_flush_flag(wf, EVL_T_BCAST);
+ }
+ 
+ static inline void evl_clear_flag(struct evl_flag *wf)
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 7bba6903c..7cb5cdfdc 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -363,7 +363,7 @@ static inline bool evl_in_irq(void)
+ 
+ static inline bool evl_is_inband(void)
+ {
+-	return !!(this_evl_rq_thread()->state & T_ROOT);
++	return !!(this_evl_rq_thread()->state & EVL_T_ROOT);
+ }
+ 
+ static inline bool evl_cannot_block(void)
+@@ -418,9 +418,9 @@ static inline bool evl_cannot_block(void)
+  */
+ #define evl_put_thread_rq_check_noirq(__thread, __rq)			\
+ 	do {								\
+-		bool __need_requeue = (__thread)->info & T_WCHAN;	\
++		bool __need_requeue = (__thread)->info & EVL_T_WCHAN;	\
+ 		if (__need_requeue)					\
+-			(__thread)->info &= ~T_WCHAN;			\
++			(__thread)->info &= ~EVL_T_WCHAN;			\
+ 		evl_put_thread_rq_noirq(__thread, __rq);		\
+ 		if (__need_requeue)					\
+ 			evl_adjust_wait_priority(__thread, evl_pi_adjust); \
+@@ -483,7 +483,7 @@ static inline void evl_sched_tick(struct evl_rq *rq)
+ 	 */
+ 	if (sched_class == curr->base_class &&
+ 	    sched_class->sched_tick &&
+-	    (curr->state & (EVL_THREAD_BLOCK_BITS|T_RRB)) == T_RRB &&
++	    (curr->state & (EVL_THREAD_BLOCK_BITS|EVL_T_RRB)) == EVL_T_RRB &&
+ 	    evl_preempt_count() == 0)
+ 		sched_class->sched_tick(rq);
+ }
+diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
+index 69dbb995b..daa90c097 100644
+--- a/include/evl/sched/fifo.h
++++ b/include/evl/sched/fifo.h
+@@ -43,7 +43,7 @@ int __evl_chk_fifo_schedparam(struct evl_thread *thread,
+ {
+ 	int min = EVL_FIFO_MIN_PRIO, max = EVL_FIFO_MAX_PRIO;
+ 
+-	if (!(thread->state & T_USER)) {
++	if (!(thread->state & EVL_T_USER)) {
+ 		min = EVL_CORE_MIN_PRIO;
+ 		max = EVL_CORE_MAX_PRIO;
+ 	}
+@@ -60,8 +60,8 @@ bool __evl_set_fifo_schedparam(struct evl_thread *thread,
+ {
+ 	bool ret = evl_set_effective_thread_priority(thread, p->fifo.prio);
+ 
+-	if (!(thread->state & T_BOOST))
+-		thread->state &= ~T_WEAK;
++	if (!(thread->state & EVL_T_BOOST))
++		thread->state &= ~EVL_T_WEAK;
+ 
+ 	return ret;
+ }
+@@ -82,7 +82,7 @@ void __evl_track_fifo_priority(struct evl_thread *thread,
+ 	else {
+ 		thread->cprio = thread->bprio;
+ 		/* Leaving PI/PP, so neither boosted nor weak. */
+-		thread->state &= ~T_WEAK;
++		thread->state &= ~EVL_T_WEAK;
+ 	}
+ }
+ 
+diff --git a/include/evl/sched/idle.h b/include/evl/sched/idle.h
+index 3f8aae3bf..3f3c55a1a 100644
+--- a/include/evl/sched/idle.h
++++ b/include/evl/sched/idle.h
+@@ -20,7 +20,7 @@ extern struct evl_sched_class evl_sched_idle;
+ static inline bool __evl_set_idle_schedparam(struct evl_thread *thread,
+ 					     const union evl_sched_param *p)
+ {
+-	thread->state &= ~T_WEAK;
++	thread->state &= ~EVL_T_WEAK;
+ 	return evl_set_effective_thread_priority(thread, p->idle.prio);
+ }
+ 
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 77ce49e6f..a0f34ca97 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -28,11 +28,15 @@
+ #include <asm/evl/thread.h>
+ 
+ /* All bits which may cause an EVL thread to block in oob context. */
+-#define EVL_THREAD_BLOCK_BITS   (T_SUSP|T_PEND|T_DELAY|T_WAIT|T_DORMANT|T_INBAND|T_HALT|T_PTSYNC)
++#define EVL_THREAD_BLOCK_BITS	(EVL_T_SUSP|EVL_T_PEND|EVL_T_DELAY|	\
++				EVL_T_WAIT|EVL_T_DORMANT|		\
++				EVL_T_INBAND|EVL_T_HALT|EVL_T_PTSYNC)
+ /* Information bits an EVL thread may receive from a blocking op. */
+-#define EVL_THREAD_INFO_MASK	(T_RMID|T_TIMEO|T_BREAK|T_KICKED|T_BCAST|T_NOMEM)
++#define EVL_THREAD_INFO_MASK	(EVL_T_RMID|EVL_T_TIMEO|EVL_T_BREAK|	\
++				EVL_T_KICKED|EVL_T_BCAST|EVL_T_NOMEM)
+ /* Mode bits configurable via EVL_THRIOC_SET/CLEAR_MODE. */
+-#define EVL_THREAD_MODE_BITS	(T_WOSS|T_WOLI|T_WOSX|T_WOSO|T_HMSIG|T_HMOBS)
++#define EVL_THREAD_MODE_BITS	(EVL_T_WOSS|EVL_T_WOLI|EVL_T_WOSX|	\
++				EVL_T_WOSO|EVL_T_HMSIG|EVL_T_HMOBS)
+ 
+ /*
+  * These are special internal values of HM diags which are never sent
+@@ -236,7 +240,7 @@ static inline void evl_test_cancel(void)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
+-	if (curr && (curr->info & T_CANCELD))
++	if (curr && (curr->info & EVL_T_CANCELD))
+ 		__evl_test_cancel(curr);
+ }
+ 
+@@ -330,7 +334,7 @@ void __evl_propagate_schedparam_change(struct evl_thread *curr);
+ 
+ static inline void evl_propagate_schedparam_change(struct evl_thread *curr)
+ {
+-	if (curr->info & T_SCHEDP)
++	if (curr->info & EVL_T_SCHEDP)
+ 		__evl_propagate_schedparam_change(curr);
+ }
+ 
+@@ -392,7 +396,7 @@ static inline void evl_stop_kthread(struct evl_kthread *kthread)
+ 
+ static inline bool evl_kthread_should_stop(void)
+ {
+-	return !!(evl_current()->info & T_CANCELD);
++	return !!(evl_current()->info & EVL_T_CANCELD);
+ }
+ 
+ static inline
+@@ -414,7 +418,7 @@ evl_current_kthread(void)
+ {
+ 	struct evl_thread *t = evl_current();
+ 
+-	return !t || t->state & T_USER ? NULL :
++	return !t || t->state & EVL_T_USER ? NULL :
+ 		container_of(t, struct evl_kthread, thread);
+ }
+ 
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 2c29c2102..94cd5fb9a 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -93,7 +93,7 @@ struct evl_wait_queue {
+ 						__timeout_mode);	\
+ 				raw_spin_unlock_irqrestore(&(__wq)->wchan.lock, __flags); \
+ 				__ret = evl_wait_schedule(__wq);	\
+-				__bcast = evl_current()->info & T_BCAST; \
++				__bcast = evl_current()->info & EVL_T_BCAST; \
+ 				raw_spin_lock_irqsave(&(__wq)->wchan.lock, __flags); \
+ 			} while (!__ret && !__bcast && !(__cond));	\
+ 		}							\
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 8eb7dd714..5a2a5bde3 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -329,7 +329,7 @@ TRACE_EVENT(evl_init_thread,
+ 	TP_fast_assign(
+ 		__entry->thread = thread;
+ 		__assign_str(thread_name, thread->name);
+-		__entry->flags = iattr->flags | (iattr->observable ? T_OBSERV : 0);
++		__entry->flags = iattr->flags | (iattr->observable ? EVL_T_OBSERV : 0);
+ 		__assign_str(class_name, iattr->sched_class->name);
+ 		__entry->cprio = thread->cprio;
+ 		__entry->status = status;
+@@ -820,12 +820,12 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
+ 
+ #define evl_print_thread_mode(__mode)	\
+ 	__print_flags(__mode, "|",	\
+-		{T_HMOBS, "hmobs"},	\
+-		{T_HMSIG, "hmsig"},	\
+-		{T_WOSX, "wosx"},	\
+-		{T_WOSS, "woss"},	\
+-		{T_WOLI, "woli"},	\
+-		{T_WOSO, "woso"})
++		{EVL_T_HMOBS, "hmobs"},	\
++		{EVL_T_HMSIG, "hmsig"},	\
++		{EVL_T_WOSX, "wosx"},	\
++		{EVL_T_WOSS, "woss"},	\
++		{EVL_T_WOLI, "woli"},	\
++		{EVL_T_WOSO, "woso"})
+ 
+ TRACE_EVENT(evl_thread_update_mode,
+ 	TP_PROTO(struct evl_thread *thread, int mode, bool set),
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 950b9e248..8b55f380a 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -18,7 +18,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  30
++#define EVL_ABI_LEVEL  31
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
+index e039b6f21..c8aed1631 100644
+--- a/include/uapi/evl/thread.h
++++ b/include/uapi/evl/thread.h
+@@ -15,55 +15,55 @@
+ 
+ /* State flags (shared) */
+ 
+-#define T_SUSP    0x00000001 /* Suspended */
+-#define T_PEND    0x00000002 /* Blocked on a wait_queue/mutex */
+-#define T_DELAY   0x00000004 /* Delayed/timed */
+-#define T_WAIT    0x00000008 /* Periodic wait */
+-#define T_READY   0x00000010 /* Ready to run (in rq) */
+-#define T_DORMANT 0x00000020 /* Not started yet */
+-#define T_ZOMBIE  0x00000040 /* Dead, waiting for disposal */
+-#define T_INBAND  0x00000080 /* Running in-band */
+-#define T_HALT    0x00000100 /* Halted */
+-#define T_BOOST   0x00000200 /* PI/PP boost undergoing */
+-#define T_PTSYNC  0x00000400 /* Synchronizing on ptrace event */
+-#define T_RRB     0x00000800 /* Undergoes round-robin scheduling */
+-#define T_ROOT    0x00001000 /* Root thread (in-band kernel placeholder) */
+-#define T_WEAK    0x00002000 /* Weak scheduling (in-band) */
+-#define T_USER    0x00004000 /* Userland thread */
+-#define T_WOSS    0x00008000 /* Warn on stage switch (HM) */
+-#define T_WOLI    0x00010000 /* Warn on locking inconsistency (HM) */
+-#define T_WOSX    0x00020000 /* Warn on stage exclusion (HM) */
+-#define T_PTRACE  0x00040000 /* Stopped on ptrace event */
+-#define T_OBSERV  0x00080000 /* Observable (only for export to userland) */
+-#define T_HMSIG   0x00100000 /* Notify HM events via SIGDEBUG */
+-#define T_HMOBS   0x00200000 /* Notify HM events via observable */
+-#define T_WOSO    0x00400000 /* Schedule overrun */
++#define EVL_T_SUSP    0x00000001 /* Suspended */
++#define EVL_T_PEND    0x00000002 /* Blocked on a wait_queue/mutex */
++#define EVL_T_DELAY   0x00000004 /* Delayed/timed */
++#define EVL_T_WAIT    0x00000008 /* Periodic wait */
++#define EVL_T_READY   0x00000010 /* Ready to run (in rq) */
++#define EVL_T_DORMANT 0x00000020 /* Not started yet */
++#define EVL_T_ZOMBIE  0x00000040 /* Dead, waiting for disposal */
++#define EVL_T_INBAND  0x00000080 /* Running in-band */
++#define EVL_T_HALT    0x00000100 /* Halted */
++#define EVL_T_BOOST   0x00000200 /* PI/PP boost undergoing */
++#define EVL_T_PTSYNC  0x00000400 /* Synchronizing on ptrace event */
++#define EVL_T_RRB     0x00000800 /* Undergoes round-robin scheduling */
++#define EVL_T_ROOT    0x00001000 /* Root thread (in-band kernel placeholder) */
++#define EVL_T_WEAK    0x00002000 /* Weak scheduling (in-band) */
++#define EVL_T_USER    0x00004000 /* Userland thread */
++#define EVL_T_WOSS    0x00008000 /* Warn on stage switch (HM) */
++#define EVL_T_WOLI    0x00010000 /* Warn on locking inconsistency (HM) */
++#define EVL_T_WOSX    0x00020000 /* Warn on stage exclusion (HM) */
++#define EVL_T_PTRACE  0x00040000 /* Stopped on ptrace event */
++#define EVL_T_OBSERV  0x00080000 /* Observable (only for export to userland) */
++#define EVL_T_HMSIG   0x00100000 /* Notify HM events via SIGDEBUG */
++#define EVL_T_HMOBS   0x00200000 /* Notify HM events via observable */
++#define EVL_T_WOSO    0x00400000 /* Schedule overrun */
+ 
+ /* Information flags (shared) */
+ 
+-#define T_TIMEO   0x00000001 /* Woken up due to a timeout condition */
+-#define T_RMID    0x00000002 /* Pending on a removed resource */
+-#define T_BREAK   0x00000004 /* Forcibly awaken from a wait state */
+-#define T_KICKED  0x00000008 /* Forced out of OOB context */
+-#define T_WCHAN   0x00000010 /* Need to requeue in wait channel */
++#define EVL_T_TIMEO   0x00000001 /* Woken up due to a timeout condition */
++#define EVL_T_RMID    0x00000002 /* Pending on a removed resource */
++#define EVL_T_BREAK   0x00000004 /* Forcibly awaken from a wait state */
++#define EVL_T_KICKED  0x00000008 /* Forced out of OOB context */
++#define EVL_T_WCHAN   0x00000010 /* Need to requeue in wait channel */
+ /* free: 0x00000020 */
+-#define T_CANCELD 0x00000040 /* Cancellation request is pending */
+-#define T_PIALERT 0x00000080 /* Priority inversion alert (HM notified) */
+-#define T_SCHEDP  0x00000100 /* Schedparam propagation is pending */
+-#define T_BCAST   0x00000200 /* Woken up upon resource broadcast */
+-#define T_SIGNAL  0x00000400 /* Event monitor signaled */
+-#define T_SXALERT 0x00000800 /* Stage exclusion alert (HM notified) */
+-#define T_PTSIG   0x00001000 /* Ptrace signal is pending */
+-#define T_PTSTOP  0x00002000 /* Ptrace stop is ongoing */
+-#define T_PTJOIN  0x00004000 /* Ptracee should join ptsync barrier */
+-#define T_NOMEM   0x00008000 /* No memory to complete the operation */
++#define EVL_T_CANCELD 0x00000040 /* Cancellation request is pending */
++#define EVL_T_PIALERT 0x00000080 /* Priority inversion alert (HM notified) */
++#define EVL_T_SCHEDP  0x00000100 /* Schedparam propagation is pending */
++#define EVL_T_BCAST   0x00000200 /* Woken up upon resource broadcast */
++#define EVL_T_SIGNAL  0x00000400 /* Event monitor signaled */
++#define EVL_T_SXALERT 0x00000800 /* Stage exclusion alert (HM notified) */
++#define EVL_T_PTSIG   0x00001000 /* Ptrace signal is pending */
++#define EVL_T_PTSTOP  0x00002000 /* Ptrace stop is ongoing */
++#define EVL_T_PTJOIN  0x00004000 /* Ptracee should join ptsync barrier */
++#define EVL_T_NOMEM   0x00008000 /* No memory to complete the operation */
+ 
+ /* Local information flags (private to current thread) */
+ 
+-#define T_SYSRST  0x00000001 /* Thread awaiting syscall restart after signal */
+-#define T_IGNOVR  0x00000002 /* Overrun detection temporarily disabled */
+-#define T_INFAULT 0x00000004 /* In fault handling */
+-#define T_NORST   0x00000008 /* Disable syscall restart */
++#define EVL_T_SYSRST  0x00000001 /* Thread awaiting syscall restart after signal */
++#define EVL_T_IGNOVR  0x00000002 /* Overrun detection temporarily disabled */
++#define EVL_T_INFAULT 0x00000004 /* In fault handling */
++#define EVL_T_NORST   0x00000008 /* Disable syscall restart */
+ 
+ /*
+  * Must follow strictly the declaration order of the state flags
+@@ -81,7 +81,7 @@
+  * 'b' -> Priority boost undergoing
+  * '#' -> Ptrace sync ongoing
+  * 'r' -> Undergoes round-robin
+- * 't' -> Warned on stage switch (T_WOSS)
++ * 't' -> Warned on stage switch (EVL_T_WOSS)
+  * 'T' -> Stopped on ptrace event
+  * 'o' -> Observable
+  */
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index ccf23585b..a5ce944e9 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -252,7 +252,7 @@ config EVL_DEBUG_WOLI
+ 	help
+ 	  This option enables a set of consistency checks by default
+ 	  for every new EVL thread for detecting wrong mutex-based
+-	  locking patterns (aka T_WOLI flag), which are otherwise
++	  locking patterns (aka EVL_T_WOLI flag), which are otherwise
+ 	  opted-in programmatically on a per-thread basis when this
+ 	  option is off. This feature may induce overhead in some
+ 	  cases, so you should enable it for debugging purposes only.
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index f09aaff24..ca5422f2d 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -367,7 +367,7 @@ void evl_core_tick(struct clock_event_device *dummy) /* hard irqs off */
+ 	 * evl_exit_irq(), so we may have to propagate the in-band
+ 	 * tick immediately only if the in-band context was preempted.
+ 	 */
+-	if ((this_rq->local_flags & RQ_TPROXY) && (this_rq->curr->state & T_ROOT))
++	if ((this_rq->local_flags & RQ_TPROXY) && (this_rq->curr->state & EVL_T_ROOT))
+ 		evl_notify_proxy_tick(this_rq);
+ }
+ 
+@@ -482,8 +482,8 @@ static int clock_sleep(struct evl_clock *clock,
+ 	struct restart_block *restart;
+ 	ktime_t timeout, rem;
+ 
+-	if (curr->local_info & T_SYSRST) {
+-		curr->local_info &= ~T_SYSRST;
++	if (curr->local_info & EVL_T_SYSRST) {
++		curr->local_info &= ~EVL_T_SYSRST;
+ 		restart = &current->restart_block;
+ 		if (restart->fn != restart_clock_sleep)
+ 			return -EINTR;
+@@ -499,7 +499,7 @@ static int clock_sleep(struct evl_clock *clock,
+ 		restart = &current->restart_block;
+ 		restart->nanosleep.expires = timeout;
+ 		restart->fn = restart_clock_sleep;
+-		curr->local_info |= T_SYSRST;
++		curr->local_info |= EVL_T_SYSRST;
+ 		return -ERESTARTSYS;
+ 	}
+ 
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 9c50a507a..f58dc8139 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -83,7 +83,7 @@ static int stop_services(void)
+ 	case EVL_STATE_STOPPED:
+ 		break;
+ 	case EVL_STATE_RUNNING:
+-		ret = evl_killall(T_USER);
++		ret = evl_killall(EVL_T_USER);
+ 		if (ret) {
+ 			set_evl_state(state);
+ 			return ret;
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 7ce9f3d69..057a9c662 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -85,7 +85,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
+ 		event->state->flags |= (EVL_MONITOR_TARGETED|
+ 					EVL_MONITOR_SIGNALED);
+ 		raw_spin_lock(&target->rq->lock);
+-		target->info |= T_SIGNAL;
++		target->info |= EVL_T_SIGNAL;
+ 		raw_spin_unlock(&target->rq->lock);
+ 	}
+ 
+@@ -105,7 +105,7 @@ void __evl_commit_monitor_ceiling(void)
+ 	struct evl_monitor *gate;
+ 
+ 	/*
+-	 * curr->u_window has to be valid since curr bears T_USER.  If
++	 * curr->u_window has to be valid since curr bears EVL_T_USER.  If
+ 	 * pp_pending is a bad handle, just skip ceiling.
+ 	 */
+ 	gate = evl_get_factory_element_by_fundle(&evl_monitor_factory,
+@@ -168,7 +168,7 @@ static void wakeup_waiters(struct evl_monitor *event, struct evl_monitor *gate)
+ 		} else if (state->flags & EVL_MONITOR_TARGETED) {
+ 			evl_for_each_waiter_safe(waiter, n,
+ 						&event->wait_queue) {
+-				if (waiter->info & T_SIGNAL)
++				if (waiter->info & EVL_T_SIGNAL)
+ 					evl_wake_up(&event->wait_queue,
+ 						waiter, 0);
+ 			}
+@@ -513,7 +513,7 @@ static int wait_monitor(struct file *filp,
+ 	raw_spin_unlock(&event->wait_queue.wchan.lock);
+ 
+ 	rq = evl_get_thread_rq_noirq(curr);
+-	curr->info &= ~T_SIGNAL;
++	curr->info &= ~EVL_T_SIGNAL;
+ 	evl_put_thread_rq_noirq(curr, rq);
+ 
+ 	__exit_monitor(gate, curr); /* See comment in exit_monitor(). */
+@@ -550,7 +550,7 @@ static int wait_monitor(struct file *filp,
+ 		 * are set to -EINTR.
+ 		 */
+ 		if (ret == -EINTR && signal_pending(current)) {
+-			curr->local_info |= T_NORST;
++			curr->local_info |= EVL_T_NORST;
+ 			goto put;
+ 		}
+ 		op_ret = ret;
+@@ -561,7 +561,7 @@ static int wait_monitor(struct file *filp,
+ 	ret = __enter_monitor(gate, NULL);
+ 	if (ret == -EINTR) {
+ 		if (signal_pending(current))
+-			curr->local_info |= T_NORST;
++			curr->local_info |= EVL_T_NORST;
+ 		op_ret = -EAGAIN;
+ 	}
+ put:
+@@ -770,9 +770,9 @@ static int monitor_release(struct inode *inode, struct file *filp)
+ 	struct evl_monitor *mon = element_of(filp, struct evl_monitor);
+ 
+ 	if (mon->type == EVL_MONITOR_EVENT)
+-		evl_flush_wait(&mon->wait_queue, T_RMID);
++		evl_flush_wait(&mon->wait_queue, EVL_T_RMID);
+ 	else
+-		evl_flush_mutex(&mon->mutex, T_RMID);
++		evl_flush_mutex(&mon->mutex, EVL_T_RMID);
+ 
+ 	return evl_release_element(inode, filp);
+ }
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 3eac51cbb..b7ae28c8d 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -39,7 +39,7 @@ void disable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
+ 	 * being switched back to in-band context on return from OOB
+ 	 * syscalls, 2) when locking consistency is being checked.
+ 	 */
+-	if (unlikely(curr->state & (T_WEAK|T_WOLI))) {
++	if (unlikely(curr->state & (EVL_T_WEAK|EVL_T_WOLI))) {
+ 		atomic_inc(&curr->held_mutex_count);
+ 		mutex->flags |= EVL_MUTEX_COUNTED;
+ 	}
+@@ -254,7 +254,7 @@ static void adjust_owner_boost(struct evl_thread *owner)
+ 	raw_spin_lock(&owner->lock);
+ 
+ 	if (list_empty(&owner->boosters)) {
+-		EVL_WARN_ON_ONCE(CORE, owner->state & T_BOOST);
++		EVL_WARN_ON_ONCE(CORE, owner->state & EVL_T_BOOST);
+ 		raw_spin_unlock(&owner->lock);
+ 		return;
+ 	}
+@@ -412,7 +412,7 @@ static void drop_booster(struct evl_mutex *mutex)
+ /*
+  * Detect when current is about to switch in-band while owning a
+  * mutex, which is plain wrong since this would create a priority
+- * inversion. T_WOLI is set for current.
++ * inversion. EVL_T_WOLI is set for current.
+  */
+ void evl_check_no_mutex(void)
+ {
+@@ -421,11 +421,11 @@ void evl_check_no_mutex(void)
+ 	bool notify;
+ 
+ 	raw_spin_lock_irqsave(&curr->lock, flags);
+-	if (!(curr->info & T_PIALERT)) {
++	if (!(curr->info & EVL_T_PIALERT)) {
+ 		notify = !list_empty(&curr->owned_mutexes);
+ 		if (notify) {
+ 			raw_spin_lock(&curr->rq->lock);
+-			curr->info |= T_PIALERT;
++			curr->info |= EVL_T_PIALERT;
+ 			raw_spin_unlock(&curr->rq->lock);
+ 		}
+ 	}
+@@ -475,7 +475,7 @@ static void flush_mutex_locked(struct evl_mutex *mutex, int reason)
+ 		list_for_each_entry_safe(waiter, tmp,
+ 					&mutex->wchan.wait_list, wait_next) {
+ 			list_del_init(&waiter->wait_next);
+-			evl_wakeup_thread(waiter, T_PEND, reason);
++			evl_wakeup_thread(waiter, EVL_T_PEND, reason);
+ 		}
+ 
+ 		if (mutex->flags & EVL_MUTEX_PIBOOST) {
+@@ -502,7 +502,7 @@ void evl_destroy_mutex(struct evl_mutex *mutex)
+ 
+ 	trace_evl_mutex_destroy(mutex);
+ 	raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+-	flush_mutex_locked(mutex, T_RMID);
++	flush_mutex_locked(mutex, EVL_T_RMID);
+ 	untrack_mutex_owner(mutex);
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+ 	evl_schedule();
+@@ -789,7 +789,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	if (!list_empty(&mutex->wchan.wait_list)) {
+ 		top_waiter = list_get_entry_init(&mutex->wchan.wait_list,
+ 				struct evl_thread, wait_next);
+-		evl_wakeup_thread(top_waiter, T_PEND, 0);
++		evl_wakeup_thread(top_waiter, EVL_T_PEND, 0);
+ 	}
+ 
+ 	/*
+@@ -809,7 +809,7 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 	if (IS_ENABLED(CONFIG_EVL_DEBUG_CORE)) {
+ 		bool bad;
+ 		raw_spin_lock_irqsave(&curr->lock, flags);
+-		bad = curr->state & T_BOOST && list_empty(&curr->boosters);
++		bad = curr->state & EVL_T_BOOST && list_empty(&curr->boosters);
+ 		raw_spin_unlock_irqrestore(&curr->lock, flags);
+ 		EVL_WARN_ON_ONCE(CORE, bad);
+ 	}
+@@ -824,8 +824,8 @@ void evl_unlock_mutex(struct evl_mutex *mutex)
+ 
+ 	h = evl_get_index(atomic_read(mutex->fastlock));
+ 	if (h != currh) {
+-		if (curr->state & T_USER) {
+-			if (curr->state & T_WOLI)
++		if (curr->state & EVL_T_USER) {
++			if (curr->state & EVL_T_WOLI)
+ 				evl_notify_thread(curr, EVL_HMDIAG_LKIMBALANCE, evl_nil);
+ 		} else {
+ 			EVL_WARN_ON(CORE, 1);
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index c2472936d..8eb30072b 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -258,7 +258,7 @@ static void disable_oob_port(struct net_device *dev)
+ 	 */
+ 
+ 	evl_signal_poll_events(&est->poll_head, POLLERR);
+-	evl_flush_wait(&est->pool_wait, T_RMID);
++	evl_flush_wait(&est->pool_wait, EVL_T_RMID);
+ 	evl_schedule();
+ 
+ 	netif_disable_oob_diversion(real_dev);
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index 16f7cb005..68cf81031 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -103,7 +103,7 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,
+ 		if (protocol == htons(ETH_P_ALL)) {
+ 			qskb = evl_net_clone_skb(skb);
+ 			if (qskb == NULL) {
+-				evl_flush_wait(&esk->input_wait, T_NOMEM);
++				evl_flush_wait(&esk->input_wait, EVL_T_NOMEM);
+ 				evl_uncharge_socket_rmem(esk, skb);
+ 				break;
+ 			}
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index 0328c7759..0dfc7aca0 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -646,7 +646,7 @@ static int poll_release(struct inode *inode, struct file *filp)
+ 
+ 	raw_spin_lock_irqsave(&group->wait_lock, flags);
+ 	list_for_each_entry(waiter, &group->waiter_list, next)
+-		evl_flush_flag_nosched(&waiter->flag, T_RMID);
++		evl_flush_flag_nosched(&waiter->flag, EVL_T_RMID);
+ 	raw_spin_unlock_irqrestore(&group->wait_lock, flags);
+ 	evl_schedule();
+ 
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 6626f4fbe..e18fcedf2 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -598,10 +598,10 @@ static int proxy_release(struct inode *inode, struct file *filp)
+ 	struct evl_proxy *proxy = element_of(filp, struct evl_proxy);
+ 
+ 	if (proxy_is_writable(proxy))
+-		evl_flush_flag(&proxy->output.ring.oob_wait, T_RMID);
++		evl_flush_flag(&proxy->output.ring.oob_wait, EVL_T_RMID);
+ 
+ 	if (proxy_is_readable(proxy))
+-		evl_flush_flag(&proxy->input.ring.oob_wait, T_RMID);
++		evl_flush_flag(&proxy->input.ring.oob_wait, EVL_T_RMID);
+ 
+ 	return evl_release_element(inode, filp);
+ }
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 360a424be..95e711c4c 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -97,13 +97,13 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
+ 	 * trigger date eventually. Make sure that we are not about to
+ 	 * kick the incoming root thread.
+ 	 */
+-	if (curr->state & T_ROOT)
++	if (curr->state & EVL_T_ROOT)
+ 		return;
+ 
+-	if (curr->state & T_USER) {
++	if (curr->state & EVL_T_USER) {
+ 		raw_spin_lock(&curr->lock);
+ 		raw_spin_lock(&this_rq->lock);
+-		curr->info |= T_KICKED;
++		curr->info |= EVL_T_KICKED;
+ 		raw_spin_unlock(&this_rq->lock);
+ 		raw_spin_unlock(&curr->lock);
+ 		evl_notify_thread(curr, EVL_HMDIAG_WATCHDOG, evl_nil);
+@@ -116,14 +116,14 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
+ 		/*
+ 		 * On behalf on an IRQ handler, evl_cancel_thread()
+ 		 * would go half way cancelling the preempted
+-		 * thread. Therefore we manually raise T_KICKED to
++		 * thread. Therefore we manually raise EVL_T_KICKED to
+ 		 * cause the next blocking call to return early in
+-		 * T_BREAK condition, and T_CANCELD so that @curr
++		 * EVL_T_BREAK condition, and EVL_T_CANCELD so that @curr
+ 		 * exits next time it invokes evl_test_cancel().
+ 		 */
+ 		raw_spin_lock(&curr->lock);
+ 		raw_spin_lock(&this_rq->lock);
+-		curr->info |= (T_KICKED|T_CANCELD);
++		curr->info |= (EVL_T_KICKED|EVL_T_CANCELD);
+ 		raw_spin_unlock(&this_rq->lock);
+ 		raw_spin_unlock(&curr->lock);
+ 	}
+@@ -194,7 +194,7 @@ static void init_rq(struct evl_rq *rq, int cpu)
+ 	 * enough of the runqueue initialized, so that attempting to
+ 	 * reschedule from evl_exit_irq() later on is harmless.
+ 	 */
+-	iattr.flags = T_ROOT;
++	iattr.flags = EVL_T_ROOT;
+ 	iattr.affinity = cpumask_of(cpu);
+ 	iattr.observable = NULL;
+ 	iattr.sched_class = &evl_sched_idle;
+@@ -278,9 +278,9 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)
+ 	 */
+ 	evl_double_rq_lock(src_rq, dst_rq);
+ 
+-	if (thread->state & T_READY) {
++	if (thread->state & EVL_T_READY) {
+ 		evl_dequeue_thread(thread);
+-		thread->state &= ~T_READY;
++		thread->state &= ~EVL_T_READY;
+ 	}
+ 
+ 	if (sched_class->sched_migrate)
+@@ -293,7 +293,7 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)
+ 
+ 	if (!(thread->state & EVL_THREAD_BLOCK_BITS)) {
+ 		evl_requeue_thread(thread);
+-		thread->state |= T_READY;
++		thread->state |= EVL_T_READY;
+ 		evl_set_resched(dst_rq);
+ 		evl_set_resched(src_rq);
+ 	}
+@@ -304,7 +304,7 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)
+ /*
+  * Move a thread to a different runqueue. Some sched_migrate() policy
+  * handlers might change the scheduling class and/or priority of the
+- * target thread, our callers MAY HAVE TO check for T_WCHAN to
++ * target thread, our callers MAY HAVE TO check for EVL_T_WCHAN to
+  * determine whether the wait channel it might pend on should be
+  * adjusted accordingly.
+  *
+@@ -366,11 +366,11 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off *
+ 		/*
+ 		 * Can't call evl_cancel_thread() from a CPU migration
+ 		 * point, that would break. Since we are on the wakeup
+-		 * path to oob context, just raise T_CANCELD to catch
++		 * path to oob context, just raise EVL_T_CANCELD to catch
+ 		 * it in evl_switch_oob().
+ 		 */
+ 		raw_spin_lock(&thread->rq->lock);
+-		thread->info |= T_CANCELD;
++		thread->info |= EVL_T_CANCELD;
+ 		raw_spin_unlock(&thread->rq->lock);
+ 	} else {
+ 		/*
+@@ -389,9 +389,9 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off *
+ 	 * Check for a wait channel requeuing. Open code the portion
+ 	 * of the evl_put_thread_rq_check_noirq() logic we need.
+ 	 */
+-	if (thread->info & T_WCHAN) {
++	if (thread->info & EVL_T_WCHAN) {
+ 		raw_spin_lock(&thread->rq->lock);
+-		thread->info &= ~T_WCHAN;
++		thread->info &= ~EVL_T_WCHAN;
+ 		raw_spin_unlock(&thread->rq->lock);
+ 		need_requeue = true;
+ 	}
+@@ -419,10 +419,10 @@ void evl_putback_thread(struct evl_thread *thread)
+ {
+   	assert_thread_pinned(thread);
+ 
+-	if (thread->state & T_READY)
++	if (thread->state & EVL_T_READY)
+ 		evl_dequeue_thread(thread);
+ 	else
+-		thread->state |= T_READY;
++		thread->state |= EVL_T_READY;
+ 
+ 	evl_enqueue_thread(thread);
+ 	evl_set_resched(thread->rq);
+@@ -463,7 +463,7 @@ int evl_set_thread_policy_locked(struct evl_thread *thread,
+ 	 * with no previous scheduling class at all.
+ 	 */
+ 	if (likely(thread->base_class != NULL)) {
+-		if (thread->state & T_READY)
++		if (thread->state & EVL_T_READY)
+ 			evl_dequeue_thread(thread);
+ 
+ 		if (sched_class != thread->base_class)
+@@ -497,21 +497,21 @@ int evl_set_thread_policy_locked(struct evl_thread *thread,
+ 	} else if (EVL_DEBUG(CORE))
+ 		thread->sched_class = orig_effective_class;
+ 
+-	if (thread->state & T_READY)
++	if (thread->state & EVL_T_READY)
+ 		evl_enqueue_thread(thread);
+ 
+ 	/*
+ 	 * Make sure not to raise RQ_SCHED when setting up the root
+ 	 * thread, so that we can't start rescheduling from
+ 	 * evl_exit_irq() before all CPUs have their runqueue fully
+-	 * built. Filtering on T_ROOT here is correct because the root
++	 * built. Filtering on EVL_T_ROOT here is correct because the root
+ 	 * thread enters the idle class once as part of the runqueue
+ 	 * setup process and never leaves it afterwards.
+ 	 */
+-	if (!(thread->state & (T_DORMANT|T_ROOT)))
++	if (!(thread->state & (EVL_T_DORMANT|EVL_T_ROOT)))
+ 		evl_set_resched(thread->rq);
+ 	else
+-		EVL_WARN_ON(CORE, (thread->state & T_ROOT) &&
++		EVL_WARN_ON(CORE, (thread->state & EVL_T_ROOT) &&
+ 			sched_class != &evl_sched_idle);
+ 	return 0;
+ }
+@@ -549,7 +549,7 @@ bool evl_set_effective_thread_priority(struct evl_thread *thread, int prio)
+ 	 * evl_protect_thread_priority() may do so when dealing with PI
+ 	 * and PP synchs resp.
+ 	 */
+-	if (wprio < thread->wprio && (thread->state & T_BOOST))
++	if (wprio < thread->wprio && (thread->state & EVL_T_BOOST))
+ 		return false;
+ 
+ 	thread->cprio = prio;
+@@ -574,7 +574,7 @@ void evl_track_thread_policy(struct evl_thread *dst,
+ 	 * We may receive redundant calls for deboosting, this is ok,
+ 	 * just filter them out.
+ 	 */
+-	if (src == dst && !(dst->state & T_BOOST))
++	if (src == dst && !(dst->state & EVL_T_BOOST))
+ 		goto out;
+ 
+ 	/*
+@@ -583,7 +583,7 @@ void evl_track_thread_policy(struct evl_thread *dst,
+ 	 * routine is allowed to lower the weighted priority with no
+ 	 * restriction, even if a boost is undergoing.
+ 	 */
+-	if (dst->state & T_READY)
++	if (dst->state & EVL_T_READY)
+ 		evl_dequeue_thread(dst);
+ 
+ 	/*
+@@ -592,7 +592,7 @@ void evl_track_thread_policy(struct evl_thread *dst,
+ 	 * inherit the scheduling parameters from @src.
+ 	 */
+ 	if (src == dst) {	/* Deboosting? */
+-		dst->state &= ~T_BOOST;
++		dst->state &= ~EVL_T_BOOST;
+ 		dst->sched_class = dst->base_class;
+ 		evl_track_priority(dst, NULL);
+ 		/*
+@@ -600,23 +600,23 @@ void evl_track_thread_policy(struct evl_thread *dst,
+ 		 * should not move the thread to the tail of its
+ 		 * priority group, which makes sense.
+ 		 */
+-		if (dst->state & T_READY)
++		if (dst->state & EVL_T_READY)
+ 			evl_requeue_thread(dst);
+ 	} else {
+ 		/*
+ 		 * Save the base priority at initial boost only, then
+-		 * raise the T_BOOST flag so that setparam() won't be
++		 * raise the EVL_T_BOOST flag so that setparam() won't be
+ 		 * allowed to decrease the current weighted priority
+ 		 * below the boost value, until deboosting occurs.
+ 		 */
+-		if (src->wprio > dst->wprio && !(dst->state & T_BOOST)) {
++		if (src->wprio > dst->wprio && !(dst->state & EVL_T_BOOST)) {
+ 			dst->bprio = dst->cprio;
+-			dst->state |= T_BOOST;
++			dst->state |= EVL_T_BOOST;
+ 		}
+ 		evl_get_schedparam(src, &param);
+ 		dst->sched_class = src->sched_class;
+ 		evl_track_priority(dst, &param);
+-		if (dst->state & T_READY)
++		if (dst->state & EVL_T_READY)
+ 			evl_enqueue_thread(dst);
+ 	}
+ 
+@@ -649,18 +649,18 @@ void evl_protect_thread_priority(struct evl_thread *thread, int prio)
+ 	 */
+ 	if (thread->sched_class != &evl_sched_fifo ||
+ 	    evl_calc_weighted_prio(&evl_sched_fifo, prio) != thread->wprio) {
+-		if (!(thread->state & T_BOOST)) {
++		if (!(thread->state & EVL_T_BOOST)) {
+ 			thread->bprio = thread->cprio;
+-			thread->state |= T_BOOST;
++			thread->state |= EVL_T_BOOST;
+ 		}
+ 
+-		if (thread->state & T_READY)
++		if (thread->state & EVL_T_READY)
+ 			evl_dequeue_thread(thread);
+ 
+ 		thread->sched_class = &evl_sched_fifo;
+ 		evl_ceil_priority(thread, prio);
+ 
+-		if (thread->state & T_READY)
++		if (thread->state & EVL_T_READY)
+ 			evl_enqueue_thread(thread);
+ 
+ 		trace_evl_thread_set_current_prio(thread);
+@@ -787,8 +787,8 @@ static irqreturn_t oob_reschedule_interrupt(int irq, void *dev_id)
+ static inline void set_next_running(struct evl_rq *rq,
+ 				struct evl_thread *next)
+ {
+-	next->state &= ~T_READY;
+-	if (next->state & T_RRB)
++	next->state &= ~EVL_T_READY;
++	if (next->state & EVL_T_RRB)
+ 		evl_start_timer(&rq->rrbtimer,
+ 				evl_abs_timeout(&rq->rrbtimer, next->rrperiod),
+ 				EVL_INFINITE);
+@@ -807,7 +807,7 @@ static struct evl_thread *__pick_next_thread(struct evl_rq *rq)
+ 	 * condition is raised for it. Otherwise, check whether
+ 	 * preemption is allowed.
+ 	 */
+-	if (!(curr->state & (EVL_THREAD_BLOCK_BITS | T_ZOMBIE))) {
++	if (!(curr->state & (EVL_THREAD_BLOCK_BITS | EVL_T_ZOMBIE))) {
+ 		if (evl_preempt_count() > 0) {
+ 			evl_set_self_resched(rq);
+ 			return curr;
+@@ -815,11 +815,11 @@ static struct evl_thread *__pick_next_thread(struct evl_rq *rq)
+ 		/*
+ 		 * Push the current thread back to the run queue of
+ 		 * the scheduling class it belongs to, if not yet
+-		 * linked to it (T_READY tells us if it is).
++		 * linked to it (EVL_T_READY tells us if it is).
+ 		 */
+-		if (!(curr->state & T_READY)) {
++		if (!(curr->state & EVL_T_READY)) {
+ 			evl_requeue_thread(curr);
+-			curr->state |= T_READY;
++			curr->state |= EVL_T_READY;
+ 		}
+ 	}
+ 
+@@ -857,23 +857,23 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)
+ 		/*
+ 		 * Obey any pending request for a ptsync freeze.
+ 		 * Either we freeze @next before a sigwake event lifts
+-		 * T_PTSYNC, setting T_PTSTOP, or after in which case
+-		 * we already have T_PTSTOP set so we don't have to
+-		 * raise T_PTSYNC. The basic assumption is that we
++		 * EVL_T_PTSYNC, setting EVL_T_PTSTOP, or after in which case
++		 * we already have EVL_T_PTSTOP set so we don't have to
++		 * raise EVL_T_PTSYNC. The basic assumption is that we
+ 		 * should get SIGSTOP/SIGTRAP for any thread involved.
+ 		 */
+ 		if (likely(!test_bit(EVL_MM_PTSYNC_BIT, &oob_mm->flags)))
+ 			break;	/* Fast and most likely path. */
+-		if (next->info & (T_PTSTOP|T_PTSIG|T_KICKED))
++		if (next->info & (EVL_T_PTSTOP|EVL_T_PTSIG|EVL_T_KICKED))
+ 			break;
+ 		/*
+ 		 * NOTE: We hold next->rq->lock by construction, so
+ 		 * changing next->state is ok despite that we don't
+ 		 * hold next->lock. This properly serializes with
+-		 * evl_kick_thread() which might raise T_PTSTOP.
++		 * evl_kick_thread() which might raise EVL_T_PTSTOP.
+ 		 */
+-		next->state |= T_PTSYNC;
+-		next->state &= ~T_READY;
++		next->state |= EVL_T_PTSYNC;
++		next->state &= ~EVL_T_READY;
+ 	}
+ 
+ 	set_next_running(rq, next);
+@@ -978,7 +978,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	 * Check whether we have a pending priority ceiling request to
+ 	 * commit before putting the current thread to sleep.
+ 	 * evl_current() may differ from rq->curr only if rq->curr ==
+-	 * &rq->root_thread. Testing T_USER eliminates this case since
++	 * &rq->root_thread. Testing EVL_T_USER eliminates this case since
+ 	 * a root thread never bears this bit.
+ 	 */
+ 	curr = this_rq->curr;
+@@ -986,14 +986,14 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	 * Deferred WCHAN requeuing must be handled prior to
+ 	 * rescheduling.
+ 	 */
+-	EVL_WARN_ON(CORE, curr->info & T_WCHAN);
++	EVL_WARN_ON(CORE, curr->info & EVL_T_WCHAN);
+ 
+ 	/*
+ 	 * Priority protection for mutexes is only available to
+ 	 * applications. Kernel users stick with the priority
+ 	 * inheritance protocol (see evl_init_kmutex()).
+ 	 */
+-	if (curr->state & T_USER)
++	if (curr->state & EVL_T_USER)
+ 		evl_commit_monitor_ceiling();
+ 
+ 	/*
+@@ -1010,7 +1010,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	 * would be really wrong in the PI/PP implementation anyway.
+ 	 */
+ 	if (IS_ENABLED(CONFIG_EVL_DEBUG_CORE) &&
+-		curr->state & T_BOOST && list_empty(&curr->boosters)) {
++		curr->state & EVL_T_BOOST && list_empty(&curr->boosters)) {
+ 		raw_spin_unlock(&curr->lock);
+ 		EVL_WARN_ON_ONCE(CORE, 1);
+ 		raw_spin_lock(&curr->lock);
+@@ -1027,7 +1027,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	next = pick_next_thread(this_rq);
+ 	trace_evl_pick_thread(next);
+ 	if (next == curr) {
+-		if (unlikely(next->state & T_ROOT)) {
++		if (unlikely(next->state & EVL_T_ROOT)) {
+ 			if (this_rq->local_flags & RQ_TPROXY)
+ 				evl_notify_proxy_tick(this_rq);
+ 			if (this_rq->local_flags & RQ_TDEFER)
+@@ -1042,10 +1042,10 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	this_rq->curr = next;
+ 	leaving_inband = false;
+ 
+-	if (prev->state & T_ROOT) {
++	if (prev->state & EVL_T_ROOT) {
+ 		leave_inband(prev);
+ 		leaving_inband = true;
+-	} else if (next->state & T_ROOT) {
++	} else if (next->state & EVL_T_ROOT) {
+ 		if (this_rq->local_flags & RQ_TPROXY)
+ 			evl_notify_proxy_tick(this_rq);
+ 		if (this_rq->local_flags & RQ_TDEFER)
+@@ -1084,7 +1084,7 @@ void evl_start_ptsync(struct evl_thread *stopper)
+ 	struct evl_rq *this_rq;
+ 	unsigned long flags;
+ 
+-	if (EVL_WARN_ON(CORE, !(stopper->state & T_USER)))
++	if (EVL_WARN_ON(CORE, !(stopper->state & EVL_T_USER)))
+ 		return;
+ 
+ 	flags = hard_local_irq_save();
+@@ -1105,9 +1105,9 @@ void resume_oob_task(struct task_struct *p) /* inband, oob stage stalled */
+ 	 */
+ 	unstall_oob();
+ 	check_cpu_affinity(p);
+-	evl_release_thread(thread, T_INBAND, 0);
++	evl_release_thread(thread, EVL_T_INBAND, 0);
+ 	/*
+-	 * If T_PTSTOP is set, pick_next_thread() is not allowed to
++	 * If EVL_T_PTSTOP is set, pick_next_thread() is not allowed to
+ 	 * freeze @thread while in flight to the out-of-band stage.
+ 	 */
+ 	evl_schedule();
+@@ -1131,12 +1131,12 @@ int evl_switch_oob(void)
+ 
+ 	trace_evl_switch_oob(curr);
+ 
+-	evl_clear_sync_uwindow(curr, T_INBAND);
++	evl_clear_sync_uwindow(curr, EVL_T_INBAND);
+ 
+ 	ret = dovetail_leave_inband();
+ 	if (ret) {
+ 		evl_test_cancel();
+-		evl_set_sync_uwindow(curr, T_INBAND);
++		evl_set_sync_uwindow(curr, EVL_T_INBAND);
+ 		return ret;
+ 	}
+ 
+@@ -1161,23 +1161,23 @@ int evl_switch_oob(void)
+ 
+ 	/*
+ 	 * In case check_cpu_affinity() caught us resuming oob from a
+-	 * wrong CPU (i.e. outside of the oob set), we have T_CANCELD
++	 * wrong CPU (i.e. outside of the oob set), we have EVL_T_CANCELD
+ 	 * set. Check and bail out if so.
+ 	 */
+-	if (curr->info & T_CANCELD)
++	if (curr->info & EVL_T_CANCELD)
+ 		evl_test_cancel();
+ 
+ 	/*
+ 	 * Since handle_sigwake_event()->evl_kick_thread() won't set
+-	 * T_KICKED unless T_INBAND is cleared, a signal received
++	 * EVL_T_KICKED unless EVL_T_INBAND is cleared, a signal received
+ 	 * during the stage transition process might have gone
+-	 * unnoticed. Recheck for signals here and raise T_KICKED if
++	 * unnoticed. Recheck for signals here and raise EVL_T_KICKED if
+ 	 * some are pending, so that we switch back in-band asap for
+ 	 * handling them.
+ 	 */
+ 	if (signal_pending(p)) {
+ 		raw_spin_lock_irqsave(&curr->rq->lock, flags);
+-		curr->info |= T_KICKED;
++		curr->info |= EVL_T_KICKED;
+ 		raw_spin_unlock_irqrestore(&curr->rq->lock, flags);
+ 	}
+ 
+@@ -1196,7 +1196,7 @@ void evl_switch_inband(int cause)
+ 	trace_evl_switch_inband(cause);
+ 
+ 	/*
+-	 * This is the only location where we may assert T_INBAND for
++	 * This is the only location where we may assert EVL_T_INBAND for
+ 	 * a thread. Basic assumption: switching to the inband stage
+ 	 * only applies to the current thread running out-of-band on
+ 	 * this CPU. See caveat about dovetail_leave_oob() below.
+@@ -1208,14 +1208,14 @@ void evl_switch_inband(int cause)
+ 	this_rq = curr->rq;
+ 	raw_spin_lock(&this_rq->lock);
+ 
+-	if (curr->state & T_READY) {
++	if (curr->state & EVL_T_READY) {
+ 		evl_dequeue_thread(curr);
+-		curr->state &= ~T_READY;
++		curr->state &= ~EVL_T_READY;
+ 	}
+ 
+-	curr->state |= T_INBAND;
+-	curr->local_info &= ~T_SYSRST;
+-	notify = curr->state & T_USER && cause > EVL_HMDIAG_NONE;
++	curr->state |= EVL_T_INBAND;
++	curr->local_info &= ~EVL_T_SYSRST;
++	notify = curr->state & EVL_T_USER && cause > EVL_HMDIAG_NONE;
+ 
+ 	/*
+ 	 * If we are initiating the ptsync sequence on breakpoint or
+@@ -1223,11 +1223,11 @@ void evl_switch_inband(int cause)
+ 	 * since switching in-band is ok.
+ 	 */
+ 	if (cause == EVL_HMDIAG_TRAP) {
+-		curr->info |= T_PTSTOP;
+-		curr->info &= ~T_PTJOIN;
++		curr->info |= EVL_T_PTSTOP;
++		curr->info &= ~EVL_T_PTJOIN;
+ 		start_ptsync_locked(curr, this_rq);
+-	} else if (curr->info & T_PTSIG) {
+-		curr->info &= ~T_PTSIG;
++	} else if (curr->info & EVL_T_PTSIG) {
++		curr->info &= ~EVL_T_PTSIG;
+ 		notify = false;
+ 	}
+ 
+@@ -1287,11 +1287,11 @@ void evl_switch_inband(int cause)
+ 		 * Help debugging spurious stage switches by sending
+ 		 * an HM event.
+ 		 */
+-		if (curr->state & T_WOSS)
++		if (curr->state & EVL_T_WOSS)
+ 			evl_notify_thread(curr, cause, evl_nil);
+ 
+ 		/* May check for locking inconsistency too. */
+-		if (curr->state & T_WOLI)
++		if (curr->state & EVL_T_WOLI)
+ 			evl_check_no_mutex();
+ 	}
+ 
+diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
+index 1d8eb1662..2ff1b6fd9 100644
+--- a/kernel/evl/sched/fifo.c
++++ b/kernel/evl/sched/fifo.c
+@@ -56,7 +56,7 @@ static void evl_fifo_ceilprio(struct evl_thread *thread, int prio)
+ static ssize_t evl_fifo_show(struct evl_thread *thread,
+ 			char *buf, ssize_t count)
+ {
+-	if (thread->state & T_RRB)
++	if (thread->state & EVL_T_RRB)
+ 		return snprintf(buf, count, "%Ld\n",
+ 				ktime_to_ns(thread->rrperiod));
+ 	return 0;
+diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
+index bdbd85c09..f955d9fa5 100644
+--- a/kernel/evl/sched/quota.c
++++ b/kernel/evl/sched/quota.c
+@@ -69,7 +69,7 @@ static inline bool thread_on_quota(struct evl_thread *thread,
+ 	 * to quota group @tg.
+ 	 */
+ 	return thread->quota == tg &&
+-		!(thread->state & (T_READY|EVL_THREAD_BLOCK_BITS));
++		!(thread->state & (EVL_T_READY|EVL_THREAD_BLOCK_BITS));
+ }
+ 
+ static inline bool group_is_active(struct evl_quota_group *tg)
+@@ -78,7 +78,7 @@ static inline bool group_is_active(struct evl_quota_group *tg)
+ 		return true;
+ 
+ 	/*
+-	 * T_READY set for @thread would mean that it is linked to the
++	 * EVL_T_READY set for @thread would mean that it is linked to the
+ 	 * runqueue, in which case tg->nr_active already accounted for
+ 	 * it.
+ 	 */
+@@ -242,7 +242,7 @@ static bool quota_setparam(struct evl_thread *thread,
+ 	struct evl_sched_quota *qs;
+ 	bool effective;
+ 
+-	thread->state &= ~T_WEAK;
++	thread->state &= ~EVL_T_WEAK;
+ 	effective = evl_set_effective_thread_priority(thread, p->quota.prio);
+ 
+ 	qs = &thread->rq->quota;
+@@ -352,7 +352,7 @@ static void quota_kick(struct evl_thread *thread)
+ 
+ static inline int thread_is_runnable(struct evl_thread *thread)
+ {
+-	return thread->quota->run_budget > 0 || (thread->info & T_KICKED);
++	return thread->quota->run_budget > 0 || (thread->info & EVL_T_KICKED);
+ }
+ 
+ static void quota_enqueue(struct evl_thread *thread)
+@@ -436,7 +436,7 @@ static struct evl_thread *quota_pick(struct evl_rq *rq)
+ 	 * thread to run until it eventually switches to in-band
+ 	 * context.
+ 	 */
+-	if (next->info & T_KICKED) {
++	if (next->info & EVL_T_KICKED) {
+ 		evl_stop_timer(&qs->limit_timer);
+ 		goto out;
+ 	}
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index fa68347be..534729e2a 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -68,7 +68,7 @@ static void tp_tick_handler(struct evl_timer *timer)
+ 	 * If the current thread on this CPU was still active at the
+ 	 * end of its time frame, we may have to notify an overrun.
+ 	 */
+-	if ((curr->state & (T_WOSO|EVL_THREAD_BLOCK_BITS)) == T_WOSO) {
++	if ((curr->state & (EVL_T_WOSO|EVL_THREAD_BLOCK_BITS)) == EVL_T_WOSO) {
+ 		/*
+ 		 * tp->wnext is pointing at the next window already,
+ 		 * move back to one which is being overrun.
+@@ -117,7 +117,7 @@ static bool tp_setparam(struct evl_thread *thread,
+ 	struct evl_rq *rq = evl_thread_rq(thread);
+ 
+ 	thread->tps = &rq->tp.partitions[p->tp.ptid];
+-	thread->state &= ~T_WEAK;
++	thread->state &= ~EVL_T_WEAK;
+ 
+ 	return evl_set_effective_thread_priority(thread, p->tp.prio);
+ }
+diff --git a/kernel/evl/sched/weak.c b/kernel/evl/sched/weak.c
+index c94d7215a..933b91e29 100644
+--- a/kernel/evl/sched/weak.c
++++ b/kernel/evl/sched/weak.c
+@@ -46,8 +46,8 @@ static int weak_chkparam(struct evl_thread *thread,
+ static bool weak_setparam(struct evl_thread *thread,
+ 			const union evl_sched_param *p)
+ {
+-	if (!(thread->state & T_BOOST))
+-		thread->state |= T_WEAK;
++	if (!(thread->state & EVL_T_BOOST))
++		thread->state |= EVL_T_WEAK;
+ 
+ 	return evl_set_effective_thread_priority(thread, p->weak.prio);
+ }
+diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
+index e5fb14441..f3e1e4676 100644
+--- a/kernel/evl/sem.c
++++ b/kernel/evl/sem.c
+@@ -64,7 +64,7 @@ void evl_broadcast(struct evl_ksem *ksem)
+ 
+ 	raw_spin_lock_irqsave(&ksem->wait.wchan.lock, flags);
+ 	ksem->value = 0;
+-	evl_flush_wait_locked(&ksem->wait, T_BCAST);
++	evl_flush_wait_locked(&ksem->wait, EVL_T_BCAST);
+ 	raw_spin_unlock_irqrestore(&ksem->wait.wchan.lock, flags);
+ 	evl_schedule();
+ }
+diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
+index 882dd9833..6cc44f439 100644
+--- a/kernel/evl/stax.c
++++ b/kernel/evl/stax.c
+@@ -72,7 +72,7 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
+ 			goto out;
+ 	} while (!(prev & STAX_CLAIMED_BIT));
+ 
+-	if (curr->state & T_WOSX)
++	if (curr->state & EVL_T_WOSX)
+ 		notify = true;
+ 
+ 	do {
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index f303bc4f8..216c8108b 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -173,22 +173,22 @@ static void prepare_for_signal(struct task_struct *p,
+ 	/*
+ 	 * We are called from out-of-band mode only to act upon a
+ 	 * pending signal receipt. We may observe signal_pending(p)
+-	 * which implies that T_KICKED was set too
+-	 * (handle_sigwake_event()), or T_KICKED alone which means
++	 * which implies that EVL_T_KICKED was set too
++	 * (handle_sigwake_event()), or EVL_T_KICKED alone which means
+ 	 * that we have been unblocked from a wait for some other
+ 	 * reason.
+ 	 */
+-	if (curr->info & T_KICKED) {
++	if (curr->info & EVL_T_KICKED) {
+ 		if (signal_pending(p)) {
+ 			int retval = -ERESTARTSYS;
+-			if (curr->local_info & T_NORST) {
++			if (curr->local_info & EVL_T_NORST) {
+ 				retval = -EINTR;
+-				curr->local_info &= ~T_NORST;
++				curr->local_info &= ~EVL_T_NORST;
+ 			}
+ 			syscall_set_return_value(current, regs, retval, 0);
+-			curr->info &= ~T_BREAK;
++			curr->info &= ~EVL_T_BREAK;
+ 		}
+-		curr->info &= ~T_KICKED;
++		curr->info &= ~EVL_T_KICKED;
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&curr->rq->lock, flags);
+@@ -302,9 +302,9 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs,
+ 
+ 	/* Syscall might have switched in-band, recheck. */
+ 	if (!evl_is_inband()) {
+-		if (signal_pending(tsk) || (curr->info & T_KICKED))
++		if (signal_pending(tsk) || (curr->info & EVL_T_KICKED))
+ 			prepare_for_signal(tsk, curr, regs);
+-		else if ((curr->state & T_WEAK) &&
++		else if ((curr->state & EVL_T_WEAK) &&
+ 			!atomic_read(&curr->held_mutex_count))
+ 			evl_switch_inband(EVL_HMDIAG_NONE);
+ 	}
+@@ -389,7 +389,7 @@ static int do_inband_syscall(struct pt_regs *regs, unsigned int nr,
+ 	 * by a pending signal, otherwise -EINTR might be received
+ 	 * upon signal detection after the transition to oob context,
+ 	 * in which case the common logic applies (i.e. based on
+-	 * T_KICKED and/or signal_pending()).
++	 * EVL_T_KICKED and/or signal_pending()).
+ 	 */
+ 	if (ret == -ERESTARTSYS) {
+ 		syscall_set_return_value(tsk, regs, ret, 0);
+@@ -399,15 +399,15 @@ static int do_inband_syscall(struct pt_regs *regs, unsigned int nr,
+ 	invoke_syscall(nr, regs, args);
+ 
+ 	if (!evl_is_inband()) {
+-		if (signal_pending(tsk) || (curr->info & T_KICKED))
++		if (signal_pending(tsk) || (curr->info & EVL_T_KICKED))
+ 			prepare_for_signal(tsk, curr, regs);
+-		else if ((curr->state & T_WEAK) &&
++		else if ((curr->state & EVL_T_WEAK) &&
+ 			!atomic_read(&curr->held_mutex_count))
+ 			evl_switch_inband(EVL_HMDIAG_NONE);
+ 	}
+ done:
+-	if (curr->local_info & T_IGNOVR)
+-		curr->local_info &= ~T_IGNOVR;
++	if (curr->local_info & EVL_T_IGNOVR)
++		curr->local_info &= ~EVL_T_IGNOVR;
+ 
+ 	evl_inc_counter(&curr->stat.sc);
+ 	evl_sync_uwindow(curr);
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index e01554fd9..dfc612314 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -64,7 +64,7 @@ static void timeout_handler(struct evl_timer *timer) /* oob stage stalled */
+ {
+ 	struct evl_thread *thread = container_of(timer, struct evl_thread, rtimer);
+ 
+-	evl_wakeup_thread(thread, T_DELAY|T_PEND, T_TIMEO);
++	evl_wakeup_thread(thread, EVL_T_DELAY|EVL_T_PEND, EVL_T_TIMEO);
+ }
+ 
+ static void periodic_handler(struct evl_timer *timer) /* oob stage stalled */
+@@ -72,7 +72,7 @@ static void periodic_handler(struct evl_timer *timer) /* oob stage stalled */
+ 	struct evl_thread *thread =
+ 		container_of(timer, struct evl_thread, ptimer);
+ 
+-	evl_wakeup_thread(thread, T_WAIT, T_TIMEO);
++	evl_wakeup_thread(thread, EVL_T_WAIT, EVL_T_TIMEO);
+ }
+ 
+ static inline void enqueue_new_thread(struct evl_thread *thread)
+@@ -154,7 +154,7 @@ static void pin_to_initial_cpu(struct evl_thread *thread)
+ 	 * evl_migrate_thread() can be called for pinning it on an
+ 	 * out-of-band CPU.
+ 	 *
+-	 * NOTE: we do not need to check for T_WCHAN on return from
++	 * NOTE: we do not need to check for EVL_T_WCHAN on return from
+ 	 * evl_migrate_thread(), there is no way the emerging thread
+ 	 * could be sleeping on a wait channel.
+ 	 */
+@@ -169,20 +169,20 @@ int evl_init_thread(struct evl_thread *thread,
+ 		struct evl_rq *rq,
+ 		const char *fmt, ...)
+ {
+-	int state = iattr->flags & ~T_SUSP, ret, gravity;
++	int state = iattr->flags & ~EVL_T_SUSP, ret, gravity;
+ 	cpumask_var_t affinity;
+ 	va_list args;
+ 
+ 	inband_context_only();
+ 
+-	if (!(state & T_ROOT))
+-		state |= T_DORMANT | T_INBAND;
++	if (!(state & EVL_T_ROOT))
++		state |= EVL_T_DORMANT | EVL_T_INBAND;
+ 
+-	if ((state & T_USER) && IS_ENABLED(CONFIG_EVL_DEBUG_WOLI))
+-		state |= T_WOLI;
++	if ((state & EVL_T_USER) && IS_ENABLED(CONFIG_EVL_DEBUG_WOLI))
++		state |= EVL_T_WOLI;
+ 
+ 	if (iattr->observable)
+-		state |= T_OBSERV;
++		state |= EVL_T_OBSERV;
+ 
+ 	/*
+ 	 * If no rq was given, pick an initial CPU for the new thread
+@@ -234,7 +234,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 	INIT_LIST_HEAD(&thread->ptsync_next);
+ 	thread->oob_mm = NULL;
+ 
+-	gravity = state & T_USER ? EVL_TIMER_UGRAVITY : EVL_TIMER_KGRAVITY;
++	gravity = state & EVL_T_USER ? EVL_TIMER_UGRAVITY : EVL_TIMER_KGRAVITY;
+ 	evl_init_timer_on_rq(&thread->rtimer, &evl_mono_clock, timeout_handler,
+ 			rq, gravity);
+ 	evl_set_timer_name(&thread->rtimer, thread->name);
+@@ -253,7 +253,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 		goto err_out;
+ 
+ #ifdef CONFIG_LOCKDEP
+-	if (state & T_ROOT) {
++	if (state & EVL_T_ROOT) {
+ 		lockdep_set_class_and_name(&thread->lock, &rq->root_lock_key,
+ 					thread->name);
+ 	} else {
+@@ -299,7 +299,7 @@ static void uninit_thread(struct evl_thread *thread)
+ 	evl_forget_thread(thread);
+ 	evl_put_thread_rq(thread, rq, flags);
+ 
+-	if (!(thread->state & T_ROOT))
++	if (!(thread->state & EVL_T_ROOT))
+ 		lockdep_unregister_key(&thread->lock_key);
+ 
+ 	kfree(thread->name);
+@@ -323,7 +323,7 @@ static void do_cleanup_current(struct evl_thread *curr)
+ 
+ 	evl_unindex_factory_element(&curr->element);
+ 
+-	if (curr->state & T_USER) {
++	if (curr->state & EVL_T_USER) {
+ 		evl_free_chunk(&evl_shared_heap, curr->u_window);
+ 		curr->u_window = NULL;
+ 		evl_drop_poll_table(curr);
+@@ -340,13 +340,13 @@ static void do_cleanup_current(struct evl_thread *curr)
+ 
+ 	rq = evl_get_thread_rq(curr, flags);
+ 
+-	if (curr->state & T_READY) {
++	if (curr->state & EVL_T_READY) {
+ 		EVL_WARN_ON(CORE, (curr->state & EVL_THREAD_BLOCK_BITS));
+ 		evl_dequeue_thread(curr);
+-		curr->state &= ~T_READY;
++		curr->state &= ~EVL_T_READY;
+ 	}
+ 
+-	curr->state |= T_ZOMBIE;
++	curr->state |= EVL_T_ZOMBIE;
+ 
+ 	evl_put_thread_rq(curr, rq, flags);
+ 	uninit_thread(curr);
+@@ -372,7 +372,7 @@ static void put_current_thread(void)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
+-	if (curr->state & T_USER)
++	if (curr->state & EVL_T_USER)
+ 		skip_ptsync(curr);
+ 
+ 	cleanup_current_thread();
+@@ -395,7 +395,7 @@ static int map_kthread_self(struct evl_kthread *kthread)
+ 	dovetail_init_altsched(&curr->altsched);
+ 	set_oob_threadinfo(curr);
+ 	dovetail_start_altsched();
+-	evl_release_thread(curr, T_DORMANT, 0);
++	evl_release_thread(curr, EVL_T_DORMANT, 0);
+ 
+ 	trace_evl_thread_map(curr);
+ 
+@@ -418,7 +418,7 @@ static int map_kthread_self(struct evl_kthread *kthread)
+ 	irq_work_queue(&kthread->irq_work);
+ 
+ 	enqueue_new_thread(curr);
+-	evl_hold_thread(curr, T_DORMANT);
++	evl_hold_thread(curr, EVL_T_DORMANT);
+ 
+ 	return kthread->status;
+ }
+@@ -490,7 +490,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)
+ 	if (kthread->status)
+ 		return kthread->status;
+ 
+-	evl_release_thread(thread, T_DORMANT, 0);
++	evl_release_thread(thread, EVL_T_DORMANT, 0);
+ 	evl_schedule();
+ 
+ 	return 0;
+@@ -526,22 +526,22 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,
+ 
+ 	/*
+ 	 * If a request to switch to in-band context is pending
+-	 * (T_KICKED), raise T_BREAK then return immediately.
++	 * (EVL_T_KICKED), raise EVL_T_BREAK then return immediately.
+ 	 */
+ 	if (likely(!(oldstate & EVL_THREAD_BLOCK_BITS))) {
+-		if (curr->info & T_KICKED) {
+-			curr->info &= ~(T_RMID|T_TIMEO);
+-			curr->info |= T_BREAK;
++		if (curr->info & EVL_T_KICKED) {
++			curr->info &= ~(EVL_T_RMID|EVL_T_TIMEO);
++			curr->info |= EVL_T_BREAK;
+ 			return;
+ 		}
+ 		curr->info &= ~EVL_THREAD_INFO_MASK;
+ 	}
+ 
+ 	/*
+-	 *  wchan + timeout: timed wait for a resource (T_PEND|T_DELAY)
+-	 *  wchan + !timeout: unbounded sleep on resource (T_PEND)
+-	 * !wchan + timeout: timed sleep (T_DELAY)
+-	 * !wchan + !timeout: periodic wait (T_WAIT)
++	 *  wchan + timeout: timed wait for a resource (EVL_T_PEND|EVL_T_DELAY)
++	 *  wchan + !timeout: unbounded sleep on resource (EVL_T_PEND)
++	 * !wchan + timeout: timed sleep (EVL_T_DELAY)
++	 * !wchan + !timeout: periodic wait (EVL_T_WAIT)
+ 	 */
+ 	if (timeout_mode != EVL_REL || !timeout_infinite(timeout)) {
+ 		evl_prepare_timed_wait(&curr->rtimer, clock,
+@@ -549,25 +549,25 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,
+ 		if (timeout_mode == EVL_REL)
+ 			timeout = evl_abs_timeout(&curr->rtimer, timeout);
+ 		else if (timeout <= evl_read_clock(clock)) {
+-			curr->info |= T_TIMEO;
++			curr->info |= EVL_T_TIMEO;
+ 			return;
+ 		}
+ 		evl_start_timer(&curr->rtimer, timeout, EVL_INFINITE);
+-		curr->state |= T_DELAY;
++		curr->state |= EVL_T_DELAY;
+ 	} else if (!wchan) {
+ 		evl_prepare_timed_wait(&curr->ptimer, clock,
+ 				evl_thread_rq(curr));
+-		curr->state |= T_WAIT;
++		curr->state |= EVL_T_WAIT;
+ 	}
+ 
+-	if (oldstate & T_READY) {
++	if (oldstate & EVL_T_READY) {
+ 		evl_dequeue_thread(curr);
+-		curr->state &= ~T_READY;
++		curr->state &= ~EVL_T_READY;
+ 	}
+ 
+ 	if (wchan) {
+ 		curr->wchan = wchan;
+-		curr->state |= T_PEND;
++		curr->state |= EVL_T_PEND;
+ 	}
+ 
+ 	evl_set_resched(rq);
+@@ -597,30 +597,30 @@ static void evl_wakeup_thread_locked(struct evl_thread *thread,
+ 
+ 	assert_thread_pinned(thread);
+ 
+-	if (EVL_WARN_ON(CORE, mask & ~(T_DELAY|T_PEND|T_WAIT)))
++	if (EVL_WARN_ON(CORE, mask & ~(EVL_T_DELAY|EVL_T_PEND|EVL_T_WAIT)))
+ 		return;
+ 
+ 	trace_evl_wakeup_thread(thread, mask, info);
+ 
+ 	oldstate = thread->state;
+ 	if (likely(oldstate & mask)) {
+-		/* Clear T_DELAY along w/ T_PEND in state. */
+-		if (mask & T_PEND)
+-			mask |= T_DELAY;
++		/* Clear EVL_T_DELAY along w/ EVL_T_PEND in state. */
++		if (mask & EVL_T_PEND)
++			mask |= EVL_T_DELAY;
+ 
+ 		thread->state &= ~mask;
+ 
+-		if (mask & (T_DELAY|T_PEND))
++		if (mask & (EVL_T_DELAY|EVL_T_PEND))
+ 			evl_stop_timer(&thread->rtimer);
+ 
+-		if (mask & T_PEND & oldstate)
++		if (mask & EVL_T_PEND & oldstate)
+ 			thread->wchan = NULL;
+ 
+ 		thread->info |= info;
+ 
+ 		if (!(thread->state & EVL_THREAD_BLOCK_BITS)) {
+ 			evl_enqueue_thread(thread);
+-			thread->state |= T_READY;
++			thread->state |= EVL_T_READY;
+ 			evl_set_resched(rq);
+ 			if (rq != this_evl_rq())
+ 				evl_inc_counter(&thread->stat.rwa);
+@@ -643,7 +643,7 @@ void evl_hold_thread(struct evl_thread *thread, int mask)
+ 	unsigned long oldstate, flags;
+ 	struct evl_rq *rq;
+ 
+-	if (EVL_WARN_ON(CORE, mask & ~(T_SUSP|T_HALT|T_DORMANT)))
++	if (EVL_WARN_ON(CORE, mask & ~(EVL_T_SUSP|EVL_T_HALT|EVL_T_DORMANT)))
+ 		return;
+ 
+ 	trace_evl_hold_thread(thread, mask);
+@@ -654,22 +654,22 @@ void evl_hold_thread(struct evl_thread *thread, int mask)
+ 
+ 	/*
+ 	 * If a request to switch to in-band context is pending for
+-	 * the target thread (T_KICKED), raise T_BREAK for it then
++	 * the target thread (EVL_T_KICKED), raise EVL_T_BREAK for it then
+ 	 * return immediately.
+ 	 */
+ 	if (likely(!(oldstate & EVL_THREAD_BLOCK_BITS))) {
+-		if (thread->info & T_KICKED) {
+-			thread->info &= ~(T_RMID|T_TIMEO);
+-			thread->info |= T_BREAK;
++		if (thread->info & EVL_T_KICKED) {
++			thread->info &= ~(EVL_T_RMID|EVL_T_TIMEO);
++			thread->info |= EVL_T_BREAK;
+ 			goto out;
+ 		}
+ 		if (thread == rq->curr)
+ 			thread->info &= ~EVL_THREAD_INFO_MASK;
+ 	}
+ 
+-	if (oldstate & T_READY) {
++	if (oldstate & EVL_T_READY) {
+ 		evl_dequeue_thread(thread);
+-		thread->state &= ~T_READY;
++		thread->state &= ~EVL_T_READY;
+ 	}
+ 
+ 	thread->state |= mask;
+@@ -684,7 +684,7 @@ void evl_hold_thread(struct evl_thread *thread, int mask)
+ 	 */
+ 	if (likely(thread == rq->curr))
+ 		evl_set_resched(rq);
+-	else if (((oldstate & (EVL_THREAD_BLOCK_BITS|T_USER)) == (T_INBAND|T_USER)))
++	else if (((oldstate & (EVL_THREAD_BLOCK_BITS|EVL_T_USER)) == (EVL_T_INBAND|EVL_T_USER)))
+ 		dovetail_request_ucall(thread->altsched.task);
+  out:
+ 	evl_put_thread_rq(thread, rq, flags);
+@@ -699,7 +699,7 @@ static void evl_release_thread_locked(struct evl_thread *thread,
+ 
+ 	assert_thread_pinned(thread);
+ 
+-	if (EVL_WARN_ON(CORE, mask & ~(T_SUSP|T_HALT|T_INBAND|T_DORMANT|T_PTSYNC)))
++	if (EVL_WARN_ON(CORE, mask & ~(EVL_T_SUSP|EVL_T_HALT|EVL_T_INBAND|EVL_T_DORMANT|EVL_T_PTSYNC)))
+ 		return;
+ 
+ 	trace_evl_release_thread(thread, mask, info);
+@@ -712,19 +712,19 @@ static void evl_release_thread_locked(struct evl_thread *thread,
+ 		if (thread->state & EVL_THREAD_BLOCK_BITS)
+ 			return;
+ 
+-		if (unlikely((oldstate & mask) & (T_HALT|T_PTSYNC))) {
++		if (unlikely((oldstate & mask) & (EVL_T_HALT|EVL_T_PTSYNC))) {
+ 			/* Requeue at head of priority group. */
+ 			evl_requeue_thread(thread);
+ 			goto ready;
+ 		}
+-	} else if (oldstate & T_READY)
++	} else if (oldstate & EVL_T_READY)
+ 		/* Ends up in round-robin (group rotation). */
+ 		evl_dequeue_thread(thread);
+ 
+ 	/* Enqueue at the tail of priority group. */
+ 	evl_enqueue_thread(thread);
+ ready:
+-	thread->state |= T_READY;
++	thread->state |= EVL_T_READY;
+ 	evl_set_resched(rq);
+ 	if (rq != this_evl_rq())
+ 		evl_inc_counter(&thread->stat.rwa);
+@@ -765,7 +765,7 @@ ktime_t evl_get_thread_timeout(struct evl_thread *thread)
+ 	struct evl_timer *timer;
+ 	ktime_t timeout, now;
+ 
+-	if (!(thread->state & T_DELAY))
++	if (!(thread->state & EVL_T_DELAY))
+ 		return 0LL;
+ 
+ 	if (evl_timer_is_running(&thread->rtimer))
+@@ -795,7 +795,7 @@ ktime_t evl_get_thread_period(struct evl_thread *thread)
+ 	 */
+ 	if (evl_timer_is_running(&thread->ptimer))
+ 		period = thread->ptimer.interval;
+-	else if (thread->state & T_RRB)
++	else if (thread->state & EVL_T_RRB)
+ 		period = thread->rrperiod;
+ 
+ 	return period;
+@@ -811,7 +811,7 @@ ktime_t evl_delay(ktime_t timeout, enum evl_tmode timeout_mode,
+ 	evl_sleep_on(timeout, timeout_mode, clock, NULL);
+ 	evl_schedule();
+ 
+-	if (curr->info & T_BREAK)
++	if (curr->info & EVL_T_BREAK)
+ 		rem = __evl_get_stopped_timer_delta(&curr->rtimer);
+ 
+ 	return rem;
+@@ -892,10 +892,10 @@ int evl_wait_period(unsigned long *overruns_r)
+ 	clock = curr->ptimer.clock;
+ 	now = evl_read_clock(clock);
+ 	if (likely(now < evl_get_timer_next_date(&curr->ptimer))) {
+-		evl_sleep_on(EVL_INFINITE, EVL_REL, clock, NULL); /* T_WAIT */
++		evl_sleep_on(EVL_INFINITE, EVL_REL, clock, NULL); /* EVL_T_WAIT */
+ 		hard_local_irq_restore(flags);
+ 		evl_schedule();
+-		if (unlikely(curr->info & T_BREAK))
++		if (unlikely(curr->info & EVL_T_BREAK))
+ 			return -EINTR;
+ 	} else
+ 		hard_local_irq_restore(flags);
+@@ -917,34 +917,34 @@ void evl_cancel_thread(struct evl_thread *thread)
+ 	unsigned long flags;
+ 	struct evl_rq *rq;
+ 
+-	if (EVL_WARN_ON(CORE, thread->state & T_ROOT))
++	if (EVL_WARN_ON(CORE, thread->state & EVL_T_ROOT))
+ 		return;
+ 
+ 	rq = evl_get_thread_rq(thread, flags);
+ 
+-	if (thread->state & T_ZOMBIE) {
++	if (thread->state & EVL_T_ZOMBIE) {
+ 		evl_put_thread_rq(thread, rq, flags);
+ 		return;
+ 	}
+ 
+-	if (thread->info & T_CANCELD)
++	if (thread->info & EVL_T_CANCELD)
+ 		goto check_self_cancel;
+ 
+ 	trace_evl_thread_cancel(thread);
+ 
+-	thread->info |= T_CANCELD;
++	thread->info |= EVL_T_CANCELD;
+ 
+ 	/*
+ 	 * If @thread is not started yet, fake a start request,
+ 	 * raising the kicked condition bit to make sure it reaches
+ 	 * evl_test_cancel() on its wakeup path.
+ 	 *
+-	 * NOTE: if T_DORMANT and !T_INBAND, then some not-yet-mapped
++	 * NOTE: if EVL_T_DORMANT and !EVL_T_INBAND, then some not-yet-mapped
+ 	 * emerging thread is self-cancelling due to an early error in
+ 	 * the prep work.
+ 	 */
+-	if ((thread->state & (T_DORMANT|T_INBAND)) == (T_DORMANT|T_INBAND)) {
+-		evl_release_thread_locked(thread, T_DORMANT, T_KICKED);
++	if ((thread->state & (EVL_T_DORMANT|EVL_T_INBAND)) == (EVL_T_DORMANT|EVL_T_INBAND)) {
++		evl_release_thread_locked(thread, EVL_T_DORMANT, EVL_T_KICKED);
+ 		evl_put_thread_rq(thread, rq, flags);
+ 		goto out;
+ 	}
+@@ -970,7 +970,7 @@ void evl_cancel_thread(struct evl_thread *thread)
+ 	 * - just unblock a kernel thread, it is expected to reach a
+ 	 * cancellation point soon after (i.e. evl_test_cancel()).
+ 	 */
+-	if (thread->state & T_USER) {
++	if (thread->state & EVL_T_USER) {
+ 		evl_demote_thread(thread);
+ 		evl_signal_thread(thread, SIGTERM, 0);
+ 	} else
+@@ -998,7 +998,7 @@ int evl_join_thread(struct evl_thread *thread, bool uninterruptible)
+ 	struct evl_rq *rq;
+ 	int ret = 0;
+ 
+-	if (EVL_WARN_ON(CORE, thread->state & T_ROOT))
++	if (EVL_WARN_ON(CORE, thread->state & EVL_T_ROOT))
+ 		return -EINVAL;
+ 
+ 	if (thread == curr)
+@@ -1010,14 +1010,14 @@ int evl_join_thread(struct evl_thread *thread, bool uninterruptible)
+ 	 * We allow multiple callers to join @thread, this is purely a
+ 	 * synchronization mechanism with no resource collection.
+ 	 */
+-	if (thread->info & T_DORMANT) {
++	if (thread->info & EVL_T_DORMANT) {
+ 		evl_put_thread_rq(thread, rq, flags);
+ 		return 0;
+ 	}
+ 
+ 	trace_evl_thread_join(thread);
+ 
+-	if (curr && !(curr->state & T_INBAND)) {
++	if (curr && !(curr->state & EVL_T_INBAND)) {
+ 		evl_put_thread_rq(thread, rq, flags);
+ 		evl_switch_inband(EVL_HMDIAG_NONE);
+ 		switched = true;
+@@ -1098,11 +1098,11 @@ int evl_set_thread_schedparam_locked(struct evl_thread *thread,
+ 	 * re-enabling irqs in order to prevent priority inversion.
+ 	 */
+ 	if (old_wprio != new_wprio && thread->wchan)
+-		thread->info |= T_WCHAN;
++		thread->info |= EVL_T_WCHAN;
+ 
+-	thread->info |= T_SCHEDP;
++	thread->info |= EVL_T_SCHEDP;
+ 	/* Ask the target thread to call back if in-band. */
+-	if ((thread->state & (T_INBAND|T_USER)) == (T_INBAND|T_USER))
++	if ((thread->state & (EVL_T_INBAND|EVL_T_USER)) == (EVL_T_INBAND|EVL_T_USER))
+ 		dovetail_request_ucall(thread->altsched.task);
+ 
+ 	return ret;
+@@ -1120,7 +1120,7 @@ void __evl_test_cancel(struct evl_thread *curr)
+ 	if (curr->rq->local_flags & RQ_IRQ)
+ 		return;
+ 
+-	if (!(curr->state & T_INBAND))
++	if (!(curr->state & EVL_T_INBAND))
+ 		evl_switch_inband(EVL_HMDIAG_NONE);
+ 
+ 	do_exit(0);
+@@ -1138,7 +1138,7 @@ void __evl_propagate_schedparam_change(struct evl_thread *curr)
+ 	struct evl_rq *rq;
+ 
+ 	/*
+-	 * Test-set race for T_SCHEDP is ok, the propagation is meant
++	 * Test-set race for EVL_T_SCHEDP is ok, the propagation is meant
+ 	 * to be done asap but not guaranteed to be carried out
+ 	 * immediately, and the request will remain pending until it
+ 	 * is eventually handled. We just have to protect against a
+@@ -1146,13 +1146,13 @@ void __evl_propagate_schedparam_change(struct evl_thread *curr)
+ 	 */
+ 	rq = evl_get_thread_rq(curr, flags);
+ 	kprio = curr->bprio;
+-	curr->info &= ~T_SCHEDP;
++	curr->info &= ~EVL_T_SCHEDP;
+ 
+ 	/*
+ 	 * Map our policies/priorities to the regular kernel's
+ 	 * (approximated).
+ 	 */
+-	if ((curr->state & T_WEAK) && kprio == 0)
++	if ((curr->state & EVL_T_WEAK) && kprio == 0)
+ 		kpolicy = SCHED_NORMAL;
+ 	else if (kprio > EVL_FIFO_MAX_PRIO)
+ 		kprio = EVL_FIFO_MAX_PRIO;
+@@ -1171,7 +1171,7 @@ void evl_unblock_thread(struct evl_thread *thread, int reason)
+ 	trace_evl_unblock_thread(thread);
+ 
+ 	/*
+-	 * We must not raise the T_BREAK bit if the target thread was
++	 * We must not raise the EVL_T_BREAK bit if the target thread was
+ 	 * already runnable at the time of this call, so that
+ 	 * downstream code does not get confused by some "successful
+ 	 * but interrupted syscall" condition. IOW, a break state
+@@ -1182,7 +1182,7 @@ void evl_unblock_thread(struct evl_thread *thread, int reason)
+ 	 * evl_wakeup_thread() guarantees this by updating the info
+ 	 * bits only if any of the mask bits is set.
+ 	 */
+-	evl_wakeup_thread(thread, T_DELAY|T_PEND|T_WAIT, reason|T_BREAK);
++	evl_wakeup_thread(thread, EVL_T_DELAY|EVL_T_PEND|EVL_T_WAIT, reason|EVL_T_BREAK);
+ }
+ EXPORT_SYMBOL_GPL(evl_unblock_thread);
+ 
+@@ -1194,59 +1194,59 @@ void evl_kick_thread(struct evl_thread *thread, int info)
+ 
+ 	rq = evl_get_thread_rq(thread, flags);
+ 
+-	if (thread->state & T_INBAND)
++	if (thread->state & EVL_T_INBAND)
+ 		goto out;
+ 
+ 	/*
+-	 * We might get T_PTSIG on top of T_KICKED, never filter out
++	 * We might get EVL_T_PTSIG on top of EVL_T_KICKED, never filter out
+ 	 * the former.
+ 	 */
+-	if (!(info & T_PTSIG) && thread->info & T_KICKED)
++	if (!(info & EVL_T_PTSIG) && thread->info & EVL_T_KICKED)
+ 		goto out;
+ 
+ 	/* See comment in evl_unblock_thread(). */
+-	evl_wakeup_thread_locked(thread, T_DELAY|T_PEND|T_WAIT,
+-				T_KICKED|T_BREAK);
++	evl_wakeup_thread_locked(thread, EVL_T_DELAY|EVL_T_PEND|EVL_T_WAIT,
++				EVL_T_KICKED|EVL_T_BREAK);
+ 
+ 	/*
+ 	 * If @thread receives multiple ptrace-stop requests, ensure
+-	 * that disabling T_PTJOIN has precedence over enabling for
++	 * that disabling EVL_T_PTJOIN has precedence over enabling for
+ 	 * the whole set.
+ 	 */
+-	if (thread->info & T_PTSTOP) {
+-		if (thread->info & T_PTJOIN)
+-			thread->info &= ~T_PTJOIN;
++	if (thread->info & EVL_T_PTSTOP) {
++		if (thread->info & EVL_T_PTJOIN)
++			thread->info &= ~EVL_T_PTJOIN;
+ 		else
+-			info &= ~T_PTJOIN;
++			info &= ~EVL_T_PTJOIN;
+ 	}
+ 
+ 	/*
+-	 * CAUTION: we must NOT raise T_BREAK when clearing a forcible
+-	 * block state, such as T_SUSP, T_HALT. The caller of
++	 * CAUTION: we must NOT raise EVL_T_BREAK when clearing a forcible
++	 * block state, such as EVL_T_SUSP, EVL_T_HALT. The caller of
+ 	 * evl_sleep_on() we unblock shall proceed as for a normal
+ 	 * return, until it traverses a cancellation point if
+-	 * T_CANCELD was raised earlier, or calls evl_sleep_on() again
+-	 * which will detect T_KICKED and act accordingly.
++	 * EVL_T_CANCELD was raised earlier, or calls evl_sleep_on() again
++	 * which will detect EVL_T_KICKED and act accordingly.
+ 	 *
+ 	 * Rationale: callers of evl_sleep_on() may assume that
+-	 * receiving T_BREAK implicitly means that the awaited event
++	 * receiving EVL_T_BREAK implicitly means that the awaited event
+ 	 * was NOT received in the meantime. Therefore, in case only
+-	 * T_SUSP remains set for the thread on entry to
+-	 * evl_kick_thread(), after T_PEND was lifted earlier when the
++	 * EVL_T_SUSP remains set for the thread on entry to
++	 * evl_kick_thread(), after EVL_T_PEND was lifted earlier when the
+ 	 * wait went to successful completion (i.e. no timeout), then
+ 	 * we want the kicked thread to know that it did receive the
+-	 * requested resource, not finding T_BREAK in its state word.
++	 * requested resource, not finding EVL_T_BREAK in its state word.
+ 	 *
+-	 * Callers of evl_sleep_on() may inquire for T_KICKED locally
+-	 * to detect forcible unblocks from T_SUSP, T_HALT, if they
++	 * Callers of evl_sleep_on() may inquire for EVL_T_KICKED locally
++	 * to detect forcible unblocks from EVL_T_SUSP, EVL_T_HALT, if they
+ 	 * should act upon this case specifically.
+ 	 *
+ 	 * If @thread was frozen by an ongoing ptrace sync sequence
+-	 * (T_PTSYNC), release it so that it can reach the next
++	 * (EVL_T_PTSYNC), release it so that it can reach the next
+ 	 * in-band switch point (either from the EVL syscall return
+ 	 * path, or from the mayday trap).
+ 	 */
+-	evl_release_thread_locked(thread, T_SUSP|T_HALT|T_PTSYNC, T_KICKED);
++	evl_release_thread_locked(thread, EVL_T_SUSP|EVL_T_HALT|EVL_T_PTSYNC, EVL_T_KICKED);
+ 
+ 	/*
+ 	 * We may send mayday signals to userland threads only.
+@@ -1256,7 +1256,7 @@ void evl_kick_thread(struct evl_thread *thread, int info)
+ 	 * epilogue. Otherwise, we want that thread to enter the
+ 	 * mayday trap asap.
+ 	 */
+-	if ((thread->state & T_USER) && thread != this_evl_rq_thread())
++	if ((thread->state & EVL_T_USER) && thread != this_evl_rq_thread())
+ 		dovetail_send_mayday(p);
+ 
+ 	/*
+@@ -1278,13 +1278,13 @@ void evl_kick_thread(struct evl_thread *thread, int info)
+ 	 * context, whatever this entails internally for the
+ 	 * implementation.
+ 	 *
+-	 * - if the thread is running on the CPU, raising T_KICKED is
++	 * - if the thread is running on the CPU, raising EVL_T_KICKED is
+ 	 * enough to force a switch to in-band context on the next
+ 	 * return to user.
+ 	 */
+-	thread->info |= T_KICKED;
++	thread->info |= EVL_T_KICKED;
+ 
+-	if (thread->state & T_READY) {
++	if (thread->state & EVL_T_READY) {
+ 		evl_force_thread(thread);
+ 		evl_set_resched(thread->rq);
+ 	}
+@@ -1361,7 +1361,7 @@ void evl_signal_thread(struct evl_thread *thread, int sig, int arg)
+ {
+ 	struct sig_irqwork_data *sigd;
+ 
+-	if (EVL_WARN_ON(CORE, !(thread->state & T_USER)))
++	if (EVL_WARN_ON(CORE, !(thread->state & EVL_T_USER)))
+ 		return;
+ 
+ 	if (running_inband()) {
+@@ -1384,10 +1384,10 @@ EXPORT_SYMBOL_GPL(evl_signal_thread);
+ void evl_notify_thread(struct evl_thread *thread,
+ 		int tag, union evl_value details)
+ {
+-	if (thread->state & T_HMSIG)
++	if (thread->state & EVL_T_HMSIG)
+ 		evl_signal_thread(thread, SIGDEBUG, tag);
+ 
+-	if (thread->state & T_HMOBS) {
++	if (thread->state & EVL_T_HMOBS) {
+ 		if (!evl_send_observable(thread->observable, tag, details))
+ 			printk_ratelimited(EVL_WARNING
+ 				"%s[%d] could not receive HM event #%d",
+@@ -1416,7 +1416,7 @@ int evl_killall(int mask)
+ 	nrthreads = evl_nrthreads;
+ 
+ 	for_each_evl_thread(t) {
+-		if ((t->state & T_ROOT) || (t->state & mask) != mask)
++		if ((t->state & EVL_T_ROOT) || (t->state & mask) != mask)
+ 			continue;
+ 
+ 		if (EVL_DEBUG(CORE))
+@@ -1439,7 +1439,7 @@ int evl_killall(int mask)
+ 	count = nrthreads - nrkilled;
+ 	if (EVL_DEBUG(CORE))
+ 		printk(EVL_INFO "waiting for %d %s threads to exit\n",
+-			nrkilled, mask & T_USER ? "user" : "kernel");
++			nrkilled, mask & EVL_T_USER ? "user" : "kernel");
+ 
+ 	ret = wait_event_interruptible(join_all,
+ 				evl_nrthreads == count);
+@@ -1447,7 +1447,7 @@ int evl_killall(int mask)
+ 	if (EVL_DEBUG(CORE))
+ 		printk(EVL_INFO "joined %d %s threads\n",
+ 			count + nrkilled - evl_nrthreads,
+-			mask & T_USER ? "user" : "kernel");
++			mask & EVL_T_USER ? "user" : "kernel");
+ 
+ 	return ret < 0 ? -EINTR : 0;
+ }
+@@ -1497,7 +1497,7 @@ struct evl_wait_channel *evl_get_thread_wchan(struct evl_thread *thread)
+ 
+ notrace pid_t evl_get_inband_pid(struct evl_thread *thread)
+ {
+-	if (thread->state & (T_ROOT|T_DORMANT|T_ZOMBIE))
++	if (thread->state & (EVL_T_ROOT|EVL_T_DORMANT|EVL_T_ZOMBIE))
+ 		return 0;
+ 
+ 	if (thread->altsched.task == NULL)
+@@ -1582,19 +1582,19 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ 	if (curr == NULL)
+ 		return;
+ 
+-	if (curr->local_info & T_INFAULT) {
++	if (curr->local_info & EVL_T_INFAULT) {
+ 		note_trap(curr, trapnr, regs, "recursive fault");
+ 		return;
+ 	}
+ 
+ 	oob_context_only();
+ 
+-	curr->local_info |= T_INFAULT;
++	curr->local_info |= EVL_T_INFAULT;
+ 
+ 	if (current->ptrace & PT_PTRACED)
+ 		is_bp = evl_is_breakpoint(trapnr);
+ 
+-	if ((EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp)
++	if ((EVL_DEBUG(CORE) || (curr->state & EVL_T_WOSS)) && !is_bp)
+ 		note_trap(curr, trapnr, regs, "switching in-band");
+ 
+ 	/*
+@@ -1616,7 +1616,7 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 
+ 	hard_local_irq_enable();
+ 
+-	curr->local_info &= ~T_INFAULT;
++	curr->local_info &= ~EVL_T_INFAULT;
+ 
+ 	if (current->ptrace & PT_PTRACED)
+ 		is_bp = evl_is_breakpoint(trapnr);
+@@ -1632,7 +1632,7 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 	 */
+ 	if (!user_mode(regs)) {
+ 		ret = evl_switch_oob();
+-		if ((EVL_DEBUG(CORE) || (curr->state & T_WOSS)) && !is_bp)
++		if ((EVL_DEBUG(CORE) || (curr->state & EVL_T_WOSS)) && !is_bp)
+ 			note_trap(curr, trapnr, regs,
+ 				ret ? "failed to resume out-of-band" :
+ 				"resuming out-of-band");
+@@ -1645,7 +1645,7 @@ void handle_oob_mayday(struct pt_regs *regs)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
+-	if (EVL_WARN_ON(CORE, !(curr->state & T_USER)))
++	if (EVL_WARN_ON(CORE, !(curr->state & EVL_T_USER)))
+ 		return;
+ 
+ 	/*
+@@ -1653,7 +1653,7 @@ void handle_oob_mayday(struct pt_regs *regs)
+ 	 * after it switched to in-band mode while returning from a
+ 	 * syscall. Filter this case out.
+ 	 */
+-	if (!(curr->state & T_INBAND))
++	if (!(curr->state & EVL_T_INBAND))
+ 		evl_switch_inband(EVL_HMDIAG_NONE);
+ }
+ 
+@@ -1680,10 +1680,10 @@ static void handle_migration_event(struct dovetail_migration_data *d)
+ 	 * transition for user threads by requesting them to call back
+ 	 * asap via the RETUSER event.
+ 	 */
+-	if (thread->state & (EVL_THREAD_BLOCK_BITS & ~T_INBAND)) {
++	if (thread->state & (EVL_THREAD_BLOCK_BITS & ~EVL_T_INBAND)) {
+ 		evl_kick_thread(thread, 0);
+ 		evl_schedule();
+-		if (thread->state & T_USER)
++		if (thread->state & EVL_T_USER)
+ 			dovetail_request_ucall(thread->altsched.task);
+ 	}
+ #endif
+@@ -1700,7 +1700,7 @@ static void handle_sigwake_event(struct task_struct *p)
+ 	if (thread == NULL)
+ 		return;
+ 
+-	if (thread->state & T_USER && p->ptrace & PT_PTRACED) {
++	if (thread->state & EVL_T_USER && p->ptrace & PT_PTRACED) {
+ 		/* We already own p->sighand->siglock. */
+ 		sigorsets(&sigpending,
+ 			&p->pending.signal,
+@@ -1708,7 +1708,7 @@ static void handle_sigwake_event(struct task_struct *p)
+ 
+ 		if (sigismember(&sigpending, SIGINT) ||
+ 			sigismember(&sigpending, SIGTRAP)) {
+-			info = T_PTSIG|T_PTSTOP;
++			info = EVL_T_PTSIG|EVL_T_PTSTOP;
+ 			ptsync = true;
+ 		}
+ 		/*
+@@ -1717,7 +1717,7 @@ static void handle_sigwake_event(struct task_struct *p)
+ 		 * be pending.
+ 		 */
+ 		if (sigismember(&sigpending, SIGSTOP))
+-			info |= T_PTSIG|T_PTSTOP|T_PTJOIN;
++			info |= EVL_T_PTSIG|EVL_T_PTSTOP|EVL_T_PTJOIN;
+ 	}
+ 
+ 	/*
+@@ -1725,8 +1725,8 @@ static void handle_sigwake_event(struct task_struct *p)
+ 	 * in-band scheduler as it bears the _TLF_OFFSTAGE flag. We
+ 	 * need to force that thread to switch to in-band context,
+ 	 * which will clear that flag. If we got there due to a ptrace
+-	 * signal, then setting T_PTSTOP ensures that @thread will be
+-	 * released from T_PTSYNC and will not receive any WOSS alert
++	 * signal, then setting EVL_T_PTSTOP ensures that @thread will be
++	 * released from EVL_T_PTSYNC and will not receive any WOSS alert
+ 	 * next time it switches in-band.
+ 	 */
+ 	evl_kick_thread(thread, info);
+@@ -1802,23 +1802,23 @@ static void handle_ptstop_event(void)
+ 	struct evl_rq *rq;
+ 
+ 	/*
+-	 * T_PTRACE denotes a stopped state as defined by ptrace()
+-	 * which means blocked in ptrace_stop(). Our T_PTSTOP bit has
++	 * EVL_T_PTRACE denotes a stopped state as defined by ptrace()
++	 * which means blocked in ptrace_stop(). Our EVL_T_PTSTOP bit has
+ 	 * a broader scope which starts from the in-band request to
+ 	 * stop (handle_sigwake_event()), then ends after the tracee
+ 	 * switched back to oob context via RETUSER handler.
+ 	 */
+ 	rq = evl_get_thread_rq(curr, flags);
+ 
+-	curr->state |= T_PTRACE;
++	curr->state |= EVL_T_PTRACE;
+ 
+ 	/*
+ 	 * If we were running out-of-band when SIGSTOP reached us, we
+ 	 * have to join the ptsync queue.
+ 	 */
+-	if (curr->info & T_PTJOIN) {
++	if (curr->info & EVL_T_PTJOIN) {
+ 		join_ptsync(curr);
+-		curr->info &= ~T_PTJOIN;
++		curr->info &= ~EVL_T_PTJOIN;
+ 	}
+ 
+ 	evl_put_thread_rq(curr, rq, flags);
+@@ -1831,7 +1831,7 @@ static void handle_ptstep_event(struct task_struct *task)
+ 	/*
+ 	 * The ptracer might have switched focus, (single-)stepping a
+ 	 * thread which did not hit the latest breakpoint
+-	 * (i.e. bearing T_PTJOIN). For this reason, we do need to
++	 * (i.e. bearing EVL_T_PTJOIN). For this reason, we do need to
+ 	 * listen to PTSTEP events to remove that thread from the
+ 	 * ptsync queue.
+ 	 */
+@@ -1842,13 +1842,13 @@ static void handle_ptcont_event(void)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
+-	if (curr->state & T_PTRACE) {
++	if (curr->state & EVL_T_PTRACE) {
+ 		/*
+ 		 * Since we stopped executing due to ptracing, any
+ 		 * ongoing periodic timeline is now lost: disable
+ 		 * overrun detection for the next round.
+ 		 */
+-		curr->local_info |= T_IGNOVR;
++		curr->local_info |= EVL_T_IGNOVR;
+ 
+ 		/*
+ 		 * Request to receive INBAND_TASK_RETUSER on the
+@@ -1890,11 +1890,11 @@ static int ptrace_sync(void)
+ 	/*
+ 	 * If we got interrupted while waiting on the ptsync barrier,
+ 	 * make sure pick_next_thread() will let us slip through again
+-	 * by keeping T_PTSTOP set.
++	 * by keeping EVL_T_PTSTOP set.
+ 	 */
+-	if (!ret && !(curr->info & T_PTSIG)) {
+-		curr->info &= ~T_PTSTOP;
+-		curr->state &= ~T_PTRACE;
++	if (!ret && !(curr->info & EVL_T_PTSIG)) {
++		curr->info &= ~EVL_T_PTSTOP;
++		curr->state &= ~EVL_T_PTRACE;
+ 	}
+ 
+ 	raw_spin_unlock_irqrestore(&this_rq->lock, flags);
+@@ -1914,7 +1914,7 @@ static void handle_retuser_event(void)
+ 		return;
+ 	}
+ 
+-	if (!(curr->state & T_PTRACE))
++	if (!(curr->state & EVL_T_PTRACE))
+ 		return;
+ 
+ 	ret = ptrace_sync();
+@@ -1923,7 +1923,7 @@ static void handle_retuser_event(void)
+ 
+ 	evl_schedule();
+ 
+-	if ((curr->state & T_WEAK) &&
++	if ((curr->state & EVL_T_WEAK) &&
+ 		atomic_read(&curr->held_mutex_count) == 0)
+ 		evl_switch_inband(EVL_HMDIAG_NONE);
+ }
+@@ -2001,13 +2001,13 @@ static int set_time_slice(struct evl_thread *thread, ktime_t quantum)
+ 		if (thread->base_class->sched_tick == NULL)
+ 			return -EINVAL;
+ 
+-		thread->state |= T_RRB;
++		thread->state |= EVL_T_RRB;
+ 		if (rq->curr == thread)
+ 			evl_start_timer(&rq->rrbtimer,
+ 					evl_abs_timeout(&rq->rrbtimer, quantum),
+ 					EVL_INFINITE);
+ 	} else {
+-		thread->state &= ~T_RRB;
++		thread->state &= ~EVL_T_RRB;
+ 		if (rq->curr == thread)
+ 			evl_stop_timer(&rq->rrbtimer);
+ 	}
+@@ -2062,7 +2062,7 @@ static void __get_sched_attrs(struct evl_sched_class *sched_class,
+ 	sched_class->sched_getparam(thread, &param);
+ 
+ 	if (sched_class == &evl_sched_fifo) {
+-		if (thread->state & T_RRB) {
++		if (thread->state & EVL_T_RRB) {
+ 			attrs->sched_rr_quantum =
+ 				ktime_to_u_timespec(thread->rrperiod);
+ 			attrs->sched_policy = SCHED_RR;
+@@ -2135,12 +2135,12 @@ static int update_mode(struct evl_thread *thread, __u32 mask,
+ 		return -EINVAL;
+ 
+ 	if (set) {
+-		/* T_HMOBS requires observability of @thread. */
+-		if (mask & T_HMOBS && thread->observable == NULL)
++		/* EVL_T_HMOBS requires observability of @thread. */
++		if (mask & EVL_T_HMOBS && thread->observable == NULL)
+ 			return -EINVAL;
+-		/* Default to T_HMSIG if not specified. */
+-		if (!(mask & (T_HMSIG|T_HMOBS)))
+-			mask |= T_HMSIG;
++		/* Default to EVL_T_HMSIG if not specified. */
++		if (!(mask & (EVL_T_HMSIG|EVL_T_HMOBS)))
++			mask |= EVL_T_HMSIG;
+ 	}
+ 
+ 	rq = evl_get_thread_rq(thread, flags);
+@@ -2152,10 +2152,10 @@ static int update_mode(struct evl_thread *thread, __u32 mask,
+ 			thread->state |= mask;
+ 		} else {
+ 			thread->state &= ~mask;
+-			if (!(thread->state & (T_WOSS|T_WOLI|T_WOSX|T_WOSO)))
+-				thread->state &= ~(T_HMSIG|T_HMOBS);
+-			else if (!(thread->state & (T_HMSIG|T_HMOBS)))
+-				thread->state &= ~(T_WOSS|T_WOLI|T_WOSX|T_WOSO);
++			if (!(thread->state & (EVL_T_WOSS|EVL_T_WOLI|EVL_T_WOSX|EVL_T_WOSO)))
++				thread->state &= ~(EVL_T_HMSIG|EVL_T_HMOBS);
++			else if (!(thread->state & (EVL_T_HMSIG|EVL_T_HMOBS)))
++				thread->state &= ~(EVL_T_WOSS|EVL_T_WOLI|EVL_T_WOSX|EVL_T_WOSO);
+ 		}
+ 	}
+ 
+@@ -2230,7 +2230,7 @@ static long thread_oob_ioctl(struct file *filp, unsigned int cmd,
+ 	long ret = -EPERM;
+ 	__u32 monfd;
+ 
+-	if (thread->state & T_ZOMBIE)
++	if (thread->state & EVL_T_ZOMBIE)
+ 		return -ESTALE;
+ 
+ 	switch (cmd) {
+@@ -2269,7 +2269,7 @@ static long thread_ioctl(struct file *filp, unsigned int cmd,
+ 	struct evl_thread *curr = evl_current();
+ 	long ret = -EPERM;
+ 
+-	if (thread->state & T_ZOMBIE)
++	if (thread->state & EVL_T_ZOMBIE)
+ 		return -ESTALE;
+ 
+ 	switch (cmd) {
+@@ -2441,7 +2441,7 @@ static int map_uthread_self(struct evl_thread *thread)
+ 	 * enqueue it now.
+ 	 */
+ 	enqueue_new_thread(thread);
+-	evl_release_thread(thread, T_DORMANT, 0);
++	evl_release_thread(thread, EVL_T_DORMANT, 0);
+ 	evl_sync_uwindow(thread);
+ 
+ 	return 0;
+@@ -2492,7 +2492,7 @@ thread_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 	if (ret)
+ 		goto fail_element;
+ 
+-	iattr.flags = T_USER;
++	iattr.flags = EVL_T_USER;
+ 
+ 	if (clone_flags & EVL_CLONE_OBSERVABLE) {
+ 		/*
+@@ -2581,11 +2581,11 @@ static void thread_factory_dispose(struct evl_element *e)
+ 	 * Two ways to get into the disposal handler: either
+ 	 * open_factory_node() failed creating a device for @thread
+ 	 * which is current, or after the last file reference to
+-	 * @thread was dropped after exit. T_ZOMBIE cleared denotes
++	 * @thread was dropped after exit. EVL_T_ZOMBIE cleared denotes
+ 	 * the first case, otherwise @thread has existed, is now dead
+ 	 * and no more reachable, so we can wakeup joiners if any.
+ 	 */
+-	if (likely(state & T_ZOMBIE)) {
++	if (likely(state & EVL_T_ZOMBIE)) {
+ 		if (thread->observable)
+ 			evl_put_element(&thread->observable->element);
+ 		evl_destroy_element(&thread->element);
+@@ -2601,7 +2601,7 @@ static void thread_factory_dispose(struct evl_element *e)
+ 		evl_destroy_element(&thread->element);
+ 	}
+ 
+-	if (state & T_USER)
++	if (state & EVL_T_USER)
+ 		kfree_rcu(thread, element.rcu);
+ }
+ 
+diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
+index 181251c48..8a3a02c66 100644
+--- a/kernel/evl/tick.c
++++ b/kernel/evl/tick.c
+@@ -248,7 +248,7 @@ void evl_program_proxy_tick(struct evl_clock *clock)
+ 	timer = container_of(tn, struct evl_timer, node);
+ 	if (timer == &this_rq->inband_timer) {
+ 		if (evl_need_resched(this_rq) ||
+-			!(this_rq->curr->state & T_ROOT)) {
++			!(this_rq->curr->state & EVL_T_ROOT)) {
+ 			tn = evl_get_tqueue_next(&tmb->q, tn);
+ 			if (tn) {
+ 				this_rq->local_flags |= RQ_TDEFER;
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 705641343..5faba9762 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -448,7 +448,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
+ 	 * the caller.
+ 	 */
+ 	thread = evl_current();
+-	if (thread->local_info & T_IGNOVR)
++	if (thread->local_info & EVL_T_IGNOVR)
+ 		return 0;
+ 
+ 	return overruns;
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index 1da92a360..335c75b57 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -43,7 +43,7 @@ EXPORT_SYMBOL_GPL(__evl_init_wait);
+ 
+ void evl_destroy_wait(struct evl_wait_queue *wq)
+ {
+-	evl_flush_wait(wq, T_RMID);
++	evl_flush_wait(wq, EVL_T_RMID);
+ 	evl_schedule();
+ #ifdef CONFIG_LOCKDEP
+ 	/* Drop dynamic key. */
+@@ -75,7 +75,7 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
+-	if ((curr->state & T_WOLI) &&
++	if ((curr->state & EVL_T_WOLI) &&
+ 		atomic_read(&curr->held_mutex_count) > 0)
+ 		evl_notify_thread(curr, EVL_HMDIAG_LKSLEEP, evl_nil);
+ 
+@@ -108,7 +108,7 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+ 			waiter = list_first_entry(&wq->wchan.wait_list,
+ 						struct evl_thread, wait_next);
+ 		list_del_init(&waiter->wait_next);
+-		evl_wakeup_thread(waiter, T_PEND, reason);
++		evl_wakeup_thread(waiter, EVL_T_PEND, reason);
+ 	}
+ 
+ 	return waiter;
+@@ -126,7 +126,7 @@ void evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
+ 
+ 	list_for_each_entry_safe(waiter, tmp, &wq->wchan.wait_list, wait_next) {
+ 		list_del_init(&waiter->wait_next);
+-		evl_wakeup_thread(waiter, T_PEND, reason);
++		evl_wakeup_thread(waiter, EVL_T_PEND, reason);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(evl_flush_wait_locked);
+@@ -176,13 +176,13 @@ int __evl_wait_schedule(struct evl_wait_channel *wchan)
+ 	 * Upon return from a wait state, the following logic applies
+ 	 * depending on the information flags:
+ 	 *
+-	 * - if none of T_RMID, T_NOMEM, T_TIMEO or T_BREAK is set, we
++	 * - if none of EVL_T_RMID, EVL_T_NOMEM, EVL_T_TIMEO or EVL_T_BREAK is set, we
+ 	 * got a wakeup upon a successful operation. In this case, we
+ 	 * should not be linked to the waitqueue anymore. NOTE: the
+-	 * caller may need to check for T_BCAST if the signal is not
++	 * caller may need to check for EVL_T_BCAST if the signal is not
+ 	 * paired with a condition but works as a pulse instead.
+ 	 *
+-	 * - if T_RMID is set, evl_flush_wait() removed us from the
++	 * - if EVL_T_RMID is set, evl_flush_wait() removed us from the
+ 	 * waitqueue before the wait channel got destroyed, and
+ 	 * therefore cannot be referred to anymore since it may be
+ 	 * stale: -EIDRM is returned.
+@@ -203,7 +203,7 @@ int __evl_wait_schedule(struct evl_wait_channel *wchan)
+ 	 * returned to the caller.
+ 	 */
+ 	info = evl_current()->info;
+-	if (likely(!(info & (T_RMID|T_NOMEM|T_TIMEO|T_BREAK)))) { /* Fast path. */
++	if (likely(!(info & (EVL_T_RMID|EVL_T_NOMEM|EVL_T_TIMEO|EVL_T_BREAK)))) { /* Fast path. */
+ 		if (IS_ENABLED(CONFIG_EVL_DEBUG_CORE)) {
+ 			bool empty;
+ 			raw_spin_lock_irqsave(&wchan->lock, flags);
+@@ -214,7 +214,7 @@ int __evl_wait_schedule(struct evl_wait_channel *wchan)
+ 		return 0;
+ 	}
+ 
+-	if (info & T_RMID)
++	if (info & EVL_T_RMID)
+ 		return -EIDRM;
+ 
+ 	raw_spin_lock_irqsave(&wchan->lock, flags);
+@@ -224,10 +224,10 @@ int __evl_wait_schedule(struct evl_wait_channel *wchan)
+ 
+ 	raw_spin_unlock_irqrestore(&wchan->lock, flags);
+ 
+-	if (info & T_NOMEM)
++	if (info & EVL_T_NOMEM)
+ 		return -ENOMEM;
+ 
+-	return info & T_TIMEO ? -ETIMEDOUT : -EINTR;
++	return info & EVL_T_TIMEO ? -ETIMEDOUT : -EINTR;
+ }
+ EXPORT_SYMBOL_GPL(__evl_wait_schedule);
+ 
+@@ -420,7 +420,7 @@ int evl_walk_pi_chain(struct evl_wait_channel *orig_wchan,
+ 			do_reorder = true;
+ 		} else if (mode == evl_pi_reset) {
+ 			/* owner.cprio <- owner.bprio */
+-			if (owner->state & T_BOOST)
++			if (owner->state & EVL_T_BOOST)
+ 				evl_track_thread_policy(owner, owner);
+ 			do_reorder = true;
+ 		}
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index baec8ec90..2dc86667e 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -553,8 +553,8 @@ static int xbuf_release(struct inode *inode, struct file *filp)
+ {
+ 	struct evl_xbuf *xbuf = element_of(filp, struct evl_xbuf);
+ 
+-	evl_flush_wait(&xbuf->obnd.i_event, T_RMID);
+-	evl_flush_flag(&xbuf->ibnd.o_event, T_RMID);
++	evl_flush_wait(&xbuf->obnd.i_event, EVL_T_RMID);
++	evl_flush_flag(&xbuf->ibnd.o_event, EVL_T_RMID);
+ 
+ 	return evl_release_element(inode, filp);
+ }
+-- 
+2.30.2
+

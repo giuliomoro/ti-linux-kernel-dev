@@ -1,0 +1,105 @@
+From ead09e2bfae9c6a1c8a6c1bfb42c83125802eff5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 7 Feb 2021 11:03:55 +0100
+Subject: [PATCH 694/985] evl/wait: display waitqueue name in trace
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h         |  2 ++
+ include/trace/events/evl.h | 14 +++++++++-----
+ kernel/evl/wait.c          |  3 +++
+ 3 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 177518623..c0fc27003 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -22,6 +22,7 @@ struct evl_wait_channel {
+ 	int (*follow_depend)(struct evl_wait_channel *wchan,
+ 			struct evl_thread *originator);
+ 	struct list_head wait_list;
++	const char *name;
+ };
+ 
+ struct evl_wait_queue {
+@@ -39,6 +40,7 @@ struct evl_wait_queue {
+ 			.reorder_wait = evl_reorder_wait,		\
+ 			.follow_depend = evl_follow_wait_depend,	\
+ 			.wait_list = LIST_HEAD_INIT((__name).wchan.wait_list), \
++			.name = #__name,				\
+ 		},							\
+ 	}
+ 
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 49f5adb7d..f8054428e 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -18,13 +18,12 @@
+ #include <linux/tracepoint.h>
+ #include <linux/trace_seq.h>
+ #include <evl/timer.h>
++#include <evl/wait.h>
+ 
+ struct evl_rq;
+ struct evl_thread;
+ struct evl_sched_attrs;
+ struct evl_init_thread_attr;
+-struct evl_wait_channel;
+-struct evl_wait_queue;
+ struct evl_mutex;
+ struct evl_clock;
+ 
+@@ -72,14 +71,14 @@ DECLARE_EVENT_CLASS(wq_event,
+ 	TP_ARGS(wq),
+ 
+ 	TP_STRUCT__entry(
+-		__field(struct evl_wait_queue *, wq)
++		__string(name, wq->wchan.name)
+ 	),
+ 
+ 	TP_fast_assign(
+-		__entry->wq = wq;
++		__assign_str(name, wq->wchan.name);
+ 	),
+ 
+-	TP_printk("wq=%p", __entry->wq)
++	TP_printk("wq=%s", __get_str(name))
+ );
+ 
+ DECLARE_EVENT_CLASS(mutex_event,
+@@ -705,6 +704,11 @@ DEFINE_EVENT(wq_event, evl_flush_wait,
+ 	TP_ARGS(wq)
+ );
+ 
++DEFINE_EVENT(wq_event, evl_finish_wait,
++	TP_PROTO(struct evl_wait_queue *wq),
++	TP_ARGS(wq)
++);
++
+ DEFINE_EVENT(mutex_event, evl_mutex_trylock,
+ 	TP_PROTO(struct evl_mutex *mutex),
+ 	TP_ARGS(mutex)
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index b47b14ae4..f6a4682e0 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -21,6 +21,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,
+ 	raw_spin_lock_init(&wq->lock);
+ 	wq->wchan.reorder_wait = evl_reorder_wait;
+ 	wq->wchan.follow_depend = evl_follow_wait_depend;
++	wq->wchan.name = name;
+ 	INIT_LIST_HEAD(&wq->wchan.wait_list);
+ 	lockdep_set_class_and_name(&wq->lock, key, name);
+ }
+@@ -147,6 +148,8 @@ int evl_wait_schedule(struct evl_wait_queue *wq)
+ 
+ 	evl_schedule();
+ 
++	trace_evl_finish_wait(wq);
++
+ 	/*
+ 	 * Upon return from schedule, we may or may not have been
+ 	 * unlinked from the wait channel, depending on whether we
+-- 
+2.30.2
+

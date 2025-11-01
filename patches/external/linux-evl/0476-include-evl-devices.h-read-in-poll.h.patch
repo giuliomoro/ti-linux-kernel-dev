@@ -1,0 +1,25 @@
+From 823e2dd345ad401834af09e0b5d4725676e40b1f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 21 Aug 2019 11:39:44 +0200
+Subject: [PATCH 476/985] include/evl: devices.h: read in poll.h
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/devices.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/evl/devices.h b/include/evl/devices.h
+index 3cd847d57..29b168dd0 100644
+--- a/include/evl/devices.h
++++ b/include/evl/devices.h
+@@ -13,6 +13,7 @@
+ #include <evl/lock.h>
+ #include <evl/mutex.h>
+ #include <evl/wait.h>
++#include <evl/poll.h>
+ 
+ #else  /* !CONFIG_EVL */
+ 
+-- 
+2.30.2
+

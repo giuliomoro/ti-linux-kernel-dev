@@ -1,0 +1,31 @@
+From df8870054207d26c05acedd42857c96f2b1d9af6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 11 Jun 2025 21:05:19 +0200
+Subject: [PATCH 947/985] evl/net: output: export netif_tx_(un)lock() symbols
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/output.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 6f59a46a5..7a22063da 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -261,11 +261,13 @@ void netif_tx_lock_oob(struct netdev_queue *txq) /* oob or in-band */
+ {
+ 	evl_lock_stax(&txq->oob.tx_lock);
+ }
++EXPORT_SYMBOL_GPL(netif_tx_lock_oob);
+ 
+ void netif_tx_unlock_oob(struct netdev_queue *txq) /* oob or in-band */
+ {
+ 	evl_unlock_stax(&txq->oob.tx_lock);
+ }
++EXPORT_SYMBOL_GPL(netif_tx_unlock_oob);
+ 
+ void __init evl_net_init_tx(void)
+ {
+-- 
+2.30.2
+

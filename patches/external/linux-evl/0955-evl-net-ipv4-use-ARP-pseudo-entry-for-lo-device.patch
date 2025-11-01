@@ -1,0 +1,512 @@
+From 66bf7ecac0f0fa6979a086aecaff37ef774f9592 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 20 Jun 2025 17:00:38 +0200
+Subject: [PATCH 955/985] evl/net: ipv4: use ARP pseudo-entry for lo device
+
+Using a regular entry in the ARP cache for the special loopback device
+is an issue because it is affected when flushing the cache, although
+it should not. This creates weird corner cases such as the requirement
+to solicit the loopback address in order to restore its entry after a
+cache flush.
+
+Since we are going to solve the same kind of issue with the upcoming
+broadcast address, let's provide ARP pseudo-entries, which are legit,
+refcounted but uncached ARP entries, accessed via a global pointer
+from the net namespace.
+
+Fix up evl_net_get_arp_entry() to specifically recognize the loopback
+address, returning its pseudo entry when matched instead of looking up
+into the ARP cache.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/evl/net.h |   8 ++
+ include/evl/net/ipv4.h        |   4 +
+ include/evl/net/ipv4/arp.h    |   6 +-
+ include/evl/net/route.h       |   4 +-
+ kernel/evl/net/dev.c          |  18 ++++-
+ kernel/evl/net/ipv4/arp.c     | 148 ++++++++++++++++++++++------------
+ kernel/evl/net/ipv4/ipv4.c    |  56 ++++++++++---
+ kernel/evl/net/route.c        |  12 ++-
+ 8 files changed, 180 insertions(+), 76 deletions(-)
+
+diff --git a/include/asm-generic/evl/net.h b/include/asm-generic/evl/net.h
+index 845639c1b..f1005430c 100644
+--- a/include/asm-generic/evl/net.h
++++ b/include/asm-generic/evl/net.h
+@@ -78,6 +78,14 @@ struct oob_net_state {
+ 		struct evl_cache routes;
+ 		/* Cache of active UDP4 receivers. */
+ 		struct evl_cache udp;
++		/* ARP pseudo-entries. */
++		struct {
++			/* ARP pseudo-entry to current loopback device. */
++			struct evl_net_arp_entry *lo;
++			/* Lock guarding the pseudo-entries for add/removal. */
++			hard_spinlock_t lock;
++		} pseudo_arp;
++		/* Lock guarding pseudo entries. */
+ 	} ipv4;
+ };
+ 
+diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
+index 19c319f96..2ce1aa50b 100644
+--- a/include/evl/net/ipv4.h
++++ b/include/evl/net/ipv4.h
+@@ -39,6 +39,10 @@ int evl_net_init_ipv4(struct net *net);
+ 
+ void evl_net_cleanup_ipv4(struct net *net);
+ 
++int evl_net_ipv4_add_device(struct net_device *dev);
++
++void evl_net_ipv4_remove_device(struct net_device *dev);
++
+ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 			struct sockaddr *addr, int flags);
+ 
+diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
+index d255aed1a..aa8a0b967 100644
+--- a/include/evl/net/ipv4/arp.h
++++ b/include/evl/net/ipv4/arp.h
+@@ -34,9 +34,11 @@ void evl_net_cleanup_arp(struct net *net);
+ 
+ void evl_net_flush_arp(struct net *net);
+ 
+-void evl_net_lo_add_arp(struct net_device *lo_dev);
++int evl_net_set_pseudo_arp(struct net_device *dev, __be32 addr,
++			struct evl_net_arp_entry **earpp);
+ 
+-void evl_net_lo_drop_arp(struct net_device *lo_dev);
++void evl_net_drop_pseudo_arp(struct net *net,
++			struct evl_net_arp_entry **earpp);
+ 
+ struct evl_net_arp_entry *
+ evl_net_get_arp_entry(struct net_device *dev, __be32 addr);
+diff --git a/include/evl/net/route.h b/include/evl/net/route.h
+index 4ee23115d..d977e03b3 100644
+--- a/include/evl/net/route.h
++++ b/include/evl/net/route.h
+@@ -35,9 +35,9 @@ static inline void evl_net_put_route(struct evl_net_route *ert)
+ 	evl_put_cache_entry(&ert->entry);
+ }
+ 
+-void evl_net_prepare_routing(struct net_device *dev);
++int evl_net_add_device_route(struct net_device *dev);
+ 
+-void evl_net_unprepare_routing(struct net_device *dev);
++void evl_net_remove_device_route(struct net_device *dev);
+ 
+ void evl_net_flush_routes(struct net *net, struct net_device *dev);
+ 
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 37a56106b..35dc0f531 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -72,6 +72,8 @@ static struct evl_net_ebpf_filter *
+ __set_rx_filter(struct evl_netdev_state *est,
+ 		struct evl_net_ebpf_filter *filter);
+ 
++static void disable_oob_port(struct net_device *dev);
++
+ static struct evl_kthread *
+ start_handler_thread(struct net_device *dev,
+ 		void (*fn)(void *arg),
+@@ -206,7 +208,12 @@ static int enable_oob_port(struct net_device *dev,
+ 	list_add(&nds->next, &oob_port_list);
+ 	raw_spin_unlock_irqrestore(&oob_port_lock, flags);
+ 
+-	return 0;
++	/* Declare the oob-enabled device to the routing system. */
++	ret = evl_net_add_device_route(dev);
++	if (ret)
++		disable_oob_port(dev);
++
++	return ret;
+ 
+ fail_enable_diversion:
+ 	if (est->tx_handler) {
+@@ -248,6 +255,9 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 	if (!netif_oob_port(dev))
+ 		return;
+ 
++	/* Remove the oob-enabled device from the routing system. */
++	evl_net_remove_device_route(dev);
++
+ 	/*
+ 	 * Make sure that no evl_down_crossing() can be issued after
+ 	 * we attempt to pass the crossing. Since the former can only
+@@ -276,6 +286,10 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 	if (EVL_WARN_ON(NET, est->refs <= 0))
+ 		return;
+ 
++	/*
++	 * We might have multiple VLAN devices acting as oob ports
++	 * sitting on the same real device, so use refcounting.
++	 */
+ 	if (--est->refs > 0)	/* Guarded by rtnl_lock. */
+ 		return;
+ 
+@@ -475,14 +489,12 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ 
+ 	switch (event) {
+ 	case NETDEV_UP:
+-		evl_net_prepare_routing(dev);
+ 		break;
+ 	case NETDEV_GOING_DOWN:
+ 		if (netif_oob_port(dev)) {
+ 			disable_oob_port(dev);
+ 			evl_net_flush_routes(dev_net(dev), dev);
+ 		}
+-		evl_net_unprepare_routing(dev);
+ 		break;
+ 	}
+ 
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index f690a5c0a..59f5272a1 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -23,6 +23,32 @@ DECLARE_WAIT_QUEUE_HEAD(evl_arp_event);
+ 
+ #define EVL_NET_ARP_CACHE_SHIFT  8
+ 
++static struct evl_net_arp_entry *alloc_arp_entry(
++	struct net_device *dev,
++	__be32 addr, unsigned char *ha) /* in-band */
++{
++	struct evl_net_arp_entry *e;
++
++	e = kzalloc(sizeof(*e), GFP_ATOMIC);
++	if (!e)
++		return NULL;
++
++	e->key.dev = dev;
++	e->key.addr = addr;
++	if (ha)
++		memcpy(e->ha, ha, sizeof(e->ha));
++
++	netdev_hold(dev, &e->dev_tracker, GFP_ATOMIC);
++
++	return e;
++}
++
++static void free_arp_entry(struct evl_net_arp_entry *e)
++{
++	netdev_put(e->key.dev, &e->dev_tracker);
++	kfree(e);
++}
++
+ static u32 hash_arp_entry(const void *key)
+ {
+ 	const struct evl_net_arp_key *arp_k = key;
+@@ -55,13 +81,12 @@ static const void *get_arp_key(const struct evl_cache_entry *entry)
+ 	return &e->key;
+ }
+ 
+-static void free_arp_entry(struct evl_cache_entry *entry) /* in-band */
++static void drop_arp_entry(struct evl_cache_entry *entry) /* in-band */
+ {
+ 	struct evl_net_arp_entry *e =
+ 		container_of(entry, struct evl_net_arp_entry, entry);
+ 
+-	netdev_put(e->key.dev, &e->dev_tracker);
+-	kfree(e);
++	free_arp_entry(e);
+ }
+ 
+ static struct evl_cache_ops arp_cache_ops = {
+@@ -69,45 +94,29 @@ static struct evl_cache_ops arp_cache_ops = {
+ 	.eq		= eq_arp_entry,
+ 	.get_key	= get_arp_key,
+ 	.format_key	= format_arp_key,
+-	.drop		= free_arp_entry,
++	.drop		= drop_arp_entry,
+ };
+ 
+ /*
+  * Cache a new ARP entry.
+  */
+-static int __cache_arp_entry(struct evl_cache *cache, struct net_device *dev,
+-			__be32 addr, unsigned char *ha) /* in-band */
++static int cache_arp_entry(struct evl_cache *cache, struct neighbour *neigh) /* in-band */
+ {
++	__be32 addr = *(const __be32 *)neigh->primary_key;
+ 	struct evl_net_arp_entry *e;
+ 	int ret;
+ 
+-	e = kzalloc(sizeof(*e), GFP_ATOMIC);
++	e = alloc_arp_entry(neigh->dev, addr, neigh->ha);
+ 	if (!e)
+ 		return -ENOMEM;
+ 
+-	e->key.dev = dev;
+-	e->key.addr = addr;
+-	if (ha)
+-		memcpy(e->ha, ha, sizeof(e->ha));
+-
+-	netdev_hold(dev, &e->dev_tracker, GFP_ATOMIC);
+-
+ 	ret = evl_add_cache_entry(cache, &e->entry);
+-	if (ret) {
+-		netdev_put(dev, &e->dev_tracker);
+-		kfree(e);
+-	}
++	if (ret)
++		free_arp_entry(e);
+ 
+ 	return ret;
+ }
+ 
+-static int cache_arp_entry(struct evl_cache *cache, struct neighbour *neigh) /* in-band */
+-{
+-	return __cache_arp_entry(cache, neigh->dev,
+-				*(const __be32 *)neigh->primary_key,
+-				neigh->ha);
+-}
+-
+ /*
+  * Uncache an ARP entry.
+  */
+@@ -190,11 +199,24 @@ struct evl_net_arp_entry *evl_net_get_arp_entry(struct net_device *dev, __be32 a
+ 		.dev = dev,
+ 	};
+ 	struct oob_net_state *nets = &dev_net(dev)->oob;
++	struct evl_net_arp_entry *earp;
+ 	struct evl_cache_entry *entry;
++	unsigned long flags;
++
++	if (unlikely(ipv4_is_loopback(addr))) {
++		raw_spin_lock_irqsave(&nets->ipv4.pseudo_arp.lock, flags);
++		earp = nets->ipv4.pseudo_arp.lo;
++		if (likely(earp))
++			evl_get_cache_entry(&earp->entry);
++		raw_spin_unlock_irqrestore(&nets->ipv4.pseudo_arp.lock, flags);
++		return earp;
++	}
+ 
+ 	entry = evl_lookup_cache(&nets->ipv4.arp, &key);
+-	if (likely(entry))
+-		return container_of(entry, struct evl_net_arp_entry, entry);
++	if (likely(entry)) {
++		earp = container_of(entry, struct evl_net_arp_entry, entry);
++		return earp;
++	}
+ 
+ 	return NULL;
+ }
+@@ -226,6 +248,9 @@ int evl_net_init_arp(struct net *net)
+ 	if (ret)
+ 		return ret;
+ 
++	raw_spin_lock_init(&nets->ipv4.pseudo_arp.lock);
++	might_hard_lock(&nets->ipv4.pseudo_arp.lock);
++
+ 	register_netevent_notifier(&netevent_notifier);
+ 
+ 	return 0;
+@@ -233,36 +258,59 @@ int evl_net_init_arp(struct net *net)
+ 
+ void evl_net_cleanup_arp(struct net *net)
+ {
++	struct oob_net_state *nets = &net->oob;
++
+ 	unregister_netevent_notifier(&netevent_notifier);
++	evl_net_drop_pseudo_arp(net, &nets->ipv4.pseudo_arp.lo);
+ 	evl_net_flush_arp(net);
+ }
+ 
+-/*
+- * We maintain an ARP pseudo-entry for the loopback address to make
+- * things simpler downstream. Cache it when the 'lo' device shows up
+- * or a user solicits the local host.
+- */
+-void evl_net_lo_add_arp(struct net_device *lo_dev)
++static void swap_pseudo_entry(struct oob_net_state *nets,
++			struct evl_net_arp_entry *new_arp,
++			struct evl_net_arp_entry **earpp)
+ {
+-	struct oob_net_state *nets = &dev_net(lo_dev)->oob;
+-	struct evl_cache *cache = &nets->ipv4.arp;
+-	int ret;
+-
+-	ret = __cache_arp_entry(cache, lo_dev, htonl(INADDR_LOOPBACK), NULL);
+-	EVL_WARN_ON(NET, ret);
++	struct evl_net_arp_entry *old_arp;
++	unsigned long flags;
++
++	/*
++	 * Unfortunately, plain xchg() is not an option because we
++	 * have to serialize with evl_net_get_arp_entry() testing for
++	 * nullness _and_ taking a reference atomically.
++	 */
++	raw_spin_lock_irqsave(&nets->ipv4.pseudo_arp.lock, flags);
++	old_arp = *earpp;
++	*earpp = new_arp;
++	raw_spin_unlock_irqrestore(&nets->ipv4.pseudo_arp.lock, flags);
++	if (old_arp)
++		evl_put_cache_entry(&old_arp->entry);
+ }
+ 
+-/*
+- * Remove the pseudo-ARP entry when the loopback device goes down.
+- */
+-void evl_net_lo_drop_arp(struct net_device *lo_dev)
++/* Create an ARP pseudo-entry for a special oob-capable device. */
++int evl_net_set_pseudo_arp(struct net_device *dev, __be32 addr,
++			struct evl_net_arp_entry **earpp)
+ {
+-	struct oob_net_state *nets = &dev_net(lo_dev)->oob;
+-	struct evl_cache *cache = &nets->ipv4.arp;
+-	const struct evl_net_arp_key key = {
+-		.addr = htonl(INADDR_LOOPBACK),
+-		.dev = lo_dev,
+-	};
++	struct oob_net_state *nets = &dev_net(dev)->oob;
++	struct evl_net_arp_entry *earp;
+ 
+-	evl_del_cache_entry(cache, &key);
++	earp = alloc_arp_entry(dev, addr, NULL);
++	if (!earp)
++		return -ENOMEM;
++
++	/*
++	 * CAUTION: We won't actually index this pseudo-entry into the
++	 * cache, but we still have to provide a valid cache pointer
++	 * so that release can happen via the cache->ops.drop handler.
++	 */
++	evl_init_cache_entry(&earp->entry, &nets->ipv4.arp);
++
++	swap_pseudo_entry(nets, earp, earpp);
++
++	return 0;
++}
++
++/* Drop a pseudo-ARP entry. */
++void evl_net_drop_pseudo_arp(struct net *net,
++			struct evl_net_arp_entry **earpp)
++{
++	swap_pseudo_entry(&net->oob, NULL, earpp);
+ }
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index ecbdd3f7b..32326814b 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -247,11 +247,17 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 	if (addr->sa_family != AF_INET)
+ 		return -EAFNOSUPPORT;
+ 
+-	ipaddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
+-
+ 	if (flags & ~EVL_NEIGH_PERMANENT)
+ 		return -EINVAL;
+ 
++	ipaddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
++
++	/*
++	 * Tell the in-band stack to resolve the route to the peer. On
++	 * success, we are called back via ip_learn_oob_route() with
++	 * the routing data, which we then index into our oob route
++	 * cache.
++	 */
+ 	rt = ip_route_output(sock_net(esk->sk), ipaddr, 0, 0, 0, RT_SCOPE_UNIVERSE);
+ 	if (IS_ERR(rt))
+ 		return PTR_ERR(rt);
+@@ -281,16 +287,6 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 				NEIGH_VAR(neigh->parms, DELAY_PROBE_TIME) + HZ
+ 			);
+ 		ret = e ? 0 : -ETIMEDOUT;
+-	} else {
+-		/*
+-		 * If asked to solicit the local host at the loopback
+-		 * address, attempt to (re-)cache an arp pseudo-entry
+-		 * for it. This is the only way to add back the 'lo'
+-		 * address to the ARP cache after it was forcibly
+-		 * flushed, barring a down->up sequence for 'lo'.
+-		 */
+-		if (dev == dev_net(dev)->loopback_dev)
+-			evl_net_lo_add_arp(dev);
+ 	}
+ 
+ 	evl_net_put_dev(dev);
+@@ -309,6 +305,42 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 	return ret;
+ }
+ 
++/* Declare a new oob-enabled device to the routing system. */
++int evl_net_ipv4_add_device(struct net_device *dev)
++{
++	struct oob_net_state *nets = &dev_net(dev)->oob;
++	int ret = 0;
++
++	/*
++	 * EVL performs output routing only so far, which targets
++	 * oob-enabled devices exclusively. So complain then bail out
++	 * if oob mode is not active for the device received.
++	 */
++	if (EVL_WARN_ON(NET, !netif_oob_port(dev)))
++		return 0;
++
++	/* Set an ARP pseudo-entry for the current loopback device. */
++	if (dev == dev_net(dev)->loopback_dev)
++		ret = evl_net_set_pseudo_arp(dev, htonl(INADDR_LOOPBACK),
++					&nets->ipv4.pseudo_arp.lo);
++
++	return ret;
++}
++
++/* Remove a downed device from the routing system. */
++void evl_net_ipv4_remove_device(struct net_device *dev)
++{
++	struct net *net = dev_net(dev);
++	struct oob_net_state *nets = &net->oob;
++
++	if (EVL_WARN_ON(NET, !netif_oob_port(dev)))
++		return;
++
++	if (dev == net->loopback_dev)
++		/* The current loopback device is going down. */
++		evl_net_drop_pseudo_arp(net, &nets->ipv4.pseudo_arp.lo);
++}
++
+ static struct evl_net_proto *match_ipv4_domain(int type, int protocol)
+ {
+ 	switch (protocol) {
+diff --git a/kernel/evl/net/route.c b/kernel/evl/net/route.c
+index 25f5ba1fc..b717901fb 100644
+--- a/kernel/evl/net/route.c
++++ b/kernel/evl/net/route.c
+@@ -7,8 +7,8 @@
+ #include <linux/slab.h>
+ #include <net/route.h>
+ #include <evl/net/socket.h>
++#include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/route.h>
+-#include <evl/net/ipv4/arp.h>
+ 
+ /*
+  * Cache a new IP route.
+@@ -77,18 +77,16 @@ void evl_net_flush_routes(struct net *net, struct net_device *dev)
+ /*
+  * Prepare the routing system for using an emerging device.
+  */
+-void evl_net_prepare_routing(struct net_device *dev)
++int evl_net_add_device_route(struct net_device *dev)
+ {
+-	if (dev == dev_net(dev)->loopback_dev)
+-		evl_net_lo_add_arp(dev);
++	return evl_net_ipv4_add_device(dev);
+ }
+ 
+ /*
+  * Drop the information related to a downed device from the routing
+  * system.
+  */
+-void evl_net_unprepare_routing(struct net_device *dev)
++void evl_net_remove_device_route(struct net_device *dev)
+ {
+-	if (dev == dev_net(dev)->loopback_dev)
+-		evl_net_lo_drop_arp(dev);
++	evl_net_ipv4_remove_device(dev);
+ }
+-- 
+2.30.2
+

@@ -1,0 +1,25 @@
+From b5642a5c056ceb1274564da630c11beddcbb73cb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 1 Feb 2025 12:56:06 +0100
+Subject: [PATCH 907/985] drivers/evl: latmus: release cdev region on unload
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/latmus.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 447ebd9d0..ec1882a6b 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -1230,6 +1230,7 @@ static void __exit latmus_exit(void)
+ {
+ 	device_destroy(&latmus_class, MKDEV(MAJOR(latmus_devt), 0));
+ 	cdev_del(&latmus_cdev);
++	unregister_chrdev_region(latmus_devt, 1);
+ 	class_unregister(&latmus_class);
+ }
+ module_exit(latmus_exit);
+-- 
+2.30.2
+

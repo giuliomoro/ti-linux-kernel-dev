@@ -1,0 +1,40 @@
+From 128cd46b623868e4deca1a2619c23b3e9f5cd92c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 8 Oct 2019 16:52:13 +0200
+Subject: [PATCH 493/985] evl/monitor: try grabbing mutex unlocked in
+ tryenter()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 0b8d9f436..ad2382638 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -233,20 +233,14 @@ static int enter_monitor(struct evl_monitor *gate,
+ 
+ static int tryenter_monitor(struct evl_monitor *gate)
+ {
+-	unsigned long flags;
+-	int ret;
+-
+ 	no_ugly_lock();
+ 
+ 	if (gate->type != EVL_MONITOR_GATE)
+ 		return -EINVAL;
+ 
+ 	evl_commit_monitor_ceiling();
+-	xnlock_get_irqsave(&nklock, flags);
+-	ret = evl_trylock_mutex(&gate->lock);
+-	xnlock_put_irqrestore(&nklock, flags);
+ 
+-	return ret;
++	return evl_trylock_mutex(&gate->lock);
+ }
+ 
+ /* nklock may be held, irqs off (NONE REQUIRED) */
+-- 
+2.30.2
+

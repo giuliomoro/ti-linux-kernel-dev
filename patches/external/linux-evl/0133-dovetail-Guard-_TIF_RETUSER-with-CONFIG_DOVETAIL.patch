@@ -1,0 +1,37 @@
+From 0f7f6a9f8b2679f68a8b61e47441192881cf2cc5 Mon Sep 17 00:00:00 2001
+From: Tobias Schaffner <tobias.schaffner@siemens.com>
+Date: Fri, 4 Oct 2024 21:06:31 +0200
+Subject: [PATCH 133/985] dovetail: Guard _TIF_RETUSER with CONFIG_DOVETAIL
+
+_TIF_RETUSER has to be guarded by CONFIG_DOVETAIL to allow building
+CONFIG_IRQ_PIPELINE without a dovetail implementation.
+
+Signed-off-by: Tobias Schaffner <tobias.schaffner@siemens.com>
+---
+ include/linux/entry-common.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/entry-common.h b/include/linux/entry-common.h
+index deed11195..1d15bc4eb 100644
+--- a/include/linux/entry-common.h
++++ b/include/linux/entry-common.h
+@@ -350,13 +350,15 @@ unsigned long exit_to_user_mode_loop(struct pt_regs *regs,
+ 
+ static inline bool do_retuser(unsigned long ti_work)
+ {
+-	if (dovetailing() && (ti_work & _TIF_RETUSER)) {
++#ifdef CONFIG_DOVETAIL
++	if (ti_work & _TIF_RETUSER) {
+ 		hard_local_irq_enable();
+ 		inband_retuser_notify();
+ 		hard_local_irq_disable();
+ 		/* RETUSER might have switched oob */
+ 		return running_inband();
+ 	}
++#endif
+ 
+ 	return false;
+ }
+-- 
+2.30.2
+

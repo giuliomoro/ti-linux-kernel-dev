@@ -1,0 +1,308 @@
+From fbfaef04d7fa53a9c801087052db47eb8d29169c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 6 Feb 2021 17:25:45 +0100
+Subject: [PATCH 693/985] evl: kconfig: introduce high per-CPU concurrency
+ switch
+
+EVL_HIGH_PERCPU_CONCURRENCY optimizes the implementation for
+applications with many real-time threads running concurrently on any
+given CPU core (typically when eight or more threads may be sharing a
+single CPU core). This is a combination of the scalable scheduler and
+rb-tree timer indexing as a single configuration switch, since both
+aspects are normally coupled.
+
+If the application system runs only a few EVL threads per CPU core,
+then this option should be turned off, in order to minimize the cache
+footprint of the queuing operations performed by the scheduler and
+timer subsystems. Otherwise, it should be turned on in order to have
+constant-time queuing operations for a large number of runnable
+threads and outstanding timers.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/timer.h | 102 ++++++++++++++++++++++----------------------
+ kernel/evl/Kconfig  |  67 ++++++++++++++++-------------
+ kernel/evl/timer.c  |   2 +-
+ 3 files changed, 89 insertions(+), 82 deletions(-)
+
+diff --git a/include/evl/timer.h b/include/evl/timer.h
+index 7feec6c44..0f5616b26 100644
+--- a/include/evl/timer.h
++++ b/include/evl/timer.h
+@@ -31,127 +31,127 @@
+ #define EVL_TIMER_GRAVITY_MASK	(EVL_TIMER_KGRAVITY|EVL_TIMER_UGRAVITY)
+ #define EVL_TIMER_INIT_MASK	EVL_TIMER_GRAVITY_MASK
+ 
+-#ifdef CONFIG_EVL_TIMER_LIST
++#ifdef CONFIG_EVL_TIMER_SCALABLE
+ 
+ struct evl_tnode {
++	struct rb_node rb;
+ 	ktime_t date;
+-	struct list_head next;
+ };
+ 
+ struct evl_tqueue {
+-	struct list_head q;
++	struct rb_root root;
++	struct evl_tnode *head;
+ };
+ 
+ static inline void evl_init_tqueue(struct evl_tqueue *tq)
+ {
+-	INIT_LIST_HEAD(&tq->q);
++	tq->root = RB_ROOT;
++	tq->head = NULL;
+ }
+ 
+ #define evl_destroy_tqueue(__tq)	do { } while (0)
+ 
+ static inline bool evl_tqueue_is_empty(struct evl_tqueue *tq)
+ {
+-	return list_empty(&tq->q);
++	return tq->head == NULL;
+ }
+ 
+ static inline
+ struct evl_tnode *evl_get_tqueue_head(struct evl_tqueue *tq)
+ {
+-	if (list_empty(&tq->q))
+-		return NULL;
+-
+-	return list_first_entry(&tq->q, struct evl_tnode, next);
++	return tq->head;
+ }
+ 
+ static inline
+ struct evl_tnode *evl_get_tqueue_next(struct evl_tqueue *tq,
+ 				struct evl_tnode *node)
+ {
+-	if (list_is_last(&node->next, &tq->q))
+-		return NULL;
+-
+-	return list_entry(node->next.next, struct evl_tnode, next);
+-}
+-
+-static inline
+-void evl_insert_tnode(struct evl_tqueue *tq,
+-		struct evl_tnode *node)
+-{
+-	struct evl_tnode *n;
+-
+-	if (list_empty(&tq->q)) {
+-		list_add(&node->next, &tq->q);
+-	} else {
+-		list_for_each_entry_reverse(n, &tq->q, next) {
+-			if (n->date <= node->date)
+-				break;
+-		}
+-		list_add(&node->next, &n->next);
+-	}
++	struct rb_node *_node = rb_next(&node->rb);
++	return _node ? container_of(_node, struct evl_tnode, rb) : NULL;
+ }
+ 
+ static inline
+ void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
+ {
+-	list_del(&node->next);
++	if (node == tq->head)
++		tq->head = evl_get_tqueue_next(tq, node);
++
++	rb_erase(&node->rb, &tq->root);
+ }
+ 
+-#define for_each_evl_tnode(__node, __tq)	\
+-	list_for_each_entry(__node, &(__tq)->q, next)
++#define for_each_evl_tnode(__node, __tq)			\
++	for ((__node) = evl_get_tqueue_head(__tq); (__node);	\
++	     (__node) = evl_get_tqueue_next(__tq, __node))
+ 
+-#else /* CONFIG_EVL_TIMER_RBTREE */
++#else /* !CONFIG_EVL_TIMER_SCALABLE */
+ 
+ struct evl_tnode {
+-	struct rb_node rb;
+ 	ktime_t date;
++	struct list_head next;
+ };
+ 
+ struct evl_tqueue {
+-	struct rb_root root;
+-	struct evl_tnode *head;
++	struct list_head q;
+ };
+ 
+ static inline void evl_init_tqueue(struct evl_tqueue *tq)
+ {
+-	tq->root = RB_ROOT;
+-	tq->head = NULL;
++	INIT_LIST_HEAD(&tq->q);
+ }
+ 
+ #define evl_destroy_tqueue(__tq)	do { } while (0)
+ 
+ static inline bool evl_tqueue_is_empty(struct evl_tqueue *tq)
+ {
+-	return tq->head == NULL;
++	return list_empty(&tq->q);
+ }
+ 
+ static inline
+ struct evl_tnode *evl_get_tqueue_head(struct evl_tqueue *tq)
+ {
+-	return tq->head;
++	if (list_empty(&tq->q))
++		return NULL;
++
++	return list_first_entry(&tq->q, struct evl_tnode, next);
+ }
+ 
+ static inline
+ struct evl_tnode *evl_get_tqueue_next(struct evl_tqueue *tq,
+ 				struct evl_tnode *node)
+ {
+-	struct rb_node *_node = rb_next(&node->rb);
+-	return _node ? container_of(_node, struct evl_tnode, rb) : NULL;
++	if (list_is_last(&node->next, &tq->q))
++		return NULL;
++
++	return list_entry(node->next.next, struct evl_tnode, next);
+ }
+ 
+ static inline
+-void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
++void evl_insert_tnode(struct evl_tqueue *tq,
++		struct evl_tnode *node)
+ {
+-	if (node == tq->head)
+-		tq->head = evl_get_tqueue_next(tq, node);
++	struct evl_tnode *n;
+ 
+-	rb_erase(&node->rb, &tq->root);
++	if (list_empty(&tq->q)) {
++		list_add(&node->next, &tq->q);
++	} else {
++		list_for_each_entry_reverse(n, &tq->q, next) {
++			if (n->date <= node->date)
++				break;
++		}
++		list_add(&node->next, &n->next);
++	}
+ }
+ 
+-#define for_each_evl_tnode(__node, __tq)			\
+-	for ((__node) = evl_get_tqueue_head(__tq); (__node);	\
+-	     (__node) = evl_get_tqueue_next(__tq, __node))
++static inline
++void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
++{
++	list_del(&node->next);
++}
++
++#define for_each_evl_tnode(__node, __tq)	\
++	list_for_each_entry(__node, &(__tq)->q, next)
+ 
+-#endif /* CONFIG_EVL_TIMER_LIST */
++#endif /* CONFIG_EVL_TIMER_SCALABLE */
+ 
+ struct evl_rq;
+ 
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index 196138db2..e5c889b38 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -38,40 +38,47 @@ config EVL_SCHED_TP_NR_PART
+ 	Define the maximum number of temporal partitions the TP
+ 	scheduler may have to handle.
+ 
+-choice
+-	prompt "Timer indexing method"
+-	default EVL_TIMER_LIST
+-	help
+-	This option selects the underlying data structure
+-	which indexes the software timers managed by the EVL core.
++config EVL_TIMER_SCALABLE
++	bool
+ 
+-config EVL_TIMER_LIST
+-	bool "Linear"
+-	help
+-	Use a linked list. Albeit O(N), a basic list is	particularly efficient
+-	when only a few software timers are concurrently active (typically less
+-	than 10).
++config EVL_SCHED_SCALABLE
++	bool
+ 
+-config EVL_TIMER_RBTREE
+-	bool "Tree"
++config EVL_HIGH_PERCPU_CONCURRENCY
++	bool "Optimize for intra-core concurrency"
++	select EVL_TIMER_SCALABLE
++	select EVL_SCHED_SCALABLE
++	default n
+ 	help
+-	Use a red-black tree. This data structure delivers better performance
+-	when a high number of software timers are concurrently active.
+ 
+-endchoice
+-
+-config EVL_SCHED_SCALABLE
+-	bool "O(1) scheduler"
+-	help
+-	This option causes a multi-level priority queue to be used in
+-	the core scheduler, so that it operates in constant-time
+-	regardless of the number of _concurrently runnable_ threads
+-	(which is normally significantly lower than the total number
+-	of threads existing in the system).
+-
+-	Its use is recommended for large multi-threaded systems
+-	involving more than 10 of such threads; otherwise, the basic
+-	linear method usually performs better latency-wise.
++	This option optimizes the implementation for applications with
++	many real-time threads running concurrently on any given CPU
++	core (typically when eight or more threads may be sharing a
++	single CPU core). Currently, this option controls the
++	following aspects of the implementation:
++
++	- when enabled, a per-CPU multi-level priority queue is used
++	  for ordering threads, which operates in constant-time
++	  regardless of the number of concurrently runnable threads on
++	  a CPU (which is normally significantly lower than the total
++	  number of threads existing in the system). Otherwise, a
++	  basic per-CPU linear list is used, which performs better
++	  latency-wise for a small number of runnable threads per CPU.
++
++	- when enabled, a per-CPU red-black tree is used for indexing
++	  the software timers, which has good scalability when many
++	  timers may be outstanding concurrently on any given
++	  CPU. Otherwise, a basic per-CPU linear list is used, which
++	  performs better latency-wise for a small number of running
++	  threads per CPU.
++
++ 	In short, if your application system runs only a few EVL
++ 	threads per CPU core, then your best shot is at leaving this
++ 	option turned off, in order to minimize the cache footprint of
++ 	the queuing operations performed by the scheduler and timer
++ 	subsystems. Otherwise, you may benefit from turning it on in
++ 	order to have constant-time queuing operations for a large
++ 	number of runnable threads and outstanding timers.
+ 
+ config EVL_RUNSTATS
+ 	bool "Collect runtime statistics"
+diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
+index 4e4a24d8e..705641343 100644
+--- a/kernel/evl/timer.c
++++ b/kernel/evl/timer.c
+@@ -455,7 +455,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
+ }
+ EXPORT_SYMBOL_GPL(evl_get_timer_overruns);
+ 
+-#ifdef CONFIG_EVL_TIMER_RBTREE
++#ifdef CONFIG_EVL_TIMER_SCALABLE
+ 
+ static __always_inline
+ bool date_is_earlier(struct evl_tnode *left,
+-- 
+2.30.2
+

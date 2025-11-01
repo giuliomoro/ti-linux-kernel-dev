@@ -1,0 +1,41 @@
+From e86d106b496d2f33cad0cb815d2a0299a2e6f312 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 18 Oct 2022 19:31:48 +0200
+Subject: [PATCH 743/985] evl/thread: release the oob state unconditionally on
+ cleanup
+
+A thread running a fork+exec sequence has its own mm_struct which is
+different from its parent internally, therefore we must release the
+per-mm(_struct) oob state in this case too.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 4dc3aca39..75c98781d 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1863,14 +1863,13 @@ static void handle_cleanup_event(struct mm_struct *mm)
+ 	 * cleanup_current_thread() already ran, so check @curr for
+ 	 * NULL.
+ 	 *
+-	 * Otherwise, release the oob state for the dropped mm if
+-	 * any. We may or may not have one, EVL_MM_ACTIVE_BIT tells us
+-	 * so.
++	 * Alwausrelease the oob state for the dropped mm if any,
++	 * EVL_MM_ACTIVE_BIT tells us if we have one.
+ 	 */
+ 	if (curr && !(current->flags & PF_EXITING))
+ 		put_current_thread();
+-	else
+-		flush_oob_mm_state(&mm->oob_state);
++
++	flush_oob_mm_state(&mm->oob_state);
+ }
+ 
+ void handle_inband_event(enum inband_event_type event, void *data)
+-- 
+2.30.2
+

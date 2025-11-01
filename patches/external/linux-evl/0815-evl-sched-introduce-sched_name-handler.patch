@@ -1,0 +1,175 @@
+From 18147c450d35fd15ca7f93c63bdf377c611bb6f6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 10 Apr 2023 12:25:36 +0200
+Subject: [PATCH 815/985] evl/sched: introduce sched_name() handler
+
+Some policies may advertise their name differently depending on the
+thread for which it is queried, in which case reporting the policy's
+global name would be inaccurate. E.g. SCHED_FIFO + EVL_T_RRB should be
+reported as round-robin, not fifo, although the former actually sits
+on the latter.
+
+Introduce the per-policy sched_name() handler, which can deal with
+such details based on a thread context.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h      | 1 +
+ kernel/evl/sched/fifo.c  | 9 +++++++++
+ kernel/evl/sched/idle.c  | 6 ++++++
+ kernel/evl/sched/quota.c | 6 ++++++
+ kernel/evl/sched/tp.c    | 6 ++++++
+ kernel/evl/sched/weak.c  | 6 ++++++
+ kernel/evl/thread.c      | 2 +-
+ 7 files changed, 35 insertions(+), 1 deletion(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index 3b256e404..0285dbc32 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -159,6 +159,7 @@ struct evl_sched_class {
+ 			     const union evl_sched_param *p);
+ 	void (*sched_forget)(struct evl_thread *thread);
+ 	void (*sched_kick)(struct evl_thread *thread);
++	const char *(*sched_name)(struct evl_thread *thread);
+ 	ssize_t (*sched_show)(struct evl_thread *thread,
+ 			      char *buf, ssize_t count);
+ 	ssize_t (*sched_control)(int cpu, union evl_sched_ctlparam *ctlp,
+diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
+index 2ff1b6fd9..c8d0456e7 100644
+--- a/kernel/evl/sched/fifo.c
++++ b/kernel/evl/sched/fifo.c
+@@ -53,6 +53,14 @@ static void evl_fifo_ceilprio(struct evl_thread *thread, int prio)
+ 	__evl_ceil_fifo_priority(thread, prio);
+ }
+ 
++static const char *evl_fifo_name(struct evl_thread *thread)
++{
++	if (thread->state & EVL_T_RRB)
++		return "rr";
++
++	return "fifo";
++}
++
+ static ssize_t evl_fifo_show(struct evl_thread *thread,
+ 			char *buf, ssize_t count)
+ {
+@@ -71,6 +79,7 @@ struct evl_sched_class evl_sched_fifo = {
+ 	.sched_trackprio	=	evl_fifo_trackprio,
+ 	.sched_ceilprio		=	evl_fifo_ceilprio,
+ 	.sched_getparam		=	evl_fifo_getparam,
++	.sched_name		=	evl_fifo_name,
+ 	.sched_show		=	evl_fifo_show,
+ 	.weight			=	EVL_CLASS_WEIGHT(4),
+ 	.policy			=	SCHED_FIFO,
+diff --git a/kernel/evl/sched/idle.c b/kernel/evl/sched/idle.c
+index 90e5f71bd..11b156a7f 100644
+--- a/kernel/evl/sched/idle.c
++++ b/kernel/evl/sched/idle.c
+@@ -35,12 +35,18 @@ static void evl_idle_ceilprio(struct evl_thread *thread, int prio)
+ 	__evl_ceil_idle_priority(thread, prio);
+ }
+ 
++static const char *evl_idle_name(struct evl_thread *thread)
++{
++	return "idle";
++}
++
+ struct evl_sched_class evl_sched_idle = {
+ 	.sched_pick		=	evl_idle_pick,
+ 	.sched_setparam		=	evl_idle_setparam,
+ 	.sched_getparam		=	evl_idle_getparam,
+ 	.sched_trackprio	=	evl_idle_trackprio,
+ 	.sched_ceilprio		=	evl_idle_ceilprio,
++	.sched_name		=	evl_idle_name,
+ 	.weight			=	EVL_CLASS_WEIGHT(0),
+ 	.policy			=	SCHED_IDLE,
+ 	.name			=	"idle"
+diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
+index a8e78f579..158bb2e24 100644
+--- a/kernel/evl/sched/quota.c
++++ b/kernel/evl/sched/quota.c
+@@ -474,6 +474,11 @@ static void quota_migrate(struct evl_thread *thread, struct evl_rq *rq)
+ 	evl_set_thread_schedparam_locked(thread, &evl_sched_fifo, &param);
+ }
+ 
++static const char *quota_name(struct evl_thread *thread)
++{
++	return "quota";
++}
++
+ static ssize_t quota_show(struct evl_thread *thread,
+ 			char *buf, ssize_t count)
+ {
+@@ -789,6 +794,7 @@ struct evl_sched_class evl_sched_quota = {
+ 	.sched_ceilprio		=	quota_ceilprio,
+ 	.sched_forget		=	quota_forget,
+ 	.sched_kick		=	quota_kick,
++	.sched_name		=	quota_name,
+ 	.sched_show		=	quota_show,
+ 	.sched_control		=	quota_control,
+ 	.weight			=	EVL_CLASS_WEIGHT(2),
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index 8aa52e70f..d55b214f8 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -241,6 +241,11 @@ static void tp_migrate(struct evl_thread *thread, struct evl_rq *rq)
+ 	evl_set_thread_schedparam_locked(thread, &evl_sched_fifo, &param);
+ }
+ 
++static const char *tp_name(struct evl_thread *thread)
++{
++	return "tp";
++}
++
+ static ssize_t tp_show(struct evl_thread *thread,
+ 		char *buf, ssize_t count)
+ {
+@@ -472,6 +477,7 @@ struct evl_sched_class evl_sched_tp = {
+ 	.sched_ceilprio		=	tp_ceilprio,
+ 	.sched_declare		=	tp_declare,
+ 	.sched_forget		=	tp_forget,
++	.sched_name		=	tp_name,
+ 	.sched_show		=	tp_show,
+ 	.sched_control		=	tp_control,
+ 	.weight			=	EVL_CLASS_WEIGHT(3),
+diff --git a/kernel/evl/sched/weak.c b/kernel/evl/sched/weak.c
+index 933b91e29..5dfd47000 100644
+--- a/kernel/evl/sched/weak.c
++++ b/kernel/evl/sched/weak.c
+@@ -85,6 +85,11 @@ static int weak_declare(struct evl_thread *thread,
+ 	return 0;
+ }
+ 
++static const char *weak_name(struct evl_thread *thread)
++{
++	return "weak";
++}
++
+ struct evl_sched_class evl_sched_weak = {
+ 	.sched_init		=	weak_init,
+ 	.sched_enqueue		=	weak_enqueue,
+@@ -97,6 +102,7 @@ struct evl_sched_class evl_sched_weak = {
+ 	.sched_trackprio	=	weak_trackprio,
+ 	.sched_ceilprio		=	weak_ceilprio,
+ 	.sched_getparam		=	weak_getparam,
++	.sched_name		=	weak_name,
+ 	.weight			=	EVL_CLASS_WEIGHT(1),
+ 	.policy			=	SCHED_WEAK,
+ 	.name			=	"weak"
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 836e769a5..dac366d41 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2646,7 +2646,7 @@ static ssize_t sched_show(struct device *dev,
+ 	cpu = evl_rq_cpu(thread->rq);
+ 
+ 	ret = snprintf(buf, PAGE_SIZE, "%d %d %d %s ",
+-		cpu, bprio, cprio, sched_class->name);
++		cpu, bprio, cprio, sched_class->sched_name(thread));
+ 
+ 	if (sched_class->sched_show) {
+ 		_ret = sched_class->sched_show(thread, buf + ret,
+-- 
+2.30.2
+

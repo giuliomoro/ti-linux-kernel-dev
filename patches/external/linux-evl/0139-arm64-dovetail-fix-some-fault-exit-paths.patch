@@ -1,0 +1,26 @@
+From fb14bb17e8907b0d5162146956afc31e2ec57f64 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 2 Jan 2025 19:05:57 +0100
+Subject: [PATCH 139/985] arm64: dovetail: fix some fault exit paths
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/mm/fault.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
+index 654abbf42..28f3b5cfe 100644
+--- a/arch/arm64/mm/fault.c
++++ b/arch/arm64/mm/fault.c
+@@ -680,7 +680,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ 
+ 	/* The fault is fully completed (including releasing mmap lock) */
+ 	if (fault & VM_FAULT_COMPLETED)
+-		return 0;
++		goto out;
+ 
+ 	if (fault & VM_FAULT_RETRY) {
+ 		mm_flags |= FAULT_FLAG_TRIED;
+-- 
+2.30.2
+

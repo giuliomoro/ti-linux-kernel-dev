@@ -1,0 +1,29 @@
+From bb4d693658c8b1aa81d4b9b885f17892d139d7cf Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 19 Oct 2022 12:14:46 +0200
+Subject: [PATCH 757/985] evl/poll: lockdep: delete group mutex at release
+
+With dynamic lock classes enabled for mutexes, we have to destroy the
+latter thoroughly after usage so that classes are removed. Otherwise,
+lockdep may complain loudly about registering classes twice.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/poll.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index eafe68d07..7fcacfabc 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -653,6 +653,7 @@ static int poll_release(struct inode *inode, struct file *filp)
+ 	evl_schedule();
+ 
+ 	flush_items(group);
++	evl_destroy_kmutex(&group->item_lock);
+ 	evl_release_file(&group->efile);
+ 	kfree(group);
+ 
+-- 
+2.30.2
+

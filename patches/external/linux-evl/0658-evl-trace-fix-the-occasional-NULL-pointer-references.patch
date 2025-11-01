@@ -1,0 +1,35 @@
+From 189f30bacf800d1dc1afc4d325d0a4239bbf72c4 Mon Sep 17 00:00:00 2001
+From: lio via Evl <evl@evlproject.org>
+Date: Wed, 18 Nov 2020 15:28:34 +0100
+Subject: [PATCH 658/985] evl trace:fix the occasional NULL pointer references
+
+Trace event *evl_sched_attrs* calls TP_printk("%s") to out print the thread
+name get by evl_element_name().
+
+However, evl_element_name() may return NULL sometimes, and TP_printk(%s)
+may cause some problems.
+
+This patch will avoid this.
+
+Signed-off-by: lio <carver4lio@163.com>
+---
+ include/trace/events/evl.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 1c3a10d9d..49f5adb7d 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -177,7 +177,8 @@ DECLARE_EVENT_CLASS(evl_sched_attrs,
+ 	),
+ 
+ 	TP_printk("thread=%s policy=%s param={ %s }",
+-		  evl_element_name(&__entry->thread->element),
++		  evl_element_name(&__entry->thread->element)?
++		  evl_element_name(&__entry->thread->element):"{ }",
+ 		  evl_print_sched_policy(__entry->policy),
+ 		  evl_trace_sched_attrs(p,
+ 					(struct evl_sched_attrs *)
+-- 
+2.30.2
+

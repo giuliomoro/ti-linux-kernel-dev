@@ -1,0 +1,27 @@
+From 3149797b54395f5f1fc7af375410e1b5676d77f2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 21 Feb 2024 18:41:25 +0100
+Subject: [PATCH 878/985] evl/net: packet: fix unbalanced lock/unlock on error
+ path
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/packet/packet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index eedae58f0..d664b014b 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -298,7 +298,7 @@ static int bind_packet_socket(struct evl_socket *esk,
+ 		if (new_ifindex) {
+ 			dev = evl_net_get_dev_by_index(esk->net, new_ifindex);
+ 			if (dev == NULL)
+-				return -EINVAL;
++				goto out;
+ 			if (is_vlan_dev(dev)) {
+ 				vlan_id = vlan_dev_vlan_id(dev);
+ 				real_ifindex = vlan_dev_real_dev(dev)->ifindex;
+-- 
+2.30.2
+

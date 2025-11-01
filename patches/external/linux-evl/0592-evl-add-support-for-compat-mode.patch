@@ -1,0 +1,1194 @@
+From 976347e5d96a7a98af2701588da96f3a02c7152e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 26 Mar 2020 18:53:16 +0100
+Subject: [PATCH 592/985] evl: add support for compat mode
+
+Compat mode (CONFIG_COMPAT) allows application binaries built for a
+32bit architecture to issue system calls to a 64bit kernel which
+implements such compatibility support.
+
+This work builds on the y2038 sanitization which eliminated the
+remaining assumptions about the size of native long integers in the
+same move.  Although these changes enable armv7 binaries to call an
+armv8 kernel, most of them are architecture-independent, and follow
+this pattern:
+
+- .compat_ioctl and .compat_oob_ioctl handlers are added to all file
+  operations structs, pointing at compat_ptr_ioctl()
+  compat_ptr_oob_ioctl() respectively.
+
+- all pointers passed by applications within ioctl() argument structs
+  are conveyed as generic 64bit values.
+
+These changes mandate upgrading the ABI revision to #20.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/include/asm/evl/syscall.h        |  47 +++--
+ arch/arm64/include/asm/evl/syscall.h      |  53 +++--
+ arch/arm64/include/uapi/asm/evl/syscall.h |   7 -
+ arch/x86/include/asm/evl/syscall.h        |  43 ++--
+ arch/x86/include/uapi/asm/evl/syscall.h   |   7 -
+ drivers/evl/hectic.c                      |   4 +
+ drivers/evl/latmus.c                      |  15 +-
+ include/evl/uaccess.h                     |  27 +++
+ include/uapi/evl/clock.h                  |   4 +-
+ include/uapi/evl/control.h                |   6 +-
+ include/uapi/evl/devices/latmus.h         |   6 +-
+ include/uapi/evl/factory.h                |   4 +-
+ include/uapi/evl/monitor.h                |   2 +-
+ include/uapi/evl/poll.h                   |   4 +-
+ include/uapi/evl/sched.h                  |   4 +-
+ include/uapi/evl/syscall.h                |   2 -
+ kernel/evl/clock.c                        |  18 +-
+ kernel/evl/control.c                      |  27 +--
+ kernel/evl/factory.c                      |  12 +-
+ kernel/evl/monitor.c                      |   7 +-
+ kernel/evl/poll.c                         |  17 +-
+ kernel/evl/syscall.c                      | 228 +++++++++++-----------
+ kernel/evl/thread.c                       |   4 +
+ kernel/evl/trace.c                        |   4 +
+ kernel/evl/xbuf.c                         |   4 +
+ 25 files changed, 329 insertions(+), 227 deletions(-)
+ delete mode 100644 arch/arm64/include/uapi/asm/evl/syscall.h
+ delete mode 100644 arch/x86/include/uapi/asm/evl/syscall.h
+ create mode 100644 include/evl/uaccess.h
+
+diff --git a/arch/arm/include/asm/evl/syscall.h b/arch/arm/include/asm/evl/syscall.h
+index 0c0727dfe..57f7d11de 100644
+--- a/arch/arm/include/asm/evl/syscall.h
++++ b/arch/arm/include/asm/evl/syscall.h
+@@ -6,30 +6,34 @@
+ #include <asm/unistd.h>
+ #include <asm/ptrace.h>
+ #include <asm/syscall.h>
+-#include <uapi/asm/dovetail.h>
++#include <uapi/asm-generic/dovetail.h>
+ 
+ #define raw_put_user(src, dst)  __put_user(src, dst)
+ #define raw_get_user(dst, src)  __get_user(dst, src)
+ 
+-#define is_oob_syscall(__regs)	((__regs)->ARM_r7 == __ARM_NR_dovetail)
+-#define oob_syscall_nr(__regs)	((__regs)->ARM_ORIG_r0)
+-
+ #define oob_retval(__regs)	((__regs)->ARM_r0)
+-#define oob_arg1(__regs)	((__regs)->ARM_r1)
+-#define oob_arg2(__regs)	((__regs)->ARM_r2)
+-#define oob_arg3(__regs)	((__regs)->ARM_r3)
+-#define oob_arg4(__regs)	((__regs)->ARM_r4)
+-#define oob_arg5(__regs)	((__regs)->ARM_r5)
+-
+-/*
+- * Fetch and test inband syscall number (valid only if
+- * !is_oob_syscall(__regs)).
+- */
+-#define inband_syscall_nr(__regs, __nr)					\
+-	({								\
+-		*(__nr) = (__regs)->ARM_r7;				\
+-		*(__nr) < NR_syscalls || *(__nr) >= __ARM_NR_BASE;	\
+-	})
++#define oob_arg1(__regs)	((__regs)->ARM_r0)
++#define oob_arg2(__regs)	((__regs)->ARM_r1)
++#define oob_arg3(__regs)	((__regs)->ARM_r2)
++#define oob_arg4(__regs)	((__regs)->ARM_r3)
++#define oob_arg5(__regs)	((__regs)->ARM_r4)
++
++static inline bool is_oob_syscall(struct pt_regs *regs)
++{
++	return !!(regs->ARM_r7 & __OOB_SYSCALL_BIT);
++}
++
++static inline unsigned int oob_syscall_nr(struct pt_regs *regs)
++{
++	return regs->ARM_r7 & ~__OOB_SYSCALL_BIT;
++}
++
++static inline
++bool inband_syscall_nr(struct pt_regs *regs, unsigned int *nr)
++{
++	*nr = regs->ARM_r7;
++	return *nr < NR_syscalls || *nr >= __ARM_NR_BASE;
++}
+ 
+ static inline void
+ set_oob_error(struct pt_regs *regs, int err)
+@@ -43,4 +47,9 @@ void set_oob_retval(struct pt_regs *regs, long ret)
+ 	oob_retval(regs) = ret;
+ }
+ 
++static inline bool is_compat_oob_call(void)
++{
++	return false;
++}
++
+ #endif /* !_EVL_ARM_ASM_SYSCALL_H */
+diff --git a/arch/arm64/include/asm/evl/syscall.h b/arch/arm64/include/asm/evl/syscall.h
+index 52579d000..4750f77c4 100644
+--- a/arch/arm64/include/asm/evl/syscall.h
++++ b/arch/arm64/include/asm/evl/syscall.h
+@@ -5,14 +5,11 @@
+ #include <linux/uaccess.h>
+ #include <asm/unistd.h>
+ #include <asm/ptrace.h>
+-#include <uapi/asm/evl/syscall.h>
++#include <uapi/asm-generic/dovetail.h>
+ 
+ #define raw_put_user(src, dst)  __put_user(src, dst)
+ #define raw_get_user(dst, src)  __get_user(dst, src)
+ 
+-#define is_oob_syscall(__regs)	((__regs)->syscallno & __EVL_SYSCALL_BIT)
+-#define oob_syscall_nr(__regs)	((__regs)->syscallno & ~__EVL_SYSCALL_BIT)
+-
+ #define oob_retval(__regs)	((__regs)->regs[0])
+ #define oob_arg1(__regs)	((__regs)->regs[0])
+ #define oob_arg2(__regs)	((__regs)->regs[1])
+@@ -20,26 +17,46 @@
+ #define oob_arg4(__regs)	((__regs)->regs[3])
+ #define oob_arg5(__regs)	((__regs)->regs[4])
+ 
+-/*
+- * Fetch and test inband syscall number (valid only if
+- * !is_oob_syscall(__regs)).
+- */
+-#define inband_syscall_nr(__regs, __nr)			\
+-	({						\
+-		*(__nr) = oob_syscall_nr(__regs);	\
+-		!is_oob_syscall(__regs);		\
+-	})
+-
+-static inline void
+-set_oob_error(struct pt_regs *regs, int err)
++#define __ARM_NR_BASE_compat		0xf0000
++
++static inline bool is_oob_syscall(const struct pt_regs *regs)
++{
++	return !!(regs->syscallno & __OOB_SYSCALL_BIT);
++}
++
++static inline unsigned int oob_syscall_nr(const struct pt_regs *regs)
++{
++	return regs->syscallno & ~__OOB_SYSCALL_BIT;
++}
++
++static inline bool
++inband_syscall_nr(struct pt_regs *regs, unsigned int *nr)
++{
++	*nr = oob_syscall_nr(regs);
++
++	return !is_oob_syscall(regs);
++}
++
++static inline void set_oob_error(struct pt_regs *regs, int err)
+ {
+ 	oob_retval(regs) = err;
+ }
+ 
+-static inline
+-void set_oob_retval(struct pt_regs *regs, long ret)
++static inline void set_oob_retval(struct pt_regs *regs, long ret)
+ {
+ 	oob_retval(regs) = ret;
+ }
+ 
++#ifdef CONFIG_COMPAT
++static inline bool is_compat_oob_call(void)
++{
++	return is_compat_task();
++}
++#else
++static inline bool is_compat_oob_call(void)
++{
++	return false;
++}
++#endif
++
+ #endif /* !_EVL_ARM64_ASM_SYSCALL_H */
+diff --git a/arch/arm64/include/uapi/asm/evl/syscall.h b/arch/arm64/include/uapi/asm/evl/syscall.h
+deleted file mode 100644
+index 212ff2528..000000000
+--- a/arch/arm64/include/uapi/asm/evl/syscall.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+-#ifndef _EVL_ARM64_ASM_UAPI_SYSCALL_H
+-#define _EVL_ARM64_ASM_UAPI_SYSCALL_H
+-
+-#define __EVL_SYSCALL_BIT	0x10000000
+-
+-#endif /* !_EVL_ARM64_ASM_UAPI_SYSCALL_H */
+diff --git a/arch/x86/include/asm/evl/syscall.h b/arch/x86/include/asm/evl/syscall.h
+index e0b6652c7..379bde60f 100644
+--- a/arch/x86/include/asm/evl/syscall.h
++++ b/arch/x86/include/asm/evl/syscall.h
+@@ -5,14 +5,11 @@
+ #include <linux/uaccess.h>
+ #include <asm/unistd.h>
+ #include <asm/ptrace.h>
+-#include <uapi/asm/evl/syscall.h>
++#include <uapi/asm-generic/dovetail.h>
+ 
+ #define raw_put_user(src, dst)  __put_user(src, dst)
+ #define raw_get_user(dst, src)  __get_user(dst, src)
+ 
+-#define is_oob_syscall(__regs)	((__regs)->orig_ax & __EVL_SYSCALL_BIT)
+-#define oob_syscall_nr(__regs)	((__regs)->orig_ax & ~__EVL_SYSCALL_BIT)
+-
+ #define oob_retval(__regs)	((__regs)->ax)
+ #define oob_arg1(__regs)	((__regs)->di)
+ #define oob_arg2(__regs)	((__regs)->si)
+@@ -20,26 +17,36 @@
+ #define oob_arg4(__regs)	((__regs)->r10)
+ #define oob_arg5(__regs)	((__regs)->r8)
+ 
+-/*
+- * Fetch and test inband syscall number (valid only if
+- * !is_oob_syscall(__regs)).
+- */
+-#define inband_syscall_nr(__regs, __nr)			\
+-	({						\
+-		*(__nr) = oob_syscall_nr(__regs);	\
+-		!is_oob_syscall(__regs);		\
+-	})
+-
+-static inline void
+-set_oob_error(struct pt_regs *regs, int err)
++static inline bool is_oob_syscall(const struct pt_regs *regs)
+ {
+-	oob_retval(regs) = err;
++	return !!(regs->orig_ax & __OOB_SYSCALL_BIT);
++}
++
++static inline unsigned int oob_syscall_nr(const struct pt_regs *regs)
++{
++	return regs->orig_ax & ~__OOB_SYSCALL_BIT;
+ }
+ 
+ static inline
+-void set_oob_retval(struct pt_regs *regs, long ret)
++bool inband_syscall_nr(struct pt_regs *regs, unsigned int *nr)
++{
++	*nr = oob_syscall_nr(regs);
++	return !is_oob_syscall(regs);
++}
++
++static inline void set_oob_error(struct pt_regs *regs, int err)
++{
++	oob_retval(regs) = err;
++}
++
++static inline void set_oob_retval(struct pt_regs *regs, long ret)
+ {
+ 	oob_retval(regs) = ret;
+ }
+ 
++static inline bool is_compat_oob_call(void)
++{
++	return in_ia32_syscall();
++}
++
+ #endif /* !_EVL_X86_ASM_SYSCALL_H */
+diff --git a/arch/x86/include/uapi/asm/evl/syscall.h b/arch/x86/include/uapi/asm/evl/syscall.h
+deleted file mode 100644
+index f3464ae53..000000000
+--- a/arch/x86/include/uapi/asm/evl/syscall.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
+-#ifndef _EVL_X86_ASM_UAPI_SYSCALL_H
+-#define _EVL_X86_ASM_UAPI_SYSCALL_H
+-
+-#define __EVL_SYSCALL_BIT	0x10000000
+-
+-#endif /* !_EVL_X86_ASM_UAPI_SYSCALL_H */
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 01cf64686..35c31fdcb 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -661,6 +661,10 @@ static const struct file_operations hectic_fops = {
+ 	.release	= hectic_release,
+ 	.unlocked_ioctl	= hectic_ioctl,
+ 	.oob_ioctl	= hectic_oob_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static dev_t hectic_devt;
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index 286fc3b83..1a320ddeb 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -14,12 +14,12 @@
+ #include <linux/cdev.h>
+ #include <linux/fs.h>
+ #include <linux/fcntl.h>
+-#include <linux/uaccess.h>
+ #include <evl/file.h>
+ #include <evl/flag.h>
+ #include <evl/clock.h>
+ #include <evl/thread.h>
+ #include <evl/xbuf.h>
++#include <evl/uaccess.h>
+ #include <uapi/evl/devices/latmus.h>
+ #include <trace/events/evl.h>
+ 
+@@ -779,7 +779,7 @@ static int run_tuning(struct latmus_runner *runner,
+ 
+ 	gravity = runner->get_gravity(runner);
+ 
+-	if (raw_copy_to_user(result->data, &gravity, sizeof(gravity)))
++	if (raw_copy_to_user_ptr64(result->data_ptr, &gravity, sizeof(gravity)))
+ 		return -EFAULT;
+ 
+ 	return 0;
+@@ -817,7 +817,7 @@ static int run_measurement(struct latmus_runner *runner,
+ 	if (result->len != sizeof(mr))
+ 		return -EINVAL;
+ 
+-	if (raw_copy_from_user(&mr, result->data, sizeof(mr)))
++	if (raw_copy_from_user_ptr64(&mr, result->data_ptr, sizeof(mr)))
+ 		return -EFAULT;
+ 
+ 	ret = measure_continously(runner);
+@@ -833,7 +833,7 @@ static int run_measurement(struct latmus_runner *runner,
+ 	last.sum_lat = state->sum;
+ 	last.overruns = state->overruns;
+ 	last.samples = state->cur_samples;
+-	if (raw_copy_to_user(mr.last, &last, sizeof(last)))
++	if (raw_copy_to_user_ptr64(mr.last_ptr, &last, sizeof(last)))
+ 		return -EFAULT;
+ 
+ 	if (runner->histogram) {
+@@ -841,7 +841,8 @@ static int run_measurement(struct latmus_runner *runner,
+ 		if (len > mr.len)
+ 			len = result->len;
+ 		if (len > 0 &&
+-		    raw_copy_to_user(mr.histogram, runner->histogram, len))
++		    raw_copy_to_user_ptr64(mr.histogram_ptr,
++					   runner->histogram, len))
+ 			return -EFAULT;
+ 	}
+ 
+@@ -1020,6 +1021,10 @@ static const struct file_operations latmus_fops = {
+ 	.release	= latmus_release,
+ 	.unlocked_ioctl	= latmus_ioctl,
+ 	.oob_ioctl	= latmus_oob_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static dev_t latmus_devt;
+diff --git a/include/evl/uaccess.h b/include/evl/uaccess.h
+new file mode 100644
+index 000000000..679bc5b80
+--- /dev/null
++++ b/include/evl/uaccess.h
+@@ -0,0 +1,27 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2020 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UACCESS_H
++#define _EVL_UACCESS_H
++
++#include <linux/uaccess.h>
++
++static inline unsigned long __must_check
++raw_copy_from_user_ptr64(void *to, u64 from_ptr, unsigned long n)
++{
++	return raw_copy_from_user(to, (void *)(long)from_ptr, n);
++}
++
++static inline unsigned long __must_check
++raw_copy_to_user_ptr64(u64 to, const void *from, unsigned long n)
++{
++	return raw_copy_to_user((void *)(long)to, from, n);
++}
++
++#define evl_ptrval64(__ptr)		((u64)(long)(__ptr))
++#define evl_valptr64(__ptrval, __type)	((__type *)(long)(__ptrval))
++
++#endif /* !_EVL_UACCESS_H */
+diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
+index ca5570c49..a578c8bab 100644
+--- a/include/uapi/evl/clock.h
++++ b/include/uapi/evl/clock.h
+@@ -25,8 +25,8 @@
+ #define EVL_CLKIOC_NEW_TIMER	_IO(EVL_CLOCK_IOCBASE, 5)
+ 
+ struct evl_timerfd_setreq {
+-	struct __evl_itimerspec *value;
+-	struct __evl_itimerspec *ovalue;
++	__u64 value_ptr;       /* (struct __evl_itimerspec *value) */
++	__u64 ovalue_ptr;      /* (struct __evl_itimerspec *ovalue) */
+ };
+ 
+ #define EVL_TIMERFD_IOCBASE	't'
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 89ee3c491..029a9f676 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -11,14 +11,14 @@
+ #include <uapi/evl/sched.h>
+ 
+ /* Earliest ABI level we support. */
+-#define EVL_ABI_BASE   19
++#define EVL_ABI_BASE   20
+ /*
+  * Current/latest ABI level we support. We may decouple the base and
+  * current ABI levels by providing backward compatibility from the
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  19
++#define EVL_ABI_LEVEL  20
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+@@ -31,7 +31,7 @@ struct evl_core_info {
+ 
+ struct evl_cpu_state {
+ 	__u32 cpu;
+-	__u32 *state;
++	__u64 state_ptr;	/* (__u32 *state) */
+ };
+ 
+ #define EVL_CONTROL_IOCBASE	'C'
+diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
+index 50bb814a8..0b0207c3a 100644
+--- a/include/uapi/evl/devices/latmus.h
++++ b/include/uapi/evl/devices/latmus.h
+@@ -44,13 +44,13 @@ struct latmus_measurement {
+ };
+ 
+ struct latmus_measurement_result {
+-	struct latmus_measurement *last;
+-	__s32 *histogram;
++	__u64 last_ptr;		/* (struct latmus_measurement *last) */
++	__u64 histogram_ptr;	/* (__s32 *histogram) */
+ 	__u32 len;
+ };
+ 
+ struct latmus_result {
+-	void *data;
++	__u64 data_ptr;		/* (void *data) */
+ 	__u32 len;
+ };
+ 
+diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
+index 3424bfd13..28efded62 100644
+--- a/include/uapi/evl/factory.h
++++ b/include/uapi/evl/factory.h
+@@ -18,8 +18,8 @@ struct evl_element_ids {
+ };
+ 
+ struct evl_clone_req {
+-	const char *name;
+-	void *attrs;
++	__u64 name_ptr;		/* (const char *name) */
++	__u64 attrs_ptr;	/* (void *attrs) */
+ 	struct evl_element_ids eids;
+ };
+ 
+diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
+index 6bfd8829a..40c5bdf2a 100644
+--- a/include/uapi/evl/monitor.h
++++ b/include/uapi/evl/monitor.h
+@@ -53,7 +53,7 @@ struct evl_monitor_state {
+ };
+ 
+ struct evl_monitor_waitreq {
+-	struct __evl_timespec *timeout;
++	__u64 timeout_ptr;	/* (struct __evl_timespec *timeout) */
+ 	__s32 gatefd;
+ 	__s32 status;
+ 	__s32 value;
+diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
+index 095270f3b..bb14c1edb 100644
+--- a/include/uapi/evl/poll.h
++++ b/include/uapi/evl/poll.h
+@@ -29,8 +29,8 @@ struct evl_poll_event {
+ };
+ 
+ struct evl_poll_waitreq {
+-	struct __evl_timespec *timeout;
+-	struct evl_poll_event *pollset;
++	__u64 timeout_ptr;	/* (struct __evl_timespec *timeout) */
++	__u64 pollset_ptr;	/* (struct evl_poll_event *pollset) */
+ 	int nrset;
+ };
+ 
+diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
+index 80147c0a8..431514f3c 100644
+--- a/include/uapi/evl/sched.h
++++ b/include/uapi/evl/sched.h
+@@ -121,8 +121,8 @@ union evl_sched_ctlinfo {
+ struct evl_sched_ctlreq {
+ 	int policy;
+ 	int cpu;
+-	const union evl_sched_ctlparam *param;
+-	union evl_sched_ctlinfo *info;
++	__u64 param_ptr; /* (const union evl_sched_ctlparam *param) */
++	__u64 info_ptr;	 /* (union evl_sched_ctlinfo *info) */
+ };
+ 
+ #endif /* !_EVL_UAPI_SCHED_H */
+diff --git a/include/uapi/evl/syscall.h b/include/uapi/evl/syscall.h
+index 70807eb54..e181464b1 100644
+--- a/include/uapi/evl/syscall.h
++++ b/include/uapi/evl/syscall.h
+@@ -7,8 +7,6 @@
+ #ifndef _EVL_UAPI_SYSCALL_H
+ #define _EVL_UAPI_SYSCALL_H
+ 
+-#define __NR_EVL_SYSCALLS	3
+-
+ #define sys_evl_read	0	/* oob_read() */
+ #define sys_evl_write	1	/* oob_write() */
+ #define sys_evl_ioctl	2	/* oob_ioctl() */
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index b4b8d97a6..294536021 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -32,6 +32,7 @@
+ #include <evl/control.h>
+ #include <evl/file.h>
+ #include <evl/irq.h>
++#include <evl/uaccess.h>
+ #include <asm/evl/syscall.h>
+ #include <uapi/evl/clock.h>
+ #include <trace/events/evl.h>
+@@ -629,11 +630,11 @@ static long timerfd_common_ioctl(struct file *filp,
+ 	switch (cmd) {
+ 	case EVL_TFDIOC_SET:
+ 		u_sreq = (typeof(u_sreq))arg;
+-		sreq.ovalue = NULL;
++		sreq.ovalue_ptr = 0;
+ 		ret = raw_copy_from_user(&sreq, u_sreq, sizeof(sreq));
+ 		if (ret)
+ 			return -EFAULT;
+-		ret = raw_copy_from_user(&uits, sreq.value, sizeof(uits));
++		ret = raw_copy_from_user_ptr64(&uits, sreq.value_ptr, sizeof(uits));
+ 		if (ret)
+ 			return -EFAULT;
+ 		if ((unsigned long)uits.it_value.tv_nsec >= ONE_BILLION ||
+@@ -645,9 +646,10 @@ static long timerfd_common_ioctl(struct file *filp,
+ 		ret = set_timerfd(timerfd, &its, &oits);
+ 		if (ret)
+ 			return ret;
+-		if (sreq.ovalue) {
++		if (sreq.ovalue_ptr) {
+ 			uoits = itimerspec64_to_u_itimerspec(oits);
+-			u_uits = (typeof(u_uits))sreq.ovalue;
++			u_uits = evl_valptr64(sreq.ovalue_ptr,
++					      struct __evl_itimerspec);
+ 			if (raw_copy_to_user(u_uits, &uoits, sizeof(uoits)))
+ 				return -EFAULT;
+ 		}
+@@ -724,6 +726,10 @@ static const struct file_operations timerfd_fops = {
+ 	.oob_read	= timerfd_oob_read,
+ 	.oob_poll	= timerfd_oob_poll,
+ 	.unlocked_ioctl	= timerfd_common_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static int new_timerfd(struct evl_clock *clock)
+@@ -877,6 +883,10 @@ static const struct file_operations clock_fops = {
+ 	.release	= evl_release_element,
+ 	.unlocked_ioctl	= clock_ioctl,
+ 	.oob_ioctl	= clock_oob_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ /*
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 82662b6a3..a10118805 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -14,6 +14,7 @@
+ #include <evl/tick.h>
+ #include <evl/sched.h>
+ #include <evl/control.h>
++#include <evl/uaccess.h>
+ #include <asm/evl/syscall.h>
+ #include <asm/evl/fptest.h>
+ #include <uapi/evl/control.h>
+@@ -106,17 +107,17 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
+ 	union evl_sched_ctlinfo info, __user *u_infp;
+ 	int ret;
+ 
+-	u_ctlp = (typeof(u_ctlp))ctl->param;
++	u_ctlp = evl_valptr64(ctl->param_ptr, union evl_sched_ctlparam);
+ 	ret = raw_copy_from_user(&param.quota, &u_ctlp->quota,
+ 				sizeof(param.quota));
+ 	if (ret)
+ 		return -EFAULT;
+ 
+ 	ret = evl_sched_quota.sched_control(ctl->cpu, &param, &info);
+-	if (ret || ctl->info == NULL)
++	if (ret || !ctl->info_ptr)
+ 		return ret;
+ 
+-	u_infp = (typeof(u_infp))ctl->info;
++	u_infp = evl_valptr64(ctl->info_ptr, union evl_sched_ctlinfo);
+ 	ret = raw_copy_to_user(&u_infp->quota, &info.quota,
+ 			sizeof(info.quota));
+ 	if (ret)
+@@ -143,12 +144,12 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 	size_t len;
+ 	int ret;
+ 
+-	u_ctlp = (typeof(u_ctlp))ctl->param;
++	u_ctlp = evl_valptr64(ctl->param_ptr, union evl_sched_ctlparam);
+ 	ret = raw_copy_from_user(&param.tp, &u_ctlp->tp, sizeof(param.tp));
+ 	if (ret)
+ 		return -EFAULT;
+ 
+-	if (ctl->info) {
++	if (ctl->info_ptr) {
+ 		/* Quick check to prevent creepy memalloc. */
+ 		if (param.tp.nr_windows > CONFIG_EVL_SCHED_TP_NR_PART)
+ 			return -EINVAL;
+@@ -163,7 +164,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)
+ 	if (ret || info == NULL)
+ 		goto out;
+ 
+-	u_infp = (typeof(u_infp))ctl->info;
++	u_infp = evl_valptr64(ctl->info_ptr, union evl_sched_ctlinfo);
+ 	len = evl_tp_paramlen(&info->tp);
+ 	ret = raw_copy_to_user(&u_infp->tp, &info->tp, len);
+ 	if (ret)
+@@ -219,14 +220,14 @@ static int do_cpu_state(struct evl_cpu_state *cpst)
+ 	if (!housekeeping_cpu(cpu, HK_FLAG_DOMAIN))
+ 		state |= EVL_CPU_ISOL;
+ 
+-	return raw_copy_to_user(cpst->state, &state, sizeof(state)) ?
+-		-EFAULT : 0;
++	return raw_copy_to_user_ptr64(cpst->state_ptr, &state,
++				      sizeof(state)) ? -EFAULT : 0;
+ }
+ 
+ static long control_common_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+ {
+-	struct evl_cpu_state cpst = { .state = 0 }, __user *u_cpst;
++	struct evl_cpu_state cpst = { .state_ptr = 0 }, __user *u_cpst;
+ 	struct evl_sched_ctlreq ctl, __user *u_ctl;
+ 	long ret;
+ 
+@@ -298,8 +299,8 @@ static long control_ioctl(struct file *filp, unsigned int cmd,
+ 		info.abi_current = EVL_ABI_LEVEL;
+ 		info.fpu_features = evl_detect_fpu();
+ 		info.shm_size = evl_shm_size;
+-		ret = raw_copy_to_user((struct evl_core_info __user *)arg,
+-				&info, sizeof(info)) ? -EFAULT : 0;
++		ret = copy_to_user((struct evl_core_info __user *)arg,
++				   &info, sizeof(info)) ? -EFAULT : 0;
+ 		break;
+ 	default:
+ 		ret = control_common_ioctl(filp, cmd, arg);
+@@ -325,6 +326,10 @@ static const struct file_operations control_fops = {
+ 	.oob_ioctl	=	control_oob_ioctl,
+ 	.unlocked_ioctl	=	control_ioctl,
+ 	.mmap		=	control_mmap,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static const char *state_labels[] = {
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 1d8f1c7cf..d2228f512 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -25,6 +25,7 @@
+ #include <evl/control.h>
+ #include <evl/syscall.h>
+ #include <evl/factory.h>
++#include <evl/uaccess.h>
+ #include <uapi/evl/factory.h>
+ 
+ static struct class *evl_class;
+@@ -375,6 +376,7 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ 	struct filename *devname = NULL;
+ 	__u32 val, state_offset = -1U;
+ 	struct evl_factory *fac;
++	void __user *u_attrs;
+ 	char tmpbuf[16];
+ 	int ret;
+ 
+@@ -392,15 +394,16 @@ static long ioctl_clone_device(struct file *filp, unsigned int cmd,
+ 	if (ret)
+ 		return -EFAULT;
+ 
+-	if (req.name) {
+-		devname = getname(req.name);
++	if (req.name_ptr) {
++		devname = getname(evl_valptr64(req.name_ptr, const char));
+ 		if (IS_ERR(devname))
+ 			return PTR_ERR(devname);
+ 	}
+ 
+ 	fac = container_of(filp->f_inode->i_cdev, struct evl_factory, cdev);
++	u_attrs = evl_valptr64(req.attrs_ptr, void);
+ 	e = fac->build(fac, devname ? devname->name : NULL,
+-		req.attrs, &state_offset);
++		u_attrs, &state_offset);
+ 	if (IS_ERR(e)) {
+ 		if (devname)
+ 			putname(devname);
+@@ -466,6 +469,9 @@ static const struct file_operations clone_fops = {
+ 	.open		= open_clone_device,
+ 	.release	= release_clone_device,
+ 	.unlocked_ioctl	= ioctl_clone_device,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++#endif
+ };
+ 
+ static int index_element_at(struct evl_element *e, fundle_t fundle)
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 7180e2bc4..c15f2332b 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -19,6 +19,7 @@
+ #include <evl/factory.h>
+ #include <evl/syscall.h>
+ #include <evl/poll.h>
++#include <evl/uaccess.h>
+ #include <asm/evl/syscall.h>
+ #include <uapi/evl/monitor.h>
+ #include <trace/events/evl.h>
+@@ -624,7 +625,7 @@ static long monitor_oob_ioctl(struct file *filp, unsigned int cmd,
+ 		ret = raw_copy_from_user(&wreq, u_wreq, sizeof(wreq));
+ 		if (ret)
+ 			return -EFAULT;
+-		u_uts = (typeof(u_uts))wreq.timeout;
++		u_uts = evl_valptr64(wreq.timeout_ptr, struct __evl_timespec);
+ 		ret = raw_copy_from_user(&uts, u_uts, sizeof(uts));
+ 		if (ret)
+ 			return -EFAULT;
+@@ -753,6 +754,10 @@ static const struct file_operations monitor_fops = {
+ 	.unlocked_ioctl	= monitor_ioctl,
+ 	.oob_ioctl	= monitor_oob_ioctl,
+ 	.oob_poll	= monitor_oob_poll,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static struct evl_element *
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index 614995819..ffda2e96f 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -18,6 +18,7 @@
+ #include <evl/sched.h>
+ #include <evl/flag.h>
+ #include <evl/mutex.h>
++#include <evl/uaccess.h>
+ #include <asm/evl/syscall.h>
+ 
+ struct poll_group {
+@@ -507,7 +508,10 @@ int wait_events(struct file *filp,
+ 
+ 	evl_init_flag(&waiter.flag);
+ 
+-	count = collect_events(group, wreq->pollset, wreq->nrset, &waiter.flag);
++	count = collect_events(group,
++			       evl_valptr64(wreq->pollset_ptr,
++					    struct evl_poll_event),
++			       wreq->nrset, &waiter.flag);
+ 	if (count > 0 || (count == -EFAULT || count == -EBADF))
+ 		goto unwait;
+ 	if (count < 0)
+@@ -531,8 +535,10 @@ int wait_events(struct file *filp,
+ 
+ 	count = ret;
+ 	if (count == 0)	/* Re-collect events after successful wait. */
+-		count = collect_events(group, wreq->pollset,
+-				wreq->nrset, NULL);
++		count = collect_events(group,
++			       evl_valptr64(wreq->pollset_ptr,
++					    struct evl_poll_event),
++			       wreq->nrset, NULL);
+ unwait:
+ 	clear_wait();
+ out:
+@@ -620,7 +626,7 @@ static long poll_oob_ioctl(struct file *filp, unsigned int cmd,
+ 		ret = raw_copy_from_user(&wreq, u_wreq, sizeof(wreq));
+ 		if (ret)
+ 			return -EFAULT;
+-		u_uts = (typeof(u_uts))wreq.timeout;
++		u_uts = evl_valptr64(wreq.timeout_ptr, struct __evl_timespec);
+ 		ret = raw_copy_from_user(&uts, u_uts, sizeof(uts));
+ 		if (ret)
+ 			return -EFAULT;
+@@ -645,6 +651,9 @@ static const struct file_operations poll_fops = {
+ 	.open		= poll_open,
+ 	.release	= poll_release,
+ 	.oob_ioctl	= poll_oob_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ struct evl_factory evl_poll_factory = {
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index bfd59bbf4..4c6f2bcb6 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -13,6 +13,7 @@
+ #include <linux/sched.h>
+ #include <linux/dovetail.h>
+ #include <linux/kconfig.h>
++#include <linux/nospec.h>
+ #include <linux/atomic.h>
+ #include <linux/sched/task_stack.h>
+ #include <linux/sched/signal.h>
+@@ -27,24 +28,111 @@
+ #include <uapi/evl/syscall.h>
+ #include <asm/evl/syscall.h>
+ 
+-#define EVL_SYSCALL(__name, __args)	\
++#define EVL_SYSCALL(__name, __args)		\
+ 	long EVL_ ## __name __args
+ 
+-#define SYSCALL_PROPAGATE   0
+-#define SYSCALL_STOP        1
++static EVL_SYSCALL(read, (int fd, char __user *u_buf, size_t size))
++{
++	struct evl_file *efilp = evl_get_file(fd);
++	struct file *filp;
++	ssize_t ret;
++
++	if (efilp == NULL)
++		return -EBADF;
++
++	filp = efilp->filp;
++	if (!(filp->f_mode & FMODE_READ)) {
++		ret = -EBADF;
++		goto out;
++	}
++
++	if (filp->f_op->oob_read == NULL) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = filp->f_op->oob_read(filp, u_buf, size);
++out:
++	evl_put_file(efilp);
++
++	return ret;
++}
++
++static EVL_SYSCALL(write, (int fd, const char __user *u_buf, size_t size))
++{
++	struct evl_file *efilp = evl_get_file(fd);
++	struct file *filp;
++	ssize_t ret;
++
++	if (efilp == NULL)
++		return -EBADF;
++
++	filp = efilp->filp;
++	if (!(filp->f_mode & FMODE_WRITE)) {
++		ret = -EBADF;
++		goto out;
++	}
++
++	if (filp->f_op->oob_write == NULL) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = filp->f_op->oob_write(filp, u_buf, size);
++out:
++	evl_put_file(efilp);
++
++	return ret;
++}
++
++static EVL_SYSCALL(ioctl, (int fd, unsigned int request, unsigned long arg))
++{
++	struct evl_file *efilp = evl_get_file(fd);
++	long ret = -ENOTTY;
++	struct file *filp;
++
++	if (efilp == NULL)
++		return -EBADF;
++
++	filp = efilp->filp;
++
++	if (unlikely(is_compat_oob_call())) {
++		if (filp->f_op->compat_oob_ioctl)
++			ret = filp->f_op->compat_oob_ioctl(filp, request, arg);
++	} else  if (filp->f_op->oob_ioctl) {
++		ret = filp->f_op->oob_ioctl(filp, request, arg);
++	}
++
++	if (ret == -ENOIOCTLCMD)
++		ret = -ENOTTY;
++
++	evl_put_file(efilp);
++
++	return ret;
++}
+ 
+ typedef long (*evl_syshand)(unsigned long arg1, unsigned long arg2,
+ 			unsigned long arg3, unsigned long arg4,
+ 			unsigned long arg5);
+ 
+-static const evl_syshand evl_syscalls[__NR_EVL_SYSCALLS];
++#define __EVL_CALL_ENTRY(__name)  \
++	[sys_evl_ ## __name] = ((evl_syshand)(EVL_ ## __name))
++
++static const evl_syshand evl_systbl[] = {
++	   __EVL_CALL_ENTRY(read),
++	   __EVL_CALL_ENTRY(write),
++	   __EVL_CALL_ENTRY(ioctl),
++};
++
++#define SYSCALL_PROPAGATE   0
++#define SYSCALL_STOP        1
+ 
+-static inline void do_oob_request(int nr, struct pt_regs *regs)
++static inline void invoke_syscall(unsigned int nr, struct pt_regs *regs)
+ {
+ 	evl_syshand handler;
+ 	long ret;
+ 
+-	handler = evl_syscalls[nr];
++	handler = evl_systbl[array_index_nospec(nr, ARRAY_SIZE(evl_systbl))];
+ 	ret = handler(oob_arg1(regs),
+ 		oob_arg2(regs),
+ 		oob_arg3(regs),
+@@ -180,7 +268,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 		return SYSCALL_STOP;
+ 	}
+ 
+-	if (nr >= ARRAY_SIZE(evl_syscalls))
++	if (nr >= ARRAY_SIZE(evl_systbl))
+ 		goto bad_syscall;
+ 
+ 	/*
+@@ -193,7 +281,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 
+ 	trace_evl_oob_sysentry(nr);
+ 
+-	do_oob_request(nr, regs);
++	invoke_syscall(nr, regs);
+ 
+ 	/* Syscall might have switched in-band, recheck. */
+ 	if (!evl_is_inband()) {
+@@ -218,9 +306,14 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 		return SYSCALL_PROPAGATE;
+ 
+ 	/*
+-	 * If this is a legit in-band syscall issued from OOB context,
+-	 * switch to in-band mode before propagating the syscall down
+-	 * the pipeline.
++	 * We don't want to trigger a stage switch whenever the
++	 * current request issued from the out-of-band stage is not a
++	 * valid in-band syscall, but rather deliver -ENOSYS directly
++	 * instead.  Otherwise, switch to in-band mode before
++	 * propagating the syscall down the pipeline. CAUTION:
++	 * inband_syscall_nr(regs, &nr) is valid only if
++	 * !is_oob_syscall(regs), which we checked earlier in
++	 * do_oob_syscall().
+ 	 */
+ 	if (inband_syscall_nr(regs, &nr)) {
+ 		if (handle_vdso_fallback(nr, regs))
+@@ -244,6 +337,16 @@ static int do_inband_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 	unsigned int nr;
+ 	int ret;
+ 
++	/*
++	 * Some architectures may use special out-of-bound syscall
++	 * numbers which escape Dovetail's range check, e.g. when
++	 * handling aarch32 syscalls over an aarch64 kernel. When so,
++	 * assume this is an in-band syscall which we need to
++	 * propagate downstream to the common handler.
++	 */
++	if (curr == NULL)
++		return SYSCALL_PROPAGATE;
++
+ 	/*
+ 	 * Catch cancellation requests pending for threads undergoing
+ 	 * the weak scheduling policy, which won't cross
+@@ -280,7 +383,7 @@ static int do_inband_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 		goto done;
+ 	}
+ 
+-	do_oob_request(nr, regs);
++	invoke_syscall(nr, regs);
+ 
+ 	if (!evl_is_inband()) {
+ 		p = current;
+@@ -317,104 +420,3 @@ void handle_oob_syscall(struct pt_regs *regs)
+ 	ret = do_oob_syscall(&oob_stage, regs);
+ 	EVL_WARN_ON(CORE, ret == SYSCALL_PROPAGATE);
+ }
+-
+-static EVL_SYSCALL(read, (int fd, char __user *u_buf, size_t size))
+-{
+-	struct evl_file *efilp = evl_get_file(fd);
+-	struct file *filp;
+-	ssize_t ret;
+-
+-	if (efilp == NULL)
+-		return -EBADF;
+-
+-	filp = efilp->filp;
+-	if (!(filp->f_mode & FMODE_READ)) {
+-		ret = -EBADF;
+-		goto out;
+-	}
+-
+-	if (filp->f_op->oob_read == NULL) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	ret = filp->f_op->oob_read(filp, u_buf, size);
+-out:
+-	evl_put_file(efilp);
+-
+-	return ret;
+-}
+-
+-static EVL_SYSCALL(write, (int fd, const char __user *u_buf, size_t size))
+-{
+-	struct evl_file *efilp = evl_get_file(fd);
+-	struct file *filp;
+-	ssize_t ret;
+-
+-	if (efilp == NULL)
+-		return -EBADF;
+-
+-	filp = efilp->filp;
+-	if (!(filp->f_mode & FMODE_WRITE)) {
+-		ret = -EBADF;
+-		goto out;
+-	}
+-
+-	if (filp->f_op->oob_write == NULL) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	ret = filp->f_op->oob_write(filp, u_buf, size);
+-out:
+-	evl_put_file(efilp);
+-
+-	return ret;
+-}
+-
+-static EVL_SYSCALL(ioctl, (int fd, unsigned int request, unsigned long arg))
+-{
+-	struct evl_file *efilp = evl_get_file(fd);
+-	struct file *filp;
+-	long ret;
+-
+-	if (efilp == NULL)
+-		return -EBADF;
+-
+-	filp = efilp->filp;
+-	if (filp->f_op->oob_ioctl) {
+-		ret = filp->f_op->oob_ioctl(filp, request, arg);
+-		if (ret == -ENOIOCTLCMD)
+-			ret = -ENOTTY;
+-	} else
+-		ret = -ENOTTY;
+-
+-	evl_put_file(efilp);
+-
+-	return ret;
+-}
+-
+-static int EVL_ni(void)
+-{
+-	return -ENOSYS;
+-}
+-
+-#define __syshand__(__name)	((evl_syshand)(EVL_ ## __name))
+-
+-#define __EVL_CALL_ENTRIES		\
+-	__EVL_CALL_ENTRY(read)		\
+-	__EVL_CALL_ENTRY(write)		\
+-	__EVL_CALL_ENTRY(ioctl)
+-
+-#define __EVL_NI	__syshand__(ni)
+-
+-#define __EVL_CALL_NI			\
+-	[0 ... __NR_EVL_SYSCALLS-1] = __EVL_NI,
+-
+-#define __EVL_CALL_ENTRY(__name)	\
+-	[sys_evl_ ## __name] = __syshand__(__name),
+-
+-static const evl_syshand evl_syscalls[] = {
+-	__EVL_CALL_NI
+-	__EVL_CALL_ENTRIES
+-};
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 722a6d8b2..f5d81701b 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2127,6 +2127,10 @@ static const struct file_operations thread_fops = {
+ 	.release	= evl_release_element,
+ 	.unlocked_ioctl	= thread_ioctl,
+ 	.oob_ioctl	= thread_oob_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl   = compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ static int map_uthread_self(struct evl_thread *thread)
+diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
+index ee9a7122a..224480947 100644
+--- a/kernel/evl/trace.c
++++ b/kernel/evl/trace.c
+@@ -80,6 +80,10 @@ static const struct file_operations trace_fops = {
+ 	.write		=	trace_write,
+ 	.oob_ioctl	=	trace_oob_ioctl,
+ 	.oob_write	=	trace_oob_write,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl  =	compat_ptr_ioctl,
++	.compat_oob_ioctl  =	compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ struct evl_factory evl_trace_factory = {
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index d8c1e1b0a..4b4654892 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -569,6 +569,10 @@ static const struct file_operations xbuf_fops = {
+ 	.oob_read	= xbuf_oob_read,
+ 	.oob_write	= xbuf_oob_write,
+ 	.oob_poll	= xbuf_oob_poll,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++	.compat_oob_ioctl  = compat_ptr_oob_ioctl,
++#endif
+ };
+ 
+ struct evl_xbuf *evl_get_xbuf(int efd, struct evl_file **efilpp)
+-- 
+2.30.2
+

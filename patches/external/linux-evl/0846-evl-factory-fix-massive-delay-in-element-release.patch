@@ -1,0 +1,156 @@
+From 8f910c9bcec8b08251abc26ce43b523aaefe4c27 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 9 Apr 2024 18:58:39 +0200
+Subject: [PATCH 846/985] evl/factory: fix massive delay in element release
+
+The RCU-based synchronization between evl_open_element() and
+__do_put_element() via synchronize_rcu() creates a massive slowdown
+due to waiting for all read sides to finish before completing the
+removal of the device backing the element, which might take quite a
+while.
+
+Meanwhile, such RCU-based synchronization is pointless, because the
+VFS already guarantees that the cdev struct embedded into the element
+is valid upon call to evl_open_element() anyway, therefore the element
+hosting the cdev is obviously valid as well.
+
+In addition, the per-element refcount which saturates to zero ensures
+that evl_open_element() may never access an element which is being
+dismantled by __do_put_element() either, since the latter may only run
+iff that refcount dropped to zero in the first place.
+
+Fix the issue simply by dropping the call to synchronize_rcu(). In the
+same move, use refcount_inc_not_zero() instead of a racy open-coded
+equivalent to check for an ongoing deletion.
+
+e.g. wall clock time for deleting 512 mutexes:
+
+NO-FIX: 27 secs
+   FIX: 67 ms
+
+Incidentally, this also fixes the lengthy exit syndrom experienced by
+the 'hectic' benchmark application, which was definitely hit by this
+issue.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h |  9 +++++--
+ kernel/evl/factory.c  | 61 ++++++++++++-------------------------------
+ 2 files changed, 23 insertions(+), 47 deletions(-)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 6b7f82de2..6cc1a835b 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -114,10 +114,15 @@ int evl_init_user_element(struct evl_element *e,
+ 
+ void evl_destroy_element(struct evl_element *e);
+ 
++static inline bool __evl_get_element(struct evl_element *e)
++{
++	return refcount_inc_not_zero(&e->refs);
++}
++
+ static inline void evl_get_element(struct evl_element *e)
+ {
+-	bool ret = refcount_inc_not_zero(&e->refs);
+-	EVL_WARN_ON(CORE, !ret);
++	bool ret = !__evl_get_element(e);
++	EVL_WARN_ON(CORE, ret);
+ }
+ 
+ struct evl_element *
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index ffffa3a6a..0d22783ee 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -153,20 +153,10 @@ static struct evl_element *unbind_file_from_element(struct file *filp)
+ }
+ 
+ /*
+- * Multiple files may reference a single element on open().
+- *
+- * e->refs tracks the outstanding references to the element, saturates
+- * to zero in evl_open_element(), which might race with
+- * evl_put_element() for the same element. If the refcount is zero on
+- * entry, evl_open_element() knows that __evl_put_element() is
+- * scheduling a deletion of @e, returning -ESTALE if so.
+- *
+- * evl_open_element() is protected against referencing stale memory
+- * enclosing all potentially unsafe references to @e into a read-side
+- * RCU section. Meanwhile we wait for all read-sides to complete after
+- * calling cdev_del().  Once cdev_del() returns, the device cannot be
+- * opened anymore, which does not affect the files that might still be
+- * active on this device though.
++ * evl_open_element() might race with __do_put_element() for the same
++ * element before the backing device is removed. If the refcount is
++ * zero on entry, evl_open_element() knows that __evl_put_element() is
++ * about to delete @e, returns -ESTALE if so.
+  */
+ int evl_open_element(struct inode *inode, struct file *filp)
+ {
+@@ -174,18 +164,8 @@ int evl_open_element(struct inode *inode, struct file *filp)
+ 	int ret = 0;
+ 
+ 	e = container_of(inode->i_cdev, struct evl_element, cdev);
+-
+-	rcu_read_lock();
+-
+-	if (!refcount_read(&e->refs))
+-		ret = -ESTALE;
+-	else
+-		evl_get_element(e);
+-
+-	rcu_read_unlock();
+-
+-	if (ret)
+-		return ret;
++	if (!__evl_get_element(e))
++		return -ESTALE;
+ 
+ 	ret = bind_file_to_element(filp, e);
+ 	if (ret) {
+@@ -206,30 +186,21 @@ static void __do_put_element(struct evl_element *e)
+ 	 * We might get there device-less if create_element_device()
+ 	 * failed installing a file descriptor for a private
+ 	 * element. Go to disposal immediately if so.
+-	 */
+-	if (unlikely(!e->dev))
+-		goto dispose;
+-
+-	/*
+-	 * e->minor won't be free for use until evl_destroy_element()
+-	 * is called from the disposal handler, so there is no risk of
+-	 * reusing it too early.
+-	 */
+-	evl_remove_element_device(e);
+-
+-	/*
+-	 * Serialize with evl_open_element().
+-	 */
+-	synchronize_rcu();
+-
+-	/*
++	 *
+ 	 * CAUTION: the disposal handler should delay the release of
+-	 * e's container at the next rcu idle period via kfree_rcu(),
++	 * @e's container at the next rcu idle period via kfree_rcu(),
+ 	 * because the embedded e->cdev is still needed ahead for
+ 	 * completing the file release process of public elements (see
+ 	 * __fput()).
+ 	 */
+-dispose:
++	if (likely(e->dev))
++		evl_remove_element_device(e);
++
++	/*
++	 * e->minor is not reusable until evl_destroy_element() is
++	 * called from the disposal handler, so there is no risk of
++	 * reusing it too early.
++	 */
+ 	fac->dispose(e);
+ }
+ 
+-- 
+2.30.2
+

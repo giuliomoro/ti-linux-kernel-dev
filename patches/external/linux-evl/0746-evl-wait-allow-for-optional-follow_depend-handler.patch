@@ -1,0 +1,99 @@
+From affa20aa2e4fcc4e8b11583ce29f80bcf21cbcd1 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 4 Oct 2022 17:15:29 +0200
+Subject: [PATCH 746/985] evl/wait: allow for optional follow_depend handler
+
+There is no point in trashing the I-cache with useless jumps to nop
+handlers. Typically, .follow_depend is not provided by the common wait
+queue, so make it optional and check for presence before branching.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/wait.h |  5 +----
+ kernel/evl/mutex.c |  6 +++---
+ kernel/evl/wait.c  | 10 +---------
+ 3 files changed, 5 insertions(+), 16 deletions(-)
+
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index 3ff58f525..6a0e4f5e2 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -38,7 +38,7 @@ struct evl_wait_queue {
+ 		.lock = __HARD_SPIN_LOCK_INITIALIZER((__name).lock),	\
+ 		.wchan = {						\
+ 			.reorder_wait = evl_reorder_wait,		\
+-			.follow_depend = evl_follow_wait_depend,	\
++			.follow_depend = NULL,				\
+ 			.wait_list = LIST_HEAD_INIT((__name).wchan.wait_list), \
+ 			.name = #__name,				\
+ 		},							\
+@@ -133,7 +133,4 @@ struct evl_thread *evl_wake_up_head(struct evl_wait_queue *wq)
+ int evl_reorder_wait(struct evl_thread *waiter,
+ 		struct evl_thread *originator);
+ 
+-int evl_follow_wait_depend(struct evl_wait_channel *wchan,
+-			struct evl_thread *originator);
+-
+ #endif /* !_EVL_WAIT_H_ */
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 7f8721d08..861426e36 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -137,7 +137,7 @@ static int adjust_boost(struct evl_thread *owner,
+ 	 * +-------------------------+
+ 	 *
+ 	 * At each stage, wchan->reorder_wait() fixes up the priority
+-	 * for @owner before walking deeper into PI chain.
++	 * for @owner before walking deeper into the PI chain.
+ 	 */
+ 	assert_hard_lock(&owner->lock);
+ 	assert_hard_lock(&origin->lock);
+@@ -620,7 +620,7 @@ static int check_lock_chain(struct evl_thread *owner,
+ 	assert_hard_lock(&originator->lock);
+ 
+ 	wchan = owner->wchan;
+-	if (wchan)
++	if (wchan && wchan->follow_depend)
+ 		return wchan->follow_depend(wchan, originator);
+ 
+ 	return 0;
+@@ -1050,7 +1050,7 @@ int evl_follow_mutex_depend(struct evl_wait_channel *wchan,
+ 		 * crazy.
+ 		 */
+ 		depend = waiter->wchan;
+-		if (depend)
++		if (depend && depend->follow_depend)
+ 			ret = depend->follow_depend(depend, originator);
+ 		raw_spin_unlock(&waiter->lock);
+ 		if (ret)
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index da297a148..f7fc2c733 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -20,7 +20,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,
+ 	wq->clock = clock;
+ 	raw_spin_lock_init(&wq->lock);
+ 	wq->wchan.reorder_wait = evl_reorder_wait;
+-	wq->wchan.follow_depend = evl_follow_wait_depend;
++	wq->wchan.follow_depend = NULL;
+ 	wq->wchan.name = name;
+ 	INIT_LIST_HEAD(&wq->wchan.wait_list);
+ 	lockdep_set_class_and_name(&wq->lock, key, name);
+@@ -149,14 +149,6 @@ int evl_reorder_wait(struct evl_thread *waiter, struct evl_thread *originator)
+ }
+ EXPORT_SYMBOL_GPL(evl_reorder_wait);
+ 
+-/* originator->lock held, hard irqs off */
+-int evl_follow_wait_depend(struct evl_wait_channel *wchan,
+-			struct evl_thread *originator)
+-{
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(evl_follow_wait_depend);
+-
+ int evl_wait_schedule(struct evl_wait_queue *wq)
+ {
+ 	struct evl_thread *curr = evl_current();
+-- 
+2.30.2
+

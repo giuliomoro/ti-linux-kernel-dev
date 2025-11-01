@@ -1,0 +1,30 @@
+From 0d5cca7e2be3e1c8b527a2c3a6c890dbe46a023f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 1 Apr 2023 20:00:26 +0200
+Subject: [PATCH 814/985] evl/factory: constify dev argument to devnode cb
+ (again)
+
+This changed was brought in during the v6.2 development cycle already,
+then lost unexpectedly.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/factory.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index a17850c16..f07bd702c 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -710,7 +710,7 @@ __evl_get_element_by_fundle(struct evl_index *map, fundle_t fundle)
+ 	return rb ? e : NULL;
+ }
+ 
+-static char *factory_type_devnode(struct device *dev, umode_t *mode,
++static char *factory_type_devnode(const struct device *dev, umode_t *mode,
+ 			kuid_t *uid, kgid_t *gid)
+ {
+ 	struct evl_element *e;
+-- 
+2.30.2
+

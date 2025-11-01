@@ -1,0 +1,1151 @@
+From 7cc9c1a055d01729905b9f151f2cdf0c76eaad75 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 1 May 2025 12:28:07 +0200
+Subject: [PATCH 930/985] evl/net: add support for packet timestamping
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ arch/arm/include/dovetail/skbuff.h   |   7 +
+ arch/arm64/include/dovetail/skbuff.h |   7 +
+ arch/x86/include/dovetail/skbuff.h   |   7 +
+ include/asm-generic/evl/skbuff.h     |  25 +++
+ include/evl/net/skb.h                |   5 +-
+ include/evl/net/socket.h             |   8 +
+ include/evl/net/timestamping.h       |  71 +++++++
+ include/uapi/evl/net/socket-abi.h    |  23 ++-
+ kernel/evl/net/Makefile              |   3 +-
+ kernel/evl/net/dev.c                 |   1 +
+ kernel/evl/net/ethernet/input.c      |   1 +
+ kernel/evl/net/input.c               |   8 +
+ kernel/evl/net/ipv4/output.c         |   9 +
+ kernel/evl/net/ipv4/udp.c            |  53 +++--
+ kernel/evl/net/output.c              |  55 ++++-
+ kernel/evl/net/packet/packet.c       |  62 ++++--
+ kernel/evl/net/socket.c              |  65 +++++-
+ kernel/evl/net/timestamping.c        | 293 +++++++++++++++++++++++++++
+ 18 files changed, 653 insertions(+), 50 deletions(-)
+ create mode 100644 arch/arm/include/dovetail/skbuff.h
+ create mode 100644 arch/arm64/include/dovetail/skbuff.h
+ create mode 100644 arch/x86/include/dovetail/skbuff.h
+ create mode 100644 include/asm-generic/evl/skbuff.h
+ create mode 100644 include/evl/net/timestamping.h
+ create mode 100644 kernel/evl/net/timestamping.c
+
+diff --git a/arch/arm/include/dovetail/skbuff.h b/arch/arm/include/dovetail/skbuff.h
+new file mode 100644
+index 000000000..c0d9f54a1
+--- /dev/null
++++ b/arch/arm/include/dovetail/skbuff.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_SKBUFF_H
++#define _EVL_DOVETAIL_SKBUFF_H
++
++#include <asm-generic/evl/skbuff.h>
++
++#endif /* !_EVL_DOVETAIL_SKBUFF_H */
+diff --git a/arch/arm64/include/dovetail/skbuff.h b/arch/arm64/include/dovetail/skbuff.h
+new file mode 100644
+index 000000000..c0d9f54a1
+--- /dev/null
++++ b/arch/arm64/include/dovetail/skbuff.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_SKBUFF_H
++#define _EVL_DOVETAIL_SKBUFF_H
++
++#include <asm-generic/evl/skbuff.h>
++
++#endif /* !_EVL_DOVETAIL_SKBUFF_H */
+diff --git a/arch/x86/include/dovetail/skbuff.h b/arch/x86/include/dovetail/skbuff.h
+new file mode 100644
+index 000000000..c0d9f54a1
+--- /dev/null
++++ b/arch/x86/include/dovetail/skbuff.h
+@@ -0,0 +1,7 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _EVL_DOVETAIL_SKBUFF_H
++#define _EVL_DOVETAIL_SKBUFF_H
++
++#include <asm-generic/evl/skbuff.h>
++
++#endif /* !_EVL_DOVETAIL_SKBUFF_H */
+diff --git a/include/asm-generic/evl/skbuff.h b/include/asm-generic/evl/skbuff.h
+new file mode 100644
+index 000000000..c9515f135
+--- /dev/null
++++ b/include/asm-generic/evl/skbuff.h
+@@ -0,0 +1,25 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _ASM_GENERIC_EVL_SKBUFF_H
++#define _ASM_GENERIC_EVL_SKBUFF_H
++
++#ifdef CONFIG_EVL_NET
++
++#include <linux/ktime.h>
++
++struct skb_shared_oob {
++	/* Time at device I/O. */
++	ktime_t device_time;
++	/* Time at RX/TX thread dequeuing/queuing point. */
++	ktime_t queuing_time;
++	/* Time at kernel/user boundary. */
++	ktime_t delivery_time;
++};
++
++#else  /* !CONFIG_EVL_NET */
++
++struct skb_shared_oob {
++};
++
++#endif	/* !CONFIG_EVL_NET */
++
++#endif /* !_ASM_GENERIC_EVL_SKBUFF_H */
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+index 593ac7594..c1a980b3f 100644
+--- a/include/evl/net/skb.h
++++ b/include/evl/net/skb.h
+@@ -20,13 +20,16 @@ struct evl_socket;
+ struct iovec;
+ 
+ struct evl_net_cb {
++	/* Cached source/destination device. */
+ 	struct net_device *dev;
+ 	union {
++		/* Low-level handler at ingress. */
+ 		struct evl_net_handler *handler;
++		/* Socket tracking memory consumption. */
+ 		struct evl_socket *tracker;
+ 	};
++	/* Protocol-specific information. */
+ 	union {
+-		/* protocol-specific stuff should live here. */
+ 	};
+ };
+ #define EVL_NET_CB(__skb)  ((struct evl_net_cb *)&((__skb)->cb[0]))
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+index 6dacc0e6c..6952aafb7 100644
+--- a/include/evl/net/socket.h
++++ b/include/evl/net/socket.h
+@@ -17,6 +17,7 @@
+ #include <evl/poll.h>
+ #include <evl/crossing.h>
+ #include <evl/work.h>
++#include <evl/net/timestamping.h>
+ #include <uapi/evl/types.h>
+ #include <uapi/evl/fcntl.h>
+ #include <uapi/evl/net/socket-abi.h>
+@@ -26,6 +27,7 @@ struct net;
+ struct net_device;
+ struct evl_net_offload;
+ struct evl_net_udp_receiver;
++struct evl_net_timestamps;
+ 
+ struct evl_net_proto {
+ 	int (*attach)(struct evl_socket *esk,
+@@ -61,6 +63,8 @@ struct evl_socket_domain {
+ 	struct list_head next;
+ };
+ 
++#define EVL_SOCK_TSOVERFLOW  0 /* Timestamping overflow. */
++
+ struct evl_socket {
+ 	struct evl_net_proto *proto;
+ 	struct evl_file efile;
+@@ -78,7 +82,11 @@ struct evl_socket {
+ 	int wmem_max;
+ 	struct evl_wait_queue wmem_wait;
+ 	struct evl_crossing wmem_drain;
++	unsigned long flags;
+ 	int protocol;
++	int timestamping;
++	spinlock_t ts_lock;
++	struct evl_net_timestamps __rcu *tx_timestamps;
+ 	refcount_t refs;	/* release vs destroy */
+ 	struct evl_work inband_offload;
+ 	union {
+diff --git a/include/evl/net/timestamping.h b/include/evl/net/timestamping.h
+new file mode 100644
+index 000000000..4cc3200d4
+--- /dev/null
++++ b/include/evl/net/timestamping.h
+@@ -0,0 +1,71 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2025 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_NET_TIMESTAMPING_H
++#define _EVL_NET_TIMESTAMPING_H
++
++#include <linux/circ_buf.h>
++#include <linux/refcount.h>
++#include <linux/rcupdate.h>
++#include <linux/log2.h>
++#include <evl/wait.h>
++#include <evl/work.h>
++#include <uapi/evl/net/socket-abi.h>
++
++struct sk_buff;
++struct evl_socket;
++
++/*
++ * The number of timestamping records we can keep for any given socket
++ * at any point in time.
++ */
++#define EVL_NET_TIMESTAMP_BUFSZ  128
++
++struct evl_net_timestamps {
++	refcount_t refcnt;
++	struct circ_buf ring;
++	struct evl_wait_queue wait_queue;
++	struct evl_work work;
++	struct rcu_head	rcu;
++	struct {
++		struct evl_net_iotimes iots;
++		u32 __padding;
++	} data[EVL_NET_TIMESTAMP_BUFSZ];
++};
++
++int evl_setup_socket_iots(struct evl_socket *esk, int tsflags);
++
++struct evl_net_timestamps *evl_get_socket_iots(struct evl_socket *esk);
++
++void evl_put_socket_iots(struct evl_net_timestamps *t);
++
++void evl_queue_iots_tx(struct sk_buff *skb);
++
++int evl_copy_iots_rx(struct sk_buff *skb,
++		struct user_oob_msghdr __user *u_msghdr);
++
++ssize_t evl_collect_socket_iots(struct evl_socket *esk,
++	struct user_oob_msghdr __user *u_msghdr,
++	__u32 msg_flags,
++	struct iovec *iov, size_t iovlen,
++	ktime_t timeout, enum evl_tmode tmode);
++
++bool __evl_test_socket_iots(struct evl_socket *esk);
++
++static inline bool evl_test_socket_iots(struct evl_socket *esk) /* in-band / oob */
++{
++	bool ret;
++
++	rcu_read_lock();
++	ret =  __evl_test_socket_iots(esk);
++	rcu_read_unlock();
++
++	return ret;
++}
++
++extern refcount_t evl_net_rx_timestamping;
++
++#endif /* !_EVL_NET_TIMESTAMPING_H */
+diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
+index 8a8f2060c..1b641d85d 100644
+--- a/include/uapi/evl/net/socket-abi.h
++++ b/include/uapi/evl/net/socket-abi.h
+@@ -13,6 +13,17 @@
+ 
+ #define SOCK_OOB	O_OOB	/* Request out-of-band capabilities */
+ 
++#define MSG_TIMESTAMP	MSG_ERRQUEUE	/* Alias to collect I/O timestamps */
++
++struct evl_net_iotimes {
++	/* Time at device<->netstack boundary (monotonic). */
++	__u64 device_time;
++	/* Time at RX/TX thread dequeuing/queuing point (monotonic). */
++	__u64 queuing_time;
++	/* Time at kernel/user boundary (monotonic). */
++	__u64 delivery_time;
++};
++
+ /* Keep this distinct from SOCK_IOC_TYPE (0x89) */
+ #define EVL_SOCKET_IOCBASE  0xee
+ 
+@@ -26,7 +37,6 @@ struct user_oob_msghdr {
+ 	__s32 count;		/* Receive only (actual byte count). */
+ 	__u32 flags;
+ 	struct __evl_timespec timeout;
+-	struct __evl_timespec timestamp; /* Stats / TSN trigger */
+ };
+ 
+ struct evl_netdev_activation {
+@@ -47,6 +57,17 @@ enum {
+ 	EVL_SOCKOPT_TIMESTAMPING,
+ };
+ 
++enum {
++	EVL_SOF_TIMESTAMP_RX = (1 << 0),
++	EVL_SOF_TIMESTAMP_TX = (1 << 1),
++	EVL_SOF_TIMESTAMP_DEVICE = (1 << 2),
++	EVL_SOF_TIMESTAMP_QUEUING = (1 << 3),
++};
++
++#define EVL_SOF_TIMESTAMPS  \
++	(EVL_SOF_TIMESTAMP_RX|EVL_SOF_TIMESTAMP_TX| \
++		EVL_SOF_TIMESTAMP_DEVICE|EVL_SOF_TIMESTAMP_QUEUING)
++
+ struct evl_net_sockopt {
+ 	int level;
+ 	int option;
+diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
+index b5fd52780..26d2ea3ee 100644
+--- a/kernel/evl/net/Makefile
++++ b/kernel/evl/net/Makefile
+@@ -2,4 +2,5 @@ obj-$(CONFIG_EVL_NET) += ethernet/ packet/ ipv4/ qdisc/
+ 
+ obj-$(CONFIG_EVL_NET) += networking.o
+ 
+-networking-y := net.o socket.o dev.o input.o output.o skb.o route.o
++networking-y := net.o socket.o dev.o input.o output.o \
++		skb.o route.o timestamping.o
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index dc7d43657..44ac47a96 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -291,6 +291,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 	__set_rx_filter(est, NULL);
+ 	evl_net_dev_purge_pool(real_dev);
+ 	evl_destroy_flag(&est->rx_flag);
++	/* Once the TX kthread is stopped, qdisc is idle. */
+ 	evl_net_free_qdisc(est->qdisc);
+ 	kfree(est);
+ 	rnds->estate = NULL;
+diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
+index de470dafa..922907708 100644
+--- a/kernel/evl/net/ethernet/input.c
++++ b/kernel/evl/net/ethernet/input.c
+@@ -11,6 +11,7 @@
+ #include <evl/net/input.h>
+ #include <evl/net/packet.h>
+ #include <evl/net/ipv4.h>
++#include <evl/net/timestamping.h>
+ 
+ static DECLARE_BITMAP(vlan_map, VLAN_N_VID);
+ 
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index be52d4e49..67ee062aa 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -18,6 +18,7 @@
+ #include <evl/net.h>
+ #include <evl/net/device.h>
+ #include <evl/net/ipv4.h>
++#include <evl/net/timestamping.h>
+ 
+ /*
+  * NOTE: This code cannot compete with napi_complete_done()
+@@ -99,6 +100,8 @@ void evl_net_do_rx(void *arg)
+ 		 */
+ 		if (evl_net_move_skb_queue(&est->rx_packets, &list)) {
+ 			list_for_each_entry_safe(skb, next, &list, list) {
++				if (skb_is_oob_timestamped(skb))
++					skb_shinfo_oob(skb)->queuing_time = evl_ktime_monotonic();
+ 				list_del(&skb->list);
+ 				EVL_NET_CB(skb)->handler->ingress(skb);
+ 			}
+@@ -151,6 +154,11 @@ void evl_net_receive(struct sk_buff *skb,
+ 	if (EVL_WARN_ON(NET, dev == NULL))
+ 		return;
+ 
++	if (refcount_read(&evl_net_rx_timestamping) > 1) {
++		skb_shinfo_oob(skb)->device_time = evl_ktime_monotonic();
++		skb_mark_oob_timestamped(skb);
++	}
++
+ 	if (skb->next)
+ 		skb_list_del_init(skb);
+ 
+diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
+index 0fb5a8810..8b65b929c 100644
+--- a/kernel/evl/net/ipv4/output.c
++++ b/kernel/evl/net/ipv4/output.c
+@@ -136,6 +136,15 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
+ 				skb_push(skb, ipc->transhdrlen);
+ 				skb_reset_transport_header(skb);
+ 			}
++
++			/*
++			 * TX time accounting starts when obtaining
++			 * the initial buffer.
++			 */
++			if (READ_ONCE(esk->timestamping) & EVL_SOF_TIMESTAMP_TX) {
++				skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
++				skb_mark_oob_timestamped(skb);
++			}
+ 		}
+ 
+ 		skb->ip_summed = CHECKSUM_NONE;
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index bae36f061..6d60865ba 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -17,6 +17,7 @@
+ #include <evl/net/offload.h>
+ #include <evl/net/skb.h>
+ #include <evl/net/device.h>
++#include <evl/net/timestamping.h>
+ #include <evl/net/ip.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/output.h>
+@@ -484,15 +485,18 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 			struct iovec *iov,
+ 			size_t iovlen)
+ {
++	__u32 msg_flags = 0, msg_uflags;
++	ktime_t timeout = EVL_INFINITE;
++	enum evl_tmode tmode = EVL_REL;
+ 	struct evl_net_udp_receiver *e;
+ 	struct __evl_timespec uts;
+-	enum evl_tmode tmode;
+ 	struct sk_buff *skb;
+ 	unsigned long flags;
+-	__u32 msg_flags = 0;
+-	ktime_t timeout;
+ 	ssize_t ret;
+ 
++	if (evl_socket_f_flags(esk) & O_NONBLOCK)
++		msg_flags |= MSG_DONTWAIT;
++
+ 	/*
+ 	 * The cache entry may be freed only from a RCU callback, get
+ 	 * a safe reference on it from a RCU read side to prevent
+@@ -506,8 +510,9 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 		/*
+ 		 * If not bound prior to calling oob_recvmsg(), force
+ 		 * a binding to 0.0.0.0:0, which means that no receipt
+-		 * will ever happen for this socket, causing this call
+-		 * to hang indefinitely until interrupted.
++		 * will ever happen for this socket (except timestamps
++		 * if any is queued), causing this call to hang
++		 * indefinitely until interrupted.
+ 		 */
+ 		rcu_read_unlock();
+ 		lock_sock(esk->sk);
+@@ -525,14 +530,15 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 	rcu_read_unlock();
+ 
+ 	if (u_msghdr) {
+-		ret = raw_get_user(msg_flags, &u_msghdr->flags);
++		ret = raw_get_user(msg_uflags, &u_msghdr->flags);
+ 		if (ret) {
+ 			ret = -EFAULT;
+ 			goto out;
+ 		}
+ 
+-		/* We only support MSG_DONTWAIT at the moment. */
+-		if (msg_flags & ~MSG_DONTWAIT) {
++		msg_flags |= msg_uflags;
++
++		if (msg_flags & ~(MSG_DONTWAIT|MSG_TIMESTAMP)) {
+ 			ret = -EINVAL;
+ 			goto out;
+ 		}
+@@ -544,15 +550,20 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 			goto out;
+ 		}
+ 
+-		timeout = u_timespec_to_ktime(uts);
+-		tmode = timeout ? EVL_ABS : EVL_REL;
+-	} else {
+-		timeout = EVL_INFINITE;
+-		tmode = EVL_REL;
+-	}
++		if (msg_flags & MSG_DONTWAIT) {
++			timeout = EVL_NONBLOCK;
++		} else {
++			timeout = u_timespec_to_ktime(uts);
++			if (timeout)
++				tmode = EVL_ABS;
++		}
+ 
+-	if (evl_socket_f_flags(esk) & O_NONBLOCK)
+-		msg_flags |= MSG_DONTWAIT;
++		if (msg_flags & MSG_TIMESTAMP) {
++			ret = evl_collect_socket_iots(esk, u_msghdr, msg_uflags,
++						iov, iovlen, timeout, tmode);
++			goto out;
++		}
++	}
+ 
+ 	do {
+ 		raw_spin_lock_irqsave(&e->wait.wchan.lock, flags);
+@@ -560,7 +571,12 @@ static ssize_t receive_udp(struct evl_socket *esk,
+ 		if (!list_empty(&e->queue)) {
+ 			skb = list_get_entry(&e->queue, struct sk_buff, list);
+ 			raw_spin_unlock_irqrestore(&e->wait.wchan.lock, flags);
+-			ret = copy_datagram_to_user(u_msghdr, iov, iovlen, skb);
++			/* Record the timestamps if required. */
++			ret = 0;
++			if (READ_ONCE(esk->timestamping) & EVL_SOF_TIMESTAMP_RX)
++				ret = evl_copy_iots_rx(skb, u_msghdr);
++			if (likely(!ret))
++				ret = copy_datagram_to_user(u_msghdr, iov, iovlen, skb);
+ 			evl_net_rput_skb(skb); /* Uncharge rmem and free. */
+ 			goto out;
+ 		}
+@@ -760,6 +776,9 @@ int evl_net_deliver_udp(struct sk_buff *skb)
+ 	if (!verify_checksum(skb))
+ 		return -EINVAL;
+ 
++	if (skb_is_oob_timestamped(skb))
++		skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
++
+ 	return queue_for_receiver(skb) ? 0 : -ESRCH;
+ }
+ 
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index dfc231be0..0e4709e73 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -21,10 +21,31 @@
+ 
+ static void xmit_inband(struct irq_work *work);
+ 
+-DEFINE_IRQ_WORK(oob_xmit_work, xmit_inband);
++static DEFINE_IRQ_WORK(oob_xmit_work, xmit_inband);
+ 
+ static DEFINE_PER_CPU(struct evl_net_skb_queue, oob_tx_relay);
+ 
++static void timestamp_at_device(struct sk_buff *skb)
++{
++	if (skb_is_oob_timestamped(skb)) {
++		skb_shinfo_oob(skb)->device_time = evl_ktime_monotonic();
++		evl_queue_iots_tx(skb);
++	}
++}
++
++static void timestamp_at_sched(struct sk_buff *skb)
++{
++	struct evl_socket *esk = EVL_NET_CB(skb)->tracker;
++	int tsflags;
++
++	if (likely(esk)) {
++		tsflags = READ_ONCE(esk->timestamping);
++		if (tsflags & EVL_SOF_TIMESTAMP_TX &&
++			tsflags & EVL_SOF_TIMESTAMP_QUEUING)
++			skb_shinfo_oob(skb)->queuing_time = evl_ktime_monotonic();
++	}
++}
++
+ static inline netdev_tx_t
+ oob_start_xmit(struct net_device *dev, struct sk_buff *skb, bool more)
+ {
+@@ -55,6 +76,11 @@ static inline void do_tx(struct evl_net_qdisc *qdisc,
+ 			struct net_device *dev, struct sk_buff *skb,
+ 			bool more)
+ {
++	/*
++	 * CAUTION: We must timestamp before uncharging which clears
++	 * the socket tracking info.
++	 */
++	timestamp_at_device(skb);
+ 	evl_net_uncharge_skb_wmem(skb);
+ 
+ 	switch (oob_start_xmit(dev, skb, more)) {
+@@ -85,16 +111,15 @@ void evl_net_do_tx(void *arg)
+ 			break;
+ 
+ 		/*
+-		 * Reread queueing discipline descriptor to allow
+-		 * dynamic updates. FIXME: protect this against
+-		 * swap/deletion while pulling packets (stax?).
++		 * FIXME: stax-protect this against swap while pulling
++		 * packets.
+ 		 */
+ 		qdisc = est->qdisc;
+ 
+ 		/*
+-		 * First we transmit the traffic as prioritized by the
+-		 * out-of-band queueing discipline attached to our
+-		 * device.
++		 * Transmit the traffic according to the
++		 * prioritization implemented by the queueing
++		 * discipline attached to our device.
+ 		 */
+ 		for (;;) {
+ 			bool more;
+@@ -108,6 +133,20 @@ void evl_net_do_tx(void *arg)
+ 
+ static void skb_xmit_inband(struct sk_buff *skb)
+ {
++	/*
++	 * Timestamping at device here is technically wrong because
++	 * dev_queue_xmit() may queue and delay the buffer for
++	 * transmission, but this is harmless, we don't have to be
++	 * accurate when measuring output delays in best-effort mode,
++	 * i.e. via the in-band stack, what matters is the oob path.
++	 *
++	 * CAUTION: wait for the timestamping to take place before
++	 * uncharging the socket for the memory, which might allow the
++	 * tracker to go stale on a different CPU (see how the wmem
++	 * crossing is used to synchronize with in-flight TX buffers
++	 * in disable_oob_port().
++	 */
++	timestamp_at_device(skb);
+ 	evl_net_uncharge_skb_wmem(skb);
+ 	skb->prev = NULL;
+ 	skb->next = NULL;
+@@ -181,6 +220,8 @@ int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
+ 	if (EVL_WARN_ON(NET, skb->sk))
+ 		return -EINVAL;
+ 
++	timestamp_at_sched(skb);
++
+ 	if (netdev_is_oob_capable(dev))
+ 		return xmit_oob(dev, skb);
+ 
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index 6b447853a..2a0171b97 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -26,6 +26,7 @@
+ #include <evl/net/output.h>
+ #include <evl/net/device.h>
+ #include <evl/net/skb.h>
++#include <evl/net/timestamping.h>
+ #include <evl/uaccess.h>
+ 
+ static struct evl_net_proto *
+@@ -186,6 +187,9 @@ static bool packet_deliver(struct sk_buff *skb, int protocol) /* oob */
+  */
+ bool evl_net_packet_deliver(struct sk_buff *skb) /* oob */
+ {
++	if (skb_is_oob_timestamped(skb))
++		skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
++
+ 	packet_deliver(skb, ETH_P_ALL);
+ 
+ 	return packet_deliver(skb, ntohs(skb->protocol));
+@@ -456,6 +460,11 @@ static ssize_t send_packet(struct evl_socket *esk,
+ 		goto out;
+ 	}
+ 
++	if (READ_ONCE(esk->timestamping) & EVL_SOF_TIMESTAMP_TX) {
++		skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
++		skb_mark_oob_timestamped(skb);
++	}
++
+ 	skb_reset_mac_header(skb);
+ 	skb->protocol = htons(esk->protocol);
+ 	skb->dev = real_dev;
+@@ -562,41 +571,45 @@ static ssize_t receive_packet(struct evl_socket *esk,
+ 			struct iovec *iov,
+ 			size_t iovlen)
+ {
++	__u32 msg_flags = 0, msg_uflags;
++	ktime_t timeout = EVL_INFINITE;
++	enum evl_tmode tmode = EVL_REL;
+ 	struct __evl_timespec uts;
+-	enum evl_tmode tmode;
+ 	struct sk_buff *skb;
+ 	unsigned long flags;
+-	__u32 msg_flags = 0;
+-	ktime_t timeout;
+ 	ssize_t ret;
+ 
++	if (evl_socket_f_flags(esk) & O_NONBLOCK)
++		msg_flags |= MSG_DONTWAIT;
++
+ 	if (u_msghdr) {
+-		ret = raw_get_user(msg_flags, &u_msghdr->flags);
++		ret = raw_get_user(msg_uflags, &u_msghdr->flags);
+ 		if (ret)
+ 			return -EFAULT;
+ 
++		msg_flags |= msg_uflags;
++
+ 		/* No MSG_TRUNC on recv, too much of a kludge. */
+-		if (msg_flags & ~MSG_DONTWAIT)
++		if (msg_flags & ~(MSG_DONTWAIT|MSG_TIMESTAMP))
+ 			return -EINVAL;
+ 
+-		/*
+-		 * Fetch the timeout on receiving a buffer from
+-		 * esk->input.
+-		 */
+ 		ret = raw_copy_from_user(&uts, &u_msghdr->timeout,
+ 					sizeof(uts));
+ 		if (ret)
+ 			return -EFAULT;
+ 
+-		timeout = u_timespec_to_ktime(uts);
+-		tmode = timeout ? EVL_ABS : EVL_REL;
+-	} else {
+-		timeout = EVL_INFINITE;
+-		tmode = EVL_REL;
+-	}
++		if (msg_flags & MSG_DONTWAIT) {
++			timeout = EVL_NONBLOCK;
++		} else {
++			timeout = u_timespec_to_ktime(uts);
++			if (timeout)
++				tmode = EVL_ABS;
++		}
+ 
+-	if (evl_socket_f_flags(esk) & O_NONBLOCK)
+-		msg_flags |= MSG_DONTWAIT;
++		if (msg_flags & MSG_TIMESTAMP)
++			return evl_collect_socket_iots(esk, u_msghdr, msg_uflags,
++						iov, iovlen, timeout, tmode);
++	}
+ 
+ 	do {
+ 		raw_spin_lock_irqsave(&esk->input_wait.wchan.lock, flags);
+@@ -604,9 +617,15 @@ static ssize_t receive_packet(struct evl_socket *esk,
+ 		if (!list_empty(&esk->input)) {
+ 			skb = list_get_entry(&esk->input, struct sk_buff, list);
+ 			raw_spin_unlock_irqrestore(&esk->input_wait.wchan.lock, flags);
+-			/* Restore the MAC header. */
+-			skb_push(skb, skb->data - skb_mac_header(skb));
+-			ret = copy_packet_to_user(u_msghdr, iov, iovlen, skb);
++			/* Record the timestamps if required. */
++			ret = 0;
++			if (READ_ONCE(esk->timestamping) & EVL_SOF_TIMESTAMP_RX)
++				ret = evl_copy_iots_rx(skb, u_msghdr);
++			if (likely(!ret)) {
++				/* Restore the MAC header. */
++				skb_push(skb, skb->data - skb_mac_header(skb));
++				ret = copy_packet_to_user(u_msghdr, iov, iovlen, skb);
++			}
+ 			evl_net_uncharge_skb_rmem(skb);
+ 			evl_net_free_skb(skb);
+ 			return ret;
+@@ -635,7 +654,8 @@ static __poll_t poll_packet(struct evl_socket *esk,
+ 
+ 	/* Enqueue, then test. */
+ 	evl_poll_watch(&esk->poll_head, wait, NULL);
+-	if (!list_empty(&esk->input))
++	/* Check whether we have datagrams and/or timestamps to read. */
++	if (!list_empty(&esk->input) || evl_test_socket_iots(esk))
+ 		ret = POLLIN|POLLRDNORM;
+ 
+ 	dev = esk->proto->get_netif(esk);
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 0e18c993c..c0c9d7a5f 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -32,6 +32,7 @@
+ #include <evl/net/skb.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/device.h>
++#include <evl/net/timestamping.h>
+ 
+ /*
+  * EVL sockets are (almost) regular sockets, extended with out-of-band
+@@ -294,7 +295,9 @@ int sock_oob_attach(struct socket *sock)
+ 
+ 	/*
+ 	 * If sk->sk_family is not PF_OOB, we have no extended oob
+-	 * context yet, allocate one to piggyback on a common socket.
++	 * context yet, allocate one to piggyback on a common
++	 * socket. In any case, we assume esk is zero-initialized (see
++	 * sk_alloc).
+ 	 */
+ 	if (sk->sk_family != PF_OOB) {
+ 		esk = kzalloc(sizeof(*esk), GFP_KERNEL);
+@@ -329,6 +332,7 @@ int sock_oob_attach(struct socket *sock)
+ 	evl_init_wait(&esk->wmem_wait, &evl_mono_clock, 0);
+ 	evl_init_poll_head(&esk->poll_head);
+ 	raw_spin_lock_init(&esk->oob_lock);
++	spin_lock_init(&esk->ts_lock);
+ 	evl_init_work(&esk->inband_offload, inband_offload_handler);
+ 	/* Inherit the {rw}mem limits from the base socket. */
+ 	esk->rmem_max = sk->sk_rcvbuf;
+@@ -365,7 +369,11 @@ void sock_oob_release(struct socket *sock)
+ 		esk->proto->release(esk);
+ 
+ 	evl_release_file(&esk->efile);
+-	/* Wait for the stack to drain in-flight outgoing buffers. */
++	/*
++	 * Wait for the stack to drain in-flight outgoing
++	 * buffers. This guards us against trackers going stale while
++	 * referred to by skbs.
++	 */
+ 	evl_pass_crossing(&esk->wmem_drain);
+ 
+ 	if (refcount_dec_and_test(&esk->refs))
+@@ -384,6 +392,9 @@ void sock_oob_destroy(struct sock *sk)
+ 	/* We are detaching, so rmem_count can be left out of sync. */
+ 	evl_net_free_skb_list(&esk->input);
+ 
++	/* Drop any timestamping data. */
++	evl_setup_socket_iots(esk, 0);
++
+ 	evl_destroy_wait(&esk->input_wait);
+ 	evl_destroy_wait(&esk->wmem_wait);
+ 
+@@ -687,6 +698,52 @@ static int socket_get_wmem(struct evl_socket *esk,
+ 			u_optlen, sizeof(esk->wmem_max));
+ }
+ 
++static int socket_set_timestamping(struct evl_socket *esk,
++				struct evl_net_sockopt __user *u_opt)
++{
++	unsigned int optlen = sizeof(__u32), __user *u_optlen;
++	void __user *u_optval;
++	unsigned int tsflags;
++	int ret;
++
++	ret = get_sockoptaddr(u_opt, &u_optval,	&u_optlen, &optlen);
++	if (ret)
++		return ret;
++
++	if (raw_get_user(tsflags, (typeof(tsflags) *)u_optval))
++		return -EFAULT;
++
++	if (tsflags & ~EVL_SOF_TIMESTAMPS)
++		return -EINVAL;
++
++	/*
++	 * Shorthand: if no specific timestamping location is given,
++	 * disable timestamping entirely.
++	 */
++	if (!(tsflags & (EVL_SOF_TIMESTAMPS &
++		~(EVL_SOF_TIMESTAMP_RX|EVL_SOF_TIMESTAMP_TX))))
++		tsflags = 0;
++
++	evl_setup_socket_iots(esk, tsflags);
++
++	return 0;
++}
++
++static int socket_get_timestamping(struct evl_socket *esk,
++				struct evl_net_sockopt __user *u_opt)
++{
++	unsigned int optlen = sizeof(esk->timestamping), __user *u_optlen;
++	void __user *u_optval;
++	int ret;
++
++	ret = get_sockoptaddr(u_opt, &u_optval,	&u_optlen, &optlen);
++	if (ret)
++		return ret;
++
++	return put_sockopt(u_optval, &esk->timestamping,
++			u_optlen, sizeof(esk->timestamping));
++}
++
+ static int socket_set_option(struct evl_socket *esk,
+ 			struct evl_net_sockopt __user *u_opt)
+ {
+@@ -706,6 +763,8 @@ static int socket_set_option(struct evl_socket *esk,
+ 		return socket_set_rmem(esk, u_opt);
+ 	case EVL_SOCKOPT_SENDSZ:
+ 		return socket_set_wmem(esk, u_opt);
++	case EVL_SOCKOPT_TIMESTAMPING:
++		return socket_set_timestamping(esk, u_opt);
+ 	}
+ 
+ 	return -EINVAL;
+@@ -730,6 +789,8 @@ static int socket_get_option(struct evl_socket *esk,
+ 		return socket_get_rmem(esk, u_opt);
+ 	case EVL_SOCKOPT_SENDSZ:
+ 		return socket_get_wmem(esk, u_opt);
++	case EVL_SOCKOPT_TIMESTAMPING:
++		return socket_get_timestamping(esk, u_opt);
+ 	}
+ 
+ 	return -EINVAL;
+diff --git a/kernel/evl/net/timestamping.c b/kernel/evl/net/timestamping.c
+new file mode 100644
+index 000000000..9b72cbd58
+--- /dev/null
++++ b/kernel/evl/net/timestamping.c
+@@ -0,0 +1,293 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0
++ *
++ * Copyright (C) 2025 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#include <linux/slab.h>
++#include <linux/err.h>
++#include <linux/refcount.h>
++#include <evl/uio.h>
++#include <evl/uaccess.h>
++#include <evl/net/socket.h>
++#include <evl/net/timestamping.h>
++#include <evl/net/skb.h>
++
++/* Tracks the number of sockets with RX timestamping enabled (+1). */
++refcount_t evl_net_rx_timestamping = REFCOUNT_INIT(1);
++
++static void iots_free_work(struct evl_work *work);
++
++static struct evl_net_timestamps *alloc_iots(void) /* in-band */
++{
++	struct evl_net_timestamps *t;
++
++	t = kmalloc(sizeof(*t), GFP_KERNEL);
++	if (!t)
++		return ERR_PTR(-ENOMEM);
++
++	refcount_set(&t->refcnt, 1);
++	t->ring.head = t->ring.tail = 0;
++	t->ring.buf = (char *)t->data;
++	evl_init_wait(&t->wait_queue, &evl_mono_clock, EVL_WAIT_FIFO);
++	evl_init_work(&t->work, iots_free_work);
++
++	return t;
++}
++
++static void free_iots(struct evl_net_timestamps *t) /* in-band */
++{
++	evl_destroy_wait(&t->wait_queue);
++	kfree_rcu(t, rcu);
++}
++
++int evl_setup_socket_iots(struct evl_socket *esk, int tsflags) /* in-band */
++{
++	struct evl_net_timestamps *t, *nt;
++	unsigned long flags;
++	int ret = 0;
++
++	inband_context_only();
++
++	/*
++	 * Setting the iots buffer amounts to a full reset if already
++	 * set.
++	 */
++	nt = tsflags ? alloc_iots() : NULL;
++	if (IS_ERR(nt))
++		return PTR_ERR(t);
++
++	spin_lock_irqsave(&esk->ts_lock, flags); /* irqsave guards against lock inversion. */
++
++	t = rcu_dereference_protected(esk->tx_timestamps,
++				lockdep_is_held(&esk->ts_lock));
++	if (t && !tsflags) {
++		if (esk->timestamping & EVL_SOF_TIMESTAMP_RX)
++			refcount_dec(&evl_net_rx_timestamping);
++		rcu_assign_pointer(esk->tx_timestamps, NULL);
++	} else if (tsflags) {
++		rcu_assign_pointer(esk->tx_timestamps, nt);
++		if (tsflags & EVL_SOF_TIMESTAMP_RX)
++			refcount_inc(&evl_net_rx_timestamping);
++	}
++
++	WRITE_ONCE(esk->timestamping, tsflags);
++
++	spin_unlock_irqrestore(&esk->ts_lock, flags);
++
++	if (t)
++		free_iots(t);
++
++	return ret;
++}
++
++struct evl_net_timestamps *evl_get_socket_iots(struct evl_socket *esk) /* in-band / oob */
++{
++	struct evl_net_timestamps *t;
++
++	rcu_read_lock();
++
++	t = rcu_dereference(esk->tx_timestamps);
++	if (t)
++		refcount_inc(&t->refcnt);
++
++	rcu_read_unlock();
++
++	return t;
++}
++
++void evl_put_socket_iots(struct evl_net_timestamps *t) /* in-band / oob */
++{
++	if (refcount_dec_and_test(&t->refcnt)) {
++		if (running_inband())
++			free_iots(t);
++		else
++			evl_call_inband(&t->work);
++	}
++}
++
++static void iots_free_work(struct evl_work *work) /* in-band */
++{
++	struct evl_net_timestamps *t = container_of(work, struct evl_net_timestamps, work);
++	free_iots(t);
++}
++
++static bool queue_iots_tx(struct evl_net_timestamps *t,
++		struct sk_buff *skb)
++{
++	struct evl_net_iotimes *iots;
++	int head, tail, room;
++	unsigned long flags;
++	const int tsz = sizeof(t->data[0]);
++	bool ret = false;
++
++	/* The size of the ring space must be a power of 2. */
++	BUILD_BUG_ON(sizeof(t->data) & (sizeof(t->data) - 1));
++
++	raw_spin_lock_irqsave(&t->wait_queue.wchan.lock, flags);
++
++	head = t->ring.head;
++	tail = smp_load_acquire(&t->ring.tail);
++
++	room = CIRC_SPACE(head, tail, sizeof(t->data));
++	if (likely(room >= tsz)) {
++		iots = &t->data[head / tsz].iots;
++		iots->device_time = skb_shinfo_oob(skb)->device_time;
++		iots->queuing_time = skb_shinfo_oob(skb)->queuing_time;
++		iots->delivery_time = skb_shinfo_oob(skb)->delivery_time;
++		smp_store_release(&t->ring.head,
++				(head + tsz) & (sizeof(t->data) - 1));
++		ret = true;
++		if (room == sizeof(t->data) - 1 &&  evl_wait_active(&t->wait_queue))
++			evl_wake_up_head(&t->wait_queue);
++	}
++
++	raw_spin_unlock_irqrestore(&t->wait_queue.wchan.lock, flags);
++
++	return ret;
++}
++
++void evl_queue_iots_tx(struct sk_buff *skb) /* oob */
++{
++	struct evl_socket *esk = EVL_NET_CB(skb)->tracker;
++	struct evl_net_timestamps *t;
++
++	/*
++	 * The tracking socket of an egress skb is covered by the wmem
++	 * crossing for staleness. IOW, if esk is referred to by an
++	 * skb, then esk is valid memory. See sock_oob_release().
++	 */
++	if (likely(esk) &&
++		READ_ONCE(esk->timestamping) & EVL_SOF_TIMESTAMP_TX) {
++		t = evl_get_socket_iots(esk);
++		if (likely(t)) {
++			if (!queue_iots_tx(t, skb))
++				set_bit(EVL_SOCK_TSOVERFLOW, &esk->flags);
++			evl_put_socket_iots(t);
++			evl_schedule();
++		}
++	}
++}
++
++/*
++ * Copy the I/O timestamps to the control area referred to by the
++ * message header. This area must be large enough to hold the iotimes
++ * struct.
++ */
++int evl_copy_iots_rx(struct sk_buff *skb,
++		struct user_oob_msghdr __user *u_msghdr) /* oob */
++{
++	struct evl_net_iotimes iots, __user *u_iots;
++	__u64 ctl_ptr;
++	__u32 ctllen;
++	int ret;
++
++	ret = raw_get_user(ctl_ptr, &u_msghdr->ctl_ptr);
++	if (ret)
++		return -EFAULT;
++
++	ret = raw_get_user(ctllen, &u_msghdr->ctllen);
++	if (ret)
++		return -EFAULT;
++
++	if (!ctl_ptr || !ctllen) /* Skip if unwanted. */
++		return 0;
++
++	if (ctllen < sizeof(struct evl_net_iotimes))
++		return -EINVAL;
++
++	/*
++	 * We might be asked to process unstamped buffers, queued and
++	 * unconsumed before timestamping was turned on. Tell user
++	 * about this by zeroing the control len, otherwise copy the
++	 * timestamps back.
++	 */
++	if (unlikely(!skb_is_oob_timestamped(skb))) {
++		ret = raw_put_user(0, &u_msghdr->ctllen);
++	} else {
++		iots.device_time = skb_shinfo_oob(skb)->device_time;
++		iots.queuing_time = skb_shinfo_oob(skb)->queuing_time;
++		iots.delivery_time = skb_shinfo_oob(skb)->delivery_time;
++		u_iots = evl_valptr64(ctl_ptr, struct evl_net_iotimes);
++		ret = raw_copy_to_user(u_iots, &iots, sizeof(iots));
++		ctllen = sizeof(struct evl_net_iotimes);
++		ret |= raw_put_user(ctllen, &u_msghdr->ctllen);
++	}
++
++	return ret ? -EFAULT : 0;
++}
++
++ssize_t evl_collect_socket_iots(struct evl_socket *esk,
++				struct user_oob_msghdr __user *u_msghdr,
++				__u32 msg_flags,
++				struct iovec *iov, size_t iovlen,
++				ktime_t timeout, enum evl_tmode tmode) /* oob */
++{
++	struct evl_net_timestamps *t;
++	struct evl_net_iotimes *iots;
++	ssize_t count = 0, ret = 0;
++	int head, tail, avail;
++	unsigned long flags;
++	const int tsz = sizeof(t->data[0]); /* Includes padding. */
++
++	t = evl_get_socket_iots(esk);
++	if (!t)	/* Nah, timestamping is off. */
++		return -EINVAL;
++
++	do {
++		raw_spin_lock_irqsave(&t->wait_queue.wchan.lock, flags);
++
++		head = smp_load_acquire(&t->ring.head);
++		tail = t->ring.tail;
++
++		avail = CIRC_CNT(head, tail, sizeof(t->data));
++		if (avail >= tsz) {
++			raw_spin_unlock_irqrestore(&t->wait_queue.wchan.lock, flags);
++			iots = &t->data[tail / tsz].iots;
++			ret = evl_copy_to_uio_incremental(&iov, &iovlen, iots, sizeof(*iots));
++			if (ret <= 0) /* Allow for null reads. */
++				break;
++			if (ret < sizeof(*iots)) {
++				/* We need space for at least one record. */
++				ret = -EINVAL;
++				break;
++			}
++			smp_store_release(&t->ring.tail,
++					(tail + tsz) & (sizeof(t->data) - 1));
++			count += sizeof(*iots);
++			continue;
++		}
++
++		raw_spin_unlock_irqrestore(&t->wait_queue.wchan.lock, flags);
++
++		if (count > 0)
++			break;
++
++		ret = evl_wait_event_timeout(&t->wait_queue, timeout, tmode,
++					CIRC_CNT(head, tail, sizeof(t->data)) >= tsz);
++	} while (!ret);
++
++	evl_put_socket_iots(t);
++
++	if (!ret && test_and_clear_bit(EVL_SOCK_TSOVERFLOW, &esk->flags))
++		ret = raw_put_user(msg_flags | MSG_TRUNC, &u_msghdr->flags);
++
++	return ret ?: count;
++}
++
++/* in-band / oob, rcu locked. */
++bool __evl_test_socket_iots(struct evl_socket *esk)
++{
++	struct evl_net_timestamps *t;
++	bool ret = false;
++	int head, tail;
++
++	t = rcu_dereference(esk->tx_timestamps);
++	if (t) {
++		head = READ_ONCE(t->ring.head);
++		tail = READ_ONCE(t->ring.tail);
++		ret = CIRC_CNT(head, tail, sizeof(t->data)) > 0;
++	}
++
++	return ret;
++}
+-- 
+2.30.2
+

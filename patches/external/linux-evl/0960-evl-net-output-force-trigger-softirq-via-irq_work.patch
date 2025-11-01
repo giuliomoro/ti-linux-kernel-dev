@@ -1,0 +1,32 @@
+From 0f649c8c7a23ef80c3b028d3b7f6f8736b341edb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 22 Jun 2025 19:28:53 +0200
+Subject: [PATCH 960/985] evl/net: output: force trigger softirq via irq_work
+
+__raise_softirq_irqoff() only marks a softirq as pending, but does not
+guarantee that in-band will notice asap.
+
+Use the recently oob-enabled raise_softirq_irqoff() call instead to
+fix this, as an irq_work is triggered to force BH handling.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/output.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 2a5db7c27..089d4aff3 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -184,7 +184,7 @@ static void xmit_inband(struct irq_work *work) /* in-band, stalled */
+ 	/*
+ 	 * process_inband_tx_backlog() should run soon, kicked by tx_action.
+ 	 */
+-	__raise_softirq_irqoff(NET_TX_SOFTIRQ);
++	raise_softirq_irqoff(NET_TX_SOFTIRQ);
+ }
+ 
+ /* oob or in-band */
+-- 
+2.30.2
+

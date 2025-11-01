@@ -1,0 +1,53 @@
+From facddb5121cb309af6b11c50619f422e694c90ee Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sat, 28 Oct 2023 18:08:17 +0200
+Subject: [PATCH 826/985] evl/lock: allow might_hard_lock() from the oob stage
+
+We should allow disabling lazy lock class registration from any stage
+by a call to might_hard_lock(), not to impose significant restriction
+on the calling context.
+
+To this end, might_hard_lock() must lock the RCU read-side across the
+inner call to might_lock(), which converts to temporary NMI context as
+long as required when called from the oob stage.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/lock.h | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/include/evl/lock.h b/include/evl/lock.h
+index 34580d1a7..8aef7ea7f 100644
+--- a/include/evl/lock.h
++++ b/include/evl/lock.h
+@@ -10,21 +10,18 @@
+ 
+ #ifdef CONFIG_LOCKDEP
+ /*
+- * might_hard_lock() disables lazy lock class registration for a given
+- * lock, by forcing it immediately from the current in-band stage so
+- * that this is not postponed until the first acquisition which might
+- * happen from the oob stage, which would be unsafe. We need to make
+- * sure that no oob context potentially grabbing the same lock can
+- * preempt us during the lock->unlock sequence might_lock() performs
+- * not to create invalid chains lockdep could observe, hence the
+- * _full() irq disabling.
++ * might_hard_lock() forces immediate lock class registration from the
++ * current stage.  Keep the lock->unlock sequence safe from preemption
++ * from any stage by disabling hard irqs, so that lockdep cannot
++ * observe invalid chains.
+  */
+ #define might_hard_lock(__lock)				\
+ 	do {						\
+ 		unsigned long __flags;			\
+-		inband_context_only();			\
+ 		local_irq_save_full(__flags);		\
++		rcu_read_lock();			\
+ 		might_lock(__lock);			\
++		rcu_read_unlock();			\
+ 		local_irq_restore_full(__flags);	\
+ 	} while (0)
+ #else
+-- 
+2.30.2
+

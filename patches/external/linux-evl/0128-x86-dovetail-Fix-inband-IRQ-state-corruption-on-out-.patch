@@ -1,0 +1,55 @@
+From 3bc4b45dad998013e71f9117a72b84d95ea8788b Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Thu, 10 Oct 2024 17:44:21 +0200
+Subject: [PATCH 128/985] x86: dovetail: Fix inband IRQ state corruption on
+ out-of-band compat syscall
+
+The following kernel splat was found when running the Xenomai 3
+testsuite in compat on dovetail enabled kernels:
+
+[  513.620975] IRQ pipeline: some code running in oob context 'Xenomai'
+                             called an in-band only routine
+[  513.620998] CPU: 0 PID: 510 Comm: smokey Not tainted 6.10.0+ #76
+[  513.621003] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS 1.16.2-debian-1.16.2-1 04/01/2014
+[  513.621005] IRQ stage: Xenomai
+[  513.621007] Call Trace:
+[  513.621011]  <TASK>
+[  513.621015]  dump_stack_lvl+0x6f/0xd0
+[  513.621202]  __inband_irq_enable+0xb/0x60
+[  513.621249]  do_int80_emulation+0x68/0x160
+[  513.621265]  asm_int80_emulation+0x1a/0x20
+[  513.621285] RIP: 0023:0xf7f692ba
+[  513.621288] Code: Unable to access opcode bytes at 0xf7f69290.
+[  513.621303] RSP: 002b:00000000ffeedf40 EFLAGS: 00000282 ORIG_RAX: 0000000000000127
+[  513.621307] RAX: ffffffffffffffda RBX: 00000000ffffff9c RCX: 00000000ffeedfa0
+[  513.621309] RDX: 0000000000088000 RSI: 0000000000000000 RDI: 00000000f7f7aff4
+[  513.621311] RBP: 00000000ffeedf88 R08: 0000000000000000 R09: 0000000000000000
+[  513.621313] R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+[  513.621315] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+[  513.621319]  </TASK>
+
+When entering the low level entry code from the out-of-band stage
+the in-band IRQ state was changed. That is now avoided by calling
+syscall_enter_from_user_enable_irqs() as all other entry points do.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ arch/x86/entry/common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/entry/common.c b/arch/x86/entry/common.c
+index 9190c805b..c83302724 100644
+--- a/arch/x86/entry/common.c
++++ b/arch/x86/entry/common.c
+@@ -259,7 +259,7 @@ __visible noinstr void do_int80_emulation(struct pt_regs *regs)
+ 
+ 	nr = syscall_32_enter(regs);
+ 
+-	local_irq_enable_full();
++	syscall_enter_from_user_enable_irqs();
+ 	nr = syscall_enter_from_user_mode_work(regs, nr);
+ 
+ 	if (dovetailing()) {
+-- 
+2.30.2
+

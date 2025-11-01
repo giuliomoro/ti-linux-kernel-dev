@@ -1,0 +1,25 @@
+From 8742d4fec5de8c592af7863f642890910576ee7f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 8 Apr 2020 19:44:52 +0200
+Subject: [PATCH 596/985] evl/device: include semaphore header
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/device.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/evl/device.h b/include/evl/device.h
+index 3bb85b0c8..afdddc27f 100644
+--- a/include/evl/device.h
++++ b/include/evl/device.h
+@@ -16,6 +16,7 @@
+ #include <evl/poll.h>
+ #include <evl/stax.h>
+ #include <evl/work.h>
++#include <evl/sem.h>
+ 
+ #else  /* !CONFIG_EVL */
+ 
+-- 
+2.30.2
+

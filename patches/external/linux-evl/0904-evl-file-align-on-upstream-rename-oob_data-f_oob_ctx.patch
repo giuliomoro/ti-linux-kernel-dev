@@ -1,0 +1,87 @@
+From 0d9503d0e986a870eb26f393248ab5902e7ff8e7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 2 Jan 2025 18:18:52 +0100
+Subject: [PATCH 904/985] evl/file: align on upstream rename: oob_data ->
+ f_oob_ctx
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/file.c       | 12 ++++++------
+ kernel/evl/net/socket.c |  4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/evl/file.c b/kernel/evl/file.c
+index 93aa8aa3c..dcb369e21 100644
+--- a/kernel/evl/file.c
++++ b/kernel/evl/file.c
+@@ -113,14 +113,14 @@ void install_inband_fd(unsigned int fd, struct file *filp,
+ 	struct evl_fd *efd;
+ 	int ret = -ENOMEM;
+ 
+-	if (filp->oob_data == NULL)
++	if (filp->f_oob_ctx == NULL)
+ 		return;
+ 
+ 	efd = evl_alloc(sizeof(struct evl_fd));
+ 	if (efd) {
+ 		efd->fd = fd;
+ 		efd->files = files;
+-		efd->efilp = filp->oob_data;
++		efd->efilp = filp->f_oob_ctx;
+ 		INIT_LIST_HEAD(&efd->poll_nodes);
+ 		raw_spin_lock_irqsave(&fdt_lock, flags);
+ 		ret = index_efd(efd, filp);
+@@ -144,7 +144,7 @@ void uninstall_inband_fd(unsigned int fd, struct file *filp,
+ 	unsigned long flags;
+ 	struct evl_fd *efd;
+ 
+-	if (filp->oob_data == NULL)
++	if (filp->f_oob_ctx == NULL)
+ 		return;
+ 
+ 	raw_spin_lock_irqsave(&fdt_lock, flags);
+@@ -165,7 +165,7 @@ void replace_inband_fd(unsigned int fd, struct file *filp,
+ 	unsigned long flags;
+ 	struct evl_fd *efd;
+ 
+-	if (filp->oob_data == NULL)
++	if (filp->f_oob_ctx == NULL)
+ 		return;
+ 
+ 	raw_spin_lock_irqsave(&fdt_lock, flags);
+@@ -173,7 +173,7 @@ void replace_inband_fd(unsigned int fd, struct file *filp,
+ 	efd = lookup_efd(fd, files);
+ 	if (efd) {
+ 		drop_watchpoints(efd);
+-		efd->efilp = filp->oob_data;
++		efd->efilp = filp->f_oob_ctx;
+ 		raw_spin_unlock_irqrestore(&fdt_lock, flags);
+ 		evl_schedule();
+ 		return;
+@@ -239,7 +239,7 @@ void evl_ignore_fd(struct evl_poll_node *node)
+ int evl_open_file(struct evl_file *efilp, struct file *filp)
+ {
+ 	efilp->filp = filp;
+-	filp->oob_data = efilp;	/* mark filp as oob-capable. */
++	filp->f_oob_ctx = efilp; /* mark filp as oob-capable. */
+ 	evl_init_crossing(&efilp->crossing);
+ 
+ 	return 0;
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 7c68fd7bd..83dea0bae 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -62,8 +62,8 @@ struct domain_list_head {
+  */
+ static inline struct evl_socket *evl_sk_from_file(struct file *filp)
+ {
+-	return filp->oob_data ?
+-		container_of(filp->oob_data, struct evl_socket, efile) :
++	return filp->f_oob_ctx ?
++		container_of(filp->f_oob_ctx, struct evl_socket, efile) :
+ 		NULL;
+ }
+ 
+-- 
+2.30.2
+

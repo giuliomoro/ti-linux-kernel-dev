@@ -1,0 +1,27 @@
+From 963af3518e329adc2c5297ecea7a26d117da4f33 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 23 Jan 2020 18:11:32 +0100
+Subject: [PATCH 563/985] evl/sem: add evl_broadcast_ksem()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sem.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/evl/sem.h b/include/evl/sem.h
+index 9378e3888..effddafd4 100644
+--- a/include/evl/sem.h
++++ b/include/evl/sem.h
+@@ -43,4 +43,9 @@ int evl_trydown(struct evl_ksem *ksem);
+ 
+ void evl_up(struct evl_ksem *ksem);
+ 
++static inline void evl_broadcast_ksem(struct evl_ksem *ksem)
++{
++	evl_flush_wait(&ksem->wait, T_BCAST);
++}
++
+ #endif /* !_EVL_SEM_H */
+-- 
+2.30.2
+

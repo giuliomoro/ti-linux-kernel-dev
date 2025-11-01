@@ -1,0 +1,53 @@
+From 376d91745140945903b2259d1e772f140658e3a3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 6 Feb 2021 15:45:54 +0100
+Subject: [PATCH 691/985] evl/sched: remove useless lookup-by-prio helper
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched/queue.h |  3 ---
+ kernel/evl/sched/core.c   | 14 --------------
+ 2 files changed, 17 deletions(-)
+
+diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
+index 8b8f432e2..ee2d1a563 100644
+--- a/include/evl/sched/queue.h
++++ b/include/evl/sched/queue.h
+@@ -44,9 +44,6 @@ void evl_init_schedq(struct evl_multilevel_queue *q);
+ 
+ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q);
+ 
+-struct evl_thread *
+-evl_lookup_schedq(struct evl_multilevel_queue *q, int prio);
+-
+ static __always_inline
+ int evl_schedq_is_empty(struct evl_multilevel_queue *q)
+ {
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 8724c047c..a129cb749 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -648,20 +648,6 @@ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)
+ 	return thread;
+ }
+ 
+-struct evl_thread *
+-evl_lookup_schedq(struct evl_multilevel_queue *q, int prio)
+-{
+-	struct list_head *head;
+-	int idx;
+-
+-	idx = get_qindex(q, prio);
+-	head = q->heads + idx;
+-	if (list_empty(head))
+-		return NULL;
+-
+-	return list_first_entry(head, struct evl_thread, rq_next);
+-}
+-
+ static inline void enter_inband(struct evl_thread *root)
+ {
+ #ifdef CONFIG_EVL_WATCHDOG
+-- 
+2.30.2
+

@@ -1,0 +1,72 @@
+From 589a4cdfe6c795f48d1d42c9738a7bad1568d6ac Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 29 Oct 2023 10:44:38 +0100
+Subject: [PATCH 828/985] evl/thread: remove useless dynamic lock key
+
+All lock instances serializing accesses to the shared data in thread
+descriptors belong to the same class lockdep-wise. Calling
+raw_spin_lock_init() to initialize such lock is enough and
+non-ambiguous.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/thread.h |  1 -
+ kernel/evl/thread.c  | 16 +---------------
+ 2 files changed, 1 insertion(+), 16 deletions(-)
+
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index a0f34ca97..2d1d6f874 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -63,7 +63,6 @@ struct evl_init_thread_attr {
+ 
+ struct evl_thread {
+ 	hard_spinlock_t lock;
+-	struct lock_class_key lock_key;	/* lockdep disambiguation */
+ 
+ 	/*
+ 	 * Shared thread-specific data, covered by ->lock.
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index dac366d41..5cd1539cd 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -230,6 +230,7 @@ int evl_init_thread(struct evl_thread *thread,
+ 	INIT_LIST_HEAD(&thread->boosters);
+ 	INIT_LIST_HEAD(&thread->owned_mutexes);
+ 	raw_spin_lock_init(&thread->lock);
++	might_hard_lock(&thread->lock);
+ 	init_completion(&thread->exited);
+ 	INIT_LIST_HEAD(&thread->ptsync_next);
+ 	thread->oob_mm = NULL;
+@@ -252,18 +253,6 @@ int evl_init_thread(struct evl_thread *thread,
+ 	if (ret)
+ 		goto err_out;
+ 
+-#ifdef CONFIG_LOCKDEP
+-	if (state & EVL_T_ROOT) {
+-		lockdep_set_class_and_name(&thread->lock, &rq->root_lock_key,
+-					thread->name);
+-	} else {
+-		lockdep_register_key(&thread->lock_key);
+-		lockdep_set_class_and_name(&thread->lock, &thread->lock_key,
+-					thread->name);
+-	}
+-	might_hard_lock(&thread->lock);
+-#endif
+-
+ 	trace_evl_init_thread(thread, iattr, ret);
+ 
+ 	return 0;
+@@ -299,9 +288,6 @@ static void uninit_thread(struct evl_thread *thread)
+ 	evl_forget_thread(thread);
+ 	evl_put_thread_rq(thread, rq, flags);
+ 
+-	if (!(thread->state & EVL_T_ROOT))
+-		lockdep_unregister_key(&thread->lock_key);
+-
+ 	kfree(thread->name);
+ }
+ 
+-- 
+2.30.2
+

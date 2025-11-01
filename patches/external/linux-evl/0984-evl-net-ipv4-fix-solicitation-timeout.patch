@@ -1,0 +1,129 @@
+From 8e900416e7203bc95fee0dfe94eeeea9c179b015 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 2 Oct 2025 15:45:41 +0200
+Subject: [PATCH 984/985] evl/net: ipv4: fix solicitation timeout
+
+Due to a bug in specifying the time limit for waiting for the ARP
+front cache to be populated, a solicitation command could hit a
+timeout condition after only 1s wait time, with the evl-net command
+failing as follows:
+
+evl-net: <some-ipaddr> did not respond: Connection timed out
+
+Fix the timeout spec, using an evl-specific limit which can be changed
+using the following sysfs knob:
+
+/sys/devices/virtual/evl/net/ipv4_solicit_timeout
+
+The default value is 5s.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/net/ipv4.h     |  2 ++
+ kernel/evl/net/ipv4/ipv4.c | 12 +++++++-----
+ kernel/evl/net/net.c       | 28 ++++++++++++++++++++++++++++
+ 3 files changed, 37 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
+index a0d6d6cc3..eeb2d76b4 100644
+--- a/include/evl/net/ipv4.h
++++ b/include/evl/net/ipv4.h
+@@ -47,6 +47,8 @@ int evl_net_ipv4_solicit(struct net *net,
+ 			struct net_device *dev,
+ 			struct sockaddr *addr, int flags);
+ 
++extern int evl_net_ipv4_solicit_timeout;
++
+ extern struct evl_socket_domain evl_net_ipv4;
+ 
+ #endif /* !_EVL_NET_IPV4_H */
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index 18c8c0bbc..6ce31d855 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -21,6 +21,8 @@
+ #include <evl/net/ipv4/arp.h>
+ #include <evl/net/ipv4/udp.h>
+ 
++int evl_net_ipv4_solicit_timeout = 5; /* Seconds */
++
+ /*
+  * Setup the IPv4 portion of the EVL state into an in-band network
+  * namespace (struct net { ... struct oob_net_state oob; ... }).
+@@ -231,8 +233,9 @@ void __evl_net_ipv4_gc(struct evl_net_frag_tdir *ftdir)
+ 
+ /**
+  * evl_net_ipv4_solicit - Resolve an IPv4 address into a link-layer
+- * address using ARP neighbour solicitation. This call waits for 5s
+- * for the front cache to receive the ARP entry before timing out.
++ * address using ARP neighbour solicitation. This call waits for the
++ * number of seconds read from evl_net_ipv4_solicit_timeout for the
++ * front cache to receive the ARP entry before timing out.
+  *
+  * @net		Network namespace this operation applies to.
+  * @dev		Preferred output device, or NULL if unspec. If given, @dev
+@@ -294,13 +297,12 @@ int evl_net_ipv4_solicit(struct net *net,
+ 	if (likely(!(neigh->nud_state & NUD_NOARP))) {
+ 		/*
+ 		 * Solicit the peer which should respond to ARP
+-		 * requests. Wait for a response for at least the ARP
+-		 * probe delay time.
++		 * requests within the allotted time.
+ 		 */
+ 		neigh_event_send(neigh, NULL);
+ 		ret = wait_event_interruptible_timeout(evl_arp_event,
+ 			       (e = evl_net_get_arp_entry(dev, ipaddr)),
+-				NEIGH_VAR(neigh->parms, DELAY_PROBE_TIME) + HZ
++				evl_net_ipv4_solicit_timeout * HZ
+ 			);
+ 		ret = e ? 0 : ret ?: -ETIMEDOUT;
+ 	}
+diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
+index aa7eefc4f..a18db00fe 100644
+--- a/kernel/evl/net/net.c
++++ b/kernel/evl/net/net.c
+@@ -183,6 +183,33 @@ static ssize_t vlans_store(struct device *dev,
+ }
+ static DEVICE_ATTR_RW(vlans);
+ 
++static ssize_t ipv4_solicit_timeout_show(struct device *dev,
++			struct device_attribute *attr,
++			char *buf)
++{
++	return sysfs_emit(buf, "%d\n", evl_net_ipv4_solicit_timeout);
++}
++
++static ssize_t ipv4_solicit_timeout_store(struct device *dev,
++			struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	ssize_t ret;
++	long value;
++
++	ret = kstrtol(buf, 0, &value);
++	if (ret < 0)
++		return ret;
++
++	if (value <= 0)
++		return -EINVAL;
++
++	evl_net_ipv4_solicit_timeout = value;
++
++	return count;
++}
++static DEVICE_ATTR_RW(ipv4_solicit_timeout);
++
+ static ssize_t ipv4_flush_routes_store(struct device *dev,
+ 				struct device_attribute *attr,
+ 				const char *buf, size_t count)
+@@ -209,6 +236,7 @@ static DEVICE_ATTR_WO(ipv4_flush_arp);
+ 
+ static struct attribute *net_attrs[] = {
+ 	&dev_attr_vlans.attr,
++	&dev_attr_ipv4_solicit_timeout.attr,
+ 	&dev_attr_ipv4_flush_routes.attr,
+ 	&dev_attr_ipv4_flush_arp.attr,
+ 	NULL,
+-- 
+2.30.2
+

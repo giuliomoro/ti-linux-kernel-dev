@@ -1,0 +1,91 @@
+From 835e33a3c4e8d536f6333a37639f74904435ea6e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 19 Oct 2022 14:52:12 +0200
+Subject: [PATCH 758/985] evl/thread: hide exiting threads from sysfs attribute
+ files
+
+Threads are special elements in that they may exit independently from
+the existence of their respective backing cdev. Make sure to hide
+exiting threads from sysfs handlers before we dismantle things.
+
+Prior to such fix, with lockdep enabled, we could receive this kernel
+splat when stopping an EVL application while an evl-ps loop is
+extracting data concurrently from the sysfs attributes related to an
+exiting thread:
+
+[  455.474409] DEBUG_LOCKS_WARN_ON(1)
+[  455.474456] WARNING: CPU: 4 PID: 425 at kernel/locking/lockdep.c:249 __lock_acquire+0xa66/0xd10
+[  455.474473] Modules linked in:
+[  455.474480] CPU: 4 PID: 425 Comm: evl-ps Not tainted 5.15.64+ #369
+[  455.474488] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.16.0-1.fc36 04/01/2014
+[  455.474492] IRQ stage: Linux
+[  455.474496] RIP: 0010:__lock_acquire+0xa66/0xd10
+[  455.474504] Code: 48 b8 4a 83 e8 8b c3 25 00 8b 3d ad 3d 30 02 85 ff 0f 85 45 ff ff ff 48 c7 c6 40 e6 66 82 48 c7 c7 60 dc 66 82 e8 c5 f6 e3 00 <0f> 0b 31 ed e9 c7 f7 ff ff e8 8c 0f 62 00 85 c0 0f 84 f9 fe ff ff
+[  455.474511] RSP: 0018:ffff888107cd7a78 EFLAGS: 00010082
+[  455.474518] RAX: 0000000000000000 RBX: ffff888107276f98 RCX: 0000000000000000
+[  455.474523] RDX: 0000000000000001 RSI: ffffffff8114d5a4 RDI: ffffed1020f9af45
+[  455.474527] RBP: 0000000000000416 R08: 0000000000000001 R09: ffff8881f742d85b
+[  455.474531] R10: ffffed103ee85b0b R11: 284e4f5f4e524157 R12: ffff888107276600
+[  455.474536] R13: 0000000000000000 R14: 0000000000000000 R15: ffff888107276f20
+[  455.474548] FS:  00007f485c93b740(0000) GS:ffff8881f7400000(0000) knlGS:0000000000000000
+[  455.474554] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  455.474559] CR2: 00005653f7bb4e68 CR3: 0000000108d00000 CR4: 00000000000406e0
+[  455.474564] Call Trace:
+[  455.474567]  <TASK>
+[  455.474570]  ? __clear_bit+0x25/0x40
+[  455.474581]  lock_acquire+0x14c/0x3b0
+[  455.474589]  ? sched_show+0x47/0x1b0
+[  455.474598]  ? lock_downgrade+0xe0/0xe0
+[  455.474605]  ? evl_get_element+0x5/0xa0
+[  455.474613]  ? __test_and_set_bit.constprop.0+0xe/0x20
+[  455.474622]  ? do_raw_spin_unlock+0x97/0xf0
+[  455.474630]  ? device_remove_bin_file+0x20/0x20
+[  455.474641]  sched_show+0x6f/0x1b0
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h | 8 ++++++++
+ kernel/evl/thread.c   | 8 ++++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 2698d378b..c5bb1a58a 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -143,6 +143,14 @@ __evl_get_element_by_fundle(struct evl_index *map,
+ 			container_of(__e, __type, element); }) : NULL;	\
+ 	})
+ 
++/* Hide the element from sysfs operations. */
++static inline void evl_hide_element(struct evl_element *e)
++{
++	struct device *dev = e->dev;
++	if (dev)
++		dev_set_drvdata(dev, NULL);
++}
++
+ static inline bool evl_element_is_public(struct evl_element *e)
+ {
+ 	return !!(e->clone_flags & EVL_CLONE_PUBLIC);
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 799195242..4647a58b9 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -277,6 +277,14 @@ static void uninit_thread(struct evl_thread *thread)
+ 	unsigned long flags;
+ 	struct evl_rq *rq;
+ 
++	/*
++	 * Threads are special elements in that they may exit
++	 * independently from the existence of their respective
++	 * backing cdev. Make sure to hide exiting threads from sysfs
++	 * handlers before we dismantle things.
++	 */
++	evl_hide_element(&thread->element);
++
+ 	evl_destroy_timer(&thread->rtimer);
+ 	evl_destroy_timer(&thread->ptimer);
+ 
+-- 
+2.30.2
+
