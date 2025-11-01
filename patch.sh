@@ -614,7 +614,6 @@ backports () {
 drivers () {
 	dir 'branding/boris'
 
-	dir 'drivers/sdhci-omap'
 	dir 'drivers/mikrobus'
 	dir 'drivers/fixes'
 	dir 'drivers/cc33xx'
@@ -674,8 +673,8 @@ xenomai4 () {
 	if [ "x${xenomai4_enable}" = "xenable" ] ; then
 		#regenerate="enable"
 		if [ "x${regenerate}" = "xenable" ] ; then
-			local BRANCH=v6.12.y-evl-rebase
-			local BASE=da274362a7bd9ab3a6e46d15945029145ebce672 # must be an ancestor of $BRANCH
+			local BRANCH=v6.1.y-cip-evl-rebase
+			local BASE=4358ed1fb0870f14dea3483f96b906d86fe629c4 # must be an ancestor of $BRANCH
 			# hack to get only a handful of commits: checkout a shallow repo, then get a bit
 			# more in chunks until the desired commit is found
 			cd "${DIR}/ignore"
