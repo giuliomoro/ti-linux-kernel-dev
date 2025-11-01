@@ -632,5 +632,31 @@ readme () {
 }
 
 readme
+
+xenomai4 () {
+	# xenomai4_enable="enable"
+	if [ "x${xenomai4_enable}" = "xenable" ] ; then
+		#regenerate="enable"
+		if [ "x${regenerate}" = "xenable" ] ; then
+			local BRANCH=v6.12.y-evl-rebase
+			local BASE=da274362a7bd9ab3a6e46d15945029145ebce672 # must be an ancestor of $BRANCH
+			# hack to get only a handful of commits: checkout a shallow repo, then get a bit
+			# more in chunks until the desired commit is found
+			cd "${DIR}/ignore"
+			if [ ! -d linux-evl ]; then
+				${git_bin} clone --depth 1 -b $BRANCH https://gitlab.com/Xenomai/xenomai4/linux-evl.git 
+			fi
+			cd "${DIR}/ignore/linux-evl"
+			${git_bin} checkout $BRANCH
+			i=1; while ! git show ${BASE}; do ${git_bin} fetch --depth=$((i+=100)); done
+			${git_bin} format-patch -o ${DIR}/patches/external/linux-evl ${BASE}
+			cd "${DIR}/KERNEL"
+		fi
+		dir 'external/linux-evl'
+	fi
+}
+
+xenomai4
+
 echo "patch.sh ran successfully"
 #
