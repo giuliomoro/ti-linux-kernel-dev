@@ -1,0 +1,28 @@
+From 45bd457372644253899281e618ef7394e33f9f34 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 14:23:27 +0100
+Subject: [PATCH 151/217] genirq: irq_pipeline: require CONFIG_IRQ_WORK
+
+Support for irq work is fundamental for proper dual kernel operations,
+so require it when configuring.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/irq/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/irq/Kconfig b/kernel/irq/Kconfig
+index 8d8330186..baeaa0462 100644
+--- a/kernel/irq/Kconfig
++++ b/kernel/irq/Kconfig
+@@ -150,6 +150,7 @@ config IRQ_PIPELINE
+ 	depends on HAVE_IRQ_PIPELINE
+ 	select IRQ_DOMAIN
+ 	select IRQ_DOMAIN_NOMAP
++	select IRQ_WORK
+ 	default n
+ 	help
+ 	  Activate this option if you want the interrupt pipeline to be
+-- 
+2.30.2
+

@@ -1,0 +1,149 @@
+From dfe92005abc419bce29bcb15fa26cec64e08a512 Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Mon, 17 Feb 2025 14:18:49 +0100
+Subject: [PATCH 140/217] arm64: fpsimd: dovetail: Allow preemption of in-band
+ fpsimd kernel sections
+
+Preemption of in-band in-kernel fpsimd sections was not allowed /
+properly implemented in Dovetail up to now.
+
+That piled up again as some crypto code was optimized for arm64 in
+Linux 6.14. A possible call stack that makes clear that the FPU was
+corrupted follows. The inband stage was using crypto/FPU code inside
+the kernel and got interrupted by OOB.
+
+	[  331.703695]  task_fpsimd_load+0xd0/0x214 (P)
+	[  331.703713]  fpsimd_restore_current_state+0x9c/0xb8
+	[  331.703732]  fpsimd_restore_current_oob+0x1c/0x2c
+	[  331.703751]  dovetail_context_switch+0x90/0x180
+	[  331.703769]  pipeline_switch_to+0x10/0x1c
+	[  331.703792]  ___xnsched_run+0x1bc/0x29c
+	[  331.703811]  run_oob_call+0x98/0x17c
+	[  331.703830]  handle_irq_pipelined_finish+0x1e0/0x1ec
+	[  331.703848]  handle_irq_pipelined+0x58/0x6c
+	[  331.703865]  call_on_irq_stack+0x24/0x4c
+	[  331.703884]  do_interrupt_handler+0x150/0x178
+	[  331.703902]  el1_interrupt+0x44/0x11c
+	[  331.703921]  el1h_64_irq_handler+0x18/0x24
+	[  331.703941]  el1h_64_irq+0x6c/0x70                <- oob
+	[  331.703957]  crc32c_le_arm64_4way+0x4c/0xc0 (P)   <- inband
+	[  331.703978]  ext4_block_bitmap_csum_set+0x38/0x60
+	[  331.704002]  ext4_mb_mark_context+0x1b0/0x398
+	[  331.704025]  ext4_mb_mark_diskspace_used+0xd8/0x1f8
+
+To fix that we have to hook into the task switch as we do on x86 and
+invoke the FPU (re)store logic.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+Acked-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/include/asm/dovetail.h    | 10 +++++++--
+ arch/arm64/include/asm/fpsimd.h      |  7 +++++-
+ arch/arm64/include/asm/thread_info.h |  1 +
+ arch/arm64/kernel/fpsimd.c           | 33 ++++++++++++++++++++++++++++
+ 4 files changed, 48 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/include/asm/dovetail.h b/arch/arm64/include/asm/dovetail.h
+index dc46f131e..8cd359710 100644
+--- a/arch/arm64/include/asm/dovetail.h
++++ b/arch/arm64/include/asm/dovetail.h
+@@ -26,11 +26,17 @@ static inline void arch_dovetail_exec_prepare(void)
+ { }
+ 
+ static inline void arch_dovetail_switch_prepare(bool leave_inband)
+-{ }
++{
++	if (leave_inband)
++		fpsimd_suspend_inband();
++}
+ 
+ static inline void arch_dovetail_switch_finish(bool enter_inband)
+ {
+-	fpsimd_restore_current_oob();
++	if (enter_inband)
++		fpsimd_resume_inband();
++	else
++		fpsimd_restore_current_oob();
+ }
+ 
+ /*
+diff --git a/arch/arm64/include/asm/fpsimd.h b/arch/arm64/include/asm/fpsimd.h
+index c25fd6706..50bbfb385 100644
+--- a/arch/arm64/include/asm/fpsimd.h
++++ b/arch/arm64/include/asm/fpsimd.h
+@@ -80,10 +80,15 @@ extern void fpsimd_flush_thread(void);
+ extern void fpsimd_signal_preserve_current_state(void);
+ extern void fpsimd_preserve_current_state(void);
+ extern void fpsimd_restore_current_state(void);
+-extern void fpsimd_restore_current_oob(void);
+ extern void fpsimd_update_current_state(struct user_fpsimd_state const *state);
+ extern void fpsimd_kvm_prepare(void);
+ 
++#ifdef CONFIG_DOVETAIL
++extern void fpsimd_restore_current_oob(void);
++extern void fpsimd_suspend_inband(void);
++extern void fpsimd_resume_inband(void);
++#endif
++
+ struct cpu_fp_state {
+ 	struct user_fpsimd_state *st;
+ 	void *sve_state;
+diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
+index 3028a8f29..8ee08fd30 100644
+--- a/arch/arm64/include/asm/thread_info.h
++++ b/arch/arm64/include/asm/thread_info.h
+@@ -76,6 +76,7 @@ void arch_setup_new_exec(void);
+ #define TIF_SECCOMP		11	/* syscall secure computing */
+ #define TIF_SYSCALL_EMU		12	/* syscall emulation active */
+ #define TIF_MAYDAY		13	/* Emergency trap pending */
++#define TIF_KERNEL_FP_PREEMPTED	14	/* Dovetail: kernel mode FPSIMD section preempted by OOB */
+ #define TIF_MEMDIE		18	/* is terminating due to OOM killer */
+ #define TIF_FREEZE		19
+ #define TIF_RESTORE_SIGMASK	20
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index 0c4d99eb8..c10a9e981 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -2222,6 +2222,39 @@ void cpu_enable_fpsimd(const struct arm64_cpu_capabilities *__always_unused p)
+ 	isb();
+ }
+ 
++#ifdef CONFIG_DOVETAIL
++
++/*
++ * Holds the in-kernel fpu state when preempted by a task running on the
++ * out-of-band stage.
++ */
++static DEFINE_PER_CPU(struct user_fpsimd_state, in_kernel_fpstate);
++
++void fpsimd_suspend_inband(void)
++{
++	struct user_fpsimd_state *kfpu = this_cpu_ptr(&in_kernel_fpstate);
++
++	/*
++	 * If TIF_KERNEL_FPSTATE is set, we are dealing with the preemption of an
++	 * inband kernel context currently using the fpu by a thread which resumes
++	 * on the oob stage.
++	 */
++	if (test_thread_flag(TIF_KERNEL_FPSTATE)) {
++		fpsimd_save_state(kfpu);
++		set_thread_flag(TIF_KERNEL_FP_PREEMPTED);
++	}
++}
++
++void fpsimd_resume_inband(void)
++{
++	struct user_fpsimd_state *kfpu = this_cpu_ptr(&in_kernel_fpstate);
++
++	if (test_and_clear_thread_flag(TIF_KERNEL_FP_PREEMPTED))
++		fpsimd_load_state(kfpu);
++}
++
++#endif
++
+ /*
+  * FP/SIMD support code initialisation.
+  */
+-- 
+2.30.2
+

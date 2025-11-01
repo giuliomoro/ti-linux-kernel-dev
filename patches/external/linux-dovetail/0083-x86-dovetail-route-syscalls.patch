@@ -1,0 +1,291 @@
+From 6791e6910be5b0e221c4e20d4ceb6e99368ba050 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 6 May 2019 18:37:41 +0200
+Subject: [PATCH 083/217] x86: dovetail: route syscalls
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+dovetail: x86: Fix detection of prctl based compat syscalls
+
+In case a compat application is requesting a dovetail service the
+syscall number will not be equal to __NR_prctl (= the x86_64 syscall
+number).
+
+The same problem exists on the arm64 architecture where the problem was
+already addressed. Apply the same to x86.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+
+dovetail: arch: Fix fetching of the first syscall argument from compat tasks
+
+On x86 there is a small difference in the ABI (= register) where the
+first syscall argument is supplied between the x86_64 (native) and
+compat (i386) case.
+
+On x86_64 the DI register is being used, while i386 used the BX
+register.
+
+The same problem exists for further arguments - handled by
+syscall_get_arguments() - as well. syscall_get_arg0() is dovetail
+specific and is now in sync with syscall_get_arguments().
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+
+dovetail: x86: Fix detection of prctl based compat syscalls
+
+In case a compat application is requesting a dovetail service the
+syscall number will not be equal to __NR_prctl (= the x86_64 syscall
+number).
+
+The same problem exists on the arm64 architecture where the problem was
+already addressed. Apply the same to x86.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+
+dovetail: arch: Fix fetching of the first syscall argument from compat tasks
+
+On x86 there is a small difference in the ABI (= register) where the
+first syscall argument is supplied between the x86_64 (native) and
+compat (i386) case.
+
+On x86_64 the DI register is being used, while i386 used the BX
+register.
+
+The same problem exists for further arguments - handled by
+syscall_get_arguments() - as well. syscall_get_arg0() is dovetail
+specific and is now in sync with syscall_get_arguments().
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+
+x86: dovetail: Fix compat syscall handling, account for new IDT entry
+
+The following upstream commit introduces a new IDTENTRY for handling
+compat syscall. As that commit is now backported into stable trees it
+broke compat syscall handling for dovetail.
+
+be5341eb0d43 ("x86/entry: Convert INT 0x80 emulation to IDTENTRY")
+
+We no longer end up in do_int80_syscall_32() which has the dovetail
+specific bits. We need the same handling in asm_int80_emulation().
+
+The problematic part in asm_int80_emulation() is the call to
+do_syscall_32_irqs_on() which basically overwrites regs->ax
+unconditionally. Linux does not know about the co-kernel syscalls, so
+we get -ENOSYS for each syscall result.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ arch/x86/entry/common.c            | 47 +++++++++++++++++++++++++++++-
+ arch/x86/include/asm/dovetail.h    |  9 ++++++
+ arch/x86/include/asm/syscall.h     | 10 +++++++
+ arch/x86/include/asm/thread_info.h |  2 ++
+ include/linux/entry-common.h       | 19 ++++++++++++
+ 5 files changed, 86 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/entry/common.c b/arch/x86/entry/common.c
+index 51efd2da4..9190c805b 100644
+--- a/arch/x86/entry/common.c
++++ b/arch/x86/entry/common.c
+@@ -78,6 +78,15 @@ __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
+ 	add_random_kstack_offset();
+ 	nr = syscall_enter_from_user_mode(regs, nr);
+ 
++	if (dovetailing()) {
++		if (nr == EXIT_SYSCALL_OOB) {
++			hard_local_irq_disable();
++			goto done;
++		}
++		if (nr == EXIT_SYSCALL_TAIL)
++			goto done_inband;
++	}
++
+ 	instrumentation_begin();
+ 
+ 	if (!do_syscall_x64(regs, nr) && !do_syscall_x32(regs, nr) && nr != -1) {
+@@ -86,7 +95,9 @@ __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
+ 	}
+ 
+ 	instrumentation_end();
++done_inband:
+ 	syscall_exit_to_user_mode(regs);
++done:
+ 
+ 	/*
+ 	 * Check that the register state is valid for using SYSRET to exit
+@@ -248,11 +259,23 @@ __visible noinstr void do_int80_emulation(struct pt_regs *regs)
+ 
+ 	nr = syscall_32_enter(regs);
+ 
+-	local_irq_enable();
++	local_irq_enable_full();
+ 	nr = syscall_enter_from_user_mode_work(regs, nr);
++
++	if (dovetailing()) {
++		if (nr == EXIT_SYSCALL_OOB) {
++			hard_local_irq_disable();
++			return;
++		}
++		if (nr == EXIT_SYSCALL_TAIL)
++			goto done;
++	}
++
+ 	do_syscall_32_irqs_on(regs, nr);
+ 
++done:
+ 	instrumentation_end();
++
+ 	syscall_exit_to_user_mode(regs);
+ }
+ 
+@@ -334,11 +357,22 @@ __visible noinstr void do_int80_syscall_32(struct pt_regs *regs)
+ 	 * the semantics of syscall_get_nr().
+ 	 */
+ 	nr = syscall_enter_from_user_mode(regs, nr);
++
++	if (dovetailing()) {
++		if (nr == EXIT_SYSCALL_OOB) {
++			hard_local_irq_disable();
++			return;
++		}
++		if (nr == EXIT_SYSCALL_TAIL)
++			goto done;
++	}
++
+ 	instrumentation_begin();
+ 
+ 	do_syscall_32_irqs_on(regs, nr);
+ 
+ 	instrumentation_end();
++done:
+ 	syscall_exit_to_user_mode(regs);
+ }
+ #endif /* !CONFIG_IA32_EMULATION */
+@@ -382,9 +416,20 @@ static noinstr bool __do_fast_syscall_32(struct pt_regs *regs)
+ 
+ 	nr = syscall_enter_from_user_mode_work(regs, nr);
+ 
++	if (dovetailing()) {
++		if (nr == EXIT_SYSCALL_OOB) {
++			instrumentation_end();
++			hard_local_irq_disable();
++			return true;
++		}
++		if (nr == EXIT_SYSCALL_TAIL)
++			goto done;
++	}
++
+ 	/* Now this is just like a normal syscall. */
+ 	do_syscall_32_irqs_on(regs, nr);
+ 
++done:
+ 	instrumentation_end();
+ 	syscall_exit_to_user_mode(regs);
+ 	return true;
+diff --git a/arch/x86/include/asm/dovetail.h b/arch/x86/include/asm/dovetail.h
+index 771a275c6..f4b866b1a 100644
+--- a/arch/x86/include/asm/dovetail.h
++++ b/arch/x86/include/asm/dovetail.h
+@@ -9,6 +9,7 @@
+ #if !defined(__ASSEMBLY__) && defined(CONFIG_DOVETAIL)
+ 
+ #include <asm/io_bitmap.h>
++#include <linux/compat.h>
+ 
+ static inline void arch_dovetail_exec_prepare(void)
+ { }
+@@ -26,6 +27,14 @@ void arch_dovetail_switch_finish(bool enter_inband)
+ 		tss_update_io_bitmap();
+ }
+ 
++/*
++ * 172 is __NR_prctl from unistd in compat mode, without #inclusion
++ * hell. At the end of the day, this number is written in stone to
++ * honor the ABI stability promise anyway.
++ */
++#define arch_dovetail_is_syscall(__nr)	\
++	(in_compat_syscall() ? (__nr) == 172 : (__nr) == __NR_prctl)
++
+ #endif
+ 
+ #endif /* _ASM_X86_DOVETAIL_H */
+diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
+index 7c488ff0c..59c07fa1c 100644
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -121,6 +121,16 @@ static inline void syscall_get_arguments(struct task_struct *task,
+ 	}
+ }
+ 
++static inline unsigned long syscall_get_arg0(struct task_struct *task,
++					     struct pt_regs *regs)
++{
++	if (IS_ENABLED(CONFIG_IA32_EMULATION) &&
++	    task->thread_info.status & TS_COMPAT)
++		return regs->bx;
++
++	return regs->di;
++}
++
+ static inline int syscall_get_arch(struct task_struct *task)
+ {
+ 	/* x32 tasks should be considered AUDIT_ARCH_X86_64. */
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index 610bbce0a..fc0b53297 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -102,6 +102,7 @@ struct thread_info {
+ #define TIF_NOCPUID		15	/* CPUID is not accessible in userland */
+ #define TIF_NOTSC		16	/* TSC is not accessible in userland */
+ #define TIF_NOTIFY_SIGNAL	17	/* signal notifications exist */
++#define TIF_RETUSER		19	/* INBAND_TASK_RETUSER is pending */
+ #define TIF_MEMDIE		20	/* is terminating due to OOM killer */
+ #define TIF_POLLING_NRFLAG	21	/* idle is polling for TIF_NEED_RESCHED */
+ #define TIF_IO_BITMAP		22	/* uses I/O bitmap */
+@@ -126,6 +127,7 @@ struct thread_info {
+ #define _TIF_NOCPUID		(1 << TIF_NOCPUID)
+ #define _TIF_NOTSC		(1 << TIF_NOTSC)
+ #define _TIF_NOTIFY_SIGNAL	(1 << TIF_NOTIFY_SIGNAL)
++#define _TIF_RETUSER		(1 << TIF_RETUSER)
+ #define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
+ #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
+ #define _TIF_SPEC_FORCE_UPDATE	(1 << TIF_SPEC_FORCE_UPDATE)
+diff --git a/include/linux/entry-common.h b/include/linux/entry-common.h
+index af163b434..be8c3a37c 100644
+--- a/include/linux/entry-common.h
++++ b/include/linux/entry-common.h
+@@ -68,6 +68,14 @@
+ 	 _TIF_NEED_RESCHED | _TIF_PATCH_PENDING | _TIF_NOTIFY_SIGNAL |	\
+ 	 ARCH_EXIT_TO_USER_MODE_WORK)
+ 
++/*
++ * Status codes of syscall entry when Dovetail is enabled. Must not
++ * conflict with valid syscall numbers. And with -1 which seccomp uses
++ * to skip an syscall.
++ */
++#define EXIT_SYSCALL_OOB	(-2)
++#define EXIT_SYSCALL_TAIL	(-3)
++
+ /**
+  * arch_enter_from_user_mode - Architecture specific sanity check for user mode regs
+  * @regs:	Pointer to currents pt_regs
+@@ -164,6 +172,17 @@ long syscall_trace_enter(struct pt_regs *regs, long syscall,
+ static __always_inline long syscall_enter_from_user_mode_work(struct pt_regs *regs, long syscall)
+ {
+ 	unsigned long work = READ_ONCE(current_thread_info()->syscall_work);
++	int ret;
++
++	/*
++	 * Pipeline the syscall to the companion core if the current
++	 * task wants this. Compiled out if not dovetailing.
++	 */
++	ret = pipeline_syscall(syscall, regs);
++	if (ret > 0)	/* out-of-band, bail out. */
++		return EXIT_SYSCALL_OOB;
++	if (ret < 0)		/* in-band, tail work only. */
++		return EXIT_SYSCALL_TAIL;
+ 
+ 	if (work & SYSCALL_WORK_ENTER)
+ 		syscall = syscall_trace_enter(regs, syscall, work);
+-- 
+2.30.2
+

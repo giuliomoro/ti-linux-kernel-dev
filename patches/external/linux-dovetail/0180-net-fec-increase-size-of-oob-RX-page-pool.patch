@@ -1,0 +1,36 @@
+From 6a3c0d9a1fd595cbfb178616008ba22296d9731f Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sat, 7 Jun 2025 19:53:21 +0200
+Subject: [PATCH 180/217] net: fec: increase size of oob RX page pool
+
+Increase the RX page pool size up to four times the ring size, for
+coping with high traffic pressure and/or (too) slow handling on the
+oob side (i.e. excessive buffering).
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/net/ethernet/freescale/fec_main.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index e850edf80..59aec903c 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -3532,7 +3532,13 @@ fec_enet_alloc_rxq_buffers(struct net_device *ndev, unsigned int queue)
+ 	rxq = fep->rx_queue[queue];
+ 	bdp = rxq->bd.base;
+ 
+-	err = fec_enet_create_page_pool(fep, rxq, rxq->bd.ring_size);
++	/*
++	 * Create a page pool. Allocating four times the ring size is
++	 * a shameless heuristic aimed at coping with high traffic
++	 * pressure and/or (too) slow handling on the oob side
++	 * (i.e. excessive buffering).
++	 */
++	err = fec_enet_create_page_pool(fep, rxq, rxq->bd.ring_size * 4);
+ 	if (err < 0) {
+ 		netdev_err(ndev, "%s failed queue %d (%d)\n", __func__, queue, err);
+ 		return err;
+-- 
+2.30.2
+

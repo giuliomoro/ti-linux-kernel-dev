@@ -1,0 +1,64 @@
+From 8b86fff791915ac4623cc524f975ac4f401a0bf3 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 20 Mar 2025 16:03:45 +0100
+Subject: [PATCH 175/217] net/page_pool: add accessor to the pool of a page
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/skbuff_ref.h |  2 ++
+ net/core/skbuff.c          | 19 ++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/include/linux/skbuff_ref.h b/include/linux/skbuff_ref.h
+index 0f3c58007..aed841bd2 100644
+--- a/include/linux/skbuff_ref.h
++++ b/include/linux/skbuff_ref.h
+@@ -34,6 +34,8 @@ static inline void skb_frag_ref(struct sk_buff *skb, int f)
+ 
+ bool napi_pp_put_page(netmem_ref netmem);
+ 
++struct page_pool *napi_pp_get_pool(netmem_ref netmem);
++
+ static inline void skb_page_unref(netmem_ref netmem, bool recycle)
+ {
+ #ifdef CONFIG_PAGE_POOL
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index af32fdff9..5852b5839 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1141,6 +1141,24 @@ int skb_cow_data_for_xdp(struct page_pool *pool, struct sk_buff **pskb,
+ EXPORT_SYMBOL(skb_cow_data_for_xdp);
+ 
+ #if IS_ENABLED(CONFIG_PAGE_POOL)
++struct page_pool *napi_pp_get_pool(netmem_ref netmem)
++{
++	netmem = netmem_compound_head(netmem);
++
++	/* page->pp_magic is OR'ed with PP_SIGNATURE after the allocation
++	 * in order to preserve any existing bits, such as bit 0 for the
++	 * head page of compound page and bit 1 for pfmemalloc page, so
++	 * mask those bits for freeing side when doing below checking,
++	 * and page_is_pfmemalloc() is checked in __page_pool_put_page()
++	 * to avoid recycling the pfmemalloc page.
++	 */
++	if (unlikely(!is_pp_netmem(netmem)))
++		return NULL;
++
++	return netmem_get_pp(netmem);
++}
++EXPORT_SYMBOL(napi_pp_get_pool);
++
+ bool napi_pp_put_page(netmem_ref netmem)
+ {
+ 	netmem = netmem_compound_head(netmem);
+@@ -1152,7 +1170,6 @@ bool napi_pp_put_page(netmem_ref netmem)
+ 
+ 	return true;
+ }
+-EXPORT_SYMBOL(napi_pp_put_page);
+ #endif
+ 
+ static bool skb_pp_recycle(struct sk_buff *skb, void *data)
+-- 
+2.30.2
+

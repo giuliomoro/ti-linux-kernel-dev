@@ -1,0 +1,53 @@
+From f4a2b9ad33ee5a5a1d942f3be69d61650c26c5eb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 17:34:13 +0100
+Subject: [PATCH 153/217] net: dovetail: oob-enable __netif_reschedule()
+
+This enables tx queue wake operation in turn.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/dev.c | 27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 89c5974bc..e92013b3a 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -3186,13 +3186,26 @@ static void __netif_reschedule(struct Qdisc *q)
+ 	struct softnet_data *sd;
+ 	unsigned long flags;
+ 
+-	local_irq_save(flags);
+-	sd = this_cpu_ptr(&softnet_data);
+-	q->next_sched = NULL;
+-	*sd->output_queue_tailp = q;
+-	sd->output_queue_tailp = &q->next_sched;
+-	raise_softirq_irqoff(NET_TX_SOFTIRQ);
+-	local_irq_restore(flags);
++	if (net_running_oob()) {
++		/* We can't migrate CPU from the oob stage. */
++		sd = this_cpu_ptr(&softnet_data);
++		q->next_sched = NULL;
++		flags = hard_local_irq_save();
++		*sd->output_queue_tailp = q;
++		sd->output_queue_tailp = &q->next_sched;
++		raise_softirq_irqoff(NET_TX_SOFTIRQ);
++		hard_local_irq_restore(flags);
++	} else {
++		local_irq_save(flags);
++		sd = this_cpu_ptr(&softnet_data);
++		q->next_sched = NULL;
++		hard_net_local_irq_disable();
++		*sd->output_queue_tailp = q;
++		sd->output_queue_tailp = &q->next_sched;
++		hard_net_local_irq_enable();
++		raise_softirq_irqoff(NET_TX_SOFTIRQ);
++		local_irq_restore(flags);
++	}
+ }
+ 
+ void __netif_schedule(struct Qdisc *q)
+-- 
+2.30.2
+

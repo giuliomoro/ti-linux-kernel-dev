@@ -1,0 +1,83 @@
+From 4398a57a736404a2717418e19c34d21a8797b7e2 Mon Sep 17 00:00:00 2001
+From: Jan Kiszka <jan.kiszka@siemens.com>
+Date: Mon, 24 Feb 2025 22:07:31 +0100
+Subject: [PATCH 142/217] x86: dovetail: Harden __send_ipi_mask[_ex] for KVM
+ and Hyper-V guests
+
+These functions are called in case paravirtual IPIs are used.
+Just like for hard submission handlers, we need to harden the path to
+avoid splashes like these:
+
+ IRQ pipeline: some code running in oob context 'Xenomai'
+               called an in-band only routine
+ CPU: 0 PID: 410 Comm: (udev-worker) Not tainted 5.10.229-cip54+ #265
+ Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS rel-1.16.2-3-gd478f380-rebuilt.opensuse.org 04/01/2014
+ IRQ stage: Xenomai
+ Call Trace:
+  dump_stack+0x84/0x9c
+  inband_irq_save+0xa/0x30
+  __send_ipi_mask+0x81/0x260
+  ? preempt_count_sub+0x96/0xe0
+  ? _raw_spin_unlock_irq+0x33/0x50
+  ? xnsched_pick_next+0xe0/0xe0
+  ? ___xnsched_run+0x491/0x5b0
+  ? ktime_get_mono_fast_ns+0x50/0xb0
+  ___xnsched_run+0x491/0x5b0
+  run_oob_call+0x97/0x170
+  xnthread_start+0x23f/0x330
+  ? rt_stack_deliver+0x340/0x340 [rtnet]
+  rtdm_task_init.part.14+0x7e/0xc0
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/x86/hyperv/hv_apic.c | 4 ++--
+ arch/x86/kernel/kvm.c     | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/hyperv/hv_apic.c b/arch/x86/hyperv/hv_apic.c
+index 0569f5793..e7b2a57c7 100644
+--- a/arch/x86/hyperv/hv_apic.c
++++ b/arch/x86/hyperv/hv_apic.c
+@@ -115,7 +115,7 @@ static bool __send_ipi_mask_ex(const struct cpumask *mask, int vector,
+ 	if (!(ms_hyperv.hints & HV_X64_EX_PROCESSOR_MASKS_RECOMMENDED))
+ 		return false;
+ 
+-	local_irq_save(flags);
++	flags = hard_local_irq_save();
+ 	ipi_arg = *this_cpu_ptr(hyperv_pcpu_input_arg);
+ 
+ 	if (unlikely(!ipi_arg))
+@@ -150,7 +150,7 @@ static bool __send_ipi_mask_ex(const struct cpumask *mask, int vector,
+ 				     ipi_arg, NULL);
+ 
+ ipi_mask_ex_done:
+-	local_irq_restore(flags);
++	hard_local_irq_restore(flags);
+ 	return hv_result_success(status);
+ }
+ 
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 5df1061fc..b183caf41 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -525,7 +525,7 @@ static void __send_ipi_mask(const struct cpumask *mask, int vector)
+ 	if (cpumask_empty(mask))
+ 		return;
+ 
+-	local_irq_save(flags);
++	flags = hard_local_irq_save();
+ 
+ 	switch (vector) {
+ 	default:
+@@ -563,7 +563,7 @@ static void __send_ipi_mask(const struct cpumask *mask, int vector)
+ 			  ret);
+ 	}
+ 
+-	local_irq_restore(flags);
++	hard_local_irq_restore(flags);
+ }
+ 
+ static void kvm_send_ipi_mask(const struct cpumask *mask, int vector)
+-- 
+2.30.2
+

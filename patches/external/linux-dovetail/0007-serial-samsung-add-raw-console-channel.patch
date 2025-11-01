@@ -1,0 +1,28 @@
+From bee6cd88a3f62985af5570521e7c124b6ff25304 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 11 Oct 2020 12:47:36 +0200
+Subject: [PATCH 007/217] serial: samsung: add raw console channel
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/tty/serial/samsung_tty.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/tty/serial/samsung_tty.c b/drivers/tty/serial/samsung_tty.c
+index 0d184ee2f..041990529 100644
+--- a/drivers/tty/serial/samsung_tty.c
++++ b/drivers/tty/serial/samsung_tty.c
+@@ -2393,6 +2393,10 @@ static struct console s3c24xx_serial_console = {
+ 	.flags		= CON_PRINTBUFFER,
+ 	.index		= -1,
+ 	.write		= s3c24xx_serial_console_write,
++#ifdef CONFIG_RAW_PRINTK
++	/* The common write handler can run from atomic context. */
++	.write_raw	= s3c24xx_serial_console_write,
++#endif
+ 	.setup		= s3c24xx_serial_console_setup,
+ 	.data		= &s3c24xx_uart_drv,
+ };
+-- 
+2.30.2
+

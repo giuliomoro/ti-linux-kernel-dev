@@ -1,0 +1,31 @@
+From 8617b9ddd14791d631e039d04026a0c6d895465c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 7 Aug 2024 11:47:26 +0200
+Subject: [PATCH 120/217] net: dovetail: don't forward stolen skb heads to the
+ core
+
+Stolen skb heads are specific to the GRO process, oob buffers are
+never part of it. So no need to pass those heads to recycle_oob_skb().
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/skbuff.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 18fc3b548..af21c5b48 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1595,9 +1595,6 @@ void __napi_kfree_skb(struct sk_buff *skb, enum skb_drop_reason reason)
+ 
+ void napi_skb_free_stolen_head(struct sk_buff *skb)
+ {
+-	if (recycle_oob_skb(skb))
+-		return;
+-
+ 	if (unlikely(skb->slow_gro)) {
+ 		nf_reset_ct(skb);
+ 		skb_dst_drop(skb);
+-- 
+2.30.2
+

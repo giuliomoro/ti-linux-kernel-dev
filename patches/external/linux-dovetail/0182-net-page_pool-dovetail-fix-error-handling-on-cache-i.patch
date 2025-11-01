@@ -1,0 +1,31 @@
+From 4b741bad22c16b4e3279b2e811d76602c8186584 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 11 Jun 2025 16:27:01 +0200
+Subject: [PATCH 182/217] net/page_pool: dovetail: fix error handling on cache
+ init failure
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/page_pool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index 72a3c18d7..df8e28940 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -602,11 +602,11 @@ static int page_pool_init_cache(struct page_pool *pool)
+ 			netmem = pool->alloc.cache[i];
+ 			if ((pp_flags & PP_FLAG_DMA_MAP) &&
+ 				unlikely(!page_pool_dma_map(pool, netmem))) {
++				nr_pages = i;
+ 				goto fail;
+ 			}
+ 
+ 			page_pool_set_pp_info(pool, netmem);
+-			pool->alloc.cache[i] = netmem;
+ 			pool->pages_state_hold_cnt++;
+ 			trace_page_pool_state_hold(pool, netmem,
+ 						pool->pages_state_hold_cnt);
+-- 
+2.30.2
+

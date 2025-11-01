@@ -1,0 +1,26 @@
+From 4f177887860e315c98f2e4df811cf16122680b08 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 20 Mar 2025 09:05:39 +0100
+Subject: [PATCH 143/217] arm64: fpsimd: dovetail: fix build w/ CONFIG_DOVETAIL
+ off (take #2)
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/kernel/fpsimd.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index c10a9e981..429a67528 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -258,7 +258,6 @@ void fpsimd_restore_current_oob(void)
+ 			preempt_disable();		\
+ 		(void)(__flags);			\
+ 	} while (0)
+-}
+ 
+ /*
+  * Release the CPU FPSIMD context.
+-- 
+2.30.2
+

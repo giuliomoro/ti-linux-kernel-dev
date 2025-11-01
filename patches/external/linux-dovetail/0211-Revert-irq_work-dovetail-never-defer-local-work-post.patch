@@ -1,0 +1,85 @@
+From 02df394aa96f3f4accd8afb77013f8d87b361f9e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 19 Jul 2025 15:26:01 +0200
+Subject: [PATCH 211/217] Revert "irq_work: dovetail: never defer local work
+ posted from oob"
+
+This reverts commit f6db3d17bd591757873e2c59999c3867756916c8 which was
+"almost right" (read: fairly broken). Problem is that with full
+preemption enabled, we are required to run the irq_work handlers on a
+thread context if those handlers might call code that would grab
+regular (i.e. threaded) spinlocks, otherwise lockdep would rightfully
+complain, e.g.:
+
+[   94.791494] ================================
+[   94.791495] WARNING: inconsistent lock state
+[   94.791497] 6.15.0-00925-g63f9fd7a1279 #2 Tainted: G        W
+[   94.791500] --------------------------------
+[   94.791501] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+[   94.791503] swapper/0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+[   94.791506] ffff888100e17160 (&xbuf->ibnd.i_event){?.+.}-{3:3}, at: __wake_up+0x1f/0x50
+[   94.791516] {HARDIRQ-ON-W} state was registered at:
+[   94.791518]   __lock_acquire+0x3af/0x12c0
+[   94.791522]   lock_acquire+0xc9/0x2b0
+[   94.791526]   rt_spin_lock+0x30/0x160
+[   94.791530]   prepare_to_wait_event+0x24/0x1c0
+[   94.791535]   inbound_wait_input+0xb7/0xe0
+[   94.791539]   do_xbuf_read+0x98/0x240
+[   94.791542]   xbuf_read+0x4b/0x60
+[   94.791546]   vfs_read+0xcf/0x320
+[   94.791551]   ksys_read+0xae/0xd0
+[   94.791552]   do_syscall_64+0xbc/0x220
+[   94.791557]   entry_SYSCALL_64_after_hwframe+0x76/0x7e
+[   94.791560] irq event stamp: 80112
+[   94.791562] hardirqs last  enabled at (80111): [<ffffffff813f6ffc>] finish_task_switch+0xdc/0x300
+[   94.791568] hardirqs last disabled at (80112): [<ffffffff8145f60b>] sync_current_irq_stage+0x12b/0x160
+[   94.791573] softirqs last  enabled at (12078): [<ffffffff813b4366>] __local_bh_enable_ip+0x136/0x1d0
+[   94.791577] softirqs last disabled at (12068): [<ffffffff814c8c85>] cgroup_idr_alloc.constprop.0+0x25/0xb0
+[   94.791580]
+[   94.791580] other info that might help us debug this:
+[   94.791581]  Possible unsafe locking scenario:
+[   94.791581]
+[   94.791582]        CPU0
+[   94.791583]        ----
+[   94.791583]   lock(&xbuf->ibnd.i_event);
+[   94.791585]   <Interrupt>
+[   94.791586]     lock(&xbuf->ibnd.i_event);
+
+Therefore, handling all irq works in hard interrupt context is wrong
+with CONFIG_PREEMPT_RT enabled. The right way to address the original
+issue is for call sites to tag their in-band works with
+IRQ_WORK_HARD_IRQ whenever applicable.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq_work.c | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/kernel/irq_work.c b/kernel/irq_work.c
+index 502ab2576..360a23d0e 100644
+--- a/kernel/irq_work.c
++++ b/kernel/irq_work.c
+@@ -81,11 +81,7 @@ void __weak irq_local_work_raise(void)
+ 	arch_irq_work_raise();
+ }
+ 
+-/* Enqueue on current CPU, work must already be claimed and preempt
+-   disabled.  Dovetail: there is the assumption by oob callers that
+-   any work set pending on the local CPU is going to be handled
+-   immediately on return to inband mode, therefore rt_lazy_work only
+-   applies to inband callers. */
++/* Enqueue on current CPU, work must already be claimed and preempt disabled */
+ static void __irq_work_queue_local(struct irq_work *work)
+ {
+ 	struct llist_head *list;
+@@ -97,7 +93,6 @@ static void __irq_work_queue_local(struct irq_work *work)
+ 	if (work_flags & IRQ_WORK_LAZY)
+ 		lazy_work = true;
+ 	else if (IS_ENABLED(CONFIG_PREEMPT_RT) &&
+-		 running_inband() &&
+ 		 !(work_flags & IRQ_WORK_HARD_IRQ))
+ 		rt_lazy_work = true;
+ 
+-- 
+2.30.2
+

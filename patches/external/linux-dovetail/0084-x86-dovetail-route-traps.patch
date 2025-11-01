@@ -1,0 +1,881 @@
+From 912d9d7ccd0a743e7eda6c72780724794d55e881 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 6 May 2019 17:59:42 +0200
+Subject: [PATCH 084/217] x86: dovetail: route traps
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+x86: dovetail: handle WARN directly from the out-of-band stage
+
+Dovetail normally notifies the companion core about most traps
+including when WARN[_ON]() has tripped, expecting a transition to the
+in-band stage if the CPU was running oob on entry.
+
+This is a problem when it comes to handling debug assertions, since
+the core might place them in sections of code where a stage switch
+would be unsafe, e.g. because they would hold some hard spinlocks
+involved in context switching, leading to a chicken-and-egg situation,
+eventually to a deadlock due to a recursive locking attempt.
+
+Let's make handle_bug() oob-safe, skipping the notification when
+handling a WARN trap.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+x86: dovetail: allow for conditional trap handling
+
+Some companion cores may want to fully handle some of the traps
+directly from the out-of-band stage, without demoting the current
+context to the in-band stage. Typically, #UD, #NM or #DE could be
+handled that way. Instead of applying the in-band fixups
+unconditionally, assume the following:
+
+- if the companion core switches in-band upon notification, then the
+in-band kernel code may assume that all regular fixups need to be
+applied next. This is the common case for most traps.
+
+- if the companion core stays on the out-of-band stage upon
+notification, then the in-band kernel code should assume that all
+required fixups were done from that stage already, returning asap from
+the outer trap handler.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/mm/fault.c              |  25 +++--
+ arch/x86/include/asm/thread_info.h |   2 +
+ arch/x86/kernel/kvm.c              |   2 +
+ arch/x86/kernel/traps.c            | 171 +++++++++++++++++++++++++----
+ arch/x86/mm/fault.c                | 110 ++++++++++++++++---
+ include/linux/entry-common.h       |  18 +++
+ 6 files changed, 276 insertions(+), 52 deletions(-)
+
+diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
+index 10a16b21d..654abbf42 100644
+--- a/arch/arm64/mm/fault.c
++++ b/arch/arm64/mm/fault.c
+@@ -486,10 +486,10 @@ static void do_bad_area(unsigned long far, unsigned long esr,
+ 	if (user_mode(regs)) {
+ 		const struct fault_info *inf = esr_to_fault_info(esr);
+ 
+-		oob_trap_notify(ARM64_TRAP_ACCESS, regs);
++		mark_trap_entry(ARM64_TRAP_ACCESS, regs);
+ 		set_thread_esr(addr, esr);
+ 		arm64_force_sig_fault(inf->sig, inf->code, far, inf->name);
+-		oob_trap_unwind(ARM64_TRAP_ACCESS, regs);
++		mark_trap_exit(ARM64_TRAP_ACCESS, regs);
+ 	} else {
+ 		__do_kernel_fault(addr, esr, regs);
+ 	}
+@@ -554,7 +554,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ 	if (kprobe_page_fault(regs, esr))
+ 		return 0;
+ 
+-	oob_trap_notify(ARM64_TRAP_ACCESS, regs);
++	mark_trap_entry(ARM64_TRAP_ACCESS, regs);
+ 
+ 	/*
+ 	 * If we're in an interrupt or have no user context, we must not take
+@@ -753,7 +753,7 @@ static int __kprobes do_page_fault(unsigned long far, unsigned long esr,
+ no_context:
+ 	__do_kernel_fault(addr, esr, regs);
+ out:
+-	oob_trap_unwind(ARM64_TRAP_ACCESS, regs);
++	mark_trap_exit(ARM64_TRAP_ACCESS, regs);
+ 	return 0;
+ }
+ 
+@@ -790,7 +790,7 @@ static int do_sea(unsigned long far, unsigned long esr, struct pt_regs *regs)
+ 	const struct fault_info *inf;
+ 	unsigned long siaddr;
+ 
+-	oob_trap_notify(ARM64_TRAP_SEA, regs);
++	mark_trap_entry(ARM64_TRAP_SEA, regs);
+ 
+ 	inf = esr_to_fault_info(esr);
+ 
+@@ -815,7 +815,7 @@ static int do_sea(unsigned long far, unsigned long esr, struct pt_regs *regs)
+ 	add_taint(TAINT_MACHINE_CHECK, LOCKDEP_STILL_OK);
+ 	arm64_notify_die(inf->name, regs, inf->sig, inf->code, siaddr, esr);
+ out:
+-	oob_trap_unwind(ARM64_TRAP_SEA, regs);
++	mark_trap_exit(ARM64_TRAP_SEA, regs);
+ 
+ 	return 0;
+ }
+@@ -908,7 +908,7 @@ void do_mem_abort(unsigned long far, unsigned long esr, struct pt_regs *regs)
+ 	if (!inf->fn(far, esr, regs))
+ 		return;
+ 
+-	oob_trap_notify(ARM64_TRAP_ACCESS, regs);
++	mark_trap_entry(ARM64_TRAP_ACCESS, regs);
+ 
+ 	if (!user_mode(regs))
+ 		die_kernel_fault(inf->name, addr, esr, regs);
+@@ -919,18 +919,19 @@ void do_mem_abort(unsigned long far, unsigned long esr, struct pt_regs *regs)
+ 	 * address to the signal handler.
+ 	 */
+ 	arm64_notify_die(inf->name, regs, inf->sig, inf->code, addr, esr);
+-	oob_trap_unwind(ARM64_TRAP_ACCESS, regs);
++
++	mark_trap_exit(ARM64_TRAP_ACCESS, regs);
+ }
+ NOKPROBE_SYMBOL(do_mem_abort);
+ 
+ void do_sp_pc_abort(unsigned long addr, unsigned long esr, struct pt_regs *regs)
+ {
+-	oob_trap_notify(ARM64_TRAP_ALIGN, regs);
++	mark_trap_entry(ARM64_TRAP_ALIGN, regs);
+ 
+ 	arm64_notify_die("SP/PC alignment exception", regs, SIGBUS, BUS_ADRALN,
+ 			 addr, esr);
+ 
+-	oob_trap_unwind(ARM64_TRAP_ALIGN, regs);
++	mark_trap_exit(ARM64_TRAP_ALIGN, regs);
+ }
+ NOKPROBE_SYMBOL(do_sp_pc_abort);
+ 
+@@ -990,7 +991,7 @@ void do_debug_exception(unsigned long addr_if_watchpoint, unsigned long esr,
+ 	const struct fault_info *inf = esr_to_debug_fault_info(esr);
+ 	unsigned long pc = instruction_pointer(regs);
+ 
+-	oob_trap_notify(ARM64_TRAP_DEBUG, regs);
++	mark_trap_entry(ARM64_TRAP_DEBUG, regs);
+ 
+ 	debug_exception_enter(regs);
+ 
+@@ -1003,7 +1004,7 @@ void do_debug_exception(unsigned long addr_if_watchpoint, unsigned long esr,
+ 
+ 	debug_exception_exit(regs);
+ 
+-	oob_trap_unwind(ARM64_TRAP_DEBUG, regs);
++	mark_trap_exit(ARM64_TRAP_DEBUG, regs);
+ }
+ NOKPROBE_SYMBOL(do_debug_exception);
+ 
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index fc0b53297..035f5e33f 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -233,10 +233,12 @@ static inline int arch_within_stack_frames(const void * const stack,
+ #define TS_OOB			0x0010	/* Thread is running out-of-band */
+ #define TS_DOVETAIL		0x0020  /* Dovetail notifier enabled */
+ #define TS_OFFSTAGE		0x0040	/* Thread is in-flight to OOB context */
++#define TS_OOBTRAP		0x0080	/* Handling a trap from OOB context */
+ 
+ #define _TLF_OOB		TS_OOB
+ #define _TLF_DOVETAIL		TS_DOVETAIL
+ #define _TLF_OFFSTAGE		TS_OFFSTAGE
++#define _TLF_OOBTRAP		TS_OOBTRAP
+ 
+ #ifndef __ASSEMBLY__
+ #ifdef CONFIG_COMPAT
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 21e9e4845..c490eec3a 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -264,6 +264,7 @@ noinstr bool __kvm_handle_async_pf(struct pt_regs *regs, u32 token)
+ 		return false;
+ 
+ 	state = irqentry_enter(regs);
++	oob_trap_notify(X86_TRAP_PF, regs);
+ 	instrumentation_begin();
+ 
+ 	/*
+@@ -284,6 +285,7 @@ noinstr bool __kvm_handle_async_pf(struct pt_regs *regs, u32 token)
+ 	}
+ 
+ 	instrumentation_end();
++	oob_trap_unwind(X86_TRAP_PF, regs);
+ 	irqentry_exit(regs, state);
+ 	return true;
+ }
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index 6e61f88b8..690b9d2ed 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -213,6 +213,52 @@ static void show_signal(struct task_struct *tsk, int signr,
+ 	}
+ }
+ 
++static __always_inline
++bool mark_trap_entry(int trapnr, struct pt_regs *regs)
++{
++	oob_trap_notify(trapnr, regs);
++
++	if (likely(running_inband())) {
++		hard_cond_local_irq_enable();
++		return true;
++	}
++
++	/*
++	 * If the oob core did not switch us inband, our caller is
++	 * expected to leave the trap handler immediately, so we may
++	 * notify the core about this right now.
++	 */
++	oob_trap_unwind(trapnr, regs);
++
++	return false;
++}
++
++static __always_inline
++void mark_trap_exit(int trapnr, struct pt_regs *regs)
++{
++	oob_trap_unwind(trapnr, regs);
++	hard_cond_local_irq_disable();
++}
++
++static __always_inline
++bool mark_trap_entry_raw(int trapnr, struct pt_regs *regs)
++{
++	oob_trap_notify(trapnr, regs);
++
++	if (running_oob()) {
++		oob_trap_unwind(trapnr, regs);
++		return false;
++	}
++
++	return true;
++}
++
++static __always_inline
++void mark_trap_exit_raw(int trapnr, struct pt_regs *regs)
++{
++	oob_trap_unwind(trapnr, regs);
++}
++
+ static void
+ do_trap(int trapnr, int signr, char *str, struct pt_regs *regs,
+ 	long error_code, int sicode, void __user *addr)
+@@ -236,12 +282,17 @@ static void do_error_trap(struct pt_regs *regs, long error_code, char *str,
+ {
+ 	RCU_LOCKDEP_WARN(!rcu_is_watching(), "entry code didn't wake RCU");
+ 
++	if (!mark_trap_entry(trapnr, regs))
++		return;
++
+ 	if (notify_die(DIE_TRAP, str, regs, error_code, trapnr, signr) !=
+ 			NOTIFY_STOP) {
+ 		cond_local_irq_enable(regs);
+ 		do_trap(trapnr, signr, str, regs, error_code, sicode, addr);
+ 		cond_local_irq_disable(regs);
+ 	}
++
++	mark_trap_exit(trapnr, regs);
+ }
+ 
+ /*
+@@ -304,8 +355,12 @@ static noinstr bool handle_bug(struct pt_regs *regs)
+ 	 * Since we're emulating a CALL with exceptions, restore the interrupt
+ 	 * state to what it was at the exception site.
+ 	 */
+-	if (regs->flags & X86_EFLAGS_IF)
+-		hard_local_irq_enable();
++	if (regs->flags & X86_EFLAGS_IF) {
++		if (running_oob())
++			hard_local_irq_enable();
++		else
++			local_irq_enable_full();
++	}
+ 
+ 	switch (ud_type) {
+ 	case BUG_UD2:
+@@ -328,8 +383,13 @@ static noinstr bool handle_bug(struct pt_regs *regs)
+ 		break;
+ 	}
+ 
+-	if (regs->flags & X86_EFLAGS_IF)
+-		hard_local_irq_disable();
++	if (regs->flags & X86_EFLAGS_IF) {
++		if (running_oob())
++			hard_local_irq_disable();
++		else
++			local_irq_disable_full();
++	}
++
+ 	instrumentation_end();
+ 
+ 	return handled;
+@@ -343,15 +403,26 @@ DEFINE_IDTENTRY_RAW(exc_invalid_op)
+ 	 * We use UD2 as a short encoding for 'CALL __WARN', as such
+ 	 * handle it before exception entry to avoid recursive WARN
+ 	 * in case exception entry is the one triggering WARNs.
++	 *
++	 * dovetail: handle_bug() may run oob, so we do not downgrade
++	 * in-band upon a failed __WARN assertion since it might have
++	 * tripped in a section of code which would not be happy to
++	 * switch stage. However, anything else should be notified to
++	 * the core, because the kernel execution might be about to
++	 * stop, so we'd need to switch in-band to get any output
++	 * before this happens.
+ 	 */
+ 	if (!user_mode(regs) && handle_bug(regs))
+ 		return;
+ 
+-	state = irqentry_enter(regs);
+-	instrumentation_begin();
+-	handle_invalid_op(regs);
+-	instrumentation_end();
+-	irqentry_exit(regs, state);
++	if (mark_trap_entry_raw(X86_TRAP_UD, regs)) {
++		state = irqentry_enter(regs);
++		instrumentation_begin();
++		handle_invalid_op(regs);
++		instrumentation_end();
++		irqentry_exit(regs, state);
++		mark_trap_exit_raw(X86_TRAP_UD, regs);
++	}
+ }
+ 
+ DEFINE_IDTENTRY(exc_coproc_segment_overrun)
+@@ -382,9 +453,12 @@ DEFINE_IDTENTRY_ERRORCODE(exc_alignment_check)
+ {
+ 	char *str = "alignment check";
+ 
+-	if (notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_AC, SIGBUS) == NOTIFY_STOP)
++	if (!mark_trap_entry(X86_TRAP_AC, regs))
+ 		return;
+ 
++	if (notify_die(DIE_TRAP, str, regs, error_code, X86_TRAP_AC, SIGBUS) == NOTIFY_STOP)
++		goto mark_exit;
++
+ 	if (!user_mode(regs))
+ 		die("Split lock detected\n", regs, error_code);
+ 
+@@ -398,6 +472,9 @@ DEFINE_IDTENTRY_ERRORCODE(exc_alignment_check)
+ 
+ out:
+ 	local_irq_disable();
++
++mark_exit:
++	mark_trap_exit(X86_TRAP_AC, regs);
+ }
+ 
+ #ifdef CONFIG_VMAP_STACK
+@@ -450,6 +527,9 @@ bool __weak always_true(void) { return true; }
+  *
+  * The 32bit #DF shim provides CR2 already as an argument. On 64bit it needs
+  * to be read before doing anything else.
++ *
++ * Dovetail: do not even ask the companion core to try restoring the
++ * in-band stage on double-fault, this would be a lost cause.
+  */
+ DEFINE_IDTENTRY_DF(exc_double_fault)
+ {
+@@ -574,9 +654,12 @@ DEFINE_IDTENTRY_DF(exc_double_fault)
+ 
+ DEFINE_IDTENTRY(exc_bounds)
+ {
++	if (!mark_trap_entry(X86_TRAP_BR, regs))
++		return;
++
+ 	if (notify_die(DIE_TRAP, "bounds", regs, 0,
+ 			X86_TRAP_BR, SIGSEGV) == NOTIFY_STOP)
+-		return;
++		goto out;
+ 	cond_local_irq_enable(regs);
+ 
+ 	if (!user_mode(regs))
+@@ -585,6 +668,8 @@ DEFINE_IDTENTRY(exc_bounds)
+ 	do_trap(X86_TRAP_BR, SIGSEGV, "bounds", regs, 0, 0, NULL);
+ 
+ 	cond_local_irq_disable(regs);
++out:
++	mark_trap_exit(X86_TRAP_BR, regs);
+ }
+ 
+ enum kernel_gp_hint {
+@@ -718,9 +803,13 @@ static bool gp_try_fixup_and_notify(struct pt_regs *regs, int trapnr,
+ 				    unsigned long error_code, const char *str,
+ 				    unsigned long address)
+ {
++	bool ret;
++
+ 	if (fixup_exception(regs, trapnr, error_code, address))
+ 		return true;
+ 
++	mark_trap_entry(trapnr, regs);
++
+ 	current->thread.error_code = error_code;
+ 	current->thread.trap_nr = trapnr;
+ 
+@@ -729,10 +818,14 @@ static bool gp_try_fixup_and_notify(struct pt_regs *regs, int trapnr,
+ 	 * from kprobe_running(), we have to be non-preemptible.
+ 	 */
+ 	if (!preemptible() && kprobe_running() &&
+-	    kprobe_fault_handler(regs, trapnr))
+-		return true;
++		kprobe_fault_handler(regs, trapnr))
++		ret = true;
++	else
++		ret = notify_die(DIE_GPF, str, regs, error_code, trapnr, SIGSEGV) == NOTIFY_STOP;
++
++	mark_trap_exit(trapnr, regs);
+ 
+-	return notify_die(DIE_GPF, str, regs, error_code, trapnr, SIGSEGV) == NOTIFY_STOP;
++	return ret;
+ }
+ 
+ static void gp_user_force_sig_segv(struct pt_regs *regs, int trapnr,
+@@ -761,9 +854,9 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
+ 	}
+ 
+ 	if (v8086_mode(regs)) {
+-		local_irq_enable();
++		local_irq_enable_full();
+ 		handle_vm86_fault((struct kernel_vm86_regs *) regs, error_code);
+-		local_irq_disable();
++		local_irq_disable_full();
+ 		return;
+ 	}
+ 
+@@ -774,8 +867,11 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
+ 		if (fixup_vdso_exception(regs, X86_TRAP_GP, error_code, 0))
+ 			goto exit;
+ 
++		if (!mark_trap_entry(X86_TRAP_GP, regs))
++			goto exit;
++
+ 		gp_user_force_sig_segv(regs, X86_TRAP_GP, error_code, desc);
+-		goto exit;
++		goto mark_exit;
+ 	}
+ 
+ 	if (gp_try_fixup_and_notify(regs, X86_TRAP_GP, error_code, desc, 0))
+@@ -801,6 +897,8 @@ DEFINE_IDTENTRY_ERRORCODE(exc_general_protection)
+ 
+ 	die_addr(desc, regs, error_code, gp_addr);
+ 
++mark_exit:
++	mark_trap_exit(X86_TRAP_GP, regs);
+ exit:
+ 	cond_local_irq_disable(regs);
+ }
+@@ -845,6 +943,9 @@ DEFINE_IDTENTRY_RAW(exc_int3)
+ 	if (poke_int3_handler(regs))
+ 		return;
+ 
++	if (!mark_trap_entry_raw(X86_TRAP_BP, regs))
++		return;
++
+ 	/*
+ 	 * irqentry_enter_from_user_mode() uses static_branch_{,un}likely()
+ 	 * and therefore can trigger INT3, hence poke_int3_handler() must
+@@ -867,6 +968,8 @@ DEFINE_IDTENTRY_RAW(exc_int3)
+ 		instrumentation_end();
+ 		irqentry_nmi_exit(regs, irq_state);
+ 	}
++
++	mark_trap_exit_raw(X86_TRAP_BP, regs);
+ }
+ 
+ #ifdef CONFIG_X86_64
+@@ -1175,7 +1278,7 @@ static noinstr void exc_debug_user(struct pt_regs *regs, unsigned long dr6)
+ 		goto out;
+ 
+ 	/* It's safe to allow irq's after DR6 has been saved */
+-	local_irq_enable();
++	local_irq_enable_full();
+ 
+ 	if (v8086_mode(regs)) {
+ 		handle_vm86_trap((struct kernel_vm86_regs *)regs, 0, X86_TRAP_DB);
+@@ -1192,7 +1295,7 @@ static noinstr void exc_debug_user(struct pt_regs *regs, unsigned long dr6)
+ 		send_sigtrap(regs, 0, get_si_code(dr6));
+ 
+ out_irq:
+-	local_irq_disable();
++	local_irq_disable_full();
+ out:
+ 	instrumentation_end();
+ 	irqentry_exit_to_user_mode(regs);
+@@ -1202,13 +1305,19 @@ static noinstr void exc_debug_user(struct pt_regs *regs, unsigned long dr6)
+ /* IST stack entry */
+ DEFINE_IDTENTRY_DEBUG(exc_debug)
+ {
+-	exc_debug_kernel(regs, debug_read_reset_dr6());
++	if (mark_trap_entry_raw(X86_TRAP_DB, regs)) {
++		exc_debug_kernel(regs, debug_read_reset_dr6());
++		mark_trap_exit_raw(X86_TRAP_DB, regs);
++	}
+ }
+ 
+ /* User entry, runs on regular task stack */
+ DEFINE_IDTENTRY_DEBUG_USER(exc_debug)
+ {
+-	exc_debug_user(regs, debug_read_reset_dr6());
++	if (mark_trap_entry_raw(X86_TRAP_DB, regs)) {
++		exc_debug_user(regs, debug_read_reset_dr6());
++		mark_trap_exit_raw(X86_TRAP_DB, regs);
++	}
+ }
+ 
+ #ifdef CONFIG_X86_FRED
+@@ -1270,13 +1379,16 @@ static void math_error(struct pt_regs *regs, int trapnr)
+ 		if (fixup_exception(regs, trapnr, 0, 0))
+ 			goto exit;
+ 
++		if (!mark_trap_entry(trapnr, regs))
++			goto exit;
++
+ 		task->thread.error_code = 0;
+ 		task->thread.trap_nr = trapnr;
+ 
+ 		if (notify_die(DIE_TRAP, str, regs, 0, trapnr,
+ 			       SIGFPE) != NOTIFY_STOP)
+ 			die(str, regs, 0);
+-		goto exit;
++		goto mark_exit;
+ 	}
+ 
+ 	/*
+@@ -1296,8 +1408,13 @@ static void math_error(struct pt_regs *regs, int trapnr)
+ 	if (fixup_vdso_exception(regs, trapnr, 0, 0))
+ 		goto exit;
+ 
++	if (!mark_trap_entry(trapnr, regs))
++		goto exit;
++
+ 	force_sig_fault(SIGFPE, si_code,
+ 			(void __user *)uprobe_get_trap_addr(regs));
++mark_exit:
++	mark_trap_exit(trapnr, regs);
+ exit:
+ 	cond_local_irq_disable(regs);
+ }
+@@ -1360,6 +1477,8 @@ static bool handle_xfd_event(struct pt_regs *regs)
+ 	if (WARN_ON(!user_mode(regs)))
+ 		return false;
+ 
++	mark_trap_entry(X86_TRAP_NM, regs);
++
+ 	local_irq_enable();
+ 
+ 	err = xfd_enable_feature(xfd_err);
+@@ -1374,6 +1493,9 @@ static bool handle_xfd_event(struct pt_regs *regs)
+ 	}
+ 
+ 	local_irq_disable();
++
++	mark_trap_exit(X86_TRAP_NM, regs);
++
+ 	return true;
+ }
+ 
+@@ -1408,7 +1530,10 @@ DEFINE_IDTENTRY(exc_device_not_available)
+ 		 * to kill the task than getting stuck in a never-ending
+ 		 * loop of #NM faults.
+ 		 */
+-		die("unexpected #NM exception", regs, 0);
++		if (mark_trap_entry(X86_TRAP_NM, regs)) {
++			die("unexpected #NM exception", regs, 0);
++			mark_trap_exit(X86_TRAP_NM, regs);
++		}
+ 	}
+ }
+ 
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index e2bd0b8a3..d75e4a8c0 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -655,6 +655,12 @@ page_fault_oops(struct pt_regs *regs, unsigned long error_code,
+ 		goto oops;
+ 	}
+ 
++	/*
++	 * Do not bother unwinding the notification context on
++	 * CPU/firmware/kernel bug.
++	 */
++	oob_trap_notify(X86_TRAP_PF, regs);
++
+ #ifdef CONFIG_VMAP_STACK
+ 	/*
+ 	 * Stack overflow?  During boot, we can fault near the initial
+@@ -775,6 +781,52 @@ show_signal_msg(struct pt_regs *regs, unsigned long error_code,
+ 	show_opcodes(regs, loglvl);
+ }
+ 
++#ifdef CONFIG_IRQ_PIPELINE
++
++static inline void cond_reenable_irqs_user(void)
++{
++	hard_local_irq_enable();
++
++	if (running_inband())
++		local_irq_enable();
++}
++
++static inline void cond_reenable_irqs_kernel(irqentry_state_t state,
++					struct pt_regs *regs)
++{
++	hard_local_irq_enable();
++	if (state.stage_info == IRQENTRY_INBAND_UNSTALLED)
++		local_irq_enable();
++}
++
++static inline void cond_disable_irqs(void)
++{
++	hard_local_irq_disable();
++
++	if (running_inband())
++		local_irq_disable();
++}
++
++#else  /* !CONFIG_IRQ_PIPELINE */
++
++static inline void cond_reenable_irqs_user(void)
++{
++	local_irq_enable();
++}
++
++static inline void cond_reenable_irqs_kernel(irqentry_state_t state,
++					struct pt_regs *regs)
++{
++	local_irq_enable();
++}
++
++static inline void cond_disable_irqs(void)
++{
++	local_irq_disable();
++}
++
++#endif  /* !CONFIG_IRQ_PIPELINE */
++
+ static void
+ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 		       unsigned long address, u32 pkey, int si_code)
+@@ -797,7 +849,7 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 	 * User mode accesses just cause a SIGSEGV.
+ 	 * It's possible to have interrupts off here:
+ 	 */
+-	local_irq_enable_full();
++	cond_reenable_irqs_user();
+ 
+ 	/*
+ 	 * Valid to do another page fault here because this one came
+@@ -814,6 +866,10 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 	if (fixup_vdso_exception(regs, X86_TRAP_PF, error_code, address))
+ 		return;
+ 
++	oob_trap_notify(X86_TRAP_PF, regs);
++	if (!running_inband())
++		goto out;
++
+ 	if (likely(show_unhandled_signals))
+ 		show_signal_msg(regs, error_code, address, tsk);
+ 
+@@ -825,6 +881,8 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 		force_sig_fault(SIGSEGV, si_code, (void __user *)address);
+ 
+ 	local_irq_disable_full();
++out:
++	oob_trap_unwind(X86_TRAP_PF, regs);
+ }
+ 
+ static noinline void
+@@ -1210,7 +1268,8 @@ NOKPROBE_SYMBOL(do_kern_addr_fault);
+ static inline
+ void do_user_addr_fault(struct pt_regs *regs,
+ 			unsigned long error_code,
+-			unsigned long address)
++			unsigned long address,
++			irqentry_state_t state)
+ {
+ 	struct vm_area_struct *vma;
+ 	struct task_struct *tsk;
+@@ -1269,7 +1328,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 	 * If we're in an interrupt, have no user context or are running
+ 	 * in a region with pagefaults disabled then we must not take the fault
+ 	 */
+-	if (unlikely(faulthandler_disabled() || !mm)) {
++	if (unlikely(running_inband() && (faulthandler_disabled() || !mm))) {
+ 		bad_area_nosemaphore(regs, error_code, address);
+ 		return;
+ 	}
+@@ -1280,7 +1339,21 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 		return;
+ 	}
+ 
+-	local_irq_enable();
++	if (user_mode(regs))
++		cond_reenable_irqs_user();
++	else
++		cond_reenable_irqs_kernel(state, regs);
++
++	/*
++	 * At this point, we would have to stop running
++	 * out-of-band. Tell the companion core about the page fault
++	 * event, so that it might switch current to in-band mode if
++	 * need be. If it does not, then we may assume that it would
++	 * also handle the fixups.
++	 */
++	oob_trap_notify(X86_TRAP_PF, regs);
++	if (!running_inband())
++		goto out;
+ 
+ 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
+ 
+@@ -1319,7 +1392,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 	 */
+ 	if (is_vsyscall_vaddr(address)) {
+ 		if (emulate_vsyscall(error_code, regs, address))
+-			return;
++			goto out;
+ 	}
+ #endif
+ 
+@@ -1353,7 +1426,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 			kernelmode_fixup_or_oops(regs, error_code, address,
+ 						 SIGBUS, BUS_ADRERR,
+ 						 ARCH_DEFAULT_PKEY);
+-		return;
++		goto out;
+ 	}
+ lock_mmap:
+ 
+@@ -1361,7 +1434,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 	vma = lock_mm_and_find_vma(mm, address, regs);
+ 	if (unlikely(!vma)) {
+ 		bad_area_nosemaphore(regs, error_code, address);
+-		return;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -1370,7 +1443,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 	 */
+ 	if (unlikely(access_error(error_code, vma))) {
+ 		bad_area_access_error(regs, error_code, address, mm, vma);
+-		return;
++		goto out;
+ 	}
+ 
+ 	/*
+@@ -1397,12 +1470,12 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 			kernelmode_fixup_or_oops(regs, error_code, address,
+ 						 SIGBUS, BUS_ADRERR,
+ 						 ARCH_DEFAULT_PKEY);
+-		return;
++		goto out;
+ 	}
+ 
+ 	/* The fault is fully completed (including releasing mmap lock) */
+ 	if (fault & VM_FAULT_COMPLETED)
+-		return;
++		goto out;
+ 
+ 	/*
+ 	 * If we need to retry the mmap_lock has already been released,
+@@ -1417,12 +1490,12 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 	mmap_read_unlock(mm);
+ done:
+ 	if (likely(!(fault & VM_FAULT_ERROR)))
+-		return;
++		goto out;
+ 
+ 	if (fatal_signal_pending(current) && !user_mode(regs)) {
+ 		kernelmode_fixup_or_oops(regs, error_code, address,
+ 					 0, 0, ARCH_DEFAULT_PKEY);
+-		return;
++		goto out;
+ 	}
+ 
+ 	if (fault & VM_FAULT_OOM) {
+@@ -1431,7 +1504,7 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 			kernelmode_fixup_or_oops(regs, error_code, address,
+ 						 SIGSEGV, SEGV_MAPERR,
+ 						 ARCH_DEFAULT_PKEY);
+-			return;
++			goto out;
+ 		}
+ 
+ 		/*
+@@ -1449,6 +1522,8 @@ void do_user_addr_fault(struct pt_regs *regs,
+ 		else
+ 			BUG();
+ 	}
++out:
++	oob_trap_unwind(X86_TRAP_PF, regs);
+ }
+ NOKPROBE_SYMBOL(do_user_addr_fault);
+ 
+@@ -1467,7 +1542,8 @@ trace_page_fault_entries(struct pt_regs *regs, unsigned long error_code,
+ 
+ static __always_inline void
+ handle_page_fault(struct pt_regs *regs, unsigned long error_code,
+-			      unsigned long address)
++		unsigned long address,
++		irqentry_state_t state)
+ {
+ 	trace_page_fault_entries(regs, error_code, address);
+ 
+@@ -1478,7 +1554,7 @@ handle_page_fault(struct pt_regs *regs, unsigned long error_code,
+ 	if (unlikely(fault_in_kernel_space(address))) {
+ 		do_kern_addr_fault(regs, error_code, address);
+ 	} else {
+-		do_user_addr_fault(regs, error_code, address);
++		do_user_addr_fault(regs, error_code, address, state);
+ 		/*
+ 		 * User address page fault handling might have reenabled
+ 		 * interrupts. Fixing up all potential exit points of
+@@ -1486,7 +1562,7 @@ handle_page_fault(struct pt_regs *regs, unsigned long error_code,
+ 		 * doable w/o creating an unholy mess or turning the code
+ 		 * upside down.
+ 		 */
+-		local_irq_disable_full();
++		cond_disable_irqs();
+ 	}
+ }
+ 
+@@ -1536,7 +1612,7 @@ DEFINE_IDTENTRY_RAW_ERRORCODE(exc_page_fault)
+ 	state = irqentry_enter(regs);
+ 
+ 	instrumentation_begin();
+-	handle_page_fault(regs, error_code, address);
++	handle_page_fault(regs, error_code, address, state);
+ 	instrumentation_end();
+ 
+ 	irqentry_exit(regs, state);
+diff --git a/include/linux/entry-common.h b/include/linux/entry-common.h
+index be8c3a37c..deed11195 100644
+--- a/include/linux/entry-common.h
++++ b/include/linux/entry-common.h
+@@ -348,6 +348,19 @@ void arch_do_signal_or_restart(struct pt_regs *regs);
+ unsigned long exit_to_user_mode_loop(struct pt_regs *regs,
+ 				     unsigned long ti_work);
+ 
++static inline bool do_retuser(unsigned long ti_work)
++{
++	if (dovetailing() && (ti_work & _TIF_RETUSER)) {
++		hard_local_irq_enable();
++		inband_retuser_notify();
++		hard_local_irq_disable();
++		/* RETUSER might have switched oob */
++		return running_inband();
++	}
++
++	return false;
++}
++
+ /**
+  * exit_to_user_mode_prepare - call exit_to_user_mode_loop() if required
+  * @regs:	Pointer to pt_regs on entry stack
+@@ -369,12 +382,17 @@ static __always_inline void exit_to_user_mode_prepare(struct pt_regs *regs)
+ 	/* Flush pending rcuog wakeup before the last need_resched() check */
+ 	tick_nohz_user_enter_prepare();
+ 
++again:
+ 	ti_work = read_thread_flags();
+ 	if (unlikely(ti_work & EXIT_TO_USER_MODE_WORK))
+ 		ti_work = exit_to_user_mode_loop(regs, ti_work);
+ 
+ 	arch_exit_to_user_mode_prepare(regs, ti_work);
+ 
++	/* Dovetail: Fire pending RETUSER request. */
++	if (do_retuser(ti_work))
++		goto again;
++
+ 	/* Ensure that kernel state is sane for a return to userspace */
+ 	kmap_assert_nomap();
+ 	lockdep_assert_irqs_disabled();
+-- 
+2.30.2
+

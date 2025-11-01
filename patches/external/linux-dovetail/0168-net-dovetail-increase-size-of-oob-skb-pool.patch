@@ -1,0 +1,26 @@
+From 24264e4880da5966032b521f3683268471c47751 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 29 Apr 2025 15:25:04 +0200
+Subject: [PATCH 168/217] net: dovetail: increase size of oob skb pool
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/skbuff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index bb6cd03c1..af32fdff9 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -591,7 +591,7 @@ EXPORT_SYMBOL(napi_build_skb);
+ 
+ #ifdef CONFIG_NET_OOB
+ 
+-unsigned int sysctl_max_oob_skb __read_mostly = 1024;
++unsigned int sysctl_max_oob_skb __read_mostly = 2048;
+ EXPORT_SYMBOL(sysctl_max_oob_skb);
+ 
+ __weak void free_skb_oob(struct sk_buff *skb)
+-- 
+2.30.2
+

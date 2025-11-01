@@ -1,0 +1,36 @@
+From e4db385297eeb2eeb256b92b7c8ebdb9dc49574a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 24 Sep 2024 10:46:31 +0200
+Subject: [PATCH 125/217] net/page_pool: dovetail: restrict lockdep check to
+ inband
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/page_pool.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/core/page_pool.c b/net/core/page_pool.c
+index fa37fb969..eee176e60 100644
+--- a/net/core/page_pool.c
++++ b/net/core/page_pool.c
+@@ -829,8 +829,6 @@ static __always_inline netmem_ref
+ __page_pool_put_page(struct page_pool *pool, netmem_ref netmem,
+ 		     unsigned int dma_sync_size, bool allow_direct)
+ {
+-	lockdep_assert_no_hardirq();
+-
+ #ifdef CONFIG_PAGE_POOL_OOB
+ 	/*
+ 	 * Pages from oob-accessed pools always live in the fast
+@@ -859,6 +857,8 @@ __page_pool_put_page(struct page_pool *pool, netmem_ref netmem,
+ 	}
+ #endif
+ 
++	lockdep_assert_no_hardirq();
++
+ 	/* This allocator is optimized for the XDP mode that uses
+ 	 * one-frame-per-page, but have fallbacks that act like the
+ 	 * regular page allocator APIs.
+-- 
+2.30.2
+

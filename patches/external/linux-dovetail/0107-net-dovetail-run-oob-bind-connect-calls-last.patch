@@ -1,0 +1,50 @@
+From a0d92c73694d1ad34b7affd999991a10d0eea360 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 6 Nov 2023 10:39:48 +0100
+Subject: [PATCH 107/217] net: dovetail: run oob bind+connect calls last
+
+Out-of-band handlers for bind() and connect() may want to reuse some
+information determined by the in-band handlers, so let's invert the
+calling sequence.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/socket.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/net/socket.c b/net/socket.c
+index c79227e67..81e65b02e 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -1962,6 +1962,9 @@ int __sys_bind_socket(struct socket *sock, struct sockaddr_storage *address,
+ 		err = READ_ONCE(sock->ops)->bind(sock,
+ 						 (struct sockaddr *)address,
+ 						 addrlen);
++	if (!err && sock_oob_capable(sock))
++		err = sock_oob_bind(sock, (struct sockaddr *)
++				&address, addrlen);
+ 	return err;
+ }
+ 
+@@ -2187,15 +2190,14 @@ int __sys_connect_file(struct file *file, struct sockaddr_storage *address,
+ 	if (err)
+ 		goto out;
+ 
+-	if (sock_oob_capable(sock)) {
++	err = READ_ONCE(sock->ops)->connect(sock, (struct sockaddr *)address,
++				addrlen, sock->file->f_flags | file_flags);
++	if (!err && sock_oob_capable(sock)) {
+ 		err = sock_oob_connect(sock, (struct sockaddr *)address,
+ 				addrlen);
+ 		if (err)
+ 			goto out;
+ 	}
+-
+-	err = READ_ONCE(sock->ops)->connect(sock, (struct sockaddr *)address,
+-				addrlen, sock->file->f_flags | file_flags);
+ out:
+ 	return err;
+ }
+-- 
+2.30.2
+

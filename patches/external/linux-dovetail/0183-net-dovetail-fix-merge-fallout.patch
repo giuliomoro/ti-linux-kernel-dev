@@ -1,0 +1,25 @@
+From abd4473a4d9ceca93530f3440d0e3d3fa2c6d004 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 11 Jun 2025 21:06:05 +0200
+Subject: [PATCH 183/217] net: dovetail: fix merge fallout
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/skbuff.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 5852b5839..0a96c36f2 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1170,6 +1170,7 @@ bool napi_pp_put_page(netmem_ref netmem)
+ 
+ 	return true;
+ }
++EXPORT_SYMBOL(napi_pp_put_page);
+ #endif
+ 
+ static bool skb_pp_recycle(struct sk_buff *skb, void *data)
+-- 
+2.30.2
+

@@ -1,0 +1,35 @@
+From e9482c72d03e1b24da7e0ea025b700d87c11ea2a Mon Sep 17 00:00:00 2001
+From: Jan Kiszka <jan.kiszka@siemens.com>
+Date: Wed, 25 Jun 2025 10:16:13 +0200
+Subject: [PATCH 210/217] x86: irq_pipeline: Use appropriate EOI on error
+ interrupts
+
+Just like for the non-pipelined spurious interrupt, we need to invoke
+the non-pipelined __apic_eoi while handling error interrupts. Otherwise,
+the local APIC will stop receiving further interrupts, and the system
+will stall.
+
+Given that it takes very special conditions to actually trigger an error
+interrupt, this issue was very likely not relevant for most deployments.
+
+Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+---
+ arch/x86/kernel/apic/apic.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 0747b37b2..197253483 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2220,7 +2220,7 @@ DEFINE_IDTENTRY_SYSVEC(sysvec_error_interrupt)
+ 	if (lapic_get_maxlvt() > 3)	/* Due to the Pentium erratum 3AP. */
+ 		apic_write(APIC_ESR, 0);
+ 	v = apic_read(APIC_ESR);
+-	apic_eoi();
++	__apic_eoi();
+ 	atomic_inc(&irq_err_count);
+ 
+ 	apic_pr_debug("APIC error on CPU%d: %02x", smp_processor_id(), v);
+-- 
+2.30.2
+

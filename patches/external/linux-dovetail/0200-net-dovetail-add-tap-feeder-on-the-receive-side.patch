@@ -1,0 +1,90 @@
+From 80e15f8a97d61a08727230572c9c22507bb248de Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sat, 21 Jun 2025 19:56:13 +0200
+Subject: [PATCH 200/217] net: dovetail: add tap feeder on the receive side
+
+We need an RX counterpart to dev_queue_xmit_nit() for use by the oob
+netstack, in order to feed the in-band sniffers listening to ETH_ALL
+packets.
+
+To this end, dev_queue_recv_nit() allows a companion core to feed the
+in-band taps with (a clone of) every skb it handles, so that common
+packet capture tools can see the ingress oob traffic as well.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h |  3 +++
+ net/core/dev.c            | 29 +++++++++++++++++++++++++++--
+ 2 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 8523ef46e..d5b9289d9 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4362,6 +4362,9 @@ void netif_device_attach(struct net_device *dev);
+ 
+ bool netif_receive_oob(struct sk_buff *skb);
+ 
++int dev_queue_recv_nit(struct sk_buff *skb,
++		struct net_device *dev);
++
+ /**
+  *	netif_oob_diversion - is the ingress traffic diverted for out-of-band handling?
+  *	@dev: network device
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 5a7bc4418..0e238ab83 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5316,6 +5316,31 @@ bool netif_receive_oob(struct sk_buff *skb)
+ 	return false;	     /* Not handled, caller should pick it. */
+ }
+ 
++/* RX counterpart to dev_queue_xmit_nit() for use by the oob netstack. */
++int dev_queue_recv_nit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct packet_type *ptype;
++	int _ret, ret = 0;
++
++	rcu_read_lock();
++
++	list_for_each_entry_rcu(ptype, &net_hotdata.ptype_all, list) {
++		_ret = deliver_skb(skb, ptype, dev);
++		if (unlikely(_ret && !ret))
++			ret = _ret;
++	}
++
++	list_for_each_entry_rcu(ptype, &skb->dev->ptype_all, list) {
++		_ret = deliver_skb(skb, ptype, dev);
++		if (unlikely(_ret && !ret))
++			ret = _ret;
++	}
++
++	rcu_read_unlock();
++
++	return ret;
++}
++
+ static bool netif_receive_oob_list(struct list_head *head)
+ {
+ 	struct sk_buff *skb, *next;
+@@ -5359,7 +5384,7 @@ static void kick_rx_inband(struct irq_work *irq_work)
+ __weak void netif_tx_wake_oob(struct netdev_queue *txq)
+ { }
+ 
+-#else
++#else  /* !CONFIG_NET_OOB */
+ 
+ static inline bool netif_receive_oob_list(struct list_head *head)
+ {
+@@ -5375,7 +5400,7 @@ static inline void process_inband_tx_backlog(struct softnet_data *sd)
+ static void process_inband_rx_backlog(struct softnet_data *sd)
+ { }
+ 
+-#endif
++#endif /* !CONFIG_NET_OOB */
+ 
+ static int netif_rx_internal(struct sk_buff *skb)
+ {
+-- 
+2.30.2
+

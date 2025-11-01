@@ -1,0 +1,41 @@
+From 86327ee67427bb67f34744ae003ee17a198d4cdd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 4 Mar 2025 09:19:04 +0100
+Subject: [PATCH 141/217] genirq: irq_pipeline: fix hardirq context detection
+ (irqctx)
+
+Each incoming IRQ passed to handle_irq_desc() is checked for calling
+context correctness, in order to detect invalid calls from
+non-interrupt context for interrupts marked as
+IRQD_HANDLE_ENFORCE_IRQCTX.
+
+When pipelining is enabled, the IRQ context spans from the early
+handling from the pipeline entry (i.e. in_pipeline()) up to the
+completion point of the full interrupt path, which includes the
+oob->in-band deferral path.
+
+The test checking for the latter was mistakenly inverted, causing the
+interrupt to be dismissed if bearing the IRQD_HANDLE_ENFORCE_IRQCTX
+flag.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq/irqdesc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index fe195606b..b1044ed9e 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -684,7 +684,7 @@ static inline bool is_hardirq(struct irq_desc *desc)
+ 	if (!irqs_pipelined())
+ 		return in_hardirq();
+ 
+-	if (in_pipeline() || !(desc->istate & IRQS_DEFERRED))
++	if (in_pipeline() || (desc->istate & IRQS_DEFERRED))
+ 		return true;
+ 
+ 	return false;
+-- 
+2.30.2
+

@@ -1,0 +1,69 @@
+From 07d0b28160b9f276501795dd14b5a533b70f7ebd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 24 Apr 2025 10:08:59 +0200
+Subject: [PATCH 164/217] net: dovetail: use lighter serialization to process
+ RX backlog
+
+The in-band backlog is a per-CPU list, we don't need a full-fledged
+spinlock. Disabling interrupt to prevent the local CPU from switching
+away to oob mode while we splice the list from the in-band stage is
+enough.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h | 1 -
+ net/core/dev.c            | 9 ++++-----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 99c1c0280..772890cfc 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -3279,7 +3279,6 @@ struct softnet_data {
+ #endif
+ #ifdef CONFIG_NET_OOB
+ 	struct list_head	inband_rx_list; /* Inband skbs received oob */
+-	hard_spinlock_t		inband_rx_lock;
+ 	struct irq_work		inband_rx_work;
+ #endif
+ 	struct Qdisc		*output_queue;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index c54a3f95a..8ad135b6e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5303,10 +5303,10 @@ bool netif_receive_oob(struct sk_buff *skb)
+ 		if (netif_deliver_oob(skb))
+ 			return true;
+ 		if (net_running_oob()) {
+-			raw_spin_lock_irqsave(&sd->inband_rx_lock, flags);
++			flags = hard_local_irq_save();
+ 			kick_softirq = list_empty(&sd->inband_rx_list);
+ 			list_add_tail(&skb->list, &sd->inband_rx_list);
+-			raw_spin_unlock_irqrestore(&sd->inband_rx_lock, flags);
++			hard_local_irq_restore(flags);
+ 			if (kick_softirq)
+ 				irq_work_queue(&sd->inband_rx_work);
+ 			return true;
+@@ -5331,9 +5331,9 @@ static void process_inband_rx_backlog(struct softnet_data *sd)
+ 	unsigned long flags;
+ 	LIST_HEAD(list);
+ 
+-	raw_spin_lock_irqsave(&sd->inband_rx_lock, flags);
++	flags = hard_local_irq_save();
+ 	list_splice_init(&sd->inband_rx_list, &list);
+-	raw_spin_unlock_irqrestore(&sd->inband_rx_lock, flags);
++	hard_local_irq_restore(flags);
+ 	if (!list_empty(&list))
+ 		_netif_receive_skb_list(&list);
+ }
+@@ -12389,7 +12389,6 @@ static int __init net_dev_init(void)
+ #endif
+ #ifdef CONFIG_NET_OOB
+ 		INIT_LIST_HEAD(&sd->inband_rx_list);
+-		raw_spin_lock_init(&sd->inband_rx_lock);
+ 		init_irq_work(&sd->inband_rx_work, kick_rx_inband);
+ #endif
+ 		INIT_CSD(&sd->defer_csd, trigger_rx_softirq, sd);
+-- 
+2.30.2
+

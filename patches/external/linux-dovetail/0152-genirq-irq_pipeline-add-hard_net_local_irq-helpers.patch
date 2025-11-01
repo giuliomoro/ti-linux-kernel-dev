@@ -1,0 +1,48 @@
+From 5527433432340c7bb118537ebe27ec8e20d0d434 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 13 Mar 2025 17:32:54 +0100
+Subject: [PATCH 152/217] genirq: irq_pipeline: add hard_net_local_irq* helpers
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/irq_pipeline.h | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/include/asm-generic/irq_pipeline.h b/include/asm-generic/irq_pipeline.h
+index 4b8999678..8eb12fd9d 100644
+--- a/include/asm-generic/irq_pipeline.h
++++ b/include/asm-generic/irq_pipeline.h
+@@ -31,6 +31,18 @@ int inband_irqs_disabled(void);
+ #define hard_irqs_disabled()			native_irqs_disabled()
+ #define hard_irqs_disabled_flags(__flags)	native_irqs_disabled_flags(__flags)
+ 
++#ifdef CONFIG_NET_OOB
++#define hard_net_local_irq_enable()		hard_local_irq_enable()
++#define hard_net_local_irq_disable()		hard_local_irq_disable()
++#define hard_net_local_irq_save()		hard_local_irq_save()
++#define hard_net_local_irq_restore(__flags)	hard_local_irq_restore(__flags)
++#else
++#define hard_net_local_irq_enable()		do { } while(0)
++#define hard_net_local_irq_disable()		do { } while(0)
++#define hard_net_local_irq_save()		0
++#define hard_net_local_irq_restore(__flags)	do { (void)(__flags); } while(0)
++#endif
++
+ void irq_pipeline_nmi_enter(void);
+ void irq_pipeline_nmi_exit(void);
+ 
+@@ -84,6 +96,11 @@ void unlock_stage(unsigned long irqstate);
+ #define hard_cond_local_irq_save()		0
+ #define hard_cond_local_irq_restore(__flags)	do { (void)(__flags); } while(0)
+ 
++#define hard_net_local_irq_enable()		do { } while(0)
++#define hard_net_local_irq_disable()		do { } while(0)
++#define hard_net_local_irq_save()		0
++#define hard_net_local_irq_restore(__flags)	do { (void)(__flags); } while(0)
++
+ #define hard_irqs_disabled()			irqs_disabled()
+ #define hard_irqs_disabled_flags(__flags)	raw_irqs_disabled_flags(__flags)
+ 
+-- 
+2.30.2
+

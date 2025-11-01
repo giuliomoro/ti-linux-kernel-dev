@@ -1,0 +1,75 @@
+From e0f874eab798c6b0241883f7bd36b2c3459bf917 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 1 Aug 2024 17:01:51 +0200
+Subject: [PATCH 096/217] arm64: dovetail: fix RETUSER handling
+
+This fixes a merge trainwreck which occured during the v6.8..v6.9
+transition. The bits dealing with dovetail_request_ucall() have been
+spuriously left aside during the merge process.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/kernel/entry-common.c | 15 ++++++++++++++-
+ arch/arm64/kernel/signal.c       | 11 -----------
+ 2 files changed, 14 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/kernel/entry-common.c b/arch/arm64/kernel/entry-common.c
+index e9f6b17b9..52a995f90 100644
+--- a/arch/arm64/kernel/entry-common.c
++++ b/arch/arm64/kernel/entry-common.c
+@@ -205,6 +205,17 @@ static __always_inline void __exit_to_user_mode(void)
+ 	unstall_inband_nocheck();
+ }
+ 
++static inline void do_retuser(void)
++{
++	unsigned long thread_flags;
++
++	if (dovetailing()) {
++		thread_flags = current_thread_info()->flags;
++		if (thread_flags & _TIF_RETUSER)
++			inband_retuser_notify();
++	}
++}
++
+ static void do_notify_resume(struct pt_regs *regs, unsigned long thread_flags)
+ {
+ 	WARN_ON_ONCE(irq_pipeline_debug() && running_oob());
+@@ -242,9 +253,11 @@ static void do_notify_resume(struct pt_regs *regs, unsigned long thread_flags)
+ 				fpsimd_restore_current_state();
+ 		}
+ 
++		do_retuser();
+ 		local_daif_mask();
+ 		thread_flags = read_thread_flags();
+-	} while (thread_flags & _TIF_WORK_MASK);
++		/* RETUSER might have switched us oob */
++	} while (running_inband() && thread_flags & _TIF_WORK_MASK);
+ 
+ 	/*
+ 	 * irq_pipeline: trace_hardirqs_off was in effect on entry, we
+diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
+index 91e39cad4..196531817 100644
+--- a/arch/arm64/kernel/signal.c
++++ b/arch/arm64/kernel/signal.c
+@@ -1464,17 +1464,6 @@ void do_signal(struct pt_regs *regs)
+ 	restore_saved_sigmask();
+ }
+ 
+-static inline void do_retuser(void)
+-{
+-	unsigned long thread_flags;
+-
+-	if (dovetailing()) {
+-		thread_flags = current_thread_info()->flags;
+-		if (thread_flags & _TIF_RETUSER)
+-			inband_retuser_notify();
+-	}
+-}
+-
+ unsigned long __ro_after_init signal_minsigstksz;
+ 
+ /*
+-- 
+2.30.2
+
