@@ -655,8 +655,47 @@ xenomai4 () {
 		dir 'external/linux-evl'
 	fi
 }
-
 xenomai4
+
+xenomai3 () {
+	xenomai3_enable="enable"
+	if [ "x${xenomai3_enable}" = "xenable" ] ; then
+		#regenerate="enable"
+		if [ "x${regenerate}" = "xenable" ] ; then
+			local BRANCH=v6.12.y-dovetail-rebase
+			local BASE=da274362a7bd9ab3a6e46d15945029145ebce672 # must be an ancestor of $BRANCH
+			# hack to get only a handful of commits: checkout a shallow repo, then get a bit
+			# more in chunks until the desired commit is found
+			cd "${DIR}/ignore"
+			if [ ! -d linux-dovetail ]; then
+				${git_bin} clone --depth 1 -b $BRANCH https://gitlab.com/Xenomai/linux-dovetail.git
+			fi
+			cd "${DIR}/ignore/linux-dovetail"
+			${git_bin} checkout $BRANCH
+			i=1; while ! ${git_bin} show ${BASE}; do ${git_bin} fetch --depth=$((i+=100)); done
+			${git_bin} format-patch -o ${DIR}/patches/external/linux-dovetail ${BASE}
+			cd "${DIR}/KERNEL"
+		fi
+		dir 'external/linux-dovetail'
+
+		if [ "x${regenerate}" = "xenable" ] ; then
+			cd "${DIR}/ignore"
+			${git_bin} clone --depth=1 https://gitlab.com/Xenomai/xenomai3/xenomai.git xenomai3
+			cd "${DIR}/ignore/xenomai3"
+			sed "s/ln -sf /cp /" -i ./scripts/prepare-kernel.sh # make sure files are copied instead of linked
+			./scripts/prepare-kernel.sh --arch=arm64 --linux="${DIR}/ignore/linux-dovetail"
+			cd "${DIR}/ignore/linux-dovetail"
+			${git_bin} add .
+			${git_bin} rm --cached *.orig
+			${git_bin} commit -am "xenomai-3: ran prepare-kernel.sh"
+			${git_bin} format-patch -o ${DIR}/patches/external/xenomai3 -1
+			cd "${DIR}/KERNEL"
+		fi
+		dir 'external/xenomai3'
+	fi
+}
+
+xenomai3
 
 echo "patch.sh ran successfully"
 #
