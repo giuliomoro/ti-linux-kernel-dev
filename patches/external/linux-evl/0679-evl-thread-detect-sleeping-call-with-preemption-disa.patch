@@ -1,0 +1,53 @@
+From c90e7acbf47484debaf9a86c27ac2fc17e0e7101 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 26 Dec 2020 19:04:13 +0100
+Subject: [PATCH 679/985] evl/thread: detect sleeping call with preemption
+ disabled
+
+Sleeping voluntarily with EVL preemption disabled is a bug. Add the
+proper assertion to detect this.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/thread.h | 2 --
+ kernel/evl/thread.c  | 4 +++-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 2b13b7830..41a7f512f 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -16,8 +16,6 @@
+ #include <linux/atomic.h>
+ #include <linux/spinlock.h>
+ #include <linux/ptrace.h>
+-#include <evl/list.h>
+-#include <evl/lock.h>
+ #include <evl/stat.h>
+ #include <evl/init.h>
+ #include <evl/timer.h>
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 50565fa2d..173b036d0 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -29,7 +29,6 @@
+ #include <evl/clock.h>
+ #include <evl/stat.h>
+ #include <evl/assert.h>
+-#include <evl/lock.h>
+ #include <evl/thread.h>
+ #include <evl/memory.h>
+ #include <evl/file.h>
+@@ -490,6 +489,9 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,
+ 	struct evl_rq *rq = curr->rq;
+ 	unsigned long oldstate;
+ 
++	/* Sleeping while preemption is disabled is a bug. */
++	EVL_WARN_ON(CORE, evl_preempt_count() != 0);
++
+ 	assert_hard_lock(&curr->lock);
+ 	assert_hard_lock(&rq->lock);
+ 
+-- 
+2.30.2
+

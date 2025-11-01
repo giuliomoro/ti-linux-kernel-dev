@@ -1,0 +1,45 @@
+From 400ed2b43dd965e2cf7c6e9d0cc6473b66c37c8d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 14 Feb 2019 10:44:17 +0100
+Subject: [PATCH 300/985] evl/sem: fix handling of evl_wait_timeout() status
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/sem.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
+index 0bf2f62f0..7afeacaff 100644
+--- a/kernel/evenless/sem.c
++++ b/kernel/evenless/sem.c
+@@ -32,8 +32,8 @@ static int acquire_sem(struct evl_sem *sem,
+ 	struct evl_sem_state *state = sem->state;
+ 	enum evl_tmode tmode;
+ 	unsigned long flags;
+-	int info, ret = 0;
+ 	ktime_t timeout;
++	int ret = 0;
+ 
+ 	if ((unsigned long)req->timeout.tv_nsec >= ONE_BILLION)
+ 		return -EINVAL;
+@@ -46,14 +46,9 @@ static int acquire_sem(struct evl_sem *sem,
+ 
+ 	timeout = timespec_to_ktime(req->timeout);
+ 	tmode = timeout ? EVL_ABS : EVL_REL;
+-	info = evl_wait_timeout(&sem->wait_queue, timeout, tmode);
+-	if (info & (T_BREAK|T_TIMEO)) {
+-		if (!(state->flags & EVL_SEM_PULSE))
+-			atomic_inc(&state->value);
+-		ret = -ETIMEDOUT;
+-		if (info & T_BREAK)
+-			ret = -EINTR;
+-	} /* No way we could receive T_RMID */
++	ret = evl_wait_timeout(&sem->wait_queue, timeout, tmode);
++	if (ret && ret != -EIDRM && !(state->flags & EVL_SEM_PULSE))
++		atomic_inc(&state->value);
+ out:
+ 	xnlock_put_irqrestore(&nklock, flags);
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,27 @@
+From ad7764d25e7c7445eaa7afa68a1cd2b3a8044326 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 16 Apr 2020 12:52:25 +0200
+Subject: [PATCH 602/985] evl/sched: tp: fix locking imbalance in control op
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/tp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
+index 73a2ea6b2..1690b4023 100644
+--- a/kernel/evl/sched/tp.c
++++ b/kernel/evl/sched/tp.c
+@@ -416,8 +416,8 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
+ 	atomic_set(&gps->refcount, 1);
+ 	gps->pwin_nr = n;
+ 	gps->tf_duration = next_offset;
+-switch_schedule:
+ 	evl_spin_lock_irqsave(&rq->lock, flags);
++switch_schedule:
+ 	ogps = set_tp_schedule(rq, gps);
+ 	evl_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+-- 
+2.30.2
+

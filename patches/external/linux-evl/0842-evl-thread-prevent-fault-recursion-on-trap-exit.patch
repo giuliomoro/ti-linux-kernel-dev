@@ -1,0 +1,31 @@
+From 071fe9a3fa48f0c641d1a73be96d3df629fbffaa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 30 Nov 2023 17:05:18 +0100
+Subject: [PATCH 842/985] evl/thread: prevent fault recursion on trap exit
+
+The same way a non-EVL thread might enter handle_oob_trap_enter(), it
+might exit via handle_oob_trap_exit() as a consequence. Make sure to
+check evl_current() for nullness, not to trigger a recurring fault.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 27c564e3c..0bc447017 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1615,6 +1615,9 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ 
+ 	hard_local_irq_enable();
+ 
++	if (curr == NULL)
++		return;
++
+ 	curr->local_info &= ~EVL_T_INFAULT;
+ 
+ 	if (current->ptrace & PT_PTRACED)
+-- 
+2.30.2
+

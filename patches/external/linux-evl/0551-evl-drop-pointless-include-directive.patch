@@ -1,0 +1,25 @@
+From 0fe59e03be3ba2b318eb6c151b42ea631b4aa333 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 31 Dec 2019 12:26:36 +0100
+Subject: [PATCH 551/985] evl: drop pointless include directive
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/Makefile | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
+index 05cf3e58c..27d2f4f11 100644
+--- a/kernel/evl/Makefile
++++ b/kernel/evl/Makefile
+@@ -1,7 +1,5 @@
+ obj-$(CONFIG_EVL) += evl.o sched/
+ 
+-ccflags-y += -Ikernel
+-
+ evl-y :=		\
+ 	clock.o		\
+ 	control.o	\
+-- 
+2.30.2
+

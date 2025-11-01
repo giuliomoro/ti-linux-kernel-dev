@@ -1,0 +1,25 @@
+From e3c0f86af56b25850a5db6693307da8eb1743c2c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 18 Jul 2024 11:30:46 +0200
+Subject: [PATCH 850/985] evl/factory: drop stale element data member
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/factory.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index 26f434504..1a116e4e6 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -80,7 +80,6 @@ struct evl_element {
+ 	struct filename *devname;
+ 	unsigned int minor;
+ 	refcount_t refs;
+-	bool zombie;
+ 	fundle_t fundle;
+ 	int clone_flags;
+ 	struct rb_node index_node;
+-- 
+2.30.2
+

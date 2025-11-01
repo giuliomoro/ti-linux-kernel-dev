@@ -1,0 +1,45 @@
+From 2515d7afa77191a68a636f01fe71fd503918a981 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 25 Sep 2020 19:03:38 +0200
+Subject: [PATCH 651/985] evl/thread: do not switch stage in trap over NMI
+ context
+
+We cannot safely run the stage switching machinery while running in
+NMI context.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/thread.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index a2512db9e..37ef40a95 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1518,6 +1518,13 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)
+ 
+ 	trace_evl_thread_fault(trapnr, regs);
+ 
++	/*
++	 *  We may not demote the current task if running in NMI
++	 *  context. Just bail out if so.
++	 */
++	if (in_nmi())
++		return;
++
+ 	curr = evl_current();
+ 	if (curr->local_info & T_INFAULT) {
+ 		note_trap(curr, trapnr, regs, "recursive fault");
+@@ -1546,6 +1553,9 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)
+ {
+ 	struct evl_thread *curr = evl_current();
+ 
++	if (in_nmi())
++		return;
++
+ 	hard_local_irq_enable();
+ 
+ 	curr->local_info &= ~T_INFAULT;
+-- 
+2.30.2
+

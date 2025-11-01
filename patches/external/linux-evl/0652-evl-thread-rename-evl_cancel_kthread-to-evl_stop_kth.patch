@@ -1,0 +1,87 @@
+From 98c39b2564bbca5b902f84936a2085daced78b22 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 31 Oct 2020 09:16:08 +0100
+Subject: [PATCH 652/985] evl/thread: rename evl_cancel_kthread() to
+ evl_stop_kthread()
+
+Align naming of the kthread termination-related calls on the in-band
+counterparts. At this chance, further clarify the interface by having
+evl_kthread_should_stop() explicitly return a boolean status.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/evl/hectic.c | 4 ++--
+ drivers/evl/latmus.c | 4 ++--
+ include/evl/thread.h | 6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index fd384e067..01c2f4281 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -450,7 +450,7 @@ static int rtswitch_create_kthread(struct rtswitch_context *ctx,
+ 				task_pid_nr(current));
+ 	/*
+ 	 * On error, clear the flag bits in order to avoid calling
+-	 * evl_cancel_kthread() for an invalid thread in
++	 * evl_stop_kthread() for an invalid thread in
+ 	 * hectic_release().
+ 	 */
+ 	if (err)
+@@ -641,7 +641,7 @@ static int hectic_release(struct inode *inode, struct file *filp)
+ 			struct rtswitch_task *task = &ctx->tasks[i];
+ 
+ 			if (task->base.flags & HECTIC_KTHREAD)
+-				evl_cancel_kthread(&task->kthread);
++				evl_stop_kthread(&task->kthread);
+ 
+ 			evl_destroy_flag(&task->rt_synch);
+ 		}
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index f90e88c7e..7e2cd9556 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -475,7 +475,7 @@ void kthread_handler(struct evl_kthread *kthread)
+ 	}
+ out:
+ 	done_sampling(&k_runner->runner, ret);
+-	evl_cancel_kthread(&k_runner->kthread);
++	evl_stop_kthread(&k_runner->kthread);
+ }
+ 
+ static void destroy_kthread_runner(struct latmus_runner *runner)
+@@ -483,7 +483,7 @@ static void destroy_kthread_runner(struct latmus_runner *runner)
+ 	struct kthread_runner *k_runner;
+ 
+ 	k_runner = container_of(runner, struct kthread_runner, runner);
+-	evl_cancel_kthread(&k_runner->kthread);
++	evl_stop_kthread(&k_runner->kthread);
+ 	evl_destroy_flag(&k_runner->barrier);
+ 	destroy_runner_base(runner);
+ 	kfree(k_runner);
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 1d300a7e6..cbca3eaf4 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -363,15 +363,15 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);
+ 	_evl_run_kthread(__kthread, cpumask_of(__cpu), __fn, __priority, \
+ 			__clone_flags, __fmt, ##__args)
+ 
+-static inline void evl_cancel_kthread(struct evl_kthread *kthread)
++static inline void evl_stop_kthread(struct evl_kthread *kthread)
+ {
+ 	evl_cancel_thread(&kthread->thread);
+ 	evl_join_thread(&kthread->thread, true);
+ }
+ 
+-static inline int evl_kthread_should_stop(void)
++static inline bool evl_kthread_should_stop(void)
+ {
+-	return evl_current()->info & T_CANCELD;
++	return !!(evl_current()->info & T_CANCELD);
+ }
+ 
+ void evl_set_kthread_priority(struct evl_kthread *thread,
+-- 
+2.30.2
+

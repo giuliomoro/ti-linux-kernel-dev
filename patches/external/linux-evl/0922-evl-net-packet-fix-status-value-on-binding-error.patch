@@ -1,0 +1,29 @@
+From abc1bb9648f846ed649131bac6154f611db26efd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 30 Apr 2025 10:20:22 +0200
+Subject: [PATCH 922/985] evl/net: packet: fix status value on binding error
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/packet/packet.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index 7a134101b..6b447853a 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -296,8 +296,10 @@ static int bind_packet_socket(struct evl_socket *esk,
+ 	if (new_ifindex != old_ifindex) {
+ 		if (new_ifindex) {
+ 			dev = evl_net_get_dev_by_index(esk->net, new_ifindex);
+-			if (dev == NULL)
++			if (dev == NULL) {
++				ret = -EINVAL;
+ 				goto out;
++			}
+ 			if (is_vlan_dev(dev)) {
+ 				vlan_id = vlan_dev_vlan_id(dev);
+ 				real_ifindex = vlan_dev_real_dev(dev)->ifindex;
+-- 
+2.30.2
+

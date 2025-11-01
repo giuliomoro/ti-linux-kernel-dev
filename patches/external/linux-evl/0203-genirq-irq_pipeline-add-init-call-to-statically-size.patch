@@ -1,0 +1,32 @@
+From 894d3b4f13e61181387cb36dd70e8ab5a581ea10 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 08:09:26 +0200
+Subject: [PATCH 203/985] genirq: irq_pipeline: add init call to
+ statically-sized in-band work
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/inband_work.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/linux/inband_work.h b/include/linux/inband_work.h
+index 6960a79fd..2c1c26456 100644
+--- a/include/linux/inband_work.h
++++ b/include/linux/inband_work.h
+@@ -132,6 +132,13 @@ bool flush_inband_work(struct inband_work_struct *iwork)
+ 		int tail;						\
+ 	};								\
+ 	__INBAND_BATCH_WORK(__tag, __handler, __count);			\
++	static inline void __PASTE(init_, __tag)(struct __tag *r)	\
++	{								\
++		init_irq_work(&r->irq_work, __PASTE(__tag, __trampoline)); \
++		INIT_WORK(&r->work, __PASTE(__tag, __batch));		\
++		r->head = 0;						\
++		r->tail = 0;						\
++	}								\
+ 	static inline void __PASTE(destroy_, __tag)(struct __tag *r)	\
+ 	{								\
+ 	}
+-- 
+2.30.2
+

@@ -1,0 +1,26 @@
+From 28d3a6992adc3011587735f417ad00db6a2b807c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 09:02:55 +0200
+Subject: [PATCH 205/985] igb: make CONFIG_IGB_OOB depend on CONFIG_IGB
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/net/ethernet/intel/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
+index a44ffcd0f..adf8b3de2 100644
+--- a/drivers/net/ethernet/intel/Kconfig
++++ b/drivers/net/ethernet/intel/Kconfig
+@@ -117,7 +117,7 @@ config IGB
+ 
+ config IGB_OOB
+ 	bool "Out-of-band support for Intel(R) 82575/82576 Gigabit Ethernet"
+-	depends on NET_OOB
++	depends on IGB && NET_OOB
+ 	help
+ 	  Enable out-of-band I/O. Say Y if a companion kernel may divert
+ 	  the network traffic going through IGB devices for real-time delivery.
+-- 
+2.30.2
+

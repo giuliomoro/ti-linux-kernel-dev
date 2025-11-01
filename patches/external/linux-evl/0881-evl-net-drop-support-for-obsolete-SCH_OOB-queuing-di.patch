@@ -1,0 +1,153 @@
+From 7b98c4e017528c6b694aeee9c3123dd4e36826b9 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 20 Mar 2024 12:41:11 +0100
+Subject: [PATCH 881/985] evl/net: drop support for obsolete SCH_OOB queuing
+ discipline
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/qdisc.h     |  1 -
+ kernel/evl/Kconfig          |  1 -
+ kernel/evl/net/output.c     | 36 +-----------------------------------
+ kernel/evl/net/qdisc/core.c | 19 +++----------------
+ 4 files changed, 4 insertions(+), 53 deletions(-)
+
+diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
+index be07e0c77..ebcc9061d 100644
+--- a/include/evl/net/qdisc.h
++++ b/include/evl/net/qdisc.h
+@@ -25,7 +25,6 @@ struct evl_net_qdisc_ops {
+ 
+ struct evl_net_qdisc {
+ 	const struct evl_net_qdisc_ops *oob_ops;
+-	struct evl_net_skb_queue inband_q;
+ 	unsigned long packet_dropped;
+ };
+ 
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index b4cc2fd13..83e5c97c2 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -93,7 +93,6 @@ config EVL_NET
+ 	default n
+ 	select NET_OOB
+ 	select NET_SCHED
+-	select NET_SCH_OOB
+ 	select BPF_OOB
+ 	select INET
+ 	select VLAN_8021Q
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 849445e57..cd3a95edc 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -58,7 +58,7 @@ void evl_net_do_tx(void *arg)
+ 	struct net_device *dev = arg;
+ 	struct evl_netdev_state *est;
+ 	struct evl_net_qdisc *qdisc;
+-	struct sk_buff *skb, *n;
++	struct sk_buff *skb;
+ 	LIST_HEAD(list);
+ 	int ret;
+ 
+@@ -87,17 +87,6 @@ void evl_net_do_tx(void *arg)
+ 				break;
+ 			do_tx(qdisc, dev, skb);
+ 		}
+-
+-		/*
+-		 * Lastly, we send out any pending traffic we received from the
+-		 * in-band sch_oob Qdisc.
+-		 */
+-		if (evl_net_move_skb_queue(&qdisc->inband_q, &list)) {
+-			list_for_each_entry_safe(skb, n, &list, list) {
+-				list_del_init(&skb->list);
+-				do_tx(qdisc, dev, skb);
+-			}
+-		}
+ 	}
+ }
+ 
+@@ -214,29 +203,6 @@ int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
+ 	return 0;
+ }
+ 
+-/**
+- *	netif_xmit_oob - send a network packet in out-of-band mode
+- *
+- *	Queue the packet for transmission from the out-of-band stage
+- *	as low priority traffic. This hook is called by the enqueuing
+- *	handler of the "sch_oob" in-band Qdisc for any packet sent to
+- * 	an oob-capable interface, so that both in-band and out-of-band
+- *	traffic is injected from our out-of-band Qdisc.
+- *
+- *	@skb the packet to transmit. Not linked to any upstream
+- *	queue. We may take for granted that @skb->dev is valid and
+- *	oob-capable. There will be no further routing of @skb, we only
+- *	queue the packet to the oob queuing discipline we have for the
+- *	oob-capable device.
+- *
+- *	Returns NET_XMIT_SUCCESS if the packet was successfully queued
+- *	for transmission, NET_XMIT_DROP otherwise.
+- */
+-int netif_xmit_oob(struct sk_buff *skb) /* in-band */
+-{
+-	return xmit_oob(skb->dev, skb) ? NET_XMIT_DROP : NET_XMIT_SUCCESS;
+-}
+-
+ void __init evl_net_init_tx(void)
+ {
+ 	struct evl_net_skb_queue *txq;
+diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
+index ce8f2e8a9..0cb5cfdbf 100644
+--- a/kernel/evl/net/qdisc/core.c
++++ b/kernel/evl/net/qdisc/core.c
+@@ -41,7 +41,6 @@ struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops) /* in-b
+ 		return ERR_PTR(-ENOMEM);
+ 
+ 	qdisc->oob_ops = ops;
+-	evl_net_init_skb_queue(&qdisc->inband_q);
+ 
+ 	ret = ops->init(qdisc);
+ 	if (ret) {
+@@ -55,7 +54,6 @@ EXPORT_SYMBOL_GPL(evl_net_alloc_qdisc);
+ 
+ void evl_net_free_qdisc(struct evl_net_qdisc *qdisc) /* in-band */
+ {
+-	evl_net_destroy_skb_queue(&qdisc->inband_q);
+ 	qdisc->oob_ops->destroy(qdisc);
+ 	kfree(qdisc);
+ }
+@@ -65,12 +63,7 @@ EXPORT_SYMBOL_GPL(evl_net_free_qdisc);
+  *	evl_net_sched_packet - pass an outgoing buffer to the packet
+  *	scheduler.
+  *
+- *	Any high priority packet originating from the EVL stack
+- *	(i.e. skb->oob is true) is given to the out-of-band qdisc
+- *	handler attached to the device for scheduling. Otherwise, the
+- *	packet is linked to the qdisc's low priority in-band queue.
+- *
+- *	@skb the packet to schedule for transmission. Must not be
++ *	@skb the oob packet to schedule for transmission. Must not be
+  *	linked to any upstream queue.
+  *
+  *	@dev the device to pass the packet to.
+@@ -79,14 +72,8 @@ int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob/in-
+ {
+ 	struct evl_net_qdisc *qdisc = dev->oob_state.estate->qdisc;
+ 
+-	/*
+-	 * Low-priority traffic sent by the sched_oob Qdisc goes to
+-	 * the internal in-band queue.
+-	 */
+-	if (!skb->oob) {
+-		evl_net_add_skb_queue(&qdisc->inband_q, skb);
+-		return 0;
+-	}
++	if (EVL_WARN_ON(NET, !skb->oob))
++		return -EINVAL;
+ 
+ 	return qdisc->oob_ops->enqueue(qdisc, skb);
+ }
+-- 
+2.30.2
+

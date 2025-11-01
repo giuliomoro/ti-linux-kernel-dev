@@ -1,0 +1,40 @@
+From 2e8e77df5531ac8aaac2e0e95195de82378d7505 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 11 Jun 2019 11:19:55 +0200
+Subject: [PATCH 398/985] uapi/evl: export ABI level
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/control.h      | 2 --
+ include/uapi/evl/control.h | 2 ++
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/evl/control.h b/include/evl/control.h
+index 14f22fb17..5a736ab2e 100644
+--- a/include/evl/control.h
++++ b/include/evl/control.h
+@@ -11,8 +11,6 @@
+ #include <linux/notifier.h>
+ #include <evl/factory.h>
+ 
+-#define EVL_ABI_LEVEL  0
+-
+ enum evl_run_states {
+ 	EVL_STATE_DISABLED,
+ 	EVL_STATE_RUNNING,
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 2ed03b07d..55191cfc8 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -10,6 +10,8 @@
+ #include <linux/types.h>
+ #include <uapi/evl/sched.h>
+ 
++#define EVL_ABI_LEVEL  0
++
+ struct evl_core_info {
+ 	__u32 abi_level;
+ 	__u32 fpu_features;
+-- 
+2.30.2
+

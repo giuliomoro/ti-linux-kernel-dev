@@ -1,0 +1,47 @@
+From 292f19d4aac3ad0199790c5d0f9be28ced6ff8fa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Jun 2025 17:43:20 +0200
+Subject: [PATCH 189/985] net: dovetail: propagate .ndo_enable_oob handler
+ status
+
+A device driver may fail turning on the oob mode when requested,
+propagate any error code received from ndo_enable_oob() to the caller
+of netif_enable_oob_diversion().
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/netdevice.h | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 6e6732fa5..8523ef46e 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4374,14 +4374,21 @@ static inline bool netif_oob_diversion(const struct net_device *dev)
+ 	return test_bit(__LINK_STATE_OOB, &dev->state);
+ }
+ 
+-static inline void netif_enable_oob_diversion(struct net_device *dev)
++static inline int netif_enable_oob_diversion(struct net_device *dev)
+ {
+ 	const struct net_device_ops *ops = dev->netdev_ops;
++	int ret;
+ 
+-	if (ops->ndo_enable_oob)
+-		ops->ndo_enable_oob(dev);
++	if (ops->ndo_enable_oob) {
++		ret = ops->ndo_enable_oob(dev);
++		if (ret)
++			return ret;
++	}
+ 
++	smp_mb__before_atomic();
+ 	set_bit(__LINK_STATE_OOB, &dev->state);
++
++	return 0;
+ }
+ 
+ static inline void netif_disable_oob_diversion(struct net_device *dev)
+-- 
+2.30.2
+

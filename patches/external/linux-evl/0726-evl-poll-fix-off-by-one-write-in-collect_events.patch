@@ -1,0 +1,32 @@
+From 4d02d143367f24b6d445006e79b3955350e94813 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 11 Apr 2022 11:31:56 +0200
+Subject: [PATCH 726/985] evl/poll: fix off-by-one write in collect_events()
+
+We might be writing past the array collecting the active events, if
+more events were ready in the event group than we had entries in the
+return array. Fix the test detecting the end of this array.
+
+This bug caused a stack smashing in the poll-multiple test.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/poll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index f5d8174b9..f0b7d6363 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -492,7 +492,7 @@ static int collect_events(struct poll_group *group,
+ 				break;
+ 			}
+ 			u_set++;
+-			if (++count > maxevents) {
++			if (++count >= maxevents) {
+ 				count = maxevents;
+ 				break;
+ 			}
+-- 
+2.30.2
+

@@ -1,0 +1,1059 @@
+From b8125098ef2ca4f76ea119d7570717b79e5362e2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 14 Oct 2022 10:04:36 +0200
+Subject: [PATCH 748/985] evl/wait: move lock to the wait channel base
+
+In order to walk the wait dependency chain which may exist between
+threads, we need to access the lock guarding each wait channel we may
+traverse. Currently, this lock is provided by the container type which
+embeds the wait channel descriptor, i.e. mutex or wait queue.
+
+Let's have the wait channel directly provide a private spinlock which
+we can operate in a generic way instead, without knowing about the
+container type.
+
+Fix up the wait queue implementation and users to use this inner lock.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/gpio/gpiolib-cdev.c    | 12 ++++----
+ include/evl/flag.h             | 12 ++++----
+ include/evl/wait.h             | 27 ++++++++--------
+ kernel/evl/clock.c             |  2 +-
+ kernel/evl/monitor.c           | 30 +++++++++---------
+ kernel/evl/net/packet/packet.c | 14 ++++-----
+ kernel/evl/net/skb.c           | 12 ++++----
+ kernel/evl/net/socket.c        |  9 ++++--
+ kernel/evl/observable.c        | 48 ++++++++++++++---------------
+ kernel/evl/sem.c               | 12 ++++----
+ kernel/evl/stax.c              | 26 ++++++++--------
+ kernel/evl/thread.c            |  8 ++---
+ kernel/evl/wait.c              | 56 ++++++++++++++++++++++------------
+ kernel/evl/xbuf.c              |  4 +--
+ 14 files changed, 144 insertions(+), 128 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
+index cca48c1b9..b29093ac3 100644
+--- a/drivers/gpio/gpiolib-cdev.c
++++ b/drivers/gpio/gpiolib-cdev.c
+@@ -2125,11 +2125,11 @@ static irqreturn_t lineevent_oob_irq_handler(int irq, void *p)
+ 	if (lineevent_read_pin(le, &ge, false) == IRQ_NONE)
+ 		return IRQ_NONE;
+ 
+-	raw_spin_lock(&le->oob_state.wait.lock);
++	raw_spin_lock(&le->oob_state.wait.wchan.lock);
+ 	kfifo_put(&le->events, ge);
+ 	evl_wake_up_head(&le->oob_state.wait);
+ 	evl_signal_poll_events(&le->oob_state.poll_head, POLLIN|POLLRDNORM);
+-	raw_spin_unlock(&le->oob_state.wait.lock);
++	raw_spin_unlock(&le->oob_state.wait.wchan.lock);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -2143,12 +2143,12 @@ static __poll_t lineevent_oob_poll(struct file *file,
+ 
+ 	evl_poll_watch(&le->oob_state.poll_head, wait, NULL);
+ 
+-	raw_spin_lock_irqsave(&le->oob_state.wait.lock, flags);
++	raw_spin_lock_irqsave(&le->oob_state.wait.wchan.lock, flags);
+ 
+ 	if (!kfifo_is_empty(&le->events))
+ 		ready |= POLLIN|POLLRDNORM;
+ 
+-	raw_spin_unlock_irqrestore(&le->oob_state.wait.lock, flags);
++	raw_spin_unlock_irqrestore(&le->oob_state.wait.wchan.lock, flags);
+ 
+ 	return ready;
+ }
+@@ -2169,7 +2169,7 @@ static ssize_t lineevent_oob_read(struct file *file,
+ 		return -EPERM;
+ 
+ 	do {
+-		raw_spin_lock_irqsave(&le->oob_state.wait.lock, flags);
++		raw_spin_lock_irqsave(&le->oob_state.wait.wchan.lock, flags);
+ 
+ 		ret = kfifo_get(&le->events, &ge);
+ 		/*
+@@ -2179,7 +2179,7 @@ static ssize_t lineevent_oob_read(struct file *file,
+ 		if (!ret)
+ 			ret = 0;
+ 
+-		raw_spin_unlock_irqrestore(&le->oob_state.wait.lock, flags);
++		raw_spin_unlock_irqrestore(&le->oob_state.wait.wchan.lock, flags);
+ 
+ 		if (ret) {
+ 			ret = raw_copy_to_user(buf, &ge, sizeof(ge));
+diff --git a/include/evl/flag.h b/include/evl/flag.h
+index 230367752..44633dd04 100644
+--- a/include/evl/flag.h
++++ b/include/evl/flag.h
+@@ -51,10 +51,10 @@ static inline bool evl_read_flag(struct evl_flag *wf)
+ }
+ 
+ #define evl_lock_flag(__wf, __flags)		\
+-	raw_spin_lock_irqsave(&(__wf)->wait.lock, __flags)
++	raw_spin_lock_irqsave(&(__wf)->wait.wchan.lock, __flags)
+ 
+ #define evl_unlock_flag(__wf, __flags)		\
+-	raw_spin_unlock_irqrestore(&(__wf)->wait.lock, __flags)
++	raw_spin_unlock_irqrestore(&(__wf)->wait.wchan.lock, __flags)
+ 
+ static inline
+ int evl_wait_flag_timeout(struct evl_flag *wf,
+@@ -69,13 +69,13 @@ static inline int evl_wait_flag(struct evl_flag *wf)
+ 	return evl_wait_flag_timeout(wf, EVL_INFINITE, EVL_REL);
+ }
+ 
+-/* wf->wait.lock held, irqs off */
++/* wf->wait.wchan.lock held, irqs off */
+ static inline struct evl_thread *evl_wait_flag_head(struct evl_flag *wf)
+ {
+ 	return evl_wait_head(&wf->wait);
+ }
+ 
+-/* wf->wait.lock held, irqs off */
++/* wf->wait.wchan.lock held, irqs off */
+ static inline void evl_raise_flag_locked(struct evl_flag *wf)
+ {
+ 	wf->raised = true;
+@@ -97,7 +97,7 @@ static inline void evl_raise_flag(struct evl_flag *wf)
+ 	evl_schedule();
+ }
+ 
+-/* wf->wait.lock held, irqs off */
++/* wf->wait.wchan.lock held, irqs off */
+ static inline void evl_flush_flag_locked(struct evl_flag *wf, int reason)
+ {
+ 	evl_flush_wait_locked(&wf->wait, reason);
+@@ -118,7 +118,7 @@ static inline void evl_flush_flag(struct evl_flag *wf, int reason)
+ 	evl_schedule();
+ }
+ 
+-/* wf->wait.lock held, irqs off */
++/* wf->wait.wchan.lock held, irqs off */
+ static inline void evl_pulse_flag_locked(struct evl_flag *wf)
+ {
+ 	evl_flush_flag_locked(wf, T_BCAST);
+diff --git a/include/evl/wait.h b/include/evl/wait.h
+index e7ead0b59..86b98d1fa 100644
+--- a/include/evl/wait.h
++++ b/include/evl/wait.h
+@@ -19,6 +19,8 @@
+ struct evl_thread;
+ 
+ struct evl_wait_channel {
++	hard_spinlock_t lock;
++	struct lock_class_key lock_key;	/* lockdep disambiguation */
+ 	int (*reorder_wait)(struct evl_thread *waiter,
+ 			struct evl_thread *originator);
+ 	struct evl_thread *(*follow_depend)(struct evl_thread *prev_owner,
+@@ -31,14 +33,13 @@ struct evl_wait_queue {
+ 	int flags;
+ 	struct evl_clock *clock;
+ 	struct evl_wait_channel wchan;
+-	hard_spinlock_t lock;
+ };
+ 
+ #define EVL_WAIT_INITIALIZER(__name) {					\
+ 		.flags = EVL_WAIT_PRIO,					\
+ 		.clock = &evl_mono_clock,				\
+-		.lock = __HARD_SPIN_LOCK_INITIALIZER((__name).lock),	\
+ 		.wchan = {						\
++			.lock = __HARD_SPIN_LOCK_INITIALIZER((__name).wchan.lock), \
+ 			.reorder_wait = evl_reorder_wait,		\
+ 			.follow_depend = NULL,				\
+ 			.wait_list = LIST_HEAD_INIT((__name).wchan.wait_list), \
+@@ -62,7 +63,7 @@ struct evl_wait_queue {
+ 	int __ret = 0, __bcast;						\
+ 	unsigned long __flags;						\
+ 									\
+-	raw_spin_lock_irqsave(&(__wq)->lock, __flags);			\
++	raw_spin_lock_irqsave(&(__wq)->wchan.lock, __flags);		\
+ 	if (!(__cond)) {						\
+ 		if (timeout_nonblock(__timeout)) {			\
+ 			__ret = -EAGAIN;				\
+@@ -70,14 +71,14 @@ struct evl_wait_queue {
+ 			do {						\
+ 				evl_add_wait_queue(__wq, __timeout,	\
+ 						__timeout_mode);	\
+-				raw_spin_unlock_irqrestore(&(__wq)->lock, __flags); \
++				raw_spin_unlock_irqrestore(&(__wq)->wchan.lock, __flags); \
+ 				__ret = evl_wait_schedule(__wq);	\
+ 				__bcast = evl_current()->info & T_BCAST; \
+-				raw_spin_lock_irqsave(&(__wq)->lock, __flags); \
++				raw_spin_lock_irqsave(&(__wq)->wchan.lock, __flags); \
+ 			} while (!__ret && !__bcast && !(__cond));	\
+ 		}							\
+ 	}								\
+-	raw_spin_unlock_irqrestore(&(__wq)->lock, __flags);		\
++	raw_spin_unlock_irqrestore(&(__wq)->wchan.lock, __flags);	\
+ 	__ret;								\
+ })
+ 
+@@ -96,21 +97,17 @@ int evl_wait_schedule(struct evl_wait_queue *wq);
+ 
+ static inline bool evl_wait_active(struct evl_wait_queue *wq)
+ {
+-	assert_hard_lock(&wq->lock);
++	assert_hard_lock(&wq->wchan.lock);
+ 	return !list_empty(&wq->wchan.wait_list);
+ }
+ 
+ void __evl_init_wait(struct evl_wait_queue *wq,
+ 		struct evl_clock *clock,
+ 		int flags,
+-		const char *name,
+-		struct lock_class_key *key);
+-
+-#define evl_init_wait(__wq, __clock, __flags)				\
+-	do {								\
+-		static struct lock_class_key __key;			\
+-		__evl_init_wait(__wq, __clock, __flags, #__wq, &__key); \
+-	} while (0)
++		const char *name);
++
++#define evl_init_wait(__wq, __clock, __flags)	\
++	__evl_init_wait(__wq, __clock, __flags, #__wq)
+ 
+ void evl_destroy_wait(struct evl_wait_queue *wq);
+ 
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 23d039369..f09aaff24 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -715,7 +715,7 @@ static int timerfd_release(struct inode *inode, struct file *filp)
+ 	struct evl_timerfd *timerfd = filp->private_data;
+ 
+ 	evl_stop_timer(&timerfd->timer);
+-	evl_flush_wait(&timerfd->readers, T_RMID);
++	evl_destroy_wait(&timerfd->readers);
+ 	evl_release_file(&timerfd->efile);
+ 	evl_put_element(&timerfd->timer.clock->element);
+ 	kfree(timerfd);
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index bb51ee056..1a2fefcd9 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -114,7 +114,7 @@ void __evl_commit_monitor_ceiling(void)
+ 	curr->u_window->pp_pending = EVL_NO_HANDLE;
+ }
+ 
+-/* event->gate->lock and event->wait_queue.lock held, irqs off */
++/* event->gate->lock and event->wait_queue.wchan.lock held, irqs off */
+ static void __untrack_event(struct evl_monitor *event)
+ {
+ 	/*
+@@ -134,13 +134,13 @@ static void untrack_event(struct evl_monitor *event)
+ 	unsigned long flags;
+ 
+ 	raw_spin_lock_irqsave(&gate->lock, flags);
+-	raw_spin_lock(&event->wait_queue.lock);
++	raw_spin_lock(&event->wait_queue.wchan.lock);
+ 	__untrack_event(event);
+-	raw_spin_unlock(&event->wait_queue.lock);
++	raw_spin_unlock(&event->wait_queue.wchan.lock);
+ 	raw_spin_unlock_irqrestore(&gate->lock, flags);
+ }
+ 
+-/* event->gate->lock and event->wait_queue.lock held, irqs off */
++/* event->gate->lock and event->wait_queue.wchan.lock held, irqs off */
+ static void wakeup_waiters(struct evl_monitor *event)
+ {
+ 	struct evl_monitor_state *state = event->state;
+@@ -264,10 +264,10 @@ static int exit_monitor(struct evl_monitor *gate)
+ 	if (state->flags & EVL_MONITOR_SIGNALED) {
+ 		state->flags &= ~EVL_MONITOR_SIGNALED;
+ 		list_for_each_entry_safe(event, n, &gate->events, next) {
+-			raw_spin_lock(&event->wait_queue.lock);
++			raw_spin_lock(&event->wait_queue.wchan.lock);
+ 			if (event->state->flags & EVL_MONITOR_SIGNALED)
+ 				wakeup_waiters(event);
+-			raw_spin_unlock(&event->wait_queue.lock);
++			raw_spin_unlock(&event->wait_queue.wchan.lock);
+ 		}
+ 	}
+ 
+@@ -338,17 +338,17 @@ static int wait_monitor_ungated(struct file *filp,
+ 				}
+ 			} while (!atomic_try_cmpxchg(at, &val, val - 1));
+ 		} else {
+-			raw_spin_lock_irqsave(&event->wait_queue.lock, flags);
++			raw_spin_lock_irqsave(&event->wait_queue.wchan.lock, flags);
+ 			if (atomic_dec_return(at) < 0) {
+ 				evl_add_wait_queue(&event->wait_queue,
+ 						timeout, tmode);
+-				raw_spin_unlock_irqrestore(&event->wait_queue.lock,
++				raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock,
+ 							flags);
+ 				ret = evl_wait_schedule(&event->wait_queue);
+ 				if (ret) /* Rollback decrement if failed. */
+ 					atomic_inc(at);
+ 			} else
+-				raw_spin_unlock_irqrestore(&event->wait_queue.lock,
++				raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock,
+ 							flags);
+ 		}
+ 		break;
+@@ -408,21 +408,21 @@ static int signal_monitor_ungated(struct evl_monitor *event, s32 sigval)
+ 	case EVL_EVENT_COUNT:
+ 		if (!sigval)
+ 			break;
+-		raw_spin_lock_irqsave(&event->wait_queue.lock, flags);
++		raw_spin_lock_irqsave(&event->wait_queue.wchan.lock, flags);
+ 		if (atomic_inc_return(&state->u.event.value) <= 0) {
+ 			evl_wake_up_head(&event->wait_queue);
+ 			pollable = false;
+ 		}
+-		raw_spin_unlock_irqrestore(&event->wait_queue.lock, flags);
++		raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
+ 		break;
+ 	case EVL_EVENT_MASK:
+-		raw_spin_lock_irqsave(&event->wait_queue.lock, flags);
++		raw_spin_lock_irqsave(&event->wait_queue.wchan.lock, flags);
+ 		val = set_event_mask(state, (int)sigval);
+ 		if (val)
+ 			evl_flush_wait_locked(&event->wait_queue, 0);
+ 		else
+ 			pollable = false;
+-		raw_spin_unlock_irqrestore(&event->wait_queue.lock, flags);
++		raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -509,9 +509,9 @@ static int wait_monitor(struct file *filp,
+ 	 * called later on, do not perform the WOLI checks when
+ 	 * enqueuing.
+ 	 */
+-	raw_spin_lock(&event->wait_queue.lock);
++	raw_spin_lock(&event->wait_queue.wchan.lock);
+ 	evl_add_wait_queue_unchecked(&event->wait_queue, timeout, tmode);
+-	raw_spin_unlock(&event->wait_queue.lock);
++	raw_spin_unlock(&event->wait_queue.wchan.lock);
+ 
+ 	rq = evl_get_thread_rq_noirq(curr);
+ 	curr->info &= ~T_SIGNAL;
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index ca1a1f71c..16f7cb005 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -32,7 +32,7 @@ find_packet_proto(__be16 protocol,
+ 		struct evl_net_proto *default_proto);
+ 
+ /*
+- * Lock nesting: protocol_lock -> rxq->lock -> esk->input_wait.lock
++ * Lock nesting: protocol_lock -> rxq->lock -> esk->input_wait.wchan.lock
+  * We use linear skbs only (no paged data).
+  */
+ 
+@@ -109,13 +109,13 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,
+ 			}
+ 		}
+ 
+-		raw_spin_lock(&esk->input_wait.lock);
++		raw_spin_lock(&esk->input_wait.wchan.lock);
+ 
+ 		list_add_tail(&qskb->list, &esk->input);
+ 		if (evl_wait_active(&esk->input_wait))
+ 			evl_wake_up_head(&esk->input_wait);
+ 
+-		raw_spin_unlock(&esk->input_wait.lock);
++		raw_spin_unlock(&esk->input_wait.wchan.lock);
+ 
+ 		evl_signal_poll_events(&esk->poll_head,	POLLIN|POLLRDNORM);
+ 		delivered = true;
+@@ -603,11 +603,11 @@ static ssize_t receive_packet(struct evl_socket *esk,
+ 		msg_flags |= MSG_DONTWAIT;
+ 
+ 	do {
+-		raw_spin_lock_irqsave(&esk->input_wait.lock, flags);
++		raw_spin_lock_irqsave(&esk->input_wait.wchan.lock, flags);
+ 
+ 		if (!list_empty(&esk->input)) {
+ 			skb = list_get_entry(&esk->input, struct sk_buff, list);
+-			raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++			raw_spin_unlock_irqrestore(&esk->input_wait.wchan.lock, flags);
+ 			/* Restore the MAC header. */
+ 			skb_push(skb, skb->data - skb_mac_header(skb));
+ 			ret = copy_packet_to_user(u_msghdr, iov, iovlen, skb);
+@@ -617,12 +617,12 @@ static ssize_t receive_packet(struct evl_socket *esk,
+ 		}
+ 
+ 		if (msg_flags & MSG_DONTWAIT) {
+-			raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++			raw_spin_unlock_irqrestore(&esk->input_wait.wchan.lock, flags);
+ 			return -EWOULDBLOCK;
+ 		}
+ 
+ 		evl_add_wait_queue(&esk->input_wait, timeout, tmode);
+-		raw_spin_unlock_irqrestore(&esk->input_wait.lock, flags);
++		raw_spin_unlock_irqrestore(&esk->input_wait.wchan.lock, flags);
+ 		ret = evl_wait_schedule(&esk->input_wait);
+ 	} while (!ret);
+ 
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 8fb80f352..3f5456b1e 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -63,7 +63,7 @@ static int recycling_count;
+ 
+ /*
+  * CAUTION: Innermost lock, may be nested with
+- * oob_netdev_state.pool_wait.lock.
++ * oob_netdev_state.pool_wait.wchan.lock.
+  */
+ static DEFINE_HARD_SPINLOCK(recycling_lock);
+ 
+@@ -131,7 +131,7 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 		return NULL;
+ 
+ 	for (;;) {
+-		raw_spin_lock_irqsave(&est->pool_wait.lock, flags);
++		raw_spin_lock_irqsave(&est->pool_wait.wchan.lock, flags);
+ 
+ 		if (!list_empty(&est->free_skb_pool)) {
+ 			skb = list_get_entry(&est->free_skb_pool,
+@@ -147,14 +147,14 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 
+ 		evl_add_wait_queue(&est->pool_wait, timeout, tmode);
+ 
+-		raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++		raw_spin_unlock_irqrestore(&est->pool_wait.wchan.lock, flags);
+ 
+ 		ret = evl_wait_schedule(&est->pool_wait);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&est->pool_wait.wchan.lock, flags);
+ 
+ 	return skb;
+ }
+@@ -180,7 +180,7 @@ static void free_skb_to_dev(struct sk_buff *skb)
+ 	unsigned long flags;
+ 
+ 	est = dev->oob_context.dev_state.estate;
+-	raw_spin_lock_irqsave(&est->pool_wait.lock, flags);
++	raw_spin_lock_irqsave(&est->pool_wait.wchan.lock, flags);
+ 
+ 	list_add(&skb->list, &est->free_skb_pool);
+ 	est->pool_free++;
+@@ -188,7 +188,7 @@ static void free_skb_to_dev(struct sk_buff *skb)
+ 	if (evl_wait_active(&est->pool_wait))
+ 		evl_wake_up_head(&est->pool_wait);
+ 
+-	raw_spin_unlock_irqrestore(&est->pool_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&est->pool_wait.wchan.lock, flags);
+ 
+ 	evl_signal_poll_events(&est->poll_head,	POLLOUT|POLLWRNORM);
+ }
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 5402e157b..38946d24b 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -300,7 +300,7 @@ void evl_unregister_socket_domain(struct evl_socket_domain *domain)
+ 
+ static inline bool charge_socket_wmem(struct evl_socket *esk,
+ 				struct sk_buff *skb)
+-{				/* esk->wmem_wait.lock held */
++{				/* esk->wmem_wait.wchan.lock held */
+ 	if (atomic_read(&esk->wmem_count) >= esk->wmem_max)
+ 		return false;
+ 
+@@ -338,7 +338,7 @@ void evl_uncharge_socket_wmem(struct sk_buff *skb)
+ 	 * The tracking socket cannot be stale as it has to pass the
+ 	 * wmem_crossing first before unwinding in sock_oob_detach().
+ 	 */
+-	raw_spin_lock_irqsave(&esk->wmem_wait.lock, flags);
++	raw_spin_lock_irqsave(&esk->wmem_wait.wchan.lock, flags);
+ 
+ 	EVL_NET_CB(skb)->tracker = NULL;
+ 
+@@ -348,7 +348,7 @@ void evl_uncharge_socket_wmem(struct sk_buff *skb)
+ 
+ 	evl_up_crossing(&esk->wmem_drain);
+ 
+-	raw_spin_unlock_irqrestore(&esk->wmem_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&esk->wmem_wait.wchan.lock, flags);
+ 
+ 	EVL_WARN_ON(NET, count < 0);
+ }
+@@ -487,6 +487,9 @@ void sock_oob_detach(struct socket *sock)
+ 	/* We are detaching, so rmem_count can be left out of sync. */
+ 	evl_net_free_skb_list(&esk->input);
+ 
++	evl_destroy_wait(&esk->input_wait);
++	evl_destroy_wait(&esk->wmem_wait);
++
+ 	if (esk->proto->detach)
+ 		esk->proto->detach(esk);
+ 
+diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
+index dab0272cc..d48833551 100644
+--- a/kernel/evl/observable.c
++++ b/kernel/evl/observable.c
+@@ -189,9 +189,9 @@ static int add_subscription(struct evl_observable *observable,
+ 	 */
+ 	raw_spin_lock_irqsave(&observable->lock, flags);
+ 	list_add_tail(&observer->next, &observable->observers);
+-	raw_spin_lock(&observable->oob_wait.lock);
++	raw_spin_lock(&observable->oob_wait.wchan.lock);
+ 	observable->writable_observers++;
+-	raw_spin_unlock(&observable->oob_wait.lock);
++	raw_spin_unlock(&observable->oob_wait.wchan.lock);
+ 	raw_spin_unlock_irqrestore(&observable->lock, flags);
+ 	evl_signal_poll_events(&observable->poll_head, POLLOUT|POLLWRNORM);
+ 
+@@ -207,7 +207,7 @@ static int add_subscription(struct evl_observable *observable,
+ 	return ret;
+ }
+ 
+-/* observable->oob_wait.lock held, irqs off */
++/* observable->oob_wait.wchan.lock held, irqs off */
+ static void decrease_writability(struct evl_observable *observable)
+ {
+ 	observable->writable_observers--;
+@@ -220,12 +220,12 @@ static void detach_observer_locked(struct evl_observer *observer,
+ {
+ 	list_del(&observer->next);
+ 
+-	raw_spin_lock(&observable->oob_wait.lock);
++	raw_spin_lock(&observable->oob_wait.wchan.lock);
+ 
+ 	if (!list_empty(&observer->free_list))
+ 		decrease_writability(observable);
+ 
+-	raw_spin_unlock(&observable->oob_wait.lock);
++	raw_spin_unlock(&observable->oob_wait.wchan.lock);
+ }
+ 
+ static inline void get_observer(struct evl_observer *observer)
+@@ -351,12 +351,12 @@ static void wake_oob_threads(struct evl_observable *observable)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	if (evl_wait_active(&observable->oob_wait))
+ 		evl_flush_wait_locked(&observable->oob_wait, 0);
+ 
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	evl_schedule();
+ }
+@@ -385,7 +385,7 @@ void evl_flush_observable(struct evl_observable *observable)
+ 	 * some events might still being pushed to the observable via
+ 	 * the thread file descriptor, so locking is required.
+ 	 */
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	list_for_each_entry_safe(observer, tmp, &observable->observers, next) {
+ 		list_del_init(&observer->next);
+@@ -393,7 +393,7 @@ void evl_flush_observable(struct evl_observable *observable)
+ 			decrease_writability(observable);
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	wake_oob_threads(observable);
+ }
+@@ -459,7 +459,7 @@ static bool notify_one_observer(struct evl_observable *observable,
+ 	struct evl_notice last_notice;
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	if (observer->flags & EVL_NOTIFY_ONCHANGE) {
+ 		last_notice = observer->last_notice;
+@@ -473,7 +473,7 @@ static bool notify_one_observer(struct evl_observable *observable,
+ 	}
+ 
+ 	if (list_empty(&observer->free_list)) {
+-		raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++		raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 		return false;
+ 	}
+ 
+@@ -486,7 +486,7 @@ static bool notify_one_observer(struct evl_observable *observable,
+ 	if (list_empty(&observer->free_list))
+ 		decrease_writability(observable);
+ done:
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	return true;
+ }
+@@ -733,7 +733,7 @@ pull_from_oob(struct evl_observable *observable,
+ 	unsigned long flags;
+ 	int ret;
+ 
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	/*
+ 	 * observable->wait.lock guards the pending and free
+@@ -752,17 +752,17 @@ pull_from_oob(struct evl_observable *observable,
+ 			goto out;
+ 		}
+ 		evl_add_wait_queue(&observable->oob_wait, EVL_INFINITE, EVL_REL);
+-		raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++		raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 		ret = evl_wait_schedule(&observable->oob_wait);
+ 		if (ret)
+ 			return ERR_PTR(ret);
+-		raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++		raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 	}
+ 
+ 	nfr = list_get_entry(&observer->pending_list,
+ 			struct evl_notification_record, next);
+ out:
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	return nfr;
+ }
+@@ -784,7 +784,7 @@ pull_from_inband(struct evl_observable *observable,
+ 	 * an explanation.
+ 	 */
+ 	spin_lock_irqsave(&observable->inband_wait.lock, ib_flags);
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, oob_flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, oob_flags);
+ 
+ 	for (;;) {
+ 		/*
+@@ -805,11 +805,11 @@ pull_from_inband(struct evl_observable *observable,
+ 			break;
+ 		}
+ 		set_current_state(TASK_INTERRUPTIBLE);
+-		raw_spin_unlock_irqrestore(&observable->oob_wait.lock, oob_flags);
++		raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, oob_flags);
+ 		spin_unlock_irqrestore(&observable->inband_wait.lock, ib_flags);
+ 		schedule();
+ 		spin_lock_irqsave(&observable->inband_wait.lock, ib_flags);
+-		raw_spin_lock_irqsave(&observable->oob_wait.lock, oob_flags);
++		raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, oob_flags);
+ 
+ 		if (signal_pending(current)) {
+ 			ret = -ERESTARTSYS;
+@@ -819,7 +819,7 @@ pull_from_inband(struct evl_observable *observable,
+ 
+ 	list_del(&wq_entry.entry);
+ 
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, oob_flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, oob_flags);
+ 	spin_unlock_irqrestore(&observable->inband_wait.lock, ib_flags);
+ 
+ 	return ret ? ERR_PTR(ret) : nfr;
+@@ -859,7 +859,7 @@ static int pull_notification(struct evl_observable *observable,
+ 	 */
+ 	ret = raw_copy_to_user(u_buf, &nf, sizeof(nf));
+ 
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	if (ret) {
+ 		list_add(&nfr->next, &observer->pending_list);
+@@ -872,7 +872,7 @@ static int pull_notification(struct evl_observable *observable,
+ 		list_add(&nfr->next, &observer->free_list);
+ 	}
+ 
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	if (unlikely(sigpoll))
+ 		evl_signal_poll_events(&observable->poll_head,
+@@ -944,7 +944,7 @@ static __poll_t poll_observable(struct evl_observable *observable)
+ 	if (observer == NULL)
+ 		return POLLERR;
+ 
+-	raw_spin_lock_irqsave(&observable->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	/* Only subscribers can inquire about readability. */
+ 	if (observer && !list_empty(&observer->pending_list))
+@@ -953,7 +953,7 @@ static __poll_t poll_observable(struct evl_observable *observable)
+ 	if (observable->writable_observers > 0)
+ 		ret |= POLLOUT|POLLWRNORM;
+ 
+-	raw_spin_unlock_irqrestore(&observable->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&observable->oob_wait.wchan.lock, flags);
+ 
+ 	return ret;
+ }
+diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
+index b7942b750..e5fb14441 100644
+--- a/kernel/evl/sem.c
++++ b/kernel/evl/sem.c
+@@ -38,9 +38,9 @@ int evl_trydown(struct evl_ksem *ksem)
+ 	unsigned long flags;
+ 	bool ret;
+ 
+-	raw_spin_lock_irqsave(&ksem->wait.lock, flags);
++	raw_spin_lock_irqsave(&ksem->wait.wchan.lock, flags);
+ 	ret = down_ksem(ksem);
+-	raw_spin_unlock_irqrestore(&ksem->wait.lock, flags);
++	raw_spin_unlock_irqrestore(&ksem->wait.wchan.lock, flags);
+ 
+ 	return ret ? 0 : -EAGAIN;
+ }
+@@ -50,10 +50,10 @@ void evl_up(struct evl_ksem *ksem)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&ksem->wait.lock, flags);
++	raw_spin_lock_irqsave(&ksem->wait.wchan.lock, flags);
+ 	ksem->value++;
+ 	evl_wake_up_head(&ksem->wait);
+-	raw_spin_unlock_irqrestore(&ksem->wait.lock, flags);
++	raw_spin_unlock_irqrestore(&ksem->wait.wchan.lock, flags);
+ 	evl_schedule();
+ }
+ EXPORT_SYMBOL_GPL(evl_up);
+@@ -62,10 +62,10 @@ void evl_broadcast(struct evl_ksem *ksem)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&ksem->wait.lock, flags);
++	raw_spin_lock_irqsave(&ksem->wait.wchan.lock, flags);
+ 	ksem->value = 0;
+ 	evl_flush_wait_locked(&ksem->wait, T_BCAST);
+-	raw_spin_unlock_irqrestore(&ksem->wait.lock, flags);
++	raw_spin_unlock_irqrestore(&ksem->wait.wchan.lock, flags);
+ 	evl_schedule();
+ }
+ EXPORT_SYMBOL_GPL(evl_broadcast);
+diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
+index c20994aa3..882dd9833 100644
+--- a/kernel/evl/stax.c
++++ b/kernel/evl/stax.c
+@@ -13,7 +13,7 @@
+ #define STAX_INBAND_BIT  BIT(31)
+ /*
+  * The stax is being claimed by the converse stage. This bit is
+- * manipulated exclusively while holding oob_wait.lock.
++ * manipulated exclusively while holding oob_wait.wchan.lock.
+  */
+ #define STAX_CLAIMED_BIT BIT(30)
+ 
+@@ -53,7 +53,7 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
+ 	unsigned long flags;
+ 	bool notify = false;
+ 
+-	raw_spin_lock_irqsave(&stax->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	if (gateval & STAX_CLAIMED_BIT) {
+ 		prev = atomic_read(&stax->gate);
+@@ -79,9 +79,9 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
+ 		if (oob_may_access(atomic_read(&stax->gate)))
+ 			break;
+ 		evl_add_wait_queue(&stax->oob_wait, EVL_INFINITE, EVL_REL);
+-		raw_spin_unlock_irqrestore(&stax->oob_wait.lock, flags);
++		raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, flags);
+ 		ret = evl_wait_schedule(&stax->oob_wait);
+-		raw_spin_lock_irqsave(&stax->oob_wait.lock, flags);
++		raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, flags);
+ 	} while (!ret);
+ 
+ 	/* Clear the claim bit if nobody contends anymore. */
+@@ -94,7 +94,7 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
+ 		} while (prev != old);
+ 	}
+ out:
+-	raw_spin_unlock_irqrestore(&stax->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	if (notify) {
+ 		evl_notify_thread(curr, EVL_HMDIAG_STAGEX, evl_nil);
+@@ -161,7 +161,7 @@ static int claim_stax_from_inband(struct evl_stax *stax, int gateval)
+ 	 * this sequence is legit.
+ 	 */
+ 	spin_lock_irqsave(&stax->inband_wait.lock, ib_flags);
+-	raw_spin_lock_irqsave(&stax->oob_wait.lock, oob_flags);
++	raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, oob_flags);
+ 
+ 	if (gateval & STAX_CLAIMED_BIT) {
+ 		prev = atomic_read(&stax->gate);
+@@ -188,11 +188,11 @@ static int claim_stax_from_inband(struct evl_stax *stax, int gateval)
+ 			break;
+ 
+ 		set_current_state(TASK_INTERRUPTIBLE);
+-		raw_spin_unlock_irqrestore(&stax->oob_wait.lock, oob_flags);
++		raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, oob_flags);
+ 		spin_unlock_irqrestore(&stax->inband_wait.lock, ib_flags);
+ 		schedule();
+ 		spin_lock_irqsave(&stax->inband_wait.lock, ib_flags);
+-		raw_spin_lock_irqsave(&stax->oob_wait.lock, oob_flags);
++		raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, oob_flags);
+ 
+ 		if (signal_pending(current)) {
+ 			ret = -ERESTARTSYS;
+@@ -211,7 +211,7 @@ static int claim_stax_from_inband(struct evl_stax *stax, int gateval)
+ 		} while (prev != old);
+ 	}
+ out:
+-	raw_spin_unlock_irqrestore(&stax->oob_wait.lock, oob_flags);
++	raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, oob_flags);
+ 	spin_unlock_irqrestore(&stax->inband_wait.lock, ib_flags);
+ 
+ 	return ret;
+@@ -314,7 +314,7 @@ static void unlock_from_oob(struct evl_stax *stax)
+ 	 * stax is claimed by inband, we have to take the slow path
+ 	 * under lock.
+ 	 */
+-	raw_spin_lock_irqsave(&stax->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	do {
+ 		old = prev;
+@@ -324,7 +324,7 @@ static void unlock_from_oob(struct evl_stax *stax)
+ 		prev = atomic_cmpxchg(&stax->gate, old, new);
+ 	} while (prev != old);
+ 
+-	raw_spin_unlock_irqrestore(&stax->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	if (!(new & STAX_CONCURRENCY_MASK))
+ 		irq_work_queue(&stax->irq_work);
+@@ -363,7 +363,7 @@ static void unlock_from_inband(struct evl_stax *stax)
+ 	 * Converse to unlock_from_oob(): stax is claimed by oob, we
+ 	 * have to take the slow path under lock.
+ 	 */
+-	raw_spin_lock_irqsave(&stax->oob_wait.lock, flags);
++	raw_spin_lock_irqsave(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	do {
+ 		old = prev;
+@@ -378,7 +378,7 @@ static void unlock_from_inband(struct evl_stax *stax)
+ 	if (!(new & STAX_CONCURRENCY_MASK))
+ 		evl_flush_wait_locked(&stax->oob_wait, 0);
+ out:
+-	raw_spin_unlock_irqrestore(&stax->oob_wait.lock, flags);
++	raw_spin_unlock_irqrestore(&stax->oob_wait.wchan.lock, flags);
+ 
+ 	evl_schedule();
+ }
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 59dffe661..906c58dc7 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -1680,14 +1680,14 @@ static void join_ptsync(struct evl_thread *curr)
+ {
+ 	struct oob_mm_state *oob_mm = curr->oob_mm;
+ 
+-	raw_spin_lock(&oob_mm->ptsync_barrier.lock);
++	raw_spin_lock(&oob_mm->ptsync_barrier.wchan.lock);
+ 
+ 	/* In non-stop mode, no ptsync sequence is started. */
+ 	if (test_bit(EVL_MM_PTSYNC_BIT, &oob_mm->flags) &&
+ 		list_empty(&curr->ptsync_next))
+ 		list_add_tail(&curr->ptsync_next, &oob_mm->ptrace_sync);
+ 
+-	raw_spin_unlock(&oob_mm->ptsync_barrier.lock);
++	raw_spin_unlock(&oob_mm->ptsync_barrier.wchan.lock);
+ }
+ 
+ static int leave_ptsync(struct evl_thread *leaver)
+@@ -1696,7 +1696,7 @@ static int leave_ptsync(struct evl_thread *leaver)
+ 	unsigned long flags;
+ 	int ret = 0;
+ 
+-	raw_spin_lock_irqsave(&oob_mm->ptsync_barrier.lock, flags);
++	raw_spin_lock_irqsave(&oob_mm->ptsync_barrier.wchan.lock, flags);
+ 
+ 	if (!test_bit(EVL_MM_PTSYNC_BIT, &oob_mm->flags))
+ 		goto out;
+@@ -1710,7 +1710,7 @@ static int leave_ptsync(struct evl_thread *leaver)
+ 		ret = 1;
+ 	}
+ out:
+-	raw_spin_unlock_irqrestore(&oob_mm->ptsync_barrier.lock, flags);
++	raw_spin_unlock_irqrestore(&oob_mm->ptsync_barrier.wchan.lock, flags);
+ 
+ 	return ret;
+ }
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index f7fc2c733..6ed82402a 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -13,17 +13,32 @@
+ #include <trace/events/evl.h>
+ 
+ void __evl_init_wait(struct evl_wait_queue *wq,
+-		struct evl_clock *clock, int flags,
+-		const char *name, struct lock_class_key *key)
++		struct evl_clock *clock, int wq_flags,
++		const char *name)
+ {
+-	wq->flags = flags;
++	unsigned long flags __maybe_unused;
++
++	wq->flags = wq_flags;
+ 	wq->clock = clock;
+-	raw_spin_lock_init(&wq->lock);
+ 	wq->wchan.reorder_wait = evl_reorder_wait;
+ 	wq->wchan.follow_depend = NULL;
+ 	wq->wchan.name = name;
+ 	INIT_LIST_HEAD(&wq->wchan.wait_list);
+-	lockdep_set_class_and_name(&wq->lock, key, name);
++	raw_spin_lock_init(&wq->wchan.lock);
++#ifdef CONFIG_PROVE_LOCKING
++	lockdep_register_key(&wq->wchan.lock_key);
++	lockdep_set_class_and_name(&wq->wchan.lock, &wq->wchan.lock_key, name);
++	/*
++	 * might_lock() forces lockdep to pre-register a dynamic lock
++	 * class, instead of waiting lazily for the first lock
++	 * acquisition, which might happen oob for us. Since that
++	 * registration depends on RCU, we need to make sure this
++	 * happens in-band.
++	 */
++	local_irq_save(flags);
++	might_lock(&wq->wchan.lock);
++	local_irq_restore(flags);
++#endif
+ }
+ EXPORT_SYMBOL_GPL(__evl_init_wait);
+ 
+@@ -31,15 +46,16 @@ void evl_destroy_wait(struct evl_wait_queue *wq)
+ {
+ 	evl_flush_wait(wq, T_RMID);
+ 	evl_schedule();
++	lockdep_unregister_key(&wq->wchan.lock_key);
+ }
+ EXPORT_SYMBOL_GPL(evl_destroy_wait);
+ 
+-/* wq->lock held, hard irqs off */
++/* wq->wchan.lock held, hard irqs off */
+ static void __evl_add_wait_queue(struct evl_thread *curr,
+ 				struct evl_wait_queue *wq,
+ 				ktime_t timeout, enum evl_tmode timeout_mode)
+ {
+-	assert_hard_lock(&wq->lock);
++	assert_hard_lock(&wq->wchan.lock);
+ 
+ 	trace_evl_wait(wq);
+ 
+@@ -73,12 +89,12 @@ void evl_add_wait_queue_unchecked(struct evl_wait_queue *wq, ktime_t timeout,
+ 	__evl_add_wait_queue(curr, wq, timeout, timeout_mode);
+ }
+ 
+-/* wq->lock held, hard irqs off */
++/* wq->wchan.lock held, hard irqs off */
+ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+ 			struct evl_thread *waiter,
+ 			int reason)
+ {
+-	assert_hard_lock(&wq->lock);
++	assert_hard_lock(&wq->wchan.lock);
+ 
+ 	trace_evl_wake_up(wq);
+ 
+@@ -96,12 +112,12 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
+ }
+ EXPORT_SYMBOL_GPL(evl_wake_up);
+ 
+-/* wq->lock held, hard irqs off */
++/* wq->wchan.lock held, hard irqs off */
+ void evl_flush_wait_locked(struct evl_wait_queue *wq, int reason)
+ {
+ 	struct evl_thread *waiter, *tmp;
+ 
+-	assert_hard_lock(&wq->lock);
++	assert_hard_lock(&wq->wchan.lock);
+ 
+ 	trace_evl_flush_wait(wq);
+ 
+@@ -116,9 +132,9 @@ void evl_flush_wait(struct evl_wait_queue *wq, int reason)
+ {
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&wq->lock, flags);
++	raw_spin_lock_irqsave(&wq->wchan.lock, flags);
+ 	evl_flush_wait_locked(wq, reason);
+-	raw_spin_unlock_irqrestore(&wq->lock, flags);
++	raw_spin_unlock_irqrestore(&wq->wchan.lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(evl_flush_wait);
+ 
+@@ -136,14 +152,14 @@ int evl_reorder_wait(struct evl_thread *waiter, struct evl_thread *originator)
+ 	assert_hard_lock(&waiter->lock);
+ 	assert_hard_lock(&originator->lock);
+ 
+-	raw_spin_lock(&wq->lock);
++	raw_spin_lock(&wq->wchan.lock);
+ 
+ 	if (wq->flags & EVL_WAIT_PRIO) {
+ 		list_del(&waiter->wait_next);
+ 		list_add_priff(waiter, &wq->wchan.wait_list, wprio, wait_next);
+ 	}
+ 
+-	raw_spin_unlock(&wq->lock);
++	raw_spin_unlock(&wq->wchan.lock);
+ 
+ 	return 0;
+ }
+@@ -202,7 +218,7 @@ int evl_wait_schedule(struct evl_wait_queue *wq)
+ 		return -ENOMEM;
+ 
+ 	if (info & (T_TIMEO|T_BREAK)) {
+-		raw_spin_lock_irqsave(&wq->lock, flags);
++		raw_spin_lock_irqsave(&wq->wchan.lock, flags);
+ 		if (!list_empty(&curr->wait_next)) {
+ 			list_del_init(&curr->wait_next);
+ 			if (info & T_TIMEO)
+@@ -210,12 +226,12 @@ int evl_wait_schedule(struct evl_wait_queue *wq)
+ 			else if (info & T_BREAK)
+ 				ret = -EINTR;
+ 		}
+-		raw_spin_unlock_irqrestore(&wq->lock, flags);
++		raw_spin_unlock_irqrestore(&wq->wchan.lock, flags);
+ 	} else if (IS_ENABLED(CONFIG_EVL_DEBUG_CORE)) {
+ 		bool empty;
+-		raw_spin_lock_irqsave(&wq->lock, flags);
++		raw_spin_lock_irqsave(&wq->wchan.lock, flags);
+ 		empty = list_empty(&curr->wait_next);
+-		raw_spin_unlock_irqrestore(&wq->lock, flags);
++		raw_spin_unlock_irqrestore(&wq->wchan.lock, flags);
+ 		EVL_WARN_ON_ONCE(CORE, !empty);
+ 	}
+ 
+@@ -225,7 +241,7 @@ EXPORT_SYMBOL_GPL(evl_wait_schedule);
+ 
+ struct evl_thread *evl_wait_head(struct evl_wait_queue *wq)
+ {
+-	assert_hard_lock(&wq->lock);
++	assert_hard_lock(&wq->wchan.lock);
+ 	return list_first_entry_or_null(&wq->wchan.wait_list,
+ 					struct evl_thread, wait_next);
+ }
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index d28d3d805..baec8ec90 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -439,7 +439,7 @@ static unsigned long outbound_lock(struct xbuf_ring *ring)
+ 	struct evl_xbuf *xbuf = container_of(ring, struct evl_xbuf, obnd.ring);
+ 	unsigned long flags;
+ 
+-	raw_spin_lock_irqsave(&xbuf->obnd.i_event.lock, flags);
++	raw_spin_lock_irqsave(&xbuf->obnd.i_event.wchan.lock, flags);
+ 
+ 	return flags;
+ }
+@@ -448,7 +448,7 @@ static void outbound_unlock(struct xbuf_ring *ring, unsigned long flags)
+ {
+ 	struct evl_xbuf *xbuf = container_of(ring, struct evl_xbuf, obnd.ring);
+ 
+-	raw_spin_unlock_irqrestore(&xbuf->obnd.i_event.lock, flags);
++	raw_spin_unlock_irqrestore(&xbuf->obnd.i_event.wchan.lock, flags);
+ }
+ 
+ static int outbound_wait_input(struct xbuf_ring *ring, size_t len, size_t avail)
+-- 
+2.30.2
+

@@ -1,0 +1,137 @@
+From 7b52fe5d21d976c8e52f50f8542c78ad8637f581 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 08:52:48 +0200
+Subject: [PATCH 961/985] evl/net: ipv4: allow for device-directed solicitation
+
+We may want to restrict the (ARP) solicitation to a particular (oob)
+device.
+
+To this end, use the information which might have been set via
+setsockopt(SO_BINDTODEVICE) on the soliciting socket for directing the
+routing request to that particular interface.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/ipv4.h     |  3 ++-
+ include/evl/net/socket.h   |  3 ++-
+ kernel/evl/net/ipv4/ipv4.c | 16 ++++++++++++----
+ kernel/evl/net/socket.c    | 29 ++++++++++++++++++++++++-----
+ 4 files changed, 40 insertions(+), 11 deletions(-)
+
+diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
+index 2ce1aa50b..a0d6d6cc3 100644
+--- a/include/evl/net/ipv4.h
++++ b/include/evl/net/ipv4.h
+@@ -43,7 +43,8 @@ int evl_net_ipv4_add_device(struct net_device *dev);
+ 
+ void evl_net_ipv4_remove_device(struct net_device *dev);
+ 
+-int evl_net_ipv4_solicit(struct evl_socket *esk,
++int evl_net_ipv4_solicit(struct net *net,
++			struct net_device *dev,
+ 			struct sockaddr *addr, int flags);
+ 
+ extern struct evl_socket_domain evl_net_ipv4;
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+index 828a4c6ba..1fcc9895c 100644
+--- a/include/evl/net/socket.h
++++ b/include/evl/net/socket.h
+@@ -41,7 +41,8 @@ struct evl_net_proto {
+ 	int (*shutdown)(struct evl_socket *esk, int how);
+ 	int (*ioctl)(struct evl_socket *esk, unsigned int cmd,
+ 		unsigned long arg);
+-	int (*solicit)(struct evl_socket *esk,
++	int (*solicit)(struct net *net,
++		struct net_device *dev,
+ 		struct sockaddr *addr, int flags);
+ 	ssize_t (*oob_send)(struct evl_socket *esk,
+ 			const struct user_oob_msghdr __user *u_msghdr,
+diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
+index c27f5fab9..2d0b0e891 100644
+--- a/kernel/evl/net/ipv4/ipv4.c
++++ b/kernel/evl/net/ipv4/ipv4.c
+@@ -234,14 +234,21 @@ void __evl_net_ipv4_gc(struct evl_net_frag_tdir *ftdir)
+  * address using ARP neighbour solicitation. This call waits for 5s
+  * for the front cache to receive the ARP entry before timing out.
+  *
+- * CAUTION: This routine may return -ERESTARTSYS on timeout.
++ * @net		Network namespace this operation applies to.
++ * @dev		Preferred output device, or NULL if unspec. If given, @dev
++ *		must be enabled as an oob port.
++ * @addr	IPv4 address of the peer to solicit.
++ * @flags	Operation flags. EVL_NEIGH_PERMANENT locks the ARP entry
++ *		in the in-band cache.
++ *
++ * Returns zero on success.
+  */
+-int evl_net_ipv4_solicit(struct evl_socket *esk,
++int evl_net_ipv4_solicit(struct net *net,
++			struct net_device *dev,
+ 			struct sockaddr *addr, int flags)
+ {
+ 	struct evl_net_arp_entry *e = NULL;
+ 	struct neighbour *neigh;
+-	struct net_device *dev;
+ 	struct rtable *rt;
+ 	__be32 ipaddr;
+ 	long ret = 0;
+@@ -260,7 +267,8 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
+ 	 * the routing data, which we then index into our oob route
+ 	 * cache.
+ 	 */
+-	rt = ip_route_output(sock_net(esk->sk), ipaddr, INADDR_ANY, 0, 0, RT_SCOPE_UNIVERSE);
++	rt = ip_route_output(net, ipaddr, INADDR_ANY, 0,
++			     dev ? dev->ifindex : 0, RT_SCOPE_UNIVERSE);
+ 	if (IS_ERR(rt))
+ 		return PTR_ERR(rt);
+ 
+diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
+index 4d0386ce7..38065222f 100644
+--- a/kernel/evl/net/socket.c
++++ b/kernel/evl/net/socket.c
+@@ -710,6 +710,28 @@ static int socket_iocget_option(struct evl_socket *esk,
+ 	return -EINVAL;
+ }
+ 
++static int socket_solicit_peer(struct evl_socket *esk,
++			struct sockaddr *addr, int flags)
++{
++	struct sock *sk = esk->sk;
++	struct net *net = sock_net(sk);
++	struct net_device *dev = NULL;
++	int ifindex, ret;
++
++	if (!esk->proto->solicit)
++		return -ENOTSUPP;
++
++	ifindex = READ_ONCE(sk->sk_bound_dev_if);
++	if (ifindex)
++		dev = evl_net_get_dev_by_index(net, ifindex);
++
++	ret = esk->proto->solicit(net, dev, addr, flags);
++	if (dev)
++		evl_net_put_dev(dev);
++
++	return ret;
++}
++
+ long sock_oob_ioctl(struct file *filp, unsigned int cmd,
+ 		unsigned long arg)
+ {
+@@ -817,11 +839,8 @@ static long sock_inband_ioctl(struct sock *sk, unsigned int cmd,
+ 		ret = copy_from_user(&solreq, u_solreq, sizeof(solreq));
+ 		if (ret)
+ 			return -EFAULT;
+-		ret = -ENOTSUPP;
+-		if (esk->proto->solicit)
+-			ret = esk->proto->solicit(esk,
+-				(struct sockaddr *)&solreq.addr,
+-				solreq.flags);
++		ret = socket_solicit_peer(esk, (struct sockaddr *)&solreq.addr,
++					solreq.flags);
+ 		break;
+ 	default:
+ 		ret = -ENOTTY;
+-- 
+2.30.2
+

@@ -1,0 +1,188 @@
+From 1651bfbccb0546b1e59014d225e4cf85277fcc78 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sat, 28 Oct 2023 17:34:07 +0200
+Subject: [PATCH 827/985] evl/mutex: remove useless dynamic lock key
+
+Using a static key for the lock serializing accesses to the shared
+mutex data is enough and non-ambiguous.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/mutex.h  | 25 +++++++++++----------
+ kernel/evl/monitor.c | 13 +++++------
+ kernel/evl/mutex.c   | 53 +++++++++++++++++++++-----------------------
+ 3 files changed, 43 insertions(+), 48 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index 426a47bb1..8b3287b69 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -34,7 +34,7 @@ struct evl_thread;
+ struct evl_mutex {
+ 	atomic_t *fastlock;
+ 	int flags;
+-	u32 *ceiling_ref;
++	u32 *ceiling_addr;
+ 	struct evl_wait_channel wchan;
+ 	struct list_head next_booster; /* thread->boosters */
+ 	struct list_head next_owned;   /* thread->owned_mutexes */
+@@ -49,20 +49,21 @@ struct evl_mutex {
+ void __evl_init_mutex(struct evl_mutex *mutex,
+ 		struct evl_clock *clock,
+ 		atomic_t *fastlock,
+-		u32 *ceiling_ref,
+-		const char *name);
++		u32 *ceiling,
++		const char *name,
++		struct lock_class_key *lock_key);
+ 
+-#define evl_init_named_mutex_pi(__mutex, __clock, __fastlock, __name)	\
+-	__evl_init_mutex(__mutex, __clock, __fastlock, NULL, __name)
++#define evl_init_mutex(__mutex, __clock, __fastlock, __ceiling)		\
++	do {								\
++		static struct lock_class_key key;			\
++		__evl_init_mutex(__mutex, __clock, __fastlock, __ceiling, #__mutex, &key); \
++	} while (0)
+ 
+ #define evl_init_mutex_pi(__mutex, __clock, __fastlock)			\
+-	evl_init_named_mutex_pi(__mutex, __clock, __fastlock, #__mutex)
+-
+-#define evl_init_named_mutex_pp(__mutex, __clock, __fastlock, __ceiling, __name) \
+-	__evl_init_mutex(__mutex, __clock, __fastlock, __ceiling, __name)
++	evl_init_mutex(__mutex, __clock, __fastlock, NULL)
+ 
+ #define evl_init_mutex_pp(__mutex, __clock, __fastlock, __ceiling)	\
+-	evl_init_named_mutex_pp(__mutex, __clock, __fastlock, __ceiling, #__mutex)
++	evl_init_mutex(__mutex, __clock, __fastlock, __ceiling)
+ 
+ void evl_destroy_mutex(struct evl_mutex *mutex);
+ 
+@@ -102,7 +103,7 @@ struct evl_kmutex {
+ 			.fastlock = &(__name).fastlock,			\
+ 			.flags = EVL_MUTEX_PI,				\
+ 			.wprio = -1,					\
+-			.ceiling_ref = NULL,				\
++			.ceiling_addr = NULL,				\
+ 			.clock = &evl_mono_clock,			\
+ 			.wchan = {					\
+ 				.lock = __HARD_SPIN_LOCK_INITIALIZER((__name).wchan.lock), \
+@@ -156,7 +157,7 @@ static inline int evl_ceiling_priority(struct evl_mutex *mutex)
+ 	 * memory, make sure to constrain it within valid bounds for
+ 	 * evl_sched_fifo before using it.
+ 	 */
+-	return clamp(*mutex->ceiling_ref, 1U, (u32)EVL_FIFO_MAX_PRIO);
++	return clamp(*mutex->ceiling_addr, 1U, (u32)EVL_FIFO_MAX_PRIO);
+ }
+ 
+ #endif /* !_EVL_MUTEX_H */
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 77b2e851b..b5ab70d10 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -1045,20 +1045,17 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		switch (attrs.protocol) {
+ 		case EVL_GATE_PP:
+ 			state->u.gate.ceiling = attrs.initval;
+-			evl_init_named_mutex_pp(&mon->mutex, clock,
++			evl_init_mutex_pp(&mon->mutex, clock,
+ 					&state->u.gate.owner,
+-					&state->u.gate.ceiling,
+-					evl_element_name(&mon->element));
+-			INIT_LIST_HEAD(&mon->events);
++					&state->u.gate.ceiling);
+ 			break;
+ 		case EVL_GATE_PI:
+-			evl_init_named_mutex_pi(&mon->mutex, clock,
+-					&state->u.gate.owner,
+-					evl_element_name(&mon->element));
+-			INIT_LIST_HEAD(&mon->events);
++			evl_init_mutex_pi(&mon->mutex, clock,
++					&state->u.gate.owner);
+ 			break;
+ 		}
+ 		raw_spin_lock_init(&mon->lock);
++		INIT_LIST_HEAD(&mon->events);
+ 		break;
+ 	case EVL_MONITOR_EVENT:
+ 		evl_init_named_wait(&mon->wait_queue, clock, EVL_WAIT_PRIO,
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index f0e6faac3..bb57f3d8d 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -20,6 +20,31 @@
+ #define for_each_evl_mutex_waiter(__pos, __mutex)			\
+ 	list_for_each_entry(__pos, &(__mutex)->wchan.wait_list, wait_next)
+ 
++void __evl_init_mutex(struct evl_mutex *mutex,
++		struct evl_clock *clock,
++		atomic_t *fastlock, u32 *ceiling,
++		const char *name,
++		struct lock_class_key *lock_key)
++{
++	int type = ceiling ? EVL_MUTEX_PP : EVL_MUTEX_PI;
++
++	mutex->fastlock = fastlock;
++	atomic_set(fastlock, EVL_NO_HANDLE);
++	mutex->flags = type;
++	mutex->boost.wprio = -1;
++	mutex->boost.sched_class = NULL;
++	mutex->ceiling_addr = ceiling;
++	mutex->clock = clock;
++	mutex->wchan.owner = NULL;
++	mutex->wchan.requeue_wait = evl_requeue_mutex_wait;
++	mutex->wchan.name = name;
++	INIT_LIST_HEAD(&mutex->wchan.wait_list);
++	raw_spin_lock_init(&mutex->wchan.lock);
++	lockdep_set_class_and_name(&mutex->wchan.lock, lock_key, name);
++	might_hard_lock(&mutex->wchan.lock);
++}
++EXPORT_SYMBOL_GPL(__evl_init_mutex);
++
+ /* mutex->wchan.lock held, irqs off. */
+ static inline
+ void disable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
+@@ -261,33 +286,6 @@ void evl_check_no_mutex(void)
+ 		evl_notify_thread(curr, EVL_HMDIAG_LKDEPEND, evl_nil);
+ }
+ 
+-void __evl_init_mutex(struct evl_mutex *mutex,
+-		struct evl_clock *clock,
+-		atomic_t *fastlock, u32 *ceiling_ref,
+-		const char *name)
+-{
+-	int type = ceiling_ref ? EVL_MUTEX_PP : EVL_MUTEX_PI;
+-
+-	mutex->fastlock = fastlock;
+-	atomic_set(fastlock, EVL_NO_HANDLE);
+-	mutex->flags = type;
+-	mutex->boost.wprio = -1;
+-	mutex->boost.sched_class = NULL;
+-	mutex->ceiling_ref = ceiling_ref;
+-	mutex->clock = clock;
+-	mutex->wchan.owner = NULL;
+-	mutex->wchan.requeue_wait = evl_requeue_mutex_wait;
+-	mutex->wchan.name = name;
+-	INIT_LIST_HEAD(&mutex->wchan.wait_list);
+-	raw_spin_lock_init(&mutex->wchan.lock);
+-#ifdef CONFIG_LOCKDEP
+-	lockdep_register_key(&mutex->wchan.lock_key);
+-	lockdep_set_class_and_name(&mutex->wchan.lock, &mutex->wchan.lock_key, name);
+-	might_hard_lock(&mutex->wchan.lock);
+-#endif
+-}
+-EXPORT_SYMBOL_GPL(__evl_init_mutex);
+-
+ /* mutex->wchan.lock held, irqs off */
+ static void flush_mutex_locked(struct evl_mutex *mutex, int reason)
+ {
+@@ -332,7 +330,6 @@ void evl_destroy_mutex(struct evl_mutex *mutex)
+ 	untrack_mutex_owner(mutex);
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+ 	evl_schedule();
+-	lockdep_unregister_key(&mutex->wchan.lock_key);
+ }
+ EXPORT_SYMBOL_GPL(evl_destroy_mutex);
+ 
+-- 
+2.30.2
+

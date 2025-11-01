@@ -1,0 +1,274 @@
+From 7508f77e914dc7182ec5ed49c09dec0b444c5fd8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Fri, 1 Mar 2024 11:28:11 +0100
+Subject: [PATCH 880/985] evl/net: find the oob state at its new location
+
+oob_netdev_state is directly accessible from the device descriptor
+without going through the obsoleted oob_context_state struct anymore.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/device.h       |  2 +-
+ kernel/evl/net/dev.c           | 20 ++++++++++----------
+ kernel/evl/net/input.c         | 10 +++++-----
+ kernel/evl/net/output.c        |  4 ++--
+ kernel/evl/net/packet/packet.c |  2 +-
+ kernel/evl/net/qdisc/core.c    |  2 +-
+ kernel/evl/net/skb.c           | 10 +++++-----
+ 7 files changed, 25 insertions(+), 25 deletions(-)
+
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+index bd1b3ea81..b4abecd32 100644
+--- a/include/evl/net/device.h
++++ b/include/evl/net/device.h
+@@ -44,7 +44,7 @@ __evl_net_filter_rx(struct evl_netdev_state *est, struct sk_buff *skb);
+ static inline enum evl_net_rx_action
+ evl_net_filter_rx(struct net_device *dev, struct sk_buff *skb)
+ {
+-	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = dev->oob_state.estate;
+ 
+ 	if (test_bit(EVL_NETDEV_RXFILTER_BIT, &est->flags))
+ 		return __evl_net_filter_rx(est, skb);
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index e5b98ab82..a3c01a57d 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -121,7 +121,7 @@ static int enable_oob_port(struct net_device *dev,
+ 	if (is_vlan_dev(dev))
+ 		real_dev = vlan_dev_real_dev(dev);
+ 
+-	rnds = &real_dev->oob_context.dev_state;
++	rnds = &real_dev->oob_state;
+ 	est = pest = rnds->estate;
+ 	if (pest == NULL) {
+ 		est = kzalloc(sizeof(*est), GFP_KERNEL);
+@@ -130,7 +130,7 @@ static int enable_oob_port(struct net_device *dev,
+ 		rnds->estate = est;
+ 	}
+ 
+-	nds = &dev->oob_context.dev_state;
++	nds = &dev->oob_state;
+ 	evl_init_crossing(&nds->crossing);
+ 
+ 	if (est->refs++ > 0)
+@@ -241,7 +241,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 	 * list, first unlink the latter _then_ pass the crossing
+ 	 * next.
+ 	 */
+-	nds = &dev->oob_context.dev_state;
++	nds = &dev->oob_state;
+ 	raw_spin_lock_irqsave(&oob_netdev_lock, flags);
+ 	list_del(&nds->next);
+ 	raw_spin_unlock_irqrestore(&oob_netdev_lock, flags);
+@@ -255,7 +255,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 
+ 	netdev_disable_oob_port(dev);
+ 
+-	rnds = &real_dev->oob_context.dev_state;
++	rnds = &real_dev->oob_state;
+ 	est = rnds->estate;
+ 
+ 	if (EVL_WARN_ON(NET, est->refs <= 0))
+@@ -347,7 +347,7 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 
+ 	list_for_each_entry(nds, &oob_netdev_list, next) {
+ 		dev = container_of(nds, struct net_device,
+-				oob_context.dev_state);
++				oob_state);
+ 		if (dev_net(dev) == net && dev->ifindex == ifindex) {
+ 			evl_down_crossing(&nds->crossing);
+ 			ret = dev;
+@@ -370,7 +370,7 @@ struct net_device *evl_net_get_dev_by_name(struct net *net, const char *name)
+ 
+ 	list_for_each_entry(nds, &oob_netdev_list, next) {
+ 		dev = container_of(nds, struct net_device,
+-				oob_context.dev_state);
++				oob_state);
+ 		if (dev_net(dev) == net && !strcmp(netdev_name(dev), name)) {
+ 			evl_down_crossing(&nds->crossing);
+ 			ret = dev;
+@@ -385,14 +385,14 @@ struct net_device *evl_net_get_dev_by_name(struct net *net, const char *name)
+ 
+ void evl_net_get_dev(struct net_device *dev)
+ {
+-	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++	struct oob_netdev_state *nds = &dev->oob_state;
+ 
+ 	evl_down_crossing(&nds->crossing);
+ }
+ 
+ void evl_net_put_dev(struct net_device *dev)
+ {
+-	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++	struct oob_netdev_state *nds = &dev->oob_state;
+ 
+ 	EVL_WARN_ON(NET, hard_irqs_disabled());
+ 
+@@ -443,7 +443,7 @@ ssize_t netif_oob_query_pool(struct net_device *dev, char *buf)
+ 	if (is_vlan_dev(dev))
+ 		real_dev = vlan_dev_real_dev(dev);
+ 
+-	est = real_dev->oob_context.dev_state.estate;
++	est = real_dev->oob_state.estate;
+ 	if (est == NULL)
+ 		return -ENXIO;
+ 
+@@ -519,7 +519,7 @@ static void __set_rx_filter(struct evl_netdev_state *est,
+  */
+ static int set_rx_filter(struct net_device *dev, unsigned long arg)
+ {
+-	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++	struct oob_netdev_state *nds = &dev->oob_state;
+ 	struct evl_net_ebpf_filter *new = NULL;
+ 	struct bpf_prog *prog;
+ 	int ret, fd;
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index f9a37511a..e876ec4c1 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -31,7 +31,7 @@ void evl_net_do_rx(void *arg)
+ 	LIST_HEAD(list);
+ 	int ret;
+ 
+-	est = dev->oob_context.dev_state.estate;
++	est = dev->oob_state.estate;
+ 
+ 	while (!evl_kthread_should_stop()) {
+ 		ret = evl_wait_flag(&est->rx_flag);
+@@ -51,7 +51,7 @@ void evl_net_do_rx(void *arg)
+ 
+ void evl_net_wake_rx(struct net_device *dev)
+ {
+-	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = dev->oob_state.estate;
+ 
+ 	evl_raise_flag(&est->rx_flag);
+ }
+@@ -79,7 +79,7 @@ void evl_net_wake_rx(struct net_device *dev)
+ void evl_net_receive(struct sk_buff *skb,
+ 		struct evl_net_handler *handler) /* in-band or oob */
+ {
+-	struct evl_netdev_state *est = skb->dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = skb->dev->oob_state.estate;
+ 
+ 	if (skb->next)
+ 		skb_list_del_init(skb);
+@@ -122,7 +122,7 @@ void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq)
+ }
+ 
+ /**
+- * netif_oob_deliver - receive a network packet
++ * netif_oob_deliver - receive a network packet from the hardware.
+  *
+  * Decide whether we should channel a freshly incoming packet to our
+  * out-of-band stack. May be called from any stage.
+@@ -212,7 +212,7 @@ bool netif_oob_deliver(struct sk_buff *skb) /* oob or in-band */
+  */
+ void netif_oob_run(struct net_device *dev) /* in-band */
+ {
+-	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = dev->oob_state.estate;
+ 
+ 	evl_raise_flag(&est->rx_flag);
+ }
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index eb8892fb1..849445e57 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -62,7 +62,7 @@ void evl_net_do_tx(void *arg)
+ 	LIST_HEAD(list);
+ 	int ret;
+ 
+-	est = dev->oob_context.dev_state.estate;
++	est = dev->oob_state.estate;
+ 
+ 	while (!evl_kthread_should_stop()) {
+ 		ret = evl_wait_flag(&est->tx_flag);
+@@ -132,7 +132,7 @@ static void xmit_inband(struct irq_work *work) /* in-band, stalled */
+ /* oob or in-band */
+ static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
+ {
+-	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = dev->oob_state.estate;
+ 	int ret;
+ 
+ 	ret = evl_net_sched_packet(dev, skb);
+diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
+index d664b014b..99a5f6d00 100644
+--- a/kernel/evl/net/packet/packet.c
++++ b/kernel/evl/net/packet/packet.c
+@@ -645,7 +645,7 @@ static __poll_t poll_packet(struct evl_socket *esk,
+ 
+ 	dev = esk->proto->get_netif(esk);
+ 	if (dev) {
+-		est = dev->oob_context.dev_state.estate;
++		est = dev->oob_state.estate;
+ 		evl_poll_watch(&est->poll_head, wait, NULL);
+ 		if (!list_empty(&est->free_skb_pool))
+ 			ret = POLLOUT|POLLWRNORM;
+diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
+index e10f3b8ab..ce8f2e8a9 100644
+--- a/kernel/evl/net/qdisc/core.c
++++ b/kernel/evl/net/qdisc/core.c
+@@ -77,7 +77,7 @@ EXPORT_SYMBOL_GPL(evl_net_free_qdisc);
+  */
+ int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob/in-band */
+ {
+-	struct evl_net_qdisc *qdisc = dev->oob_context.dev_state.estate->qdisc;
++	struct evl_net_qdisc *qdisc = dev->oob_state.estate->qdisc;
+ 
+ 	/*
+ 	 * Low-priority traffic sent by the sched_oob Qdisc goes to
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 2c71fa205..3c2cfb89b 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -137,7 +137,7 @@ static inline size_t get_headroom(struct net_device *dev)
+ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 				      ktime_t timeout, enum evl_tmode tmode)
+ {
+-	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++	struct evl_netdev_state *est = dev->oob_state.estate;
+ 	struct sk_buff *skb;
+ 	unsigned long flags;
+ 	int ret;
+@@ -209,7 +209,7 @@ static void free_skb_to_dev(struct sk_buff *skb)
+ 	struct evl_netdev_state *est;
+ 	unsigned long flags;
+ 
+-	est = dev->oob_context.dev_state.estate;
++	est = dev->oob_state.estate;
+ 	raw_spin_lock_irqsave(&est->pool_wait.wchan.lock, flags);
+ 
+ 	list_add(&skb->list, &est->free_skb_pool);
+@@ -439,7 +439,7 @@ static struct sk_buff *alloc_one_skb(struct net_device *dev)
+ 	dma_addr_t dma_addr;
+ 
+ 	if (!netdev_is_oob_capable(dev)) {
+-		est = dev->oob_context.dev_state.estate;
++		est = dev->oob_state.estate;
+ 		return __netdev_alloc_oob_skb(dev, est->buf_size,
+ 					get_headroom(dev),
+ 					GFP_KERNEL|GFP_DMA);
+@@ -516,7 +516,7 @@ int evl_net_dev_build_pool(struct net_device *dev)
+ 	if (EVL_WARN_ON(NET, netif_oob_diversion(dev)))
+ 		return -EBUSY;
+ 
+-	est = dev->oob_context.dev_state.estate;
++	est = dev->oob_state.estate;
+ 
+ 	INIT_LIST_HEAD(&est->free_skb_pool);
+ 
+@@ -545,7 +545,7 @@ void evl_net_dev_purge_pool(struct net_device *dev)
+ 	if (EVL_WARN_ON(NET, netif_oob_diversion(dev)))
+ 		return;
+ 
+-	est = dev->oob_context.dev_state.estate;
++	est = dev->oob_state.estate;
+ 
+ 	list_for_each_entry_safe(skb, next, &est->free_skb_pool, list) {
+ 		if (netdev_is_oob_capable(dev))
+-- 
+2.30.2
+

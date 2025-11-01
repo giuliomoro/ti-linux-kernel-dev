@@ -1,0 +1,301 @@
+From f5452c1b9d8603f43e3c5179baeefdef8fa21538 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 24 Jun 2025 08:46:48 +0200
+Subject: [PATCH 965/985] evl/stat: extend internal statistics interface
+
+Upcoming statistics support for the network stack requires non-atomic
+but still careful helpers usable in concurrent readers/writer
+accesses.
+
+Introduce such interface, rebasing the optional runtime stats on top
+of it.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/stat.h      | 63 +++++++++++++++++++++++++----------------
+ include/evl/thread.h    |  8 +++---
+ include/evl/timer.h     | 29 ++++---------------
+ kernel/evl/sched/core.c |  4 +--
+ kernel/evl/syscall.c    |  4 +--
+ kernel/evl/thread.c     | 20 ++++++-------
+ 6 files changed, 63 insertions(+), 65 deletions(-)
+
+diff --git a/include/evl/stat.h b/include/evl/stat.h
+index a94aa709c..08ee9ec9c 100644
+--- a/include/evl/stat.h
++++ b/include/evl/stat.h
+@@ -14,6 +14,33 @@
+ 
+ struct evl_rq;
+ 
++typedef struct {
++	u64 value;
++} evl_counter64;
++
++typedef struct {
++	u32 value;
++} evl_counter32;
++
++#define evl_counter_inc(__c)		(++(__c)->value)
++#define evl_counter_read(__c)		((__c)->value)
++#define evl_counter_set(__c, __v)	((__c)->value = (__v))
++#define evl_counter_add(__c, __n)	((__c)->value += (__n))
++
++/*
++ * The careful helpers won't guarantee atomic updates of the counter,
++ * but do prevent from load/store tearing and other sorts of
++ * compiler-originated shenanigans.
++ */
++#define evl_counter_read_careful(__c)	READ_ONCE((__c)->value)
++#define evl_counter_add_careful(__c, __n)			\
++	do {							\
++		typeof((__c)->value) ___oldv =			\
++			evl_counter_read_careful(__c);		\
++		WRITE_ONCE((__c)->value, ___oldv + __n);	\
++	} while (0)
++#define evl_counter_inc_careful(__c)	evl_counter_add_careful(__c, 1)
++
+ #ifdef CONFIG_EVL_RUNSTATS
+ 
+ struct evl_account {
+@@ -23,9 +50,9 @@ struct evl_account {
+ 
+ /*
+  * Return current date which can be passed to other accounting
+- * services for immediate accounting. We do not use sched_clock() on
+- * purpose: its worst case execution time may be really bad under some
+- * combination of clock data updates and high cache pressure.
++ * services. We do not use sched_clock() on purpose: its worst case
++ * execution time may be really bad under some combination of clock
++ * data updates and high cache pressure.
+  */
+ static inline ktime_t evl_get_timestamp(void)
+ {
+@@ -86,25 +113,13 @@ static inline void evl_reset_account(struct evl_account *account)
+ 		(__rq)->current_account = (__new_account);	\
+ 	} while (0)
+ 
+-struct evl_counter {
+-	unsigned long counter;
++struct evl_opt_counter {
++	unsigned long value;
+ };
+ 
+-static inline unsigned long evl_inc_counter(struct evl_counter *c)
+-{
+-	return c->counter++;
+-}
+-
+-static inline unsigned long evl_get_counter(struct evl_counter *c)
+-{
+-	return c->counter;
+-}
+-
+-static inline
+-void evl_set_counter(struct evl_counter *c, unsigned long value)
+-{
+-	c->counter = value;
+-}
++#define evl_opt_counter_inc(__c)		evl_counter_inc(__c)
++#define evl_opt_counter_read(__c)		evl_counter_read(__c)
++#define evl_opt_counter_set(__c, __value)	evl_counter_set(__c, __value)
+ 
+ #else /* !CONFIG_EVL_RUNSTATS */
+ 
+@@ -119,12 +134,12 @@ struct evl_account {
+ #define evl_close_account(__rq, __new_account)	do { } while (0)
+ #define evl_get_last_account_switch(__rq)		({ 0; })
+ 
+-struct evl_counter {
++struct evl_opt_counter {
+ };
+ 
+-#define evl_inc_counter(__c) 	({ do { } while(0); 0; })
+-#define evl_get_counter(__c) 	({ 0; })
+-#define evl_set_counter(_c, __value)	do { } while (0)
++#define evl_opt_counter_inc(__c) 		({ do { } while(0); 0; })
++#define evl_opt_counter_read(__c) 		({ 0; })
++#define evl_opt_counter_set(__c, __value)	do { } while (0)
+ 
+ #endif /* CONFIG_EVL_RUNSTATS */
+ 
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 7fb1f66b8..3344fa324 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -138,10 +138,10 @@ struct evl_thread {
+ 	atomic_t held_mutex_count;
+ 	struct irq_work inband_work;
+ 	struct {
+-		struct evl_counter isw;	/* in-band switches */
+-		struct evl_counter csw;	/* context switches */
+-		struct evl_counter sc;	/* OOB syscalls */
+-		struct evl_counter rwa;	/* remote wakeups */
++		struct evl_opt_counter isw;	/* in-band switches */
++		struct evl_opt_counter csw;	/* context switches */
++		struct evl_opt_counter sc;	/* OOB syscalls */
++		struct evl_opt_counter rwa;	/* remote wakeups */
+ 		struct evl_account account; /* exec time accounting */
+ 		struct evl_account lastperiod;
+ 	} stat;
+diff --git a/include/evl/timer.h b/include/evl/timer.h
+index c5ce4a0ff..1e4327ff0 100644
+--- a/include/evl/timer.h
++++ b/include/evl/timer.h
+@@ -187,10 +187,8 @@ struct evl_timer {
+ 	struct evl_timerbase *base;
+ 	void (*handler)(struct evl_timer *timer);
+ 	const char *name;
+-#ifdef CONFIG_EVL_RUNSTATS
+-	struct evl_counter scheduled;
+-	struct evl_counter fired;
+-#endif /* CONFIG_EVL_RUNSTATS */
++	struct evl_opt_counter scheduled;
++	struct evl_opt_counter fired;
+ };
+ 
+ #define evl_tdate(__timer)	((__timer)->node.date)
+@@ -291,40 +289,25 @@ void evl_set_timer_gravity(struct evl_timer *timer,
+ 	evl_init_timer_on_rq(__timer, &evl_mono_clock, __handler, NULL,	\
+ 			EVL_TIMER_IGRAVITY)
+ 
+-#ifdef CONFIG_EVL_RUNSTATS
+-
+ static inline
+ void evl_reset_timer_stats(struct evl_timer *timer)
+ {
+-	evl_set_counter(&timer->scheduled, 0);
+-	evl_set_counter(&timer->fired, 0);
++	evl_opt_counter_set(&timer->scheduled, 0);
++	evl_opt_counter_set(&timer->fired, 0);
+ }
+ 
+ static inline
+ void evl_account_timer_scheduled(struct evl_timer *timer)
+ {
+-	evl_inc_counter(&timer->scheduled);
++	evl_opt_counter_inc(&timer->scheduled);
+ }
+ 
+ static inline
+ void evl_account_timer_fired(struct evl_timer *timer)
+ {
+-	evl_inc_counter(&timer->fired);
++	evl_opt_counter_inc(&timer->fired);
+ }
+ 
+-#else /* !CONFIG_EVL_RUNSTATS */
+-
+-static inline
+-void evl_reset_timer_stats(struct evl_timer *timer) { }
+-
+-static inline
+-void evl_account_timer_scheduled(struct evl_timer *timer) { }
+-
+-static inline
+-void evl_account_timer_fired(struct evl_timer *timer) { }
+-
+-#endif /* !CONFIG_EVL_RUNSTATS */
+-
+ static inline
+ void evl_set_timer_name(struct evl_timer *timer, const char *name)
+ {
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 8855afb71..5925f70ef 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1029,7 +1029,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
+ 	}
+ 
+ 	evl_switch_account(this_rq, &next->stat.account);
+-	evl_inc_counter(&next->stat.csw);
++	evl_opt_counter_inc(&next->stat.csw);
+ 	raw_spin_unlock(&prev->lock);
+ 
+ 	prepare_rq_switch(this_rq, prev, next);
+@@ -1239,7 +1239,7 @@ void evl_switch_inband_details(int cause, union evl_value details)
+ 		curr->name, evl_get_inband_pid(curr));
+ 
+ 	/* Account for switch to in-band context. */
+-	evl_inc_counter(&curr->stat.isw);
++	evl_opt_counter_inc(&curr->stat.isw);
+ 
+ 	trace_evl_switched_inband(curr);
+ 
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index 63c4d8625..33fd07c4e 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -305,7 +305,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs,
+ 	}
+ 
+ 	/* Update the stats and user visible info. */
+-	evl_inc_counter(&curr->stat.sc);
++	evl_opt_counter_inc(&curr->stat.sc);
+ 	evl_sync_uwindow(curr);
+ 
+ 	trace_evl_oob_sysexit(syscall_get_return_value(tsk, regs));
+@@ -403,7 +403,7 @@ static int do_inband_syscall(struct pt_regs *regs, unsigned int scno,
+ 	if (curr->local_info & EVL_T_IGNOVR)
+ 		curr->local_info &= ~EVL_T_IGNOVR;
+ 
+-	evl_inc_counter(&curr->stat.sc);
++	evl_opt_counter_inc(&curr->stat.sc);
+ 	evl_sync_uwindow(curr);
+ 
+ 	trace_evl_inband_sysexit(syscall_get_return_value(tsk, regs));
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 7d582d65c..5a822eeff 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -617,7 +617,7 @@ static void evl_wakeup_thread_locked(struct evl_thread *thread,
+ 			thread->state |= EVL_T_READY;
+ 			evl_set_resched(rq);
+ 			if (rq != this_evl_rq())
+-				evl_inc_counter(&thread->stat.rwa);
++				evl_opt_counter_inc(&thread->stat.rwa);
+ 		}
+ 	}
+ }
+@@ -721,7 +721,7 @@ static void evl_release_thread_locked(struct evl_thread *thread,
+ 	thread->state |= EVL_T_READY;
+ 	evl_set_resched(rq);
+ 	if (rq != this_evl_rq())
+-		evl_inc_counter(&thread->stat.rwa);
++		evl_opt_counter_inc(&thread->stat.rwa);
+ }
+ 
+ void evl_release_thread(struct evl_thread *thread, int mask, int info)
+@@ -2115,10 +2115,10 @@ void evl_get_thread_state(struct evl_thread *thread,
+ 	__get_sched_attrs(thread->sched_class, thread, &statebuf->eattrs);
+ 	statebuf->cpu = evl_rq_cpu(thread->rq);
+ 	statebuf->state = evl_rq_cpu(thread->rq);
+-	statebuf->isw = evl_get_counter(&thread->stat.isw);
+-	statebuf->csw = evl_get_counter(&thread->stat.csw);
+-	statebuf->sc = evl_get_counter(&thread->stat.sc);
+-	statebuf->rwa = evl_get_counter(&thread->stat.rwa);
++	statebuf->isw = evl_opt_counter_read(&thread->stat.isw);
++	statebuf->csw = evl_opt_counter_read(&thread->stat.csw);
++	statebuf->sc = evl_opt_counter_read(&thread->stat.sc);
++	statebuf->rwa = evl_opt_counter_read(&thread->stat.rwa);
+ 	statebuf->xtime = ktime_to_ns(evl_get_account_total(
+ 					&thread->stat.account));
+ 	evl_put_thread_rq(thread, rq, flags);
+@@ -2719,10 +2719,10 @@ static ssize_t stats_show(struct device *dev,
+ 		usage = 0;
+ 
+ 	ret = snprintf(buf, PAGE_SIZE, "%lu %lu %lu %lu %Lu %d\n",
+-		thread->stat.isw.counter,
+-		thread->stat.csw.counter,
+-		thread->stat.sc.counter,
+-		thread->stat.rwa.counter,
++		evl_opt_counter_read(&thread->stat.isw),
++		evl_opt_counter_read(&thread->stat.csw),
++		evl_opt_counter_read(&thread->stat.sc),
++		evl_opt_counter_read(&thread->stat.rwa),
+ 		total,
+ 		usage);
+ 
+-- 
+2.30.2
+

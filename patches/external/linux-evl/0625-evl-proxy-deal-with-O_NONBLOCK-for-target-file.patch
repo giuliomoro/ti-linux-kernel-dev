@@ -1,0 +1,83 @@
+From b36a75c7ad9955c890fce56912829b863099a848 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 May 2020 16:12:03 +0200
+Subject: [PATCH 625/985] evl/proxy: deal with O_NONBLOCK for target file
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 27 +++++++++++++++++++--------
+ 1 file changed, 19 insertions(+), 8 deletions(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 009e32720..6626f4fbe 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -314,8 +314,7 @@ static ssize_t do_proxy_read(struct file *filp,
+ 	char __user *u_ptr;
+ 	int xret;
+ 
+-	if (count == 0)
+-		return 0;
++	/* count may not be zero. */
+ 
+ 	if (count > ring->bufsz)
+ 		return -EFBIG;
+@@ -335,9 +334,6 @@ static ssize_t do_proxy_read(struct file *filp,
+ 		if (avail < len) {
+ 			raw_spin_unlock_irqrestore(&ring->lock, flags);
+ 
+-			if (in->on_error)
+-				return in->on_error;
+-
+ 			if (avail > 0 && filp->f_flags & O_NONBLOCK) {
+ 				/* granularity may not be ^2. */
+ 				len = rounddown(avail, ring->granularity ?: 1);
+@@ -345,7 +341,16 @@ static ssize_t do_proxy_read(struct file *filp,
+ 					goto retry;
+ 			}
+ 
+-			return -EAGAIN;
++			if (in->on_error)
++				return in->on_error;
++
++			/*
++			 * Zero return means 'wait then try again' to
++			 * the caller. Should the worker get -EAGAIN
++			 * as non-blocking mode was set for the target
++			 * file, on_error would reflect this.
++			 */
++			return 0;
+ 		}
+ 
+ 		rdoff = ring->rdoff;
+@@ -419,9 +424,12 @@ static ssize_t proxy_oob_read(struct file *filp,
+ 	if (!proxy_is_readable(proxy))
+ 		return -ENXIO;
+ 
++	if (count == 0)
++		return 0;
++
+ 	for (;;) {
+ 		ret = do_proxy_read(filp, u_buf, count);
+-		if (ret != -EAGAIN || filp->f_flags & O_NONBLOCK)
++		if (ret || filp->f_flags & O_NONBLOCK)
+ 			break;
+ 		if (!request_done) {
+ 			atomic_add(count, &in->reqsz);
+@@ -507,9 +515,12 @@ static ssize_t proxy_read(struct file *filp,
+ 	if (!proxy_is_readable(proxy))
+ 		return -ENXIO;
+ 
++	if (count == 0)
++		return 0;
++
+ 	for (;;) {
+ 		ret = do_proxy_read(filp, u_buf, count);
+-		if (ret != -EAGAIN || filp->f_flags & O_NONBLOCK)
++		if (ret || filp->f_flags & O_NONBLOCK)
+ 			break;
+ 		if (!request_done) {
+ 			atomic_add(count, &in->reqsz);
+-- 
+2.30.2
+

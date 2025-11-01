@@ -1,0 +1,501 @@
+From 4e9e94e969c924b621c68b593adfa06fbe973cfd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 27 May 2025 15:46:11 +0200
+Subject: [PATCH 934/985] evl: suffix all UAPI headers with -abi
+
+Deconflict header namespaces between UAPI and libevl, aligning on the
+naming standard.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ drivers/evl/hectic.c                                |  2 +-
+ drivers/evl/latmus.c                                |  2 +-
+ include/evl/clock.h                                 |  2 +-
+ include/evl/devices/gpio.h                          |  2 +-
+ include/evl/factory.h                               |  2 +-
+ include/evl/memory.h                                |  2 +-
+ include/evl/net/socket.h                            |  4 ++--
+ include/evl/observable.h                            |  2 +-
+ include/evl/poll.h                                  |  2 +-
+ include/evl/thread.h                                |  2 +-
+ include/evl/tick.h                                  |  2 +-
+ include/uapi/evl/control-abi.h                      |  2 +-
+ include/uapi/evl/devices/gpio-abi.h                 | 10 ++++++++++
+ include/uapi/evl/devices/gpio.h                     | 10 ----------
+ include/uapi/evl/devices/{hectic.h => hectic-abi.h} |  6 +++---
+ include/uapi/evl/devices/{latmus.h => latmus-abi.h} |  6 +++---
+ include/uapi/evl/{fcntl.h => fcntl-abi.h}           |  6 +++---
+ include/uapi/evl/net/net-abi.h                      |  2 +-
+ include/uapi/evl/net/socket-abi.h                   |  2 +-
+ include/uapi/evl/observable-abi.h                   |  2 +-
+ include/uapi/evl/poll-abi.h                         |  2 +-
+ include/uapi/evl/sched-abi.h                        |  2 +-
+ include/uapi/evl/{signal.h => signal-abi.h}         |  6 +++---
+ include/uapi/evl/{trace.h => trace-abi.h}           |  6 +++---
+ include/uapi/evl/{types.h => types-abi.h}           |  6 +++---
+ kernel/evl/mutex.c                                  |  2 +-
+ kernel/evl/sched/core.c                             |  2 +-
+ kernel/evl/trace.c                                  |  2 +-
+ kernel/evl/wait.c                                   |  2 +-
+ 29 files changed, 50 insertions(+), 50 deletions(-)
+ create mode 100644 include/uapi/evl/devices/gpio-abi.h
+ delete mode 100644 include/uapi/evl/devices/gpio.h
+ rename include/uapi/evl/devices/{hectic.h => hectic-abi.h} (92%)
+ rename include/uapi/evl/devices/{latmus.h => latmus-abi.h} (92%)
+ rename include/uapi/evl/{fcntl.h => fcntl-abi.h} (75%)
+ rename include/uapi/evl/{signal.h => signal-abi.h} (85%)
+ rename include/uapi/evl/{trace.h => trace-abi.h} (69%)
+ rename include/uapi/evl/{types.h => types-abi.h} (92%)
+
+diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
+index 0112f6360..a11da8f91 100644
+--- a/drivers/evl/hectic.c
++++ b/drivers/evl/hectic.c
+@@ -18,7 +18,7 @@
+ #include <evl/file.h>
+ #include <evl/stax.h>
+ #include <asm/evl/fptest.h>
+-#include <uapi/evl/devices/hectic.h>
++#include <uapi/evl/devices/hectic-abi.h>
+ #include <trace/events/evl.h>
+ 
+ #define HECTIC_KTHREAD      0x20000
+diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
+index ec1882a6b..01a7a9169 100644
+--- a/drivers/evl/latmus.c
++++ b/drivers/evl/latmus.c
+@@ -20,7 +20,7 @@
+ #include <evl/thread.h>
+ #include <evl/xbuf.h>
+ #include <evl/uaccess.h>
+-#include <uapi/evl/devices/latmus.h>
++#include <uapi/evl/devices/latmus-abi.h>
+ #include <trace/events/evl.h>
+ 
+ #define TUNER_SAMPLING_TIME	500000000UL
+diff --git a/include/evl/clock.h b/include/evl/clock.h
+index cb1bbf2cc..47daf80df 100644
+--- a/include/evl/clock.h
++++ b/include/evl/clock.h
+@@ -14,7 +14,7 @@
+ #include <linux/cpumask.h>
+ #include <evl/list.h>
+ #include <evl/factory.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ #include <uapi/evl/clock-abi.h>
+ 
+ #define ONE_BILLION  1000000000
+diff --git a/include/evl/devices/gpio.h b/include/evl/devices/gpio.h
+index 06d03464f..f5480bd14 100644
+--- a/include/evl/devices/gpio.h
++++ b/include/evl/devices/gpio.h
+@@ -8,7 +8,7 @@
+ #define _EVL_DEVICES_GPIO_H
+ 
+ #include <evl/device.h>
+-#include <uapi/evl/devices/gpio.h>
++#include <uapi/evl/devices/gpio-abi.h>
+ 
+ #ifdef CONFIG_EVL
+ 
+diff --git a/include/evl/factory.h b/include/evl/factory.h
+index dbecef12b..7aaf70cd6 100644
+--- a/include/evl/factory.h
++++ b/include/evl/factory.h
+@@ -21,7 +21,7 @@
+ #include <linux/refcount.h>
+ #include <evl/assert.h>
+ #include <evl/file.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ #include <uapi/evl/factory-abi.h>
+ 
+ #define element_of(__filp, __type)					\
+diff --git a/include/evl/memory.h b/include/evl/memory.h
+index 3219ee4bd..b7fc6b0be 100644
+--- a/include/evl/memory.h
++++ b/include/evl/memory.h
+@@ -14,7 +14,7 @@
+ #include <linux/rbtree.h>
+ #include <evl/list.h>
+ #include <evl/factory.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ 
+ #define EVL_HEAP_PAGE_SHIFT	9 /* 2^9 => 512 bytes */
+ #define EVL_HEAP_PAGE_SIZE	(1UL << EVL_HEAP_PAGE_SHIFT)
+diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
+index 6952aafb7..828a4c6ba 100644
+--- a/include/evl/net/socket.h
++++ b/include/evl/net/socket.h
+@@ -18,8 +18,8 @@
+ #include <evl/crossing.h>
+ #include <evl/work.h>
+ #include <evl/net/timestamping.h>
+-#include <uapi/evl/types.h>
+-#include <uapi/evl/fcntl.h>
++#include <uapi/evl/types-abi.h>
++#include <uapi/evl/fcntl-abi.h>
+ #include <uapi/evl/net/socket-abi.h>
+ 
+ struct evl_socket;
+diff --git a/include/evl/observable.h b/include/evl/observable.h
+index 8a53cd9d8..96c209440 100644
+--- a/include/evl/observable.h
++++ b/include/evl/observable.h
+@@ -14,7 +14,7 @@
+ #include <evl/factory.h>
+ #include <evl/wait.h>
+ #include <evl/poll.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ #include <uapi/evl/observable-abi.h>
+ 
+ struct file;
+diff --git a/include/evl/poll.h b/include/evl/poll.h
+index c16ed26bb..b8823a459 100644
+--- a/include/evl/poll.h
++++ b/include/evl/poll.h
+@@ -15,7 +15,7 @@
+ #include <evl/poll_head.h>
+ #include <evl/wait.h>
+ #include <evl/factory.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ #include <uapi/evl/poll-abi.h>
+ 
+ struct file;
+diff --git a/include/evl/thread.h b/include/evl/thread.h
+index 1164962cd..7fb1f66b8 100644
+--- a/include/evl/thread.h
++++ b/include/evl/thread.h
+@@ -24,7 +24,7 @@
+ #include <evl/assert.h>
+ #include <uapi/evl/thread-abi.h>
+ #include <uapi/evl/sched-abi.h>
+-#include <uapi/evl/signal.h>
++#include <uapi/evl/signal-abi.h>
+ #include <asm/evl/thread.h>
+ 
+ /* All bits which may cause an EVL thread to block in oob context. */
+diff --git a/include/evl/tick.h b/include/evl/tick.h
+index 581bb106b..b6e7864ad 100644
+--- a/include/evl/tick.h
++++ b/include/evl/tick.h
+@@ -13,7 +13,7 @@
+ #include <linux/tick.h>
+ #include <evl/clock.h>
+ #include <evl/sched.h>
+-#include <uapi/evl/types.h>
++#include <uapi/evl/types-abi.h>
+ 
+ struct evl_rq;
+ 
+diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
+index 386b48360..0cf83bb16 100644
+--- a/include/uapi/evl/control-abi.h
++++ b/include/uapi/evl/control-abi.h
+@@ -17,7 +17,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  39
++#define EVL_ABI_LEVEL  40
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/devices/gpio-abi.h b/include/uapi/evl/devices/gpio-abi.h
+new file mode 100644
+index 000000000..b81f34db4
+--- /dev/null
++++ b/include/uapi/evl/devices/gpio-abi.h
+@@ -0,0 +1,10 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ */
++
++#ifndef _EVL_UAPI_DEVICES_GPIO_ABI_H
++#define _EVL_UAPI_DEVICES_GPIO_ABI_H
++
++#define GPIOHANDLE_REQUEST_OOB		(1UL << 5)
++
++#endif /* !_EVL_UAPI_DEVICES_GPIO_ABI_H */
+diff --git a/include/uapi/evl/devices/gpio.h b/include/uapi/evl/devices/gpio.h
+deleted file mode 100644
+index 06e43fbe8..000000000
+--- a/include/uapi/evl/devices/gpio.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-/*
+- * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
+- */
+-
+-#ifndef _EVL_UAPI_DEVICES_GPIO_H
+-#define _EVL_UAPI_DEVICES_GPIO_H
+-
+-#define GPIOHANDLE_REQUEST_OOB		(1UL << 5)
+-
+-#endif /* !_EVL_UAPI_DEVICES_GPIO_H */
+diff --git a/include/uapi/evl/devices/hectic.h b/include/uapi/evl/devices/hectic-abi.h
+similarity index 92%
+rename from include/uapi/evl/devices/hectic.h
+rename to include/uapi/evl/devices/hectic-abi.h
+index 6426901d0..f4dd00e63 100644
+--- a/include/uapi/evl/devices/hectic.h
++++ b/include/uapi/evl/devices/hectic-abi.h
+@@ -6,8 +6,8 @@
+  * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_DEVICES_HECTIC_H
+-#define _EVL_UAPI_DEVICES_HECTIC_H
++#ifndef _EVL_UAPI_DEVICES_HECTIC_ABI_H
++#define _EVL_UAPI_DEVICES_HECTIC_ABI_H
+ 
+ #include <linux/types.h>
+ 
+@@ -44,4 +44,4 @@ struct hectic_error {
+ #define EVL_HECIOC_LOCK_STAX 		_IO(EVL_HECTIC_IOCBASE, 9)
+ #define EVL_HECIOC_UNLOCK_STAX 		_IO(EVL_HECTIC_IOCBASE, 10)
+ 
+-#endif /* !_EVL_UAPI_DEVICES_HECTIC_H */
++#endif /* !_EVL_UAPI_DEVICES_HECTIC_ABI_H */
+diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus-abi.h
+similarity index 92%
+rename from include/uapi/evl/devices/latmus.h
+rename to include/uapi/evl/devices/latmus-abi.h
+index b9cfd2897..5425bb553 100644
+--- a/include/uapi/evl/devices/latmus.h
++++ b/include/uapi/evl/devices/latmus-abi.h
+@@ -5,8 +5,8 @@
+  * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_DEVICES_LATMUS_H
+-#define _EVL_UAPI_DEVICES_LATMUS_H
++#ifndef _EVL_UAPI_DEVICES_LATMUS_ABI_H
++#define _EVL_UAPI_DEVICES_LATMUS_ABI_H
+ 
+ #include <linux/types.h>
+ 
+@@ -64,4 +64,4 @@ struct latmus_result {
+ #define EVL_LATIOC_PULSE	_IOW(EVL_LATMUS_IOCBASE, 3, __u64)
+ #define EVL_LATIOC_RESET	_IO(EVL_LATMUS_IOCBASE, 4)
+ 
+-#endif /* !_EVL_UAPI_DEVICES_LATMUS_H */
++#endif /* !_EVL_UAPI_DEVICES_LATMUS_ABI_H */
+diff --git a/include/uapi/evl/fcntl.h b/include/uapi/evl/fcntl-abi.h
+similarity index 75%
+rename from include/uapi/evl/fcntl.h
+rename to include/uapi/evl/fcntl-abi.h
+index 8f0b92570..74895b55d 100644
+--- a/include/uapi/evl/fcntl.h
++++ b/include/uapi/evl/fcntl-abi.h
+@@ -4,8 +4,8 @@
+  * Copyright (C) 2021 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_FCNTL_H
+-#define _EVL_UAPI_FCNTL_H
++#ifndef _EVL_UAPI_FCNTL_ABI_H
++#define _EVL_UAPI_FCNTL_ABI_H
+ 
+ /*
+  * EVL-specific open mode. Must match kernel UAPI in
+@@ -13,4 +13,4 @@
+  */
+ #define O_OOB	010000000000	/* Request out-of-band capabilities */
+ 
+-#endif /* !_EVL_UAPI_FCNTL_H */
++#endif /* !_EVL_UAPI_FCNTL_ABI_H */
+diff --git a/include/uapi/evl/net/net-abi.h b/include/uapi/evl/net/net-abi.h
+index c75e571a8..2dbdcbeba 100644
+--- a/include/uapi/evl/net/net-abi.h
++++ b/include/uapi/evl/net/net-abi.h
+@@ -7,7 +7,7 @@
+ #ifndef _EVL_UAPI_NET_NET_ABI_H
+ #define _EVL_UAPI_NET_NET_ABI_H
+ 
+-#include <evl/types.h>
++#include <evl/types-abi.h>
+ 
+ #define EVL_NET_DEV		"net"
+ 
+diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
+index 22c5395e3..f41882f9b 100644
+--- a/include/uapi/evl/net/socket-abi.h
++++ b/include/uapi/evl/net/socket-abi.h
+@@ -7,7 +7,7 @@
+ #ifndef _EVL_UAPI_NET_SOCKET_ABI_H
+ #define _EVL_UAPI_NET_SOCKET_ABI_H
+ 
+-#include <evl/types.h>
++#include <evl/types-abi.h>
+ 
+ #define AF_OOB		46	/* Out-of-band domain sockets */
+ 
+diff --git a/include/uapi/evl/observable-abi.h b/include/uapi/evl/observable-abi.h
+index 3da0a47ae..9d55233f7 100644
+--- a/include/uapi/evl/observable-abi.h
++++ b/include/uapi/evl/observable-abi.h
+@@ -7,7 +7,7 @@
+ #ifndef _EVL_UAPI_OBSERVABLE_ABI_H
+ #define _EVL_UAPI_OBSERVABLE_ABI_H
+ 
+-#include <evl/types.h>
++#include <evl/types-abi.h>
+ 
+ #define EVL_OBSERVABLE_DEV	"observable"
+ 
+diff --git a/include/uapi/evl/poll-abi.h b/include/uapi/evl/poll-abi.h
+index ba2816e62..8ed405f3c 100644
+--- a/include/uapi/evl/poll-abi.h
++++ b/include/uapi/evl/poll-abi.h
+@@ -7,7 +7,7 @@
+ #ifndef _EVL_UAPI_POLL_ABI_H
+ #define _EVL_UAPI_POLL_ABI_H
+ 
+-#include <evl/types.h>
++#include <evl/types-abi.h>
+ 
+ #define EVL_POLL_DEV		"poll"
+ 
+diff --git a/include/uapi/evl/sched-abi.h b/include/uapi/evl/sched-abi.h
+index 8c453c86c..440e69812 100644
+--- a/include/uapi/evl/sched-abi.h
++++ b/include/uapi/evl/sched-abi.h
+@@ -8,7 +8,7 @@
+ #ifndef _EVL_UAPI_SCHED_ABI_H
+ #define _EVL_UAPI_SCHED_ABI_H
+ 
+-#include <evl/types.h>
++#include <evl/types-abi.h>
+ 
+ #define EVL_CPU_OOB      (1 << 0)
+ #define EVL_CPU_ISOL     (1 << 1)
+diff --git a/include/uapi/evl/signal.h b/include/uapi/evl/signal-abi.h
+similarity index 85%
+rename from include/uapi/evl/signal.h
+rename to include/uapi/evl/signal-abi.h
+index 3d4a869e1..8f1649913 100644
+--- a/include/uapi/evl/signal.h
++++ b/include/uapi/evl/signal-abi.h
+@@ -6,8 +6,8 @@
+  * Copyright (C) 2013, 2018 Philippe Gerum <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_SIGNAL_H
+-#define _EVL_UAPI_SIGNAL_H
++#ifndef _EVL_UAPI_SIGNAL_ABI_H
++#define _EVL_UAPI_SIGNAL_ABI_H
+ 
+ /*
+  * EVL_HMDIAG_xxx codes are possible values of sigdebug_cause().
+@@ -19,4 +19,4 @@
+ #define sigdebug_marked(si)		\
+ 	((sigdebug_code(si) & 0xffff0000) == sigdebug_marker)
+ 
+-#endif /* !_EVL_UAPI_SIGNAL_H */
++#endif /* !_EVL_UAPI_SIGNAL_ABI_H */
+diff --git a/include/uapi/evl/trace.h b/include/uapi/evl/trace-abi.h
+similarity index 69%
+rename from include/uapi/evl/trace.h
+rename to include/uapi/evl/trace-abi.h
+index b0e4e8c26..5c133da18 100644
+--- a/include/uapi/evl/trace.h
++++ b/include/uapi/evl/trace-abi.h
+@@ -4,11 +4,11 @@
+  * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_TRACE_H
+-#define _EVL_UAPI_TRACE_H
++#ifndef _EVL_UAPI_TRACE_ABI_H
++#define _EVL_UAPI_TRACE_ABI_H
+ 
+ #define EVL_TRACE_IOCBASE	'O'
+ 
+ #define EVL_TRCIOC_SNAPSHOT	_IO(EVL_TRACE_IOCBASE, 0)
+ 
+-#endif /* !_EVL_UAPI_TRACE_H */
++#endif /* !_EVL_UAPI_TRACE_ABI_H */
+diff --git a/include/uapi/evl/types.h b/include/uapi/evl/types-abi.h
+similarity index 92%
+rename from include/uapi/evl/types.h
+rename to include/uapi/evl/types-abi.h
+index 975b25db6..5bd4a5a12 100644
+--- a/include/uapi/evl/types.h
++++ b/include/uapi/evl/types-abi.h
+@@ -5,8 +5,8 @@
+  * Copyright (C) 2013, 2018 Philippe Gerum <rpm@xenomai.org>
+  */
+ 
+-#ifndef _EVL_UAPI_TYPES_H
+-#define _EVL_UAPI_TYPES_H
++#ifndef _EVL_UAPI_TYPES_ABI_H
++#define _EVL_UAPI_TYPES_ABI_H
+ 
+ #include <linux/types.h>
+ 
+@@ -54,4 +54,4 @@ union evl_value {
+ #define evl_ptrval(__ptr)	((union evl_value){ .ptr = (__ptr) })
+ #define evl_nil			evl_intval(0)
+ 
+-#endif /* !_EVL_UAPI_TYPES_H */
++#endif /* !_EVL_UAPI_TYPES_ABI_H */
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index aa3205905..7684ec961 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -11,7 +11,7 @@
+ #include <evl/thread.h>
+ #include <evl/mutex.h>
+ #include <evl/lock.h>
+-#include <uapi/evl/signal.h>
++#include <uapi/evl/signal-abi.h>
+ #include <trace/events/evl.h>
+ 
+ #define for_each_evl_mutex_waiter(__pos, __mutex)			\
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index c1da116dc..8855afb71 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -23,7 +23,7 @@
+ #include <evl/monitor.h>
+ #include <evl/mutex.h>
+ #include <evl/flag.h>
+-#include <uapi/evl/signal.h>
++#include <uapi/evl/signal-abi.h>
+ #include <trace/events/evl.h>
+ 
+ DEFINE_PER_CPU(struct evl_rq, evl_runqueues);
+diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
+index aaf3d3f3d..0560f6596 100644
+--- a/kernel/evl/trace.c
++++ b/kernel/evl/trace.c
+@@ -7,7 +7,7 @@
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
+ #include <evl/factory.h>
+-#include <uapi/evl/trace.h>
++#include <uapi/evl/trace-abi.h>
+ #include <trace/events/evl.h>
+ 
+ static long trace_common_ioctl(struct file *filp, unsigned int cmd,
+diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
+index 69f24e735..736bb5d17 100644
+--- a/kernel/evl/wait.c
++++ b/kernel/evl/wait.c
+@@ -8,7 +8,7 @@
+ #include <evl/lock.h>
+ #include <evl/wait.h>
+ #include <evl/thread.h>
+-#include <uapi/evl/signal.h>
++#include <uapi/evl/signal-abi.h>
+ #include <trace/events/evl.h>
+ 
+ void __evl_init_wait(struct evl_wait_queue *wq,
+-- 
+2.30.2
+

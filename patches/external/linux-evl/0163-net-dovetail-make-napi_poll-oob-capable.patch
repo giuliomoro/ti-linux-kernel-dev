@@ -1,0 +1,107 @@
+From aac5ceece891ceb7742de28d55cf4f738bd0b2ba Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 23 Apr 2025 18:21:36 +0200
+Subject: [PATCH 163/985] net: dovetail: make napi_poll() oob-capable
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/linux/netdevice.h |  2 ++
+ net/core/dev.c            | 50 +++++++++++++++++++++++++--------------
+ 2 files changed, 34 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 510fc80bf..99c1c0280 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4419,6 +4419,8 @@ static inline void netif_disable_oob_port(struct net_device *dev)
+ 	smp_mb__after_atomic();
+ }
+ 
++int napi_poll_oob(struct napi_struct *n, struct list_head *repoll);
++
+ /* Out-of-band hooks implemented by the companion core. */
+ void napi_schedule_oob(struct napi_struct *n);
+ bool netif_deliver_oob(struct sk_buff *skb);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 4ae484f61..c54a3f95a 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -5338,6 +5338,13 @@ static void process_inband_rx_backlog(struct softnet_data *sd)
+ 		_netif_receive_skb_list(&list);
+ }
+ 
++static int napi_poll(struct napi_struct *n, struct list_head *repoll);
++
++int napi_poll_oob(struct napi_struct *n, struct list_head *repoll)
++{
++	return napi_poll(n, repoll);
++}
++
+ __weak void napi_schedule_oob(struct napi_struct *n)
+ { }
+ 
+@@ -6480,7 +6487,12 @@ bool napi_complete_done(struct napi_struct *n, int work_done)
+ 	if (netif_oob_diversion(n->dev)) {
+ 		if (net_running_oob())
+ 			return napi_schedule_unprep(n);
+-
++		/*
++		 * We get there only when the NAPI poll handler runs
++		 * from the inband stage, i.e. called from a non
++		 * oob-capable device which ingress traffic is
++		 * diverted to some oob netstack nevertheless.
++		 */
+ 		napi_schedule_oob(n);
+ 	}
+ 
+@@ -7038,28 +7050,30 @@ static int __napi_poll(struct napi_struct *n, bool *repoll)
+ 		return work;
+ 	}
+ 
+-	/* The NAPI context has more processing work, but busy-polling
+-	 * is preferred. Exit early.
+-	 */
+-	if (napi_prefer_busy_poll(n)) {
+-		if (napi_complete_done(n, work)) {
+-			/* If timeout is not set, we need to make sure
+-			 * that the NAPI is re-scheduled.
++	if (!net_running_oob()) {
++		/* The NAPI context has more processing work, but busy-polling
++		 * is preferred. Exit early.
++		 */
++		if (napi_prefer_busy_poll(n)) {
++			if (napi_complete_done(n, work)) {
++				/* If timeout is not set, we need to make sure
++				 * that the NAPI is re-scheduled.
++				 */
++				napi_schedule(n);
++			}
++			return work;
++		}
++
++		if (n->gro_bitmask) {
++			/* flush too old packets
++			 * If HZ < 1000, flush all packets.
+ 			 */
+-			napi_schedule(n);
++			napi_gro_flush(n, HZ >= 1000);
+ 		}
+-		return work;
+-	}
+ 
+-	if (n->gro_bitmask) {
+-		/* flush too old packets
+-		 * If HZ < 1000, flush all packets.
+-		 */
+-		napi_gro_flush(n, HZ >= 1000);
++		gro_normal_list(n);
+ 	}
+ 
+-	gro_normal_list(n);
+-
+ 	/* Some drivers may have called napi_schedule
+ 	 * prior to exhausting their budget.
+ 	 */
+-- 
+2.30.2
+

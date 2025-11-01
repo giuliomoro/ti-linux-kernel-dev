@@ -1,0 +1,32 @@
+From a48feb7dd7942182c5f78683104b86cf1401f1e6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 31 Dec 2019 12:24:08 +0100
+Subject: [PATCH 548/985] x86/build: evl: drop pointless include directives
+
+These directives would also cause compilation errors in arch/x86/kvm
+when building in-tree due to pulling the wrong header file
+(i.e. "irq.h").
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/x86/Makefile | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 44eb7a9db..5b773b347 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -220,10 +220,6 @@ KBUILD_CFLAGS += -Wno-sign-compare
+ #
+ KBUILD_CFLAGS += -fno-asynchronous-unwind-tables
+ 
+-ifeq ($(CONFIG_EVL),y)
+-KBUILD_CFLAGS += -Iarch/$(SRCARCH)/evl/include -Iinclude/evl
+-endif
+-
+ # Avoid indirect branches in kernel to deal with Spectre
+ ifdef CONFIG_MITIGATION_RETPOLINE
+   KBUILD_CFLAGS += $(RETPOLINE_CFLAGS)
+-- 
+2.30.2
+

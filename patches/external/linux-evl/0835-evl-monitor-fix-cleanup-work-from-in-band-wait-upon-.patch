@@ -1,0 +1,84 @@
+From e48a30cd69f849bfb370d898d2c6097aedadd70b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 23 Nov 2023 19:54:15 +0100
+Subject: [PATCH 835/985] evl/monitor: fix cleanup work from in-band wait upon
+ signal
+
+The sleeper was left attached to the wait queue, causing a crash
+shortly after.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 36 +++++++++++++++++++++---------------
+ 1 file changed, 21 insertions(+), 15 deletions(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 42ae97ca7..19cd6138b 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -1001,6 +1001,7 @@ static ssize_t monitor_read(struct file *filp, char __user *u_buf,
+ 	struct evl_monitor *event = element_of(filp, struct evl_monitor);
+ 	struct wait_queue_entry wq_entry;
+ 	unsigned long flags, ib_flags;
++	int ret = 0;
+ 	s32 val;
+ 
+ 	if (event->type != EVL_MONITOR_EVENT || event->protocol != EVL_EVENT_MASK)
+@@ -1015,34 +1016,39 @@ static ssize_t monitor_read(struct file *filp, char __user *u_buf,
+ 		spin_lock_irqsave(&event->inband_wait.lock, ib_flags);
+ 		raw_spin_lock_irqsave(&event->wait_queue.wchan.lock, flags);
+ 
++		if (signal_pending(current)) {
++			ret = -ERESTARTSYS;
++			break;
++		}
++
+ 		if (list_empty(&wq_entry.entry))
+ 			__add_wait_queue(&event->inband_wait, &wq_entry);
+ 
+ 		/* Disjunctive operation. */
+-		if (__trywait_mask(event, -1, false, &val, flags)) {
+-			list_del(&wq_entry.entry);
+-			 /* We have collected all the bits, send POLLOUT wakeup. */
+-			if (waitqueue_active(&event->inband_wait))
+-				wake_up_all_locked(&event->inband_wait);
+-			spin_unlock_irqrestore(&event->inband_wait.lock, ib_flags);
+-			break;
+-		}
+-
+-		raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
++		if (__trywait_mask(event, -1, false, &val, flags))
++			goto unlocked;
+ 
+ 		if (filp->f_flags & O_NONBLOCK) {
+-			spin_unlock_irqrestore(&event->inband_wait.lock, ib_flags);
+-			return -EAGAIN;
++			ret = -EAGAIN;
++			break;
+ 		}
+ 
+ 		set_current_state(TASK_INTERRUPTIBLE);
++		raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
+ 		spin_unlock_irqrestore(&event->inband_wait.lock, ib_flags);
+-
+ 		schedule();
+-		if (signal_pending(current))
+-			return -ERESTARTSYS;
+ 	}
+ 
++	raw_spin_unlock_irqrestore(&event->wait_queue.wchan.lock, flags);
++unlocked:
++	list_del(&wq_entry.entry);
++
++	/* We have collected all the bits, send POLLOUT wakeup. */
++	if (!ret && waitqueue_active(&event->inband_wait))
++		wake_up_all_locked(&event->inband_wait);
++
++	spin_unlock_irqrestore(&event->inband_wait.lock, ib_flags);
++
+ 	return copy_to_user(u_buf, &val, sizeof(val)) ? -EFAULT : sizeof(val);
+ }
+ 
+-- 
+2.30.2
+

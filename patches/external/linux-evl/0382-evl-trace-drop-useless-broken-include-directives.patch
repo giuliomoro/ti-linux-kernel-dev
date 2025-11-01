@@ -1,0 +1,40 @@
+From f30745d43631af349910a714fbf981cf0de37347 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 24 May 2019 16:18:32 +0200
+Subject: [PATCH 382/985] evl/trace: drop useless, broken include directives
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/syscall.c | 3 ---
+ kernel/evl/trace.c   | 1 -
+ 2 files changed, 4 deletions(-)
+
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index d22604dd5..5473e2ca4 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -25,9 +25,6 @@
+ #include <trace/events/evl.h>
+ #include <uapi/evl/syscall.h>
+ #include <asm/evl/syscall.h>
+-#ifdef CONFIG_FTRACE
+-#include <trace/trace.h>
+-#endif
+ 
+ #define EVL_SYSCALL(__name, __args)	\
+ 	long EVL_ ## __name __args
+diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
+index 2bab7a201..ee9a7122a 100644
+--- a/kernel/evl/trace.c
++++ b/kernel/evl/trace.c
+@@ -9,7 +9,6 @@
+ #include <evl/factory.h>
+ #include <uapi/evl/trace.h>
+ #include <trace/events/evl.h>
+-#include <trace/trace.h>
+ 
+ static long trace_common_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+-- 
+2.30.2
+

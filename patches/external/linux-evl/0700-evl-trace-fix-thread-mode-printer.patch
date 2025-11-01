@@ -1,0 +1,27 @@
+From c13be0e4e3c72c9cce2105cb825fc4516f229169 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 12 Jun 2021 18:35:52 +0200
+Subject: [PATCH 700/985] evl/trace: fix thread mode printer
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/trace/events/evl.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 786bf18a7..70fc49867 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -817,6 +817,9 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
+ 
+ #define evl_print_thread_mode(__mode)	\
+ 	__print_flags(__mode, "|",	\
++		{T_HMOBS, "hmobs"},	\
++		{T_HMSIG, "hmsig"},	\
++		{T_WOSX, "wosx"},	\
+ 		{T_WOSS, "woss"},	\
+ 		{T_WOLI, "woli"})
+ 
+-- 
+2.30.2
+

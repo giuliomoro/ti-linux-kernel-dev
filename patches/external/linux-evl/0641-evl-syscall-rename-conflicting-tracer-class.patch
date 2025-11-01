@@ -1,0 +1,73 @@
+From 4d06781ecad774b9b6aa139e154e5c02bafd846b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 2 Sep 2020 11:19:04 +0200
+Subject: [PATCH 641/985] evl/syscall: rename conflicting tracer class
+
+The syscall_exit tracer appeared in v5.9, so prefix our tracer
+definitions with evl_ to avoid naming conflicts.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch wip/evl-5.9-rc3
+# Changes to be committed:
+#	modified:   include/trace/events/evl.h
+#
+---
+ include/trace/events/evl.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index c1cde0faa..1c3a10d9d 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -118,7 +118,7 @@ DECLARE_EVENT_CLASS(timer_event,
+ 			 { 1, "oob_write" },	\
+ 			 { 2, "oob_ioctl" })
+ 
+-DECLARE_EVENT_CLASS(syscall_entry,
++DECLARE_EVENT_CLASS(evl_syscall_entry,
+ 	TP_PROTO(unsigned int nr),
+ 	TP_ARGS(nr),
+ 
+@@ -133,7 +133,7 @@ DECLARE_EVENT_CLASS(syscall_entry,
+ 	TP_printk("syscall=%s", evl_print_syscall(__entry->nr))
+ );
+ 
+-DECLARE_EVENT_CLASS(syscall_exit,
++DECLARE_EVENT_CLASS(evl_syscall_exit,
+ 	TP_PROTO(long result),
+ 	TP_ARGS(result),
+ 
+@@ -742,22 +742,22 @@ DEFINE_EVENT(mutex_event, evl_mutex_flush,
+ #define __timespec_args(__name)					\
+ 	__entry->tv_sec_##__name, __entry->tv_nsec_##__name
+ 
+-DEFINE_EVENT(syscall_entry, evl_oob_sysentry,
++DEFINE_EVENT(evl_syscall_entry, evl_oob_sysentry,
+ 	TP_PROTO(unsigned int nr),
+ 	TP_ARGS(nr)
+ );
+ 
+-DEFINE_EVENT(syscall_exit, evl_oob_sysexit,
++DEFINE_EVENT(evl_syscall_exit, evl_oob_sysexit,
+ 	TP_PROTO(long result),
+ 	TP_ARGS(result)
+ );
+ 
+-DEFINE_EVENT(syscall_entry, evl_inband_sysentry,
++DEFINE_EVENT(evl_syscall_entry, evl_inband_sysentry,
+ 	TP_PROTO(unsigned int nr),
+ 	TP_ARGS(nr)
+ );
+ 
+-DEFINE_EVENT(syscall_exit, evl_inband_sysexit,
++DEFINE_EVENT(evl_syscall_exit, evl_inband_sysexit,
+ 	TP_PROTO(long result),
+ 	TP_ARGS(result)
+ );
+-- 
+2.30.2
+

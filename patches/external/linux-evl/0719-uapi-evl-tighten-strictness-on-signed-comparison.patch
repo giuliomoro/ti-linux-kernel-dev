@@ -1,0 +1,26 @@
+From bb0b2a8a4e2b4867303a5cb8592839270aebe6fb Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 7 Nov 2021 10:55:21 +0100
+Subject: [PATCH 719/985] uapi/evl: tighten strictness on signed comparison
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/mutex.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/uapi/evl/mutex.h b/include/uapi/evl/mutex.h
+index 68df16399..9a1979483 100644
+--- a/include/uapi/evl/mutex.h
++++ b/include/uapi/evl/mutex.h
+@@ -36,7 +36,7 @@ int evl_fast_lock_mutex(atomic_t *fastlock, fundle_t new_ownerh)
+ static inline
+ int evl_fast_unlock_mutex(atomic_t *fastlock, fundle_t cur_ownerh)
+ {
+-	return atomic_cmpxchg(fastlock, cur_ownerh, EVL_NO_HANDLE)
++	return (fundle_t)atomic_cmpxchg(fastlock, cur_ownerh, EVL_NO_HANDLE)
+ 		== cur_ownerh;
+ }
+ 
+-- 
+2.30.2
+

@@ -1,0 +1,130 @@
+From 8e67174929b432e60d94f7755526a2535bf50170 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 11 Jun 2020 15:28:52 +0200
+Subject: [PATCH 632/985] uapi/evl: annotate label of user pointers in ABI
+
+All pointers passed as 64 bit long integer in the ABI in order to deal
+with compat mode refer to user memory. Annotate their description
+accordingly.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/clock.h          | 4 ++--
+ include/uapi/evl/control.h        | 2 +-
+ include/uapi/evl/devices/latmus.h | 6 +++---
+ include/uapi/evl/factory.h        | 4 ++--
+ include/uapi/evl/monitor.h        | 2 +-
+ include/uapi/evl/poll.h           | 4 ++--
+ include/uapi/evl/sched.h          | 4 ++--
+ 7 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
+index a578c8bab..4d3e3ff2c 100644
+--- a/include/uapi/evl/clock.h
++++ b/include/uapi/evl/clock.h
+@@ -25,8 +25,8 @@
+ #define EVL_CLKIOC_NEW_TIMER	_IO(EVL_CLOCK_IOCBASE, 5)
+ 
+ struct evl_timerfd_setreq {
+-	__u64 value_ptr;       /* (struct __evl_itimerspec *value) */
+-	__u64 ovalue_ptr;      /* (struct __evl_itimerspec *ovalue) */
++	__u64 value_ptr;       /* (struct __evl_itimerspec __user *value) */
++	__u64 ovalue_ptr;      /* (struct __evl_itimerspec __user *ovalue) */
+ };
+ 
+ #define EVL_TIMERFD_IOCBASE	't'
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 9eebdb085..2e6562c46 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -31,7 +31,7 @@ struct evl_core_info {
+ 
+ struct evl_cpu_state {
+ 	__u32 cpu;
+-	__u64 state_ptr;	/* (__u32 *state) */
++	__u64 state_ptr;	/* (__u32 __user *state) */
+ };
+ 
+ #define EVL_CONTROL_IOCBASE	'C'
+diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
+index 4045e57a3..b9cfd2897 100644
+--- a/include/uapi/evl/devices/latmus.h
++++ b/include/uapi/evl/devices/latmus.h
+@@ -46,13 +46,13 @@ struct latmus_measurement {
+ };
+ 
+ struct latmus_measurement_result {
+-	__u64 last_ptr;		/* (struct latmus_measurement *last) */
+-	__u64 histogram_ptr;	/* (__s32 *histogram) */
++	__u64 last_ptr;		/* (struct latmus_measurement __user *last) */
++	__u64 histogram_ptr;	/* (__s32 __user *histogram) */
+ 	__u32 len;
+ };
+ 
+ struct latmus_result {
+-	__u64 data_ptr;		/* (void *data) */
++	__u64 data_ptr;		/* (void __user *data) */
+ 	__u32 len;
+ };
+ 
+diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
+index 50bf50e97..50dc36bdc 100644
+--- a/include/uapi/evl/factory.h
++++ b/include/uapi/evl/factory.h
+@@ -29,8 +29,8 @@ struct evl_element_ids {
+ #define EVL_CLONE_MASK		(((__u32)-1 << 16) & ~EVL_CLONE_COREDEV)
+ 
+ struct evl_clone_req {
+-	__u64 name_ptr;		/* (const char *name) */
+-	__u64 attrs_ptr;	/* (void *attrs) */
++	__u64 name_ptr;		/* (const char __user *name) */
++	__u64 attrs_ptr;	/* (void __user *attrs) */
+ 	__u32 clone_flags;
+ 	/* Output on success: */
+ 	struct evl_element_ids eids;
+diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
+index 40c5bdf2a..3d68eb0cd 100644
+--- a/include/uapi/evl/monitor.h
++++ b/include/uapi/evl/monitor.h
+@@ -53,7 +53,7 @@ struct evl_monitor_state {
+ };
+ 
+ struct evl_monitor_waitreq {
+-	__u64 timeout_ptr;	/* (struct __evl_timespec *timeout) */
++	__u64 timeout_ptr;	/* (struct __evl_timespec __user *timeout) */
+ 	__s32 gatefd;
+ 	__s32 status;
+ 	__s32 value;
+diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
+index 321ebd016..d9475b8d3 100644
+--- a/include/uapi/evl/poll.h
++++ b/include/uapi/evl/poll.h
+@@ -31,8 +31,8 @@ struct evl_poll_event {
+ };
+ 
+ struct evl_poll_waitreq {
+-	__u64 timeout_ptr;	/* (struct __evl_timespec *timeout) */
+-	__u64 pollset_ptr;	/* (struct evl_poll_event *pollset) */
++	__u64 timeout_ptr;	/* (struct __evl_timespec __user *timeout) */
++	__u64 pollset_ptr;	/* (struct evl_poll_event __user *pollset) */
+ 	int nrset;
+ };
+ 
+diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
+index 534673c78..f66081a56 100644
+--- a/include/uapi/evl/sched.h
++++ b/include/uapi/evl/sched.h
+@@ -126,8 +126,8 @@ union evl_sched_ctlinfo {
+ struct evl_sched_ctlreq {
+ 	int policy;
+ 	int cpu;
+-	__u64 param_ptr; /* (const union evl_sched_ctlparam *param) */
+-	__u64 info_ptr;	 /* (union evl_sched_ctlinfo *info) */
++	__u64 param_ptr; /* (const union evl_sched_ctlparam __user *param) */
++	__u64 info_ptr;	 /* (union evl_sched_ctlinfo __user *info) */
+ };
+ 
+ #endif /* !_EVL_UAPI_SCHED_H */
+-- 
+2.30.2
+

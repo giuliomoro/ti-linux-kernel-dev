@@ -1,0 +1,26 @@
+From a456b67eff5f80a345adaabe7db40b483b96df87 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 9 Feb 2019 11:10:14 +0100
+Subject: [PATCH 278/985] evl/mutex: fix ceiling reference in PP init
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evenless/mutex.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
+index 989d8c2cf..183453f9b 100644
+--- a/kernel/evenless/mutex.c
++++ b/kernel/evenless/mutex.c
+@@ -311,7 +311,7 @@ static void init_mutex(struct evl_mutex *mutex,
+ 	mutex->flags = flags & ~EVL_MUTEX_CLAIMED;
+ 	mutex->owner = NULL;
+ 	mutex->wprio = -1;
+-	mutex->ceiling_ref = NULL;
++	mutex->ceiling_ref = ceiling_ref;
+ 	mutex->clock = clock;
+ 	INIT_LIST_HEAD(&mutex->wait_list);
+ 	mutex->wchan.abort_wait = evl_abort_mutex_wait;
+-- 
+2.30.2
+

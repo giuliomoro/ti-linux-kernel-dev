@@ -1,0 +1,28 @@
+From 48a3b294b43068746270d1022f1489e2b08b9892 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 31 Dec 2019 12:26:20 +0100
+Subject: [PATCH 550/985] arm64/build: evl: drop pointless include directives
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/Makefile | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+index 370de5ec5..ffe2a3ad4 100644
+--- a/arch/arm64/Makefile
++++ b/arch/arm64/Makefile
+@@ -152,10 +152,6 @@ else ifeq ($(CONFIG_DYNAMIC_FTRACE_WITH_ARGS),y)
+   CC_FLAGS_FTRACE := -fpatchable-function-entry=2
+ endif
+ 
+-ifeq ($(CONFIG_EVL),y)
+-KBUILD_CFLAGS += -Iarch/$(SRCARCH)/evl/include -Iinclude/evl
+-endif
+-
+ ifeq ($(CONFIG_KASAN_SW_TAGS), y)
+ KASAN_SHADOW_SCALE_SHIFT := 4
+ else ifeq ($(CONFIG_KASAN_GENERIC), y)
+-- 
+2.30.2
+

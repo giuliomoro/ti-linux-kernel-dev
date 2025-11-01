@@ -1,0 +1,35 @@
+From 5e696bed546726ac254fe3ba8c859cbb2de313b2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 9 Aug 2020 12:20:47 +0200
+Subject: [PATCH 638/985] arm/evl: move Kconfig switch to kernel features
+ section
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm/Kconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index c8b40837e..37d8042c8 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -315,8 +315,6 @@ config PGTABLE_LEVELS
+ 	default 3 if ARM_LPAE
+ 	default 2
+ 
+-source "kernel/Kconfig.evl"
+-
+ menu "System Type"
+ 
+ config MMU
+@@ -969,6 +967,7 @@ config SCHED_SMT
+ 	  places. If unsure say N here.
+ 
+ source "kernel/Kconfig.dovetail"
++source "kernel/Kconfig.evl"
+ 
+ config HAVE_ARM_SCU
+ 	bool
+-- 
+2.30.2
+

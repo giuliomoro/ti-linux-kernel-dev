@@ -1,0 +1,40 @@
+From 6737c56ca602a7d1d3c2ea776abe6c18a948fd76 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 May 2020 12:52:59 +0200
+Subject: [PATCH 622/985] evl/proxy: properly detect atomic file position
+ management
+
+!FMODE_STREAM does not tell us anything about atomic fpos handling,
+although FMODE_STREAM would denote a non-seekable
+file. FMODE_ATOMIC_POS is what we need to check instead.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index b44d3dd89..5a3e225f0 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -84,7 +84,7 @@ static void relay_output(struct evl_proxy *proxy)
+ 	rdoff = ring->rdoff;
+ 
+ 	ppos = NULL;
+-	if (!(filp->f_mode & FMODE_STREAM)) {
++	if (filp->f_mode & FMODE_ATOMIC_POS) {
+ 		mutex_lock(&filp->f_pos_lock);
+ 		ppos = &pos;
+ 		pos = filp->f_pos;
+@@ -242,7 +242,7 @@ static void relay_input(struct evl_proxy *proxy)
+ 	wroff = ring->wroff;
+ 
+ 	ppos = NULL;
+-	if (!(filp->f_mode & FMODE_STREAM)) {
++	if (filp->f_mode & FMODE_ATOMIC_POS) {
+ 		mutex_lock(&filp->f_pos_lock);
+ 		ppos = &pos;
+ 		pos = filp->f_pos;
+-- 
+2.30.2
+

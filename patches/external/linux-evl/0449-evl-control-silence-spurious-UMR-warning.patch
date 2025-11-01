@@ -1,0 +1,27 @@
+From e5e08da5add8d0eb2c7506e71f82f259155f9b8e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 17 Jul 2019 11:27:57 +0200
+Subject: [PATCH 449/985] evl/control: silence spurious UMR warning
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/control.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/control.c b/kernel/evl/control.c
+index 8e5586d22..0c0642716 100644
+--- a/kernel/evl/control.c
++++ b/kernel/evl/control.c
+@@ -225,8 +225,8 @@ static int do_cpu_state(struct evl_cpu_state *cpst)
+ static long control_common_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+ {
++	struct evl_cpu_state cpst = { .state = 0 }, __user *u_cpst;
+ 	struct evl_sched_ctlreq ctl, __user *u_ctl;
+-	struct evl_cpu_state cpst, __user *u_cpst;
+ 	long ret;
+ 
+ 	switch (cmd) {
+-- 
+2.30.2
+

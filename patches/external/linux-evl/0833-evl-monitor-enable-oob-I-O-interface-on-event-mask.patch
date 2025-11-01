@@ -1,0 +1,104 @@
+From 0f5200b706aa2245d641b2bb08768e7063d7f9f5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 14 Nov 2023 19:19:25 +0100
+Subject: [PATCH 833/985] evl/monitor: enable oob I/O interface on event mask
+
+In the wake of enabling the in-band I/O interface for event mask
+monitors, let's enable the oob I/O interface as well.
+
+Like the in-band I/O calls, the oob I/O form is restricted to
+disjunctive wait, unicast send ops.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/control-abi.h |  2 +-
+ kernel/evl/monitor.c           | 46 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 47 insertions(+), 1 deletion(-)
+
+diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
+index 8787dd979..801e6e7dd 100644
+--- a/include/uapi/evl/control-abi.h
++++ b/include/uapi/evl/control-abi.h
+@@ -17,7 +17,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  33
++#define EVL_ABI_LEVEL  34
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 3a241604c..6cdcda893 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -1018,6 +1018,7 @@ static ssize_t monitor_read(struct file *filp, char __user *u_buf,
+ 		if (list_empty(&wq_entry.entry))
+ 			__add_wait_queue(&event->inband_wait, &wq_entry);
+ 
++		/* Disjunctive operation. */
+ 		if (__trywait_mask(event, -1, false, &val, flags)) {
+ 			list_del(&wq_entry.entry);
+ 			 /* We have collected all the bits, send POLLOUT wakeup. */
+@@ -1062,6 +1063,49 @@ static ssize_t monitor_write(struct file *filp, const char __user *u_buf,
+ 	if (ret)
+ 		return -EFAULT;
+ 
++	/* Unicast operation. */
++	return post_mask(event, val, false);
++}
++
++static ssize_t monitor_oob_read(struct file *filp,
++				char __user *u_buf, size_t count)
++{
++	struct evl_monitor *event = element_of(filp, struct evl_monitor);
++	s32 value;
++	int ret;
++
++	if (event->type != EVL_MONITOR_EVENT || event->protocol != EVL_EVENT_MASK)
++		return -EINVAL;
++
++	if (count != sizeof(s32))
++		return -EINVAL;
++
++	/* Disjunctive operation. */
++	ret = wait_mask_oob(filp, EVL_INFINITE, EVL_REL, -1, false, &value);
++	if (ret)
++		return ret;
++
++	return copy_to_user(u_buf, &value, sizeof(value)) ? -EFAULT : 0;
++}
++
++static ssize_t monitor_oob_write(struct file *filp,
++				const char __user *u_buf, size_t count)
++{
++	struct evl_monitor *event = element_of(filp, struct evl_monitor);
++	s32 val;
++	int ret;
++
++	if (event->type != EVL_MONITOR_EVENT || event->protocol != EVL_EVENT_MASK)
++		return -EINVAL;
++
++	if (count != sizeof(s32))
++		return -EINVAL;
++
++	ret = copy_from_user(&val, u_buf, sizeof(val));
++	if (ret)
++		return -EFAULT;
++
++	/* Unicast operation. */
+ 	return post_mask(event, val, false);
+ }
+ 
+@@ -1092,6 +1136,8 @@ static const struct file_operations monitor_fops = {
+ 	.write		= monitor_write,
+ 	.poll		= monitor_poll,
+ 	.unlocked_ioctl	= monitor_ioctl,
++	.oob_read	= monitor_oob_read,
++	.oob_write	= monitor_oob_write,
+ 	.oob_ioctl	= monitor_oob_ioctl,
+ 	.oob_poll	= monitor_oob_poll,
+ #ifdef CONFIG_COMPAT
+-- 
+2.30.2
+

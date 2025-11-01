@@ -1,0 +1,28 @@
+From 458bc9765c7f75fab8ff177ce4cca23d260031aa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 12 Nov 2019 19:58:05 +0100
+Subject: [PATCH 543/985] evl/proxy: return -EBADF on invalid target fd
+
+For consistency with the poller element (EVL_POLL_CTLADD).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 9e86292ce..62dab0aab 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -316,7 +316,7 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
+ 
+ 	filp = fget(attrs.fd);
+ 	if (filp == NULL)
+-		return ERR_PTR(-EINVAL);
++		return ERR_PTR(-EBADF);
+ 
+ 	proxy = kzalloc(sizeof(*proxy), GFP_KERNEL);
+ 	if (proxy == NULL) {
+-- 
+2.30.2
+

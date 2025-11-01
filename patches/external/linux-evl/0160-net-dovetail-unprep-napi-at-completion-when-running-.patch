@@ -1,0 +1,32 @@
+From fc19f369e6c3c287e75f0f1d4fb4273026ac9724 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 15 Apr 2025 09:10:14 +0200
+Subject: [PATCH 160/985] net: dovetail: unprep napi at completion when running
+ oob
+
+When napi_complete_done() is called from the oob stage, we may
+unprepare the napi struct before returning, in order to release
+it. This mimicks the original behavior from the in-band stage.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/dev.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 6b17052b4..5b7e2ab4c 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -6479,7 +6479,8 @@ bool napi_complete_done(struct napi_struct *n, int work_done)
+ 
+ 	if (netif_oob_diversion(n->dev)) {
+ 		if (net_running_oob())
+-			return true;
++			return napi_schedule_unprep(n);
++
+ 		napi_schedule_oob(n);
+ 	}
+ 
+-- 
+2.30.2
+

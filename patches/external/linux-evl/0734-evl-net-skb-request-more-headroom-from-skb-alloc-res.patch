@@ -1,0 +1,47 @@
+From 5a13050700f8bc87d4485a10d6118aad4c310bc7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 22 Jul 2022 18:54:50 +0200
+Subject: [PATCH 734/985] evl/net: skb: request more headroom from skb alloc,
+ reset calls
+
+We may now require additional headroom to be allocated for oob
+skbs. Ask for VLAN_HLEN more bytes so that the lower layers do not
+need to reallocate because of our 802.1q encapsulation.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/skb.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 229a99da1..8fb80f352 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -247,7 +247,7 @@ static void free_skb(struct sk_buff *skb)
+ 	}
+ 
+ 	if (!dref) {
+-		netdev_reset_oob_skb(dev, skb);
++		netdev_reset_oob_skb(dev, skb, VLAN_HLEN);
+ 		free_skb_to_dev(skb);
+ 	}
+ }
+@@ -387,8 +387,14 @@ static struct sk_buff *alloc_one_skb(struct net_device *dev)
+ 
+ 	if (!netdev_is_oob_capable(dev)) {
+ 		est = dev->oob_context.dev_state.estate;
++		/*
++		 *  Add the length of a VLAN header to the default
++		 *  headroom, so that the lower layers do not need to
++		 *  reallocate because of the 802.1q encapsulation.
++		 */
+ 		return __netdev_alloc_oob_skb(dev, est->buf_size,
+-					      GFP_KERNEL|GFP_DMA);
++					VLAN_HLEN,
++					GFP_KERNEL|GFP_DMA);
+ 	}
+ 
+ 	skb = netdev_alloc_oob_skb(dev, &dma_addr);
+-- 
+2.30.2
+

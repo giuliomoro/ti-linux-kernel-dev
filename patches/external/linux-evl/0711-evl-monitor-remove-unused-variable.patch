@@ -1,0 +1,25 @@
+From 921b4b88fa089ad45c132e359bcad7b58e684caa Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 11 Sep 2021 17:02:22 +0200
+Subject: [PATCH 711/985] evl/monitor: remove unused variable
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/monitor.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index d19bd0e7d..e0b31ecda 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -38,7 +38,6 @@ struct evl_monitor {
+ 			struct evl_monitor *gate;
+ 			struct evl_poll_head poll_head;
+ 			struct list_head next; /* in ->events */
+-			struct list_head next_poll;
+ 		};
+ 	};
+ };
+-- 
+2.30.2
+

@@ -1,0 +1,154 @@
+From 342f46e1dd77ea42ac00fe99cb0dc2716098040d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 1 Jul 2025 12:41:59 +0200
+Subject: [PATCH 977/985] evl/net: stats: track checksum and buffer allocation
+ failures
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/asm-generic/evl/netdevice.h |  3 +++
+ include/evl/net/device.h            |  9 +++++++++
+ include/uapi/evl/net/device-abi.h   |  8 +++++++-
+ kernel/evl/net/dev.c                | 13 +++++++++++++
+ kernel/evl/net/ipv4/udp.c           |  5 ++++-
+ kernel/evl/net/skb.c                |  6 ++++--
+ 6 files changed, 40 insertions(+), 4 deletions(-)
+
+diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
+index 71f9cadda..54517674d 100644
+--- a/include/asm-generic/evl/netdevice.h
++++ b/include/asm-generic/evl/netdevice.h
+@@ -59,8 +59,11 @@ struct evl_netdev_state {
+ 		evl_counter64 rx_bytes;
+ 		evl_counter64 tx_packets;
+ 		evl_counter64 tx_bytes;
++		evl_counter32 rx_nomem;
++		evl_counter32 tx_nomem;
+ 		evl_counter32 pool_alloc_count;
+ 		evl_counter32 pool_release_count;
++		evl_counter32 csum_errors;
+ 	} stats;
+ 	/* Count of oob ports referring to this device. */
+ 	int refs;
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+index ef7c89f2e..d0085b3c8 100644
+--- a/include/evl/net/device.h
++++ b/include/evl/net/device.h
+@@ -42,6 +42,8 @@ int __evl_net_dev_allocfd(struct net_device *dev);
+ 
+ int evl_net_dev_allocfd(struct net *net, const char *devname);
+ 
++void evl_net_dev_tx_nomem(struct net_device *dev);
++
+ enum evl_net_rx_action
+ __evl_net_filter_rx(struct evl_netdev_state *est, struct sk_buff *skb);
+ 
+@@ -74,6 +76,13 @@ static inline struct net_device *evl_net_real_dev(struct net_device *dev)
+ 	return dev;
+ }
+ 
++static inline struct evl_netdev_state *evl_net_get_state(struct net_device *dev)
++{
++	struct net_device *real_dev = evl_net_real_dev(dev);
++
++	return real_dev->oob_state.estate;
++}
++
+ #endif
+ 
+ #endif /* !_EVL_NET_DEVICE_H */
+diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
+index 6eec8fefb..b23fd665d 100644
+--- a/include/uapi/evl/net/device-abi.h
++++ b/include/uapi/evl/net/device-abi.h
+@@ -20,7 +20,13 @@ struct evl_net_devstat {
+ 	__u32 skb_size;
+ 	__u32 skb_free;
+ 	__u32 skb_total;
+-	__u8 oob_capable:1;	/* Driver is oob_capable */
++	__u32 csum_errors;
++	__u32 rx_nomem;
++	__u32 tx_nomem;
++	union {
++		__u32 oob_capable:1;	/* Driver is oob_capable */
++		__u32 __flags;
++	};
+ };
+ 
+ #define EVL_NDEVIOC_SETRXEBPF	_IOW(EVL_NETDEV_IOCBASE, 0, __s32 /* fd */)
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 679352fb4..35679bd0c 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -609,11 +609,15 @@ static int get_dev_stat(struct net_device *dev, struct evl_net_devstat *devs)
+ 	struct evl_netdev_state *est = real_dev->oob_state.estate;
+ 	u64 alloc_count, release_count;
+ 
++	devs->__flags = 0;	/* Clear this first. */
+ 	devs->oob_capable = netdev_is_oob_capable(real_dev);
+ 	devs->rx_packets = evl_counter_read_careful(&est->stats.rx_packets);
+ 	devs->rx_bytes = evl_counter_read_careful(&est->stats.rx_bytes);
+ 	devs->tx_packets = evl_counter_read_careful(&est->stats.tx_packets);
+ 	devs->tx_bytes = evl_counter_read_careful(&est->stats.tx_bytes);
++	devs->rx_nomem = evl_counter_read_careful(&est->stats.rx_nomem);
++	devs->tx_nomem = evl_counter_read_careful(&est->stats.tx_nomem);
++	devs->csum_errors = evl_counter_read_careful(&est->stats.csum_errors);
+ 	devs->skb_size = est->buf_size;
+ 	alloc_count = evl_counter_read_careful(&est->stats.pool_alloc_count);
+ 	release_count = evl_counter_read_careful(&est->stats.pool_release_count);
+@@ -623,6 +627,15 @@ static int get_dev_stat(struct net_device *dev, struct evl_net_devstat *devs)
+ 	return 0;
+ }
+ 
++/* in-band hook, called by a driver upon oob memory shortage on RX. */
++void netif_rx_nomem_oob(struct net_device *dev)
++{
++	struct net_device *real_dev = evl_net_real_dev(dev);
++	struct evl_netdev_state *est = real_dev->oob_state.estate;
++
++	evl_counter_inc_careful(&est->stats.tx_nomem);
++}
++
+ static long netdev_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+ {
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index e4faac6cb..568058694 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -852,8 +852,11 @@ int evl_net_deliver_udp(struct sk_buff *skb)
+ 	if (unlikely(sizeof(struct udphdr) > skb->len))
+ 		return -EINVAL;	/* Obviously garbled, drop that. */
+ 
+-	if (!verify_checksum(skb))
++	if (!verify_checksum(skb)) {
++		struct evl_netdev_state *est = evl_net_get_state(skb->dev);
++		evl_counter_inc_careful(&est->stats.csum_errors);
+ 		return -EINVAL;
++	}
+ 
+ 	if (skb_is_oob_timestamped(skb))
+ 		skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index d38e3fb35..50090c181 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -158,11 +158,13 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,
+ 	 * the specified timeout rule.
+ 	 */
+ 	real_dev = evl_net_real_dev(dev);
++	est = real_dev->oob_state.estate;
+ 	page = alloc_bufpage(real_dev, timeout, tmode);
+-	if (IS_ERR(page))
++	if (IS_ERR(page)) {
++		evl_counter_inc_careful(&est->stats.tx_nomem);
+ 		return ERR_PTR(PTR_ERR(page));
++	}
+ 
+-	est = real_dev->oob_state.estate;
+ 	skb = build_skb(page_address(page), est->buf_size);
+ 	if (!skb) {
+ 		maybe_kick_recycler(); /* Hope for the best. */
+-- 
+2.30.2
+

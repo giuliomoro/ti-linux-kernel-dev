@@ -1,0 +1,227 @@
+From 0cc97c3689e95865214e2ad0350a0ace93a2574d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 20 Nov 2022 12:44:26 +0100
+Subject: [PATCH 790/985] evl/mutex: extend check on in-band switch
+
+Checking for PI/PP boosting mutex is not enough when dropping to
+in-band context: owning any mutex in this case would be wrong, since
+this would create a priority inversion.
+
+Extend the logic of evl_detect_boost_drop() to encompass any owned
+mutex, renaming it to evl_check_no_mutex() for consistency. As a
+side-effect, the thread which attempts to switch in-band while owning
+mutex(es) now receives a single HMDIAG_LKDEPEND notification, instead
+of notifying all waiter(s) sleeping on those mutexes.
+
+As a consequence, we can drop detect_inband_owner() which becomes
+redundant as it detects the same issue from the converse side without
+extending the test coverage (i.e. a contender would check whether the
+mutex owner is running in-band).
+
+This change does affect the behavior for applications turning on
+T_WOLI on waiter threads explicitly. This said, the same issue would
+still be detected if CONFIG_EVL_DEBUG_WOLI is set globally though,
+which is the recommended configuration during the development stage.
+
+This change also solves an ABBA issue which existed in the former
+implementation:
+
+[   40.976962] ======================================================
+[   40.976964] WARNING: possible circular locking dependency detected
+[   40.976965] 5.15.77-00716-g8390add2f766 #156 Not tainted
+[   40.976968] ------------------------------------------------------
+[   40.976969] monitor-pp-lazy/363 is trying to acquire lock:
+[   40.976971] ffff99c5c14e5588 (test363.0){....}-{0:0}, at: evl_detect_boost_drop+0x80/0x200
+[   40.976987]
+[   40.976987] but task is already holding lock:
+[   40.976988] ffff99c5c243d818 (monitor-pp-lazy:363){....}-{0:0}, at: evl_detect_boost_drop+0x0/0x200
+[   40.976996]
+[   40.976996] which lock already depends on the new lock.
+[   40.976996]
+[   40.976997]
+[   40.976997] the existing dependency chain (in reverse order) is:
+[   40.976998]
+[   40.976998] -> #1 (monitor-pp-lazy:363){....}-{0:0}:
+[   40.977003]        fast_grab_mutex+0xca/0x150
+[   40.977006]        evl_lock_mutex_timeout+0x60/0xa90
+[   40.977009]        monitor_oob_ioctl+0x226/0xed0
+[   40.977014]        EVL_ioctl+0x41/0xa0
+[   40.977017]        handle_pipelined_syscall+0x3d8/0x490
+[   40.977021]        __pipeline_syscall+0xcc/0x2e0
+[   40.977026]        pipeline_syscall+0x47/0x120
+[   40.977030]        syscall_enter_from_user_mode+0x40/0xa0
+[   40.977036]        do_syscall_64+0x15/0xf0
+[   40.977039]        entry_SYSCALL_64_after_hwframe+0x61/0xcb
+[   40.977044]
+[   40.977044] -> #0 (test363.0){....}-{0:0}:
+[   40.977048]        __lock_acquire+0x133a/0x2530
+[   40.977053]        lock_acquire+0xce/0x2d0
+[   40.977056]        evl_detect_boost_drop+0xb0/0x200
+[   40.977059]        evl_switch_inband+0x41e/0x540
+[   40.977064]        do_oob_syscall+0x1bc/0x3d0
+[   40.977067]        handle_pipelined_syscall+0xbe/0x490
+[   40.977071]        __pipeline_syscall+0xcc/0x2e0
+[   40.977075]        pipeline_syscall+0x47/0x120
+[   40.977079]        syscall_enter_from_user_mode+0x40/0xa0
+[   40.977083]        do_syscall_64+0x15/0xf0
+[   40.977086]        entry_SYSCALL_64_after_hwframe+0x61/0xcb
+[   40.977090]
+[   40.977090] other info that might help us debug this:
+[   40.977090]
+[   40.977091]  Possible unsafe locking scenario:
+[   40.977091]
+[   40.977092]        CPU0                    CPU1
+[   40.977093]        ----                    ----
+[   40.977094]   lock(monitor-pp-lazy:363);
+[   40.977096]                                lock(test363.0);
+[   40.977098]                                lock(monitor-pp-lazy:363);
+[   40.977100]   lock(test363.0);
+[   40.977102]
+[   40.977102]  *** DEADLOCK ***
+[   40.977102]
+[   40.977103] 1 lock held by monitor-pp-lazy/363:
+[   40.977105]  #0: ffff99c5c243d818 (monitor-pp-lazy:363){....}-{0:0}, at: evl_detect_boost_drop+0x0/0x200
+[   40.977113]
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h     |  2 +-
+ kernel/evl/mutex.c      | 72 ++++++++---------------------------------
+ kernel/evl/sched/core.c |  2 +-
+ 3 files changed, 16 insertions(+), 60 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index b8c421561..9c5604f56 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -80,7 +80,7 @@ void evl_flush_mutex(struct evl_mutex *mutex,
+ 
+ void evl_commit_mutex_ceiling(struct evl_mutex *mutex);
+ 
+-void evl_detect_boost_drop(void);
++void evl_check_no_mutex(void);
+ 
+ void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
+ 			struct evl_thread *waiter);
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 8217fad46..6215ffa7d 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -20,9 +20,6 @@
+ #define for_each_evl_mutex_waiter(__pos, __mutex)			\
+ 	list_for_each_entry(__pos, &(__mutex)->wchan.wait_list, wait_next)
+ 
+-#define for_each_evl_booster(__pos, __thread)			\
+-	list_for_each_entry(__pos, &(__thread)->boosters, next_booster)
+-
+ static inline int get_ceiling_value(struct evl_mutex *mutex)
+ {
+ 	/*
+@@ -409,67 +406,29 @@ static void drop_booster(struct evl_mutex *mutex)
+ }
+ 
+ /*
+- * Detect when current which is running out-of-band is about to sleep
+- * on a mutex currently owned by another thread running in-band.
+- *
+- * mutex->wchan.lock held, irqs off, curr == this_evl_rq()->curr.
+- */
+-static void detect_inband_owner(struct evl_mutex *mutex,
+-				struct evl_thread *curr)
+-{
+-	struct evl_thread *owner = mutex->wchan.owner;
+-
+-	/*
+-	 * @curr == this_evl_rq()->curr so no need to grab
+-	 * @curr->lock.
+-	 */
+-	raw_spin_lock(&curr->rq->lock);
+-
+-	if (curr->info & T_PIALERT) {
+-		curr->info &= ~T_PIALERT;
+-	} else if (owner->state & T_INBAND) {
+-		curr->info |= T_PIALERT;
+-		raw_spin_unlock(&curr->rq->lock);
+-		evl_notify_thread(curr, EVL_HMDIAG_LKDEPEND, evl_nil);
+-		return;
+-	}
+-
+-	raw_spin_unlock(&curr->rq->lock);
+-}
+-
+-/*
+- * Detect when current is about to switch in-band while holding a
+- * mutex which is causing an active PI or PP boost. Since such a
+- * dependency on in-band would cause a priority inversion for the
+- * waiter(s), the latter is sent a HM notification if T_WOLI is set.
++ * Detect when current is about to switch in-band while owning a
++ * mutex, which is plain wrong since this would create a priority
++ * inversion. T_WOLI is set for current.
+  */
+-void evl_detect_boost_drop(void)
++void evl_check_no_mutex(void)
+ {
+ 	struct evl_thread *curr = evl_current();
+-	struct evl_thread *waiter;
+-	struct evl_mutex *mutex;
+ 	unsigned long flags;
++	bool notify;
+ 
+ 	raw_spin_lock_irqsave(&curr->lock, flags);
+-
+-	/*
+-	 * Iterate over waiters of each mutex we got boosted for due
+-	 * to PI/PP.
+-	 */
+-	for_each_evl_booster(mutex, curr) {
+-		raw_spin_lock(&mutex->wchan.lock);
+-		for_each_evl_mutex_waiter(waiter, mutex) {
+-			if (!(waiter->state & (T_WOLI|T_PIALERT)))
+-				continue;
+-			raw_spin_lock(&waiter->rq->lock);
+-			waiter->info |= T_PIALERT;
+-			raw_spin_unlock(&waiter->rq->lock);
+-			evl_notify_thread(waiter, EVL_HMDIAG_LKDEPEND, evl_nil);
++	if (!(curr->info & T_PIALERT)) {
++		notify = !list_empty(&curr->owned_mutexes);
++		if (notify) {
++			raw_spin_lock(&curr->rq->lock);
++			curr->info |= T_PIALERT;
++			raw_spin_unlock(&curr->rq->lock);
+ 		}
+-		raw_spin_unlock(&mutex->wchan.lock);
+ 	}
+-
+ 	raw_spin_unlock_irqrestore(&curr->lock, flags);
++
++	if (notify)
++		evl_notify_thread(curr, EVL_HMDIAG_LKDEPEND, evl_nil);
+ }
+ 
+ void __evl_init_mutex(struct evl_mutex *mutex,
+@@ -707,9 +666,6 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 		evl_put_element(&owner->element);
+ 	}
+ 
+-	if (unlikely(curr->state & T_WOLI))
+-		detect_inband_owner(mutex, curr);
+-
+ 	evl_double_thread_lock(curr, owner);
+ 
+ 	walk_mode = evl_pi_check;
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index 4de8f786c..360a424be 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -1292,7 +1292,7 @@ void evl_switch_inband(int cause)
+ 
+ 		/* May check for locking inconsistency too. */
+ 		if (curr->state & T_WOLI)
+-			evl_detect_boost_drop();
++			evl_check_no_mutex();
+ 	}
+ 
+ 	/* @curr is now running inband. */
+-- 
+2.30.2
+

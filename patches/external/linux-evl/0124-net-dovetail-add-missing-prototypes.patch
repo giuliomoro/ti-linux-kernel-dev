@@ -1,0 +1,136 @@
+From e71322260041acd98ca93453e41f5cbe06266ae6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 23 Sep 2024 12:22:41 +0200
+Subject: [PATCH 124/985] net: dovetail: add missing prototypes
+
+At this chance, remove unused weak function leftovers.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/netdevice.h |  3 +++
+ include/net/route.h       |  5 +++++
+ include/net/sock.h        | 27 ++++++++++++++++++++++++++-
+ net/core/skbuff.c         |  5 +----
+ net/ipv4/route.c          |  8 ++++----
+ 5 files changed, 39 insertions(+), 9 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index ef54c1173..22bf5382d 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4426,6 +4426,9 @@ bool netif_deliver_oob(struct sk_buff *skb);
+ void netif_tx_lock_oob(struct netdev_queue *txq);
+ void netif_tx_unlock_oob(struct netdev_queue *txq);
+ void process_inband_tx_backlog(struct softnet_data *sd);
++int netif_oob_switch_port(struct net_device *dev, bool enabled);
++bool netif_oob_get_port(struct net_device *dev);
++ssize_t netif_oob_query_pool(struct net_device *dev, char *buf);
+ 
+ static inline void netdev_set_oob_capable(struct net_device *dev)
+ {
+diff --git a/include/net/route.h b/include/net/route.h
+index 8a11d19f8..8d3687b91 100644
+--- a/include/net/route.h
++++ b/include/net/route.h
+@@ -406,4 +406,9 @@ static inline struct neighbour *ip_neigh_for_gw(struct rtable *rt,
+ 	return neigh;
+ }
+ 
++#ifdef CONFIG_NET_OOB
++void ip_learn_oob_route(struct net *net, struct flowi4 *flp4,
++			struct rtable *rt);
++#endif
++
+ #endif	/* _ROUTE_H */
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 7d4093d83..1d752ac8c 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1811,14 +1811,39 @@ static inline bool sock_oob_capable(struct socket *sock)
+ 	return sock && sock->sk && sock->file && sock->file->oob_data;
+ }
+ 
++int sock_oob_attach(struct socket *sock);
++
++void sock_oob_release(struct socket *sock);
++
++void sock_oob_destroy(struct sock *sk);
++
+ int sock_oob_bind(struct sock *sk,
+ 		struct sockaddr *addr, int len);
+ 
+ int sock_oob_shutdown(struct sock *sk, int how);
+ 
++int sock_oob_connect(struct sock *sk,
++		struct sockaddr *addr, int len, int flags);
++
++long sock_inband_ioctl_redirect(struct sock *sk,
++				unsigned int cmd, unsigned long arg);
++
++long sock_oob_ioctl(struct file *file,
++		unsigned int cmd, unsigned long arg);
++
++void sock_oob_release(struct socket *sock);
++
++ssize_t sock_oob_write(struct file *filp,
++		const char __user *u_buf, size_t count);
++
++ssize_t sock_oob_read(struct file *filp,
++		char __user *u_buf, size_t count);
++
++__poll_t sock_oob_poll(struct file *filp,
++		struct oob_poll_wait *wait);
++
+ static inline void sock_oob_destruct(struct sock *sk)
+ {
+-	void sock_oob_destroy(struct sock *sk);
+ 	if (sk->oob_data)
+ 		sock_oob_destroy(sk);
+ }
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index c5dd6a584..26939e405 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -587,9 +587,6 @@ EXPORT_SYMBOL(sysctl_max_oob_skb);
+ __weak void free_skb_oob(struct sk_buff *skb)
+ { }
+ 
+-__weak void free_skb_head_oob(struct sk_buff *skb)
+-{ }
+-
+ bool recycle_skb_oob(struct sk_buff *skb)
+ {
+ 	/*
+@@ -619,7 +616,7 @@ void finalize_skb_inband(struct sk_buff *skb)
+  */
+ static struct skbuff_oob_pool skbuff_oob_pool;
+ 
+-void init_oob_cache(void)
++static void init_oob_cache(void)
+ {
+ 	struct skbuff_oob_pool *c = &skbuff_oob_pool;
+ 	unsigned int n, max_skbs;
+diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+index ff43d4cc6..cb3b1eb29 100644
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -2880,12 +2880,12 @@ struct dst_entry *ipv4_blackhole_route(struct net *net, struct dst_entry *dst_or
+ }
+ 
+ #ifdef CONFIG_NET_OOB
+-__weak
++__weak void ip_learn_oob_route(struct net *net, struct flowi4 *flp4, struct rtable *rt)
++{ }
+ #else
+-static inline
+-#endif
+-void ip_learn_oob_route(struct net *net, struct flowi4 *flp4, struct rtable *rt)
++static inline void ip_learn_oob_route(struct net *net, struct flowi4 *flp4, struct rtable *rt)
+ { }
++#endif
+ 
+ struct rtable *ip_route_output_flow(struct net *net, struct flowi4 *flp4,
+ 				    const struct sock *sk)
+-- 
+2.30.2
+

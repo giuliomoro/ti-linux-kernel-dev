@@ -1,0 +1,35 @@
+From 8f0e3141701b918285bbe39c1ca0832c5e1385b0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 9 Aug 2020 12:20:47 +0200
+Subject: [PATCH 637/985] arm64/evl: move Kconfig switch to kernel features
+ section
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/arm64/Kconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index f17f2e3b6..397bb4351 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -1550,6 +1550,7 @@ config CC_HAVE_SHADOW_CALL_STACK
+ 	def_bool $(cc-option, -fsanitize=shadow-call-stack -ffixed-x18)
+ 
+ source "kernel/Kconfig.dovetail"
++source "kernel/Kconfig.evl"
+ 
+ config PARAVIRT
+ 	bool "Enable paravirtualization code"
+@@ -2341,8 +2342,6 @@ config ARM64_CONTPTE
+ 
+ endmenu # "Kernel Features"
+ 
+-source "kernel/Kconfig.evl"
+-
+ menu "Boot options"
+ 
+ config ARM64_ACPI_PARKING_PROTOCOL
+-- 
+2.30.2
+

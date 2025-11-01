@@ -1,0 +1,65 @@
+From 9ec11267908f55a9d494ed6148b26313eed42905 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 12 Jun 2025 16:03:27 +0200
+Subject: [PATCH 186/985] genirq: irq_pipeline: deny switching threaded IRQ to
+ oob mode
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/irq/manage.c | 25 ++++++++++++++++++-------
+ 1 file changed, 18 insertions(+), 7 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index bd0e8d171..3a65fa887 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -943,7 +943,8 @@ EXPORT_SYMBOL(irq_set_irq_wake);
+  *
+  *	Enable/disable out-of-band handling for an IRQ. At least one
+  *	action must have been previously registered for such
+- *	interrupt.
++ *	interrupt. Enabling out-of-band handling is disallowed for
++ *	IRQs with threaded action(s).
+  *
+  *      The previously registered action(s) need(s) not bearing the
+  *      IRQF_OOB flag for the IRQ to be switched to out-of-band
+@@ -955,6 +956,7 @@ EXPORT_SYMBOL(irq_set_irq_wake);
+  */
+ int irq_switch_oob(unsigned int irq, bool on)
+ {
++	struct irqaction *action;
+ 	struct irq_desc *desc;
+ 	unsigned long flags;
+ 	int ret = 0;
+@@ -963,13 +965,22 @@ int irq_switch_oob(unsigned int irq, bool on)
+ 	if (!desc)
+ 		return -EINVAL;
+ 
+-	if (!desc->action)
++	if (!desc->action) {
+ 		ret = -EINVAL;
+-	else if (on)
+-		irq_settings_set_oob(desc);
+-	else
+-		irq_settings_clr_oob(desc);
+-
++	} else {
++		if (on) {
++			for_each_action_of_desc(desc, action) {
++				if (action->thread_fn) {
++					ret = -EBUSY;
++					goto out;
++				}
++			}
++			irq_settings_set_oob(desc);
++		} else {
++			irq_settings_clr_oob(desc);
++		}
++	}
++out:
+ 	irq_put_desc_unlock(desc, flags);
+ 
+ 	return ret;
+-- 
+2.30.2
+

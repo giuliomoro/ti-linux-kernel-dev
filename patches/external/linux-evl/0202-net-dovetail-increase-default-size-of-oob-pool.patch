@@ -1,0 +1,30 @@
+From 43e62edba77f7763efce8a04dd1cf47dd6010645 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Sun, 22 Jun 2025 18:26:11 +0200
+Subject: [PATCH 202/985] net: dovetail: increase default size of oob pool
+
+The number of buffers in-flight oob buffers may increase significantly
+due to network taps being fed. Raise the default size of the oob pool
+accordingly.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ net/core/skbuff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 9cbeb8696..9b7c7081f 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -591,7 +591,7 @@ EXPORT_SYMBOL(napi_build_skb);
+ 
+ #ifdef CONFIG_NET_OOB
+ 
+-unsigned int sysctl_max_oob_skb __read_mostly = 2048;
++unsigned int sysctl_max_oob_skb __read_mostly = 4096;
+ EXPORT_SYMBOL(sysctl_max_oob_skb);
+ 
+ __weak void free_skb_oob(struct sk_buff *skb)
+-- 
+2.30.2
+

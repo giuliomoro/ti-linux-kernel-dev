@@ -1,0 +1,86 @@
+From e7dbfc40b07742d69460c7d7aa4fd5177875a5c5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Fri, 21 Oct 2022 10:29:03 +0200
+Subject: [PATCH 764/985] evl/mutex: skip mutex transfer to unblocked waiter
+
+A thread which has been forcibly unblocked while waiting for a mutex
+might still be linked to the mutex wait list, until it resumes in
+wait_mutex_schedule() eventually.
+
+Let's detect this case by transferring the mutex to a waiter only if
+it still pends on it.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/list.h |  5 -----
+ kernel/evl/mutex.c | 30 ++++++++++++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 7 deletions(-)
+
+diff --git a/include/evl/list.h b/include/evl/list.h
+index 742ce664b..47841be6e 100644
+--- a/include/evl/list.h
++++ b/include/evl/list.h
+@@ -38,9 +38,4 @@ do {										\
+ 	  __item;						\
+   })
+ 
+-#ifndef list_next_entry
+-#define list_next_entry(__item, __member)			\
+-	list_entry((__item)->__member.next, typeof(*(__item)), __member)
+-#endif
+-
+ #endif /* !_EVL_LIST_H_ */
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 5e34e2d16..09cb7f9cf 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -1326,9 +1326,33 @@ static bool transfer_ownership(struct evl_mutex *mutex)
+ 
+ 	n_owner = list_first_entry(&mutex->wchan.wait_list,
+ 				struct evl_thread, wait_next);
+-
++next:
+ 	raw_spin_lock(&n_owner->lock);
+ 
++	/*
++	 * A thread which has been forcibly unblocked while waiting
++	 * for a mutex might still be linked to the wait list, until
++	 * it resumes in wait_mutex_schedule() eventually. We can
++	 * detect this rare case by testing the wait channel it pends
++	 * on, since evl_wakeup_thread() clears it.
++	 *
++	 * CAUTION: a basic invariant is that a thread is removed from
++	 * the wait list only when unblocked on a successful request
++	 * (i.e. the awaited resource was granted), this way the
++	 * opposite case can be detected by checking for
++	 * !list_empty(&thread->wait_next) when resuming. So
++	 * unfortunately, we have to keep that thread in the wait list
++	 * not to break this assumption, until it resumes and figures
++	 * out.
++	 */
++	if (!n_owner->wchan) {
++		raw_spin_unlock(&n_owner->lock);
++		n_owner = list_next_entry(n_owner, wait_next);
++		if (&n_owner->wait_next == &mutex->wchan.wait_list)
++			goto clear;
++		goto next;
++	}
++
+ 	n_owner->wwake = &mutex->wchan;
+ 	list_del_init(&n_owner->wait_next);
+ 	/*
+@@ -1357,8 +1381,10 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
+ 
+ 	trace_evl_mutex_unlock(mutex);
+ 
+-	if (!enable_inband_switch(curr))
++	if (!enable_inband_switch(curr)) {
++		WARN_ON_ONCE(1);
+ 		return;
++	}
+ 
+ 	raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
+ 
+-- 
+2.30.2
+

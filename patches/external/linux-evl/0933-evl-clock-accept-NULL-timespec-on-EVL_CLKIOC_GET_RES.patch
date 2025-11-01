@@ -1,0 +1,39 @@
+From 930b111497288b92f5f2e2b5115c4027040a19c4 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 27 May 2025 15:02:22 +0200
+Subject: [PATCH 933/985] evl/clock: accept NULL timespec on EVL_CLKIOC_GET_RES
+
+Emulate the POSIX behavior which accepts a NULLL timespec for the
+purpose of validating the clock id without actually caring for the
+resolution.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/clock.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
+index 7cf4bc304..842db49c8 100644
+--- a/kernel/evl/clock.c
++++ b/kernel/evl/clock.c
+@@ -793,9 +793,16 @@ static long clock_common_ioctl(struct evl_clock *clock,
+ 
+ 	switch (cmd) {
+ 	case EVL_CLKIOC_GET_RES:
++		/*
++		 * Emulate the POSIX behavior which accepts a NULL
++		 * timespec for the purpose of validating the clock id
++		 * only, which we already did.
++		 */
++		u_uts = (typeof(u_uts))arg;
++		if (!u_uts)
++			return 0;
+ 		get_clock_resolution(clock, &ts64);
+ 		uts = timespec64_to_u_timespec(ts64);
+-		u_uts = (typeof(u_uts))arg;
+ 		ret = raw_copy_to_user(u_uts, &uts,
+ 				sizeof(*u_uts)) ? -EFAULT : 0;
+ 		break;
+-- 
+2.30.2
+

@@ -1,0 +1,35 @@
+From f20c605c9fbb0493b90031c9bef4095f8568e8dd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 3 Dec 2022 12:16:51 +0100
+Subject: [PATCH 801/985] evl/trace: fix evl_sleep_on() tracepoint
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/trace/events/evl.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
+index 5a2a5bde3..1fb2ba92b 100644
+--- a/include/trace/events/evl.h
++++ b/include/trace/events/evl.h
+@@ -351,7 +351,7 @@ TRACE_EVENT(evl_sleep_on,
+ 		__field(ktime_t, timeout)
+ 		__field(enum evl_tmode, timeout_mode)
+ 		__field(struct evl_wait_channel *, wchan)
+-		__string(wchan_name, wchan->name)
++		__string(wchan_name, wchan ? wchan->name : "none")
+ 		__string(clock_name, clock ? clock->name : "none")
+ 	),
+ 
+@@ -361,7 +361,7 @@ TRACE_EVENT(evl_sleep_on,
+ 		__entry->timeout_mode = timeout_mode;
+ 		__entry->wchan = wchan;
+ 		__assign_str(clock_name, clock ? clock->name : "none");
+-		__assign_str(wchan_name, wchan->name);
++		__assign_str(wchan_name, wchan ? wchan->name : "none");
+ 	),
+ 
+ 	TP_printk("pid=%d timeout=%Lu timeout_mode=%d clock=%s wchan=%s(%p)",
+-- 
+2.30.2
+

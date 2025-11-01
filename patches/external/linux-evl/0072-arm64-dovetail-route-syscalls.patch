@@ -1,0 +1,106 @@
+From 8df2bfcd3ed55dc38a1e7e949306211e50b659e2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 7 Jul 2020 18:39:36 +0200
+Subject: [PATCH 072/985] arm64: dovetail: route syscalls
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+
+dovetail: arm64: Fix detection of prctl based compat syscalls
+
+In case a compat application is requesting a dovetail service the
+syscall number will not be equal to __NR_prctl (= the x86_64 syscall
+number).
+
+The same problem exists on the arm64 architecture where the problem was
+already addressed. Apply the same to x86.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+
+dovetail: arch: Fix fetching of the first syscall argument from compat tasks
+
+On x86 there is a small difference in the ABI (= register) where the
+first syscall argument is supplied between the x86_64 (native) and
+compat (i386) case.
+
+On x86_64 the DI register is being used, while i386 used the BX
+register.
+
+The same problem exists for further arguments - handled by
+syscall_get_arguments() - as well. syscall_get_arg0() is dovetail
+specific and is now in sync with syscall_get_arguments().
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ arch/arm64/include/asm/syscall.h |  6 ++++++
+ arch/arm64/kernel/syscall.c      | 20 ++++++++++++++------
+ 2 files changed, 20 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
+index ab8e14b96..3cf564634 100644
+--- a/arch/arm64/include/asm/syscall.h
++++ b/arch/arm64/include/asm/syscall.h
+@@ -73,6 +73,12 @@ static inline void syscall_get_arguments(struct task_struct *task,
+ 	memcpy(args, &regs->regs[1], 5 * sizeof(args[0]));
+ }
+ 
++static inline unsigned long syscall_get_arg0(struct task_struct *task,
++					     struct pt_regs *regs)
++{
++	return regs->orig_x0;
++}
++
+ /*
+  * We don't care about endianness (__AUDIT_ARCH_LE bit) here because
+  * AArch64 has the same system calls both on little- and big- endian.
+diff --git a/arch/arm64/kernel/syscall.c b/arch/arm64/kernel/syscall.c
+index 8da4a08c1..0e8b45440 100644
+--- a/arch/arm64/kernel/syscall.c
++++ b/arch/arm64/kernel/syscall.c
+@@ -75,16 +75,11 @@ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,
+ 			   const syscall_fn_t syscall_table[])
+ {
+ 	unsigned long flags = read_thread_flags();
++	int ret;
+ 
+ 	regs->orig_x0 = regs->regs[0];
+ 	regs->syscallno = scno;
+ 
+-	/*
+-	 * irq_pipeline: DAIF was unmasked by caller(s), we fixup the
+-	 * inband stall bit accordingly.
+-	 */
+-	unstall_inband();
+-
+ 	/*
+ 	 * BTI note:
+ 	 * The architecture does not guarantee that SPSR.BTYPE is zero
+@@ -103,6 +98,18 @@ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,
+ 	 * (Similarly for HVC and SMC elsewhere.)
+ 	 */
+ 
++	if (dovetail_debug()) {
++		WARN_ON_ONCE(hard_irqs_disabled());
++		WARN_ON_ONCE(running_inband() && test_inband_stall());
++	}
++
++	ret = pipeline_syscall(scno, regs);
++	if (ret > 0)
++		return;
++
++	if (ret < 0)
++		goto tail_work;
++
+ 	if (flags & _TIF_MTE_ASYNC_FAULT) {
+ 		/*
+ 		 * Process the asynchronous tag check fault before the actual
+@@ -143,6 +150,7 @@ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,
+ 	 * check again. However, if we were tracing entry, then we always trace
+ 	 * exit regardless, as the old entry assembly did.
+ 	 */
++tail_work:
+ 	if (!has_syscall_work(flags) && !IS_ENABLED(CONFIG_DEBUG_RSEQ)) {
+ 		flags = read_thread_flags();
+ 		if (!has_syscall_work(flags) && !(flags & _TIF_SINGLESTEP))
+-- 
+2.30.2
+

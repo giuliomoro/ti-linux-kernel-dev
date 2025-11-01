@@ -1,0 +1,843 @@
+From 1e1be4dddf0f2ca0643badc896c3232fa6e3a69e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 21 Feb 2024 17:44:30 +0100
+Subject: [PATCH 879/985] evl/net: allow for eBPF-based filtering on early RX
+ path
+
+We can use eBPF filtering in order to leave the decision about oob vs
+inband packet delivery to userland. Provide an ioctl() interface to do
+so on a per-device basis.
+
+An eBPF filter may be attached to any netdevice which is enabled for
+oob diversion. If present, this program is in charge of determining
+which stack is eventually going to handle every ingress packet passed
+to netif_oob_deliver() by the inband stack. The eBPF program belongs
+to the "socket" class, since we already have a skb at this point.
+
+In absence of filter, the default VLAN-based rules apply, i.e. an
+ingress packet should be handled by the oob stack if it is VLAN
+tagged, and its VLAN id matches one of the ids defined as oob traffic
+discriminators.
+---
+ include/asm-generic/evl/netdevice.h |  14 ++
+ include/evl/net.h                   |   1 +
+ include/evl/net/device.h            |  22 ++++
+ include/evl/net/input.h             |   2 +
+ include/uapi/evl/control-abi.h      |   2 +-
+ include/uapi/evl/net/bpf-abi.h      |  17 +++
+ include/uapi/evl/net/device-abi.h   |  16 +++
+ include/uapi/evl/net/net-abi.h      |  23 ++++
+ kernel/evl/Kconfig                  |  11 ++
+ kernel/evl/net/Makefile             |   4 +-
+ kernel/evl/net/dev.c                | 191 +++++++++++++++++++++++++++-
+ kernel/evl/net/ethernet/input.c     | 104 ++++++++++-----
+ kernel/evl/net/input.c              |  64 ++++++++--
+ kernel/evl/net/{init.c => net.c}    |  42 +++++-
+ 14 files changed, 461 insertions(+), 52 deletions(-)
+ create mode 100644 include/uapi/evl/net/bpf-abi.h
+ create mode 100644 include/uapi/evl/net/device-abi.h
+ create mode 100644 include/uapi/evl/net/net-abi.h
+ rename kernel/evl/net/{init.c => net.c} (79%)
+
+diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
+index 7f6bfad4f..345b3dd24 100644
+--- a/include/asm-generic/evl/netdevice.h
++++ b/include/asm-generic/evl/netdevice.h
+@@ -5,6 +5,7 @@
+ #ifdef CONFIG_EVL_NET
+ 
+ #include <linux/list.h>
++#include <linux/rcupdate.h>
+ #include <evl/wait.h>
+ #include <evl/poll.h>
+ #include <evl/flag.h>
+@@ -12,12 +13,20 @@
+ 
+ struct evl_net_qdisc;
+ struct evl_kthread;
++struct bpf_prog;
+ 
+ struct evl_net_skb_queue {
+ 	struct list_head queue;
+ 	hard_spinlock_t lock;
+ };
+ 
++struct evl_net_ebpf_filter {
++	struct rcu_head rcu;
++	struct bpf_prog *prog;
++};
++
++#define EVL_NETDEV_RXFILTER_BIT  0
++
+ struct evl_netdev_state {
+ 	/* Buffer pool management */
+ 	struct list_head free_skb_pool;
+@@ -34,6 +43,11 @@ struct evl_netdev_state {
+ 	struct evl_net_qdisc *qdisc;
+ 	struct evl_kthread *tx_handler;
+ 	struct evl_flag tx_flag;
++	/* RX filter/redirector */
++	spinlock_t filter_lock;
++	struct evl_net_ebpf_filter __rcu *rx_filter;
++	/* Runtime state flags. */
++	unsigned long flags;
+ 	/* Count of oob ports referring to this device. */
+ 	int refs;
+ };
+diff --git a/include/evl/net.h b/include/evl/net.h
+index e283a9dca..9b194d69b 100644
+--- a/include/evl/net.h
++++ b/include/evl/net.h
+@@ -13,6 +13,7 @@
+ #include <net/sock.h>
+ #include <evl/net/skb.h>
+ #include <evl/net/input.h>
++#include <uapi/evl/net/net-abi.h>
+ 
+ int evl_net_init(void);
+ 
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+index 51bc61612..bd1b3ea81 100644
+--- a/include/evl/net/device.h
++++ b/include/evl/net/device.h
+@@ -10,10 +10,13 @@
+ #ifdef CONFIG_EVL_NET
+ 
+ #include <linux/if_vlan.h>
++#include <uapi/evl/net/device-abi.h>
++#include <uapi/evl/net/bpf-abi.h>
+ 
+ struct evl_socket;
+ struct evl_netdev_activation;
+ struct notifier_block;
++struct sk_buff;
+ 
+ int evl_net_switch_oob_port(struct evl_socket *esk,
+ 			    struct evl_netdev_activation *act);
+@@ -24,12 +27,31 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ struct net_device *
+ evl_net_get_dev_by_index(struct net *net, int ifindex);
+ 
++struct net_device *
++evl_net_get_dev_by_name(struct net *net, const char *name);
++
+ void evl_net_get_dev(struct net_device *dev);
+ 
+ void evl_net_put_dev(struct net_device *dev);
+ 
+ void evl_net_wake_rx(struct net_device *dev);
+ 
++int evl_net_dev_allocfd(struct net *net, const char *devname);
++
++enum evl_net_rx_action
++__evl_net_filter_rx(struct evl_netdev_state *est, struct sk_buff *skb);
++
++static inline enum evl_net_rx_action
++evl_net_filter_rx(struct net_device *dev, struct sk_buff *skb)
++{
++	struct evl_netdev_state *est = dev->oob_context.dev_state.estate;
++
++	if (test_bit(EVL_NETDEV_RXFILTER_BIT, &est->flags))
++		return __evl_net_filter_rx(est, skb);
++
++	return EVL_RX_VLAN;
++}
++
+ static inline struct net_device *evl_net_real_dev(struct net_device *dev)
+ {
+ 	if (is_vlan_dev(dev))
+diff --git a/include/evl/net/input.h b/include/evl/net/input.h
+index f0f2b99c6..2838cb04a 100644
+--- a/include/evl/net/input.h
++++ b/include/evl/net/input.h
+@@ -35,6 +35,8 @@ void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq);
+ 
+ bool evl_net_ether_accept(struct sk_buff *skb);
+ 
++bool evl_net_ether_accept_vlan(struct sk_buff *skb);
++
+ static inline bool evl_net_rxqueue_active(struct evl_net_rxqueue *rxq)
+ {
+ 	return list_empty(&rxq->subscribers);
+diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
+index a06a837d6..39e005195 100644
+--- a/include/uapi/evl/control-abi.h
++++ b/include/uapi/evl/control-abi.h
+@@ -17,7 +17,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  36
++#define EVL_ABI_LEVEL  37
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/include/uapi/evl/net/bpf-abi.h b/include/uapi/evl/net/bpf-abi.h
+new file mode 100644
+index 000000000..08757fedb
+--- /dev/null
++++ b/include/uapi/evl/net/bpf-abi.h
+@@ -0,0 +1,17 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2024 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_NET_BPF_ABI_H
++#define _EVL_UAPI_NET_BPF_ABI_H
++
++enum evl_net_rx_action {
++	EVL_RX_DROP = 0,	/* Discard */
++	EVL_RX_ACCEPT,		/* Pass to oob stack */
++	EVL_RX_SKIP,		/* Leave to inband stack */
++	EVL_RX_VLAN,		/* Apply VLAN-based rules */
++};
++
++#endif /* !_EVL_UAPI_NET_BPF_ABI_H */
+diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
+new file mode 100644
+index 000000000..7c2a2a206
+--- /dev/null
++++ b/include/uapi/evl/net/device-abi.h
+@@ -0,0 +1,16 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2024 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_NET_DEVICE_ABI_H
++#define _EVL_UAPI_NET_DEVICE_ABI_H
++
++#include <linux/types.h>
++
++#define EVL_NETDEV_IOCBASE  0xef
++
++#define EVL_NDEVIOC_SETRXEBPF	_IOW(EVL_NETDEV_IOCBASE, 0, __s32 /* fd */)
++
++#endif /* !_EVL_UAPI_NET_DEVICE_ABI_H */
+diff --git a/include/uapi/evl/net/net-abi.h b/include/uapi/evl/net/net-abi.h
+new file mode 100644
+index 000000000..c75e571a8
+--- /dev/null
++++ b/include/uapi/evl/net/net-abi.h
+@@ -0,0 +1,23 @@
++/*
++ * SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
++ *
++ * Copyright (C) 2024 Philippe Gerum  <rpm@xenomai.org>
++ */
++
++#ifndef _EVL_UAPI_NET_NET_ABI_H
++#define _EVL_UAPI_NET_NET_ABI_H
++
++#include <evl/types.h>
++
++#define EVL_NET_DEV		"net"
++
++#define EVL_NET_IOCBASE  0xf0
++
++struct evl_net_devfd {
++	__u64 name_ptr;		/* (const char __user *name) */
++	__u32 fd;
++};
++
++#define EVL_NET_GETDEVFD	_IOWR(EVL_NETDEV_IOCBASE, 0, struct evl_net_devfd)
++
++#endif /* !_EVL_UAPI_NET_NET_ABI_H */
+diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
+index a79e6318c..b4cc2fd13 100644
+--- a/kernel/evl/Kconfig
++++ b/kernel/evl/Kconfig
+@@ -94,6 +94,7 @@ config EVL_NET
+ 	select NET_OOB
+ 	select NET_SCHED
+ 	select NET_SCH_OOB
++	select BPF_OOB
+ 	select INET
+ 	select VLAN_8021Q
+ 	help
+@@ -175,6 +176,16 @@ config EVL_NR_OBSERVABLES
+        observables attached to threads are not accounted for in this
+        value.
+ 
++config EVL_NR_NETDEV
++	depends on EVL_NET
++	int "Maximum number of netdevices"
++	range 1 256
++	default 8
++	help
++
++	This value gives the maximum number of network devices which
++	can deal with out-of-band traffic.
++
+ endmenu
+ 
+ menu "Pre-calibrated latency"
+diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
+index d7f1348f7..b5fd52780 100644
+--- a/kernel/evl/net/Makefile
++++ b/kernel/evl/net/Makefile
+@@ -1,5 +1,5 @@
+ obj-$(CONFIG_EVL_NET) += ethernet/ packet/ ipv4/ qdisc/
+ 
+-obj-$(CONFIG_EVL_NET) += net.o
++obj-$(CONFIG_EVL_NET) += networking.o
+ 
+-net-y := init.o socket.o dev.o input.o output.o skb.o route.o
++networking-y := net.o socket.o dev.o input.o output.o skb.o route.o
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 47528b3e5..e5b98ab82 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -11,9 +11,15 @@
+ #include <linux/if_vlan.h>
+ #include <linux/err.h>
+ #include <linux/rtnetlink.h>
++#include <linux/bpf.h>
++#include <linux/filter.h>
++#include <linux/anon_inodes.h>
++#include <linux/file.h>
++#include <evl/uaccess.h>
+ #include <evl/sched.h>
+ #include <evl/thread.h>
+ #include <evl/crossing.h>
++#include <evl/factory.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/device.h>
+ #include <evl/net/skb.h>
+@@ -59,6 +65,9 @@ static LIST_HEAD(oob_netdev_list);
+ 
+ static DEFINE_HARD_SPINLOCK(oob_netdev_lock);
+ 
++static void __set_rx_filter(struct evl_netdev_state *est,
++			struct evl_net_ebpf_filter *filter);
++
+ static struct evl_kthread *
+ start_handler_thread(struct net_device *dev,
+ 		void (*fn)(void *arg),
+@@ -141,6 +150,7 @@ static int enable_oob_port(struct net_device *dev,
+ 	est->pool_free = 0;
+ 	est->pool_max = act->poolsz;
+ 	est->buf_size = act->bufsz;
++	spin_lock_init(&est->filter_lock);
+ 	est->qdisc = evl_net_alloc_qdisc(&evl_net_qdisc_fifo);
+ 	if (IS_ERR(est->qdisc)) {
+ 		ret = PTR_ERR(est->qdisc);
+@@ -193,8 +203,10 @@ static int enable_oob_port(struct net_device *dev,
+ 	 * No skb has flowed yet, no pending recycling op. Likewise,
+ 	 * we cannot have any rxq in the cache or dump lists.
+ 	 */
+-	evl_stop_kthread(est->rx_handler);
+-	evl_destroy_flag(&est->tx_flag);
++	if (netdev_is_oob_capable(real_dev)) {
++		evl_stop_kthread(est->rx_handler);
++		evl_destroy_flag(&est->tx_flag);
++	}
+ fail_start_rx:
+ 	evl_net_dev_purge_pool(real_dev);
+ 	evl_destroy_flag(&est->rx_flag);
+@@ -267,6 +279,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ 	if (est->tx_handler)
+ 		evl_stop_kthread(est->tx_handler);
+ 
++	__set_rx_filter(est, NULL);
+ 	evl_net_dev_purge_pool(real_dev);
+ 	evl_net_free_qdisc(est->qdisc);
+ 	kfree(est);
+@@ -274,7 +287,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
+ }
+ 
+ static int switch_oob_port(struct net_device *dev,
+-			struct evl_netdev_activation *act) /* in-band */
++			struct evl_netdev_activation *act) /* rtnl_lock held, in-band */
+ {
+ 	int ret = 0;
+ 
+@@ -347,6 +360,29 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 	return ret;
+ }
+ 
++struct net_device *evl_net_get_dev_by_name(struct net *net, const char *name)
++{
++	struct net_device *dev, *ret = NULL;
++	struct oob_netdev_state *nds;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&oob_netdev_lock, flags);
++
++	list_for_each_entry(nds, &oob_netdev_list, next) {
++		dev = container_of(nds, struct net_device,
++				oob_context.dev_state);
++		if (dev_net(dev) == net && !strcmp(netdev_name(dev), name)) {
++			evl_down_crossing(&nds->crossing);
++			ret = dev;
++			break;
++		}
++	}
++
++	raw_spin_unlock_irqrestore(&oob_netdev_lock, flags);
++
++	return ret;
++}
++
+ void evl_net_get_dev(struct net_device *dev)
+ {
+ 	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
+@@ -431,3 +467,152 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ 
+ 	return NOTIFY_DONE;
+ }
++
++enum evl_net_rx_action
++__evl_net_filter_rx(struct evl_netdev_state *est, struct sk_buff *skb)
++{
++	enum evl_net_rx_action ret = EVL_RX_VLAN;
++	struct evl_net_ebpf_filter *filter;
++
++	rcu_read_lock();
++
++	filter = rcu_dereference(est->rx_filter);
++	if (filter)
++		ret = bpf_prog_run_clear_cb(filter->prog, skb);
++
++	rcu_read_unlock();
++
++	return ret;
++}
++
++static void drop_rx_filter(struct rcu_head *rcu)
++{
++	struct evl_net_ebpf_filter *filter = container_of(rcu, struct evl_net_ebpf_filter, rcu);
++
++	bpf_prog_destroy(filter->prog);
++	kfree(filter);
++}
++
++static void __set_rx_filter(struct evl_netdev_state *est,
++			struct evl_net_ebpf_filter *filter)
++{
++	struct evl_net_ebpf_filter *old;
++
++	spin_lock_bh(&est->filter_lock);
++	old = rcu_dereference_protected(est->rx_filter,
++				lockdep_is_held(&est->filter_lock));
++	rcu_assign_pointer(est->rx_filter, filter);
++	if (filter)
++		__set_bit(EVL_NETDEV_RXFILTER_BIT, &est->flags);
++	else
++		__clear_bit(EVL_NETDEV_RXFILTER_BIT, &est->flags);
++	spin_unlock_bh(&est->filter_lock);
++
++	if (old)
++		call_rcu(&old->rcu, drop_rx_filter);
++}
++
++/*
++ * set_rx_filter - install an eBPF filter module to redirect ingress
++ * traffic to the proper network stack, inband or oob.  @dev is a
++ * physical interface.
++ */
++static int set_rx_filter(struct net_device *dev, unsigned long arg)
++{
++	struct oob_netdev_state *nds = &dev->oob_context.dev_state;
++	struct evl_net_ebpf_filter *new = NULL;
++	struct bpf_prog *prog;
++	int ret, fd;
++
++	ret = raw_get_user(fd, (__s32 *)arg);
++	if (ret)
++		return -EFAULT;
++
++	if (fd != -1) {
++		prog = bpf_prog_get_type(fd, BPF_PROG_TYPE_SOCKET_FILTER);
++		if (IS_ERR(prog)) {
++			netdev_warn(dev, "invalid out-of-band eBPF filter\n");
++			return PTR_ERR(prog);
++		}
++		new = kmalloc(sizeof(*new), GFP_KERNEL);
++		if (!new)
++			return -ENOMEM;
++		new->prog = prog;
++		netdev_notice(dev, "out-of-band eBPF filter installed\n");
++	}
++
++	__set_rx_filter(nds->estate, new);
++
++	return 0;
++}
++
++static long netdev_ioctl(struct file *filp, unsigned int cmd,
++			unsigned long arg)
++{
++	struct net_device *dev = filp->private_data;
++	int ret = -ENOTTY;
++
++	switch (cmd) {
++	case EVL_NDEVIOC_SETRXEBPF:
++		/*
++		 * The underlying physical device of a VLAN interface
++		 * supports the eBPF filter.
++		 */
++		if (is_vlan_dev(dev))
++			dev = vlan_dev_real_dev(dev);
++		ret = set_rx_filter(dev, arg);
++		break;
++	}
++
++	return ret;
++}
++
++static int netdev_release(struct inode *inode, struct file *filp)
++{
++	struct net_device *dev = filp->private_data;
++
++	evl_net_put_dev(dev);
++
++	return 0;
++}
++
++static const struct file_operations netdev_fops = {
++	.open		= stream_open,
++	.release	= netdev_release,
++	.unlocked_ioctl	= netdev_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++#endif
++};
++
++int evl_net_dev_allocfd(struct net *net, const char *devname)
++{
++	struct net_device *dev;
++	struct file *filp;
++	int ret, fd;
++
++	dev = evl_net_get_dev_by_name(net, devname);
++	if (!dev)		/* Not an oob port. */
++		return -ENXIO;
++
++	filp = anon_inode_getfile("[evl-netdev]", &netdev_fops,
++				dev, O_RDWR|O_CLOEXEC);
++	if (IS_ERR(filp))
++		return PTR_ERR(filp);
++
++	fd = get_unused_fd_flags(O_RDWR|O_CLOEXEC);
++	if (fd < 0) {
++		ret = fd;
++		goto fail;
++	}
++
++	filp->private_data = dev;
++
++	fd_install(fd, filp);
++
++	return fd;
++fail:
++	filp_close(filp, current->files);
++
++	return ret;
++}
+diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
+index 356a5f771..5887b5cf6 100644
+--- a/kernel/evl/net/ethernet/input.c
++++ b/kernel/evl/net/ethernet/input.c
+@@ -16,29 +16,87 @@ static DECLARE_BITMAP(vlan_map, VLAN_N_VID);
+ 
+ static struct evl_net_handler evl_net_ether;
+ 
++static void untag_packet(struct sk_buff *skb,
++			unsigned char *mac_hdr, struct vlan_ethhdr *ehdr)
++{
++	int mac_len;
++
++	/*
++	 * We run very early in the RX path, eth_type_trans() already
++	 * pulled the MAC header at this point though. We accept
++	 * ETH_P_IP encapsulation only so that ARP and friends still
++	 * flow through the regular network stack. Fix up the protocol
++	 * tag in the skb manually, cache the VLAN information in the
++	 * skb, then reorder the MAC header eventually.
++	 */
++	skb->protocol = ehdr->h_vlan_encapsulated_proto;
++	__vlan_hwaccel_put_tag(skb, ehdr->h_vlan_proto,
++			ntohs(ehdr->h_vlan_TCI));
++	skb_pull_inline(skb, VLAN_HLEN);
++	mac_len = skb->data - mac_hdr;
++	if (likely(mac_len > VLAN_HLEN + ETH_TLEN)) {
++		memmove(mac_hdr + VLAN_HLEN, mac_hdr,
++			mac_len - VLAN_HLEN - ETH_TLEN);
++	}
++	skb->mac_header += VLAN_HLEN;
++}
++
+ /**
+- * evl_net_ether_accept - Stage dispatcher for ethernet packets
++ * evl_net_ether_accept - Unconditionally accept an ethernet packet
++ * for the out-of-band stack, stripping out the VLAN information if
++ * present.
+  *
+- * Decide whether an incoming ethernet packet should be delivered via
+- * the out-of-band networking stack instead of the in-band one. Our
+- * primary selector for out-of-band ethernet traffic is VLAN tagging,
+- * all we need to do is checking whether some VLAN information stored
+- * into the packet matches a VID reserved for such traffic.
++ * @skb the packet to deliver. May be linked to some upstream queue.
++ */
++bool evl_net_ether_accept(struct sk_buff *skb)
++{
++	struct vlan_ethhdr *ehdr;
++	unsigned char *mac_hdr;
++	u16 vlan_tci;
++
++	/* If accelerated, the VLAN header is already out. */
++	if (!__vlan_hwaccel_get_tag(skb, &vlan_tci))
++		goto pick;
++
++	/*
++	 * Deal manually with input from adapters without hw
++	 * accelerated VLAN processing, in this case we need to pull
++	 * the VLAN header from the packet. See comment in
++	 * evl_net_ether_accept_vlan().
++	 */
++	if (skb_vlan_tag_present(skb) || !eth_type_vlan(skb->protocol))
++		goto pick;
++
++	mac_hdr = skb_mac_header(skb);
++	ehdr = (struct vlan_ethhdr *)mac_hdr;
++	if (ehdr->h_vlan_encapsulated_proto != htons(ETH_P_IP))
++		return false;
++
++	untag_packet(skb, mac_hdr, ehdr);
++pick:
++	evl_net_receive(skb, &evl_net_ether);
++
++	return true;
++}
++
++/**
++ * evl_net_ether_accept_vlan - Accept an ethernet packet if tagged for
++ * an out-of-band VLAN.
+  *
+- * Currently, we only deal with IP input on ethernet medium.
++ * Decide whether an incoming ethernet packet should be handled by the
++ * out-of-band networking stack instead of the in-band one. This
++ * routine checks whether some VLAN information stored into the packet
++ * matches one of the VIDs reserved for out-of-band traffic.
+  *
+- * @skb the packet to deliver. May be linked to some upstream
+- * queue.
++ * @skb the packet to deliver. May be linked to some upstream queue.
+  *
+- * Returns true if the out-of-band stack will handle and deliver the
+- * packet.
++ * Returns true if the out-of-band stack should handle the packet.
+  */
+-bool evl_net_ether_accept(struct sk_buff *skb)
++bool evl_net_ether_accept_vlan(struct sk_buff *skb)
+ {
+ 	struct vlan_ethhdr *ehdr;
+ 	unsigned char *mac_hdr;
+ 	u16 vlan_tci;
+-	int mac_len;
+ 
+ 	/* Try the accelerated way first. */
+ 	if (!__vlan_hwaccel_get_tag(skb, &vlan_tci) &&
+@@ -62,26 +120,8 @@ bool evl_net_ether_accept(struct sk_buff *skb)
+ 	}
+ 
+ 	return false;
+-
+ untag:
+-	/*
+-	 * We run very early in the RX path, eth_type_trans() already
+-	 * pulled the MAC header at this point though. We accept
+-	 * ETH_P_IP encapsulation only so that ARP and friends still
+-	 * flow through the regular network stack. Fix up the protocol
+-	 * tag in the skb manually, cache the VLAN information in the
+-	 * skb, then reorder the MAC header eventually.
+-	 */
+-	skb->protocol = ehdr->h_vlan_encapsulated_proto;
+-	__vlan_hwaccel_put_tag(skb, ehdr->h_vlan_proto,
+-			ntohs(ehdr->h_vlan_TCI));
+-	skb_pull_inline(skb, VLAN_HLEN);
+-	mac_len = skb->data - mac_hdr;
+-	if (likely(mac_len > VLAN_HLEN + ETH_TLEN)) {
+-		memmove(mac_hdr + VLAN_HLEN, mac_hdr,
+-			mac_len - VLAN_HLEN - ETH_TLEN);
+-	}
+-	skb->mac_header += VLAN_HLEN;
++	untag_packet(skb, mac_hdr, ehdr);
+ pick:
+ 	evl_net_receive(skb, &evl_net_ether);
+ 
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index 3e77960f5..f9a37511a 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -16,6 +16,7 @@
+ #include <evl/list.h>
+ #include <evl/flag.h>
+ #include <evl/net.h>
++#include <evl/net/device.h>
+ #include <evl/net/ipv4.h>
+ 
+ /*
+@@ -61,10 +62,10 @@ void evl_net_wake_rx(struct net_device *dev)
+  * Schedule an incoming packet for delivery to a listening EVL socket
+  * This call is either invoked:
+  *
+- * - in-band by a protocol-specific stage dispatcher
+- *   (e.g. evl_net_ether_accept()) diverting packets from the regular
+- *   networking stack, in order to queue work for its .ingress()
+- *   handler.
++ * - in-band by a protocol-specific out-of-band packet filter
++ *   (e.g. evl_net_ether_accept(), evl_net_ether_accept_vlan())
++ *   diverting packets from the regular networking stack, in order to
++ *   queue work for its .ingress() handler.
+  *
+  * - out-of-band on behalf of a fully oob capable NIC driver,
+  *   typically from an out-of-band (RX) IRQ context.
+@@ -126,6 +127,12 @@ void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq)
+  * Decide whether we should channel a freshly incoming packet to our
+  * out-of-band stack. May be called from any stage.
+  *
++ * Delivery is trivially simple at the moment: the set of protocols we
++ * handle is statically defined, currently ETH_P_IP. The point is to
++ * provide an expedited data path via the oob stage for the protocols
++ * which most users need, without reinventing the whole networking
++ * infrastructure.
++ *
+  * @skb the packet to inspect for oob delivery. May be linked to some
+  * upstream queue.
+  *
+@@ -140,23 +147,54 @@ bool netif_oob_deliver(struct sk_buff *skb) /* oob or in-band */
+ 	skb_reset_mac_len(skb);
+ 
+ 	/*
+-	 * Delivery is trivially simple at the moment: the set of
+-	 * protocols we handle is statically defined. The point is to
+-	 * provide an expedited data path via the oob stage for the
+-	 * protocols which most users need, without reinventing the
+-	 * whole networking infrastructure. XDP would not help here
+-	 * for several reasons.
++	 * Filter the incoming packet through the eBPF RX program
++	 * attached to the input device (if any), passing it down to
++	 * the regular in-band stack if the filter code says that we
++	 * are not interested in it.
++	 */
++	switch (evl_net_filter_rx(skb->dev, skb)) {
++	case EVL_RX_VLAN:
++		/*
++		 * Apply our VLAN rules to decide whether this is an
++		 * oob packet.
++		 */
++		break;
++	case EVL_RX_ACCEPT:
++		/* Direct the packet to the oob stack unconditionally. */
++		switch (skb->protocol) {
++		case htons(ETH_P_IP):
++			return evl_net_ether_accept(skb);
++		default:
++			/*
++			 * We don't deal with non-IP protocols, and
++			 * the filter mistakenly told us to handle the
++			 * packet. Leave it to inband.
++			 */
++			return false;
++		}
++	case EVL_RX_SKIP:
++		/* Leave the packet to inband. */
++		return false;
++	case EVL_RX_DROP:
++		/* Blackhole. */
++		evl_net_free_skb(skb);
++		return true;
++	}
++
++	/*
++	 * Fallback to VLAN-based filtering to figure out whether the
++	 * packet should be handled by the oob stack.
+ 	 */
+ 	switch (skb->protocol) {
+-	case htons(ETH_P_IP):	/* Try IP over ethernet. */
+-		return evl_net_ether_accept(skb);
++	case htons(ETH_P_IP):
++		return evl_net_ether_accept_vlan(skb);
+ 	default:
+ 		/*
+ 		 * For those adapters without hw-accelerated VLAN
+ 		 * capabilities, check the ethertype directly.
+ 		 */
+ 		if (eth_type_vlan(skb->protocol))
+-			return evl_net_ether_accept(skb);
++			return evl_net_ether_accept_vlan(skb);
+ 
+ 		return false;
+ 	}
+diff --git a/kernel/evl/net/init.c b/kernel/evl/net/net.c
+similarity index 79%
+rename from kernel/evl/net/init.c
+rename to kernel/evl/net/net.c
+index 1beabe957..5f0ec61b5 100644
+--- a/kernel/evl/net/init.c
++++ b/kernel/evl/net/net.c
+@@ -12,6 +12,7 @@
+ #include <linux/nsproxy.h>
+ #include <net/net_namespace.h>
+ #include <evl/factory.h>
++#include <evl/uaccess.h>
+ #include <evl/net/qdisc.h>
+ #include <evl/net/packet.h>
+ #include <evl/net/device.h>
+@@ -101,7 +102,46 @@ void __init evl_net_cleanup(void)
+ 	evl_net_cleanup_pools();
+ }
+ 
+-static const struct file_operations net_fops;
++static long net_ioctl(struct file *filp, unsigned int cmd,
++		unsigned long arg)
++{
++	struct evl_net_devfd req, __user *u_req;
++	const char __user *u_name;
++	struct filename *devname;
++	long ret;
++	int ufd;
++
++	switch (cmd) {
++	case EVL_NET_GETDEVFD:
++		u_req = (typeof(u_req))arg;
++		ret = copy_from_user(&req, u_req, sizeof(req));
++		if (ret)
++			return -EFAULT;
++		u_name = evl_valptr64(req.name_ptr, const char);
++		devname = getname(u_name);
++		if (IS_ERR(devname))
++			return PTR_ERR(devname);
++		ufd = evl_net_dev_allocfd(current->nsproxy->net_ns, devname->name);
++		putname(devname);
++		if (ufd < 0)
++			return ret;
++		ret = put_user((__u32)ufd, &u_req->fd);
++		if (ret)
++			return -EFAULT;
++		break;
++	default:
++		ret = -ENOTTY;
++	}
++
++	return ret;
++}
++
++static const struct file_operations net_fops = {
++	.unlocked_ioctl	= net_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl	= compat_ptr_ioctl,
++#endif
++};
+ 
+ static ssize_t vlans_show(struct device *dev,
+ 			struct device_attribute *attr,
+-- 
+2.30.2
+

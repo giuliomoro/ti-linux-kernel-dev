@@ -1,0 +1,99 @@
+From c3e0384544780e98c852c8fddea18c4f5ce8cd8d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 23 Jul 2022 17:21:32 +0200
+Subject: [PATCH 736/985] evl/monitor: event: differentiate causes for
+ interrupted wait
+
+A wait operation can be interrupted for the following reasons:
+
+- a signal was received while waiting for the event.
+
+- the caller got forcibly unblocked while waiting for the event.
+
+- a signal was received or the caller got forcibly unblocked while
+  trying to reacquire the lock once the event was successfully
+  received.
+
+Ensure these conditions are differentiated when returning to the
+caller via the operation status (req.status), which enables the user
+interface to decide whether it needs to restart the syscall
+transparently after some fixups on signal receipt, or bail out on
+error if forcibly unblocked for any other reason.
+
+This change causes a bump of the current ABI version (#28). However,
+it does not affect current and older libevl releases since none of
+them check the operation status when an interrupted wait is detected.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/uapi/evl/control.h |  2 +-
+ kernel/evl/monitor.c       | 31 ++++++++++++++++++++++---------
+ 2 files changed, 23 insertions(+), 10 deletions(-)
+
+diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
+index 58912a5f2..5e84f33d9 100644
+--- a/include/uapi/evl/control.h
++++ b/include/uapi/evl/control.h
+@@ -18,7 +18,7 @@
+  * latter to the former. CAUTION: a litteral value is required for the
+  * current ABI definition (scripts reading this may be naive).
+  */
+-#define EVL_ABI_LEVEL  27
++#define EVL_ABI_LEVEL  28
+ 
+ #define EVL_CONTROL_DEV  "/dev/evl/control"
+ 
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 26486ead5..4def50d5a 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -527,24 +527,37 @@ static int wait_monitor(struct file *filp,
+ 	 * be handled asap. So exit to user mode, allowing any pending
+ 	 * signal to be handled during the transition, then expect
+ 	 * userland to issue UNWAIT to recover (or exit, whichever
+-	 * comes first). Consequently, disable syscall restart from
+-	 * kernel upon interrupted wait, because the caller does not
+-	 * hold the mutex until UNWAIT happens.
++	 * comes first).
++	 *
++	 * Consequently, disable syscall restart from kernel upon
++	 * interrupted wait, because the caller does not hold the
++	 * mutex until UNWAIT happens.
+ 	 */
+ 	ret = evl_wait_schedule(&event->wait_queue);
+ 	if (ret) {
+ 		untrack_event(event);
+-		if (ret == -EINTR) {
+-			/* Disable syscall restart upon signal (only). */
+-			if (signal_pending(current))
+-				curr->local_info |= T_NORST;
++		/*
++		 * Disable syscall restart upon signal (only), user
++		 * receives -EINTR and a zero status in this case. If
++		 * the caller was forcibly unblocked for any other
++		 * reason, both the return value and the status word
++		 * are set to -EINTR.
++		 */
++		if (ret == -EINTR && signal_pending(current)) {
++			curr->local_info |= T_NORST;
+ 			goto put;
+ 		}
+ 		op_ret = ret;
++		if (ret == -EIDRM)
++			goto put;
+ 	}
+ 
+-	if (ret != -EIDRM)	/* Success or -ETIMEDOUT */
+-		ret = __enter_monitor(gate, NULL);
++	ret = __enter_monitor(gate, NULL);
++	if (ret == -EINTR) {
++		if (signal_pending(current))
++			curr->local_info |= T_NORST;
++		op_ret = -EAGAIN;
++	}
+ put:
+ 	evl_put_file(efilp);
+ out:
+-- 
+2.30.2
+

@@ -1,0 +1,36 @@
+From 849c058c15b216b224d64e327925ae9f1d5882c4 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 10 Mar 2020 15:53:51 +0100
+Subject: [PATCH 589/985] evl/syscall: handle_oob_syscall() does not return any
+ value
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/syscall.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
+index 08dad2491..bfd59bbf4 100644
+--- a/kernel/evl/syscall.c
++++ b/kernel/evl/syscall.c
+@@ -310,15 +310,12 @@ int handle_pipelined_syscall(struct irq_stage *stage, struct pt_regs *regs)
+ 	return do_oob_syscall(stage, regs);
+ }
+ 
+-int handle_oob_syscall(struct pt_regs *regs)
++void handle_oob_syscall(struct pt_regs *regs)
+ {
+ 	int ret;
+ 
+ 	ret = do_oob_syscall(&oob_stage, regs);
+-	if (EVL_WARN_ON(CORE, ret == SYSCALL_PROPAGATE))
+-		ret = SYSCALL_STOP;
+-
+-	return ret;
++	EVL_WARN_ON(CORE, ret == SYSCALL_PROPAGATE);
+ }
+ 
+ static EVL_SYSCALL(read, (int fd, char __user *u_buf, size_t size))
+-- 
+2.30.2
+

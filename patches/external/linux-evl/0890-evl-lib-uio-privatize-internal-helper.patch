@@ -1,0 +1,26 @@
+From 7e5ad1623c6b6314225142c2b23579dd3cbf0892 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 24 Sep 2024 11:29:43 +0200
+Subject: [PATCH 890/985] evl/lib: uio: privatize internal helper
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/lib/uio.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/lib/uio.c b/kernel/evl/lib/uio.c
+index 69fb5c3e0..cf015cb20 100644
+--- a/kernel/evl/lib/uio.c
++++ b/kernel/evl/lib/uio.c
+@@ -23,7 +23,7 @@ static int load_iov_native(struct iovec *iov,
+ 
+ #ifdef CONFIG_COMPAT
+ 
+-int do_load_iov(struct iovec *iov,
++static int do_load_iov(struct iovec *iov,
+ 		const struct iovec __user *u_iov,
+ 		size_t iovlen)
+ {
+-- 
+2.30.2
+

@@ -1,0 +1,56 @@
+From 5faa747482697f8140dfd76669056d18c90dcb96 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Tue, 1 Jul 2025 12:48:14 +0200
+Subject: [PATCH 978/985] evl/net: export hooks visible from NIC drivers
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/dev.c    | 1 +
+ kernel/evl/net/input.c  | 1 +
+ kernel/evl/net/output.c | 4 ++--
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 35679bd0c..3869d57d1 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -635,6 +635,7 @@ void netif_rx_nomem_oob(struct net_device *dev)
+ 
+ 	evl_counter_inc_careful(&est->stats.tx_nomem);
+ }
++EXPORT_SYMBOL(netif_rx_nomem_oob);
+ 
+ static long netdev_ioctl(struct file *filp, unsigned int cmd,
+ 			unsigned long arg)
+diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
+index c9aa66c1c..0171ec8b8 100644
+--- a/kernel/evl/net/input.c
++++ b/kernel/evl/net/input.c
+@@ -352,3 +352,4 @@ void netif_schedule_oob(struct net_device *dev)
+ {
+ 	evl_net_wake_rx(dev);
+ }
++EXPORT_SYMBOL(netif_schedule_oob);
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 239880b9f..9ca8cb90e 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -282,13 +282,13 @@ void netif_tx_lock_oob(struct netdev_queue *txq) /* oob or in-band */
+ {
+ 	evl_lock_stax(&txq->oob.tx_lock);
+ }
+-EXPORT_SYMBOL_GPL(netif_tx_lock_oob);
++EXPORT_SYMBOL(netif_tx_lock_oob);
+ 
+ void netif_tx_unlock_oob(struct netdev_queue *txq) /* oob or in-band */
+ {
+ 	evl_unlock_stax(&txq->oob.tx_lock);
+ }
+-EXPORT_SYMBOL_GPL(netif_tx_unlock_oob);
++EXPORT_SYMBOL(netif_tx_unlock_oob);
+ 
+ void __init evl_net_init_tx(void)
+ {
+-- 
+2.30.2
+

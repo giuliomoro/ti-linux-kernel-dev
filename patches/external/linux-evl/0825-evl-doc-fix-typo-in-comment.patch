@@ -1,0 +1,30 @@
+From a639418debf6a72f85c5a15a7eff6632e3e3fbf8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 26 Oct 2023 17:14:47 +0200
+Subject: [PATCH 825/985] evl/doc: fix typo in comment
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/factory.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
+index 9ed127f61..17ea7567d 100644
+--- a/kernel/evl/factory.c
++++ b/kernel/evl/factory.c
+@@ -336,9 +336,9 @@ static int do_element_visibility(struct evl_element *e,
+ 		e->clone_flags |= EVL_CLONE_COREDEV;
+ 
+ 	/*
+-	 * Unlike a private one, a publically visible element exports
+-	 * a cdev in the /dev/evl hierarchy so that any process can
+-	 * see it.  Both types are backed by a kernel device object so
++	 * Unlike a private one, a publicly visible element exports a
++	 * cdev in the /dev/evl hierarchy so that any process can see
++	 * it.  Both types are backed by a kernel device object so
+ 	 * that we can export their state to userland via /sysfs.
+ 	 */
+ 
+-- 
+2.30.2
+

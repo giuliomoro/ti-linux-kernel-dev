@@ -1,0 +1,30 @@
+From bc037e13b17c6e7edf813304825746fdde3f4683 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 3 Nov 2024 19:14:32 +0100
+Subject: [PATCH 132/985] genirq: irq_pipeline: add placeholder for
+ handle_irq_pipelined()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/irq_pipeline.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/linux/irq_pipeline.h b/include/linux/irq_pipeline.h
+index da9bc59a2..c2eb5fb95 100644
+--- a/include/linux/irq_pipeline.h
++++ b/include/linux/irq_pipeline.h
+@@ -144,6 +144,11 @@ static inline bool irq_pipeline_can_idle(void)
+ 
+ static inline void irq_pipeline_idling_checks(void) { }
+ 
++static inline int handle_irq_pipelined(struct pt_regs *regs)
++{
++	return 1;
++}
++
+ #endif /* !CONFIG_IRQ_PIPELINE */
+ 
+ #endif /* _LINUX_IRQ_PIPELINE_H */
+-- 
+2.30.2
+

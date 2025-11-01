@@ -1,0 +1,61 @@
+From 2d1db34f9d31e3772a6d7a3780de11901a8ce32a Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Thu, 24 Apr 2025 18:10:48 +0200
+Subject: [PATCH 166/985] dma: dovetail: catch map/unmap calls from oob context
+
+With more existing drivers being added out-of-band I/O support, we
+need some debug instrumentation for detecting calls to DMA routines
+which are disallowed from the out-of-band stage, and may cause weird
+data consistency issues in random ways without implying a system
+crash.
+
+DMA mapping ops belong to this set (DMA sync do _not_ though).
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/dma/mapping.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/kernel/dma/mapping.c b/kernel/dma/mapping.c
+index c7cc4e33e..2098ac409 100644
+--- a/kernel/dma/mapping.c
++++ b/kernel/dma/mapping.c
+@@ -159,6 +159,8 @@ dma_addr_t dma_map_page_attrs(struct device *dev, struct page *page,
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+ 	dma_addr_t addr;
+ 
++	check_inband_stage();
++
+ 	BUG_ON(!valid_dma_direction(dir));
+ 
+ 	if (WARN_ON_ONCE(!dev->dma_mask))
+@@ -185,6 +187,8 @@ void dma_unmap_page_attrs(struct device *dev, dma_addr_t addr, size_t size,
+ {
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+ 
++	check_inband_stage();
++
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	if (dma_map_direct(dev, ops) ||
+ 	    arch_dma_unmap_page_direct(dev, addr + size))
+@@ -204,6 +208,8 @@ static int __dma_map_sg_attrs(struct device *dev, struct scatterlist *sg,
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+ 	int ents;
+ 
++	check_inband_stage();
++
+ 	BUG_ON(!valid_dma_direction(dir));
+ 
+ 	if (WARN_ON_ONCE(!dev->dma_mask))
+@@ -305,6 +311,8 @@ void dma_unmap_sg_attrs(struct device *dev, struct scatterlist *sg,
+ {
+ 	const struct dma_map_ops *ops = get_dma_ops(dev);
+ 
++	check_inband_stage();
++
+ 	BUG_ON(!valid_dma_direction(dir));
+ 	trace_dma_unmap_sg(dev, sg, nents, dir, attrs);
+ 	debug_dma_unmap_sg(dev, sg, nents, dir);
+-- 
+2.30.2
+

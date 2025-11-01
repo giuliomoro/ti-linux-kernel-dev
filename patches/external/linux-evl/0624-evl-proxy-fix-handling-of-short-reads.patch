@@ -1,0 +1,38 @@
+From 68763a164559dcfc0ec9ff0023eaf7d7a151e8fe Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 May 2020 15:46:02 +0200
+Subject: [PATCH 624/985] evl/proxy: fix handling of short reads
+
+We should be able to read a complete message of the requested length
+if O_NONBLOCK is clear. If set and some bytes are available, return
+them.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index e589d3de0..009e32720 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -338,11 +338,11 @@ static ssize_t do_proxy_read(struct file *filp,
+ 			if (in->on_error)
+ 				return in->on_error;
+ 
+-			if (!(filp->f_flags & O_NONBLOCK) &&
+-				avail > 0 && ring->granularity <= avail) {
+-				len = ring->granularity > 1 ?
+-					ring->granularity : avail;
+-				goto retry;
++			if (avail > 0 && filp->f_flags & O_NONBLOCK) {
++				/* granularity may not be ^2. */
++				len = rounddown(avail, ring->granularity ?: 1);
++				if (len)
++					goto retry;
+ 			}
+ 
+ 			return -EAGAIN;
+-- 
+2.30.2
+

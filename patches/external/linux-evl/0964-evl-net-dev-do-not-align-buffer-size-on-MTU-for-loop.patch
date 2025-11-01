@@ -1,0 +1,37 @@
+From 57e8448497128d012bb907540c77d855daca9490 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 18:26:51 +0200
+Subject: [PATCH 964/985] evl/net: dev: do not align buffer size on MTU for
+ loopback devices
+
+Those pseudo-devices have preposterously large MTUs which make no
+sense for oob usage.
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/net/dev.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index a93a534fc..0e61c3a76 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -147,9 +147,13 @@ static int enable_oob_port(struct net_device *dev,
+ 	if (!p->bufsz)
+ 		p->bufsz = EVL_DEFAULT_NETDEV_BUFSZ;
+ 
+-	/* Silently align on the current mtu if need be. */
++	/*
++	 * Use the device MTU as the bare minimum unless this is a
++	 * loopback device (those have preposterously large MTUs for
++	 * oob usage).
++	 */
+ 	mtu = READ_ONCE(real_dev->mtu);
+-	if (p->bufsz < mtu)
++	if (!(real_dev->flags & IFF_LOOPBACK) && p->bufsz < mtu)
+ 		p->bufsz = mtu;
+ 
+ 	est->pool_max = p->poolsz;
+-- 
+2.30.2
+

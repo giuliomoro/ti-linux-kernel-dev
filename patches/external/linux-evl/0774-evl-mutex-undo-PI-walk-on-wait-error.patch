@@ -1,0 +1,70 @@
+From d3344fcf6b5aee19d87114b2356706ac3c7a176d Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 31 Oct 2022 10:49:51 +0100
+Subject: [PATCH 774/985] evl/mutex: undo PI walk on wait error
+
+On timeout/break error waiting for __evl_unlock_mutex() to wake us up,
+we have to undo the effects of the last PI walk, adjusting the
+priority of waiters in the chain according to the current boost
+priority of the mutex.
+
+Failing to do so would leave members of that PI chain indefinitely
+boosted after the thread has stopped waiting for the mutex.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 0a5031830..4b1212e8c 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -753,14 +753,8 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	assert_hard_lock(&mutex->wchan.lock);
+ 	assert_hard_lock(&curr->lock);
+ 	if (ret) {
+-		/*
+-		 * On error, we may have done a partial boost of the
+-		 * PI chain, so we need to carefully revert this.
+-		 */
+ 		raw_spin_unlock(&curr->lock);
+-		undo_pi_walk(mutex);
+-		hard_local_irq_enable();
+-		return ret;
++		goto fail;
+ 	}
+ 
+ 	/*
+@@ -786,8 +780,10 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	raw_spin_unlock_irqrestore(&mutex->wchan.lock, flags);
+ 	ret = wait_mutex_schedule(mutex);
+ 	/* If something went wrong while sleeping, bail out. */
+-	if (ret)
+-		return ret;
++	if (ret) {
++		raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
++		goto fail;
++	}
+ 
+ 	/*
+ 	 * Otherwise, this means __evl_unlock_mutex() unblocked us, so
+@@ -796,6 +792,15 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 	 */
+ 	evl_schedule();
+ 	goto retry;
++fail:
++	/*
++	 * On error, we may have done a partial boost of the PI chain,
++	 * so we need to carefully revert this.
++	 */
++	undo_pi_walk(mutex);
++	hard_local_irq_enable();
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(evl_lock_mutex_timeout);
+ 
+-- 
+2.30.2
+

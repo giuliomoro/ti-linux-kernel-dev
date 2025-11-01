@@ -1,0 +1,30 @@
+From 1cbfaf60408c2978eb35e40ac6cafd0fc86f7002 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 20 Nov 2022 19:01:54 +0100
+Subject: [PATCH 791/985] evl/mutex: prevent adjustment issue from getting
+ worse
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 6215ffa7d..9cc0f141a 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -253,7 +253,10 @@ static void adjust_owner_boost(struct evl_thread *owner)
+ 
+ 	raw_spin_lock(&owner->lock);
+ 
+-	EVL_WARN_ON(CORE, list_empty(&owner->boosters));
++	if (EVL_WARN_ON_ONCE(CORE, list_empty(&owner->boosters))) {
++		raw_spin_unlock(&owner->lock);
++		return;
++	}
+ 
+ 	/*
+ 	 * Fetch the mutex currently queuing the top waiter, among all
+-- 
+2.30.2
+

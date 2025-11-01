@@ -1,0 +1,29 @@
+From cda35be2fa0f85d8065111b03f7a0c8e67dfa9fd Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 19 Oct 2022 12:06:30 +0200
+Subject: [PATCH 756/985] evl/poll: lockdep: use evl_init_flag_on_stack()
+
+This gets us a static lock class for the underlying wait queue lock,
+which is required for initialization from oob context.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/poll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
+index 08bba4f4e..eafe68d07 100644
+--- a/kernel/evl/poll.c
++++ b/kernel/evl/poll.c
+@@ -567,7 +567,7 @@ int wait_events(struct file *filp,
+ 		return 0;
+ 
+ 	u_set = evl_valptr64(wreq->pollset_ptr, struct evl_poll_event);
+-	evl_init_flag(&waiter.flag);
++	evl_init_flag_on_stack(&waiter.flag);
+ 
+ 	count = collect_events(group, u_set, wreq->nrset, &waiter.flag);
+ 	if (count > 0 || (count == -EFAULT || count == -EBADF))
+-- 
+2.30.2
+

@@ -1,0 +1,136 @@
+From 7381ee65ec023f0c6396bb71da4a33f6a6c5880c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 10 Jul 2024 09:56:24 +0200
+Subject: [PATCH 847/985] evl/sched: introduce generic handler for manual
+ round-robin
+
+We need a way to force any arbitrary thread to relinquish the
+CPU. This is what the former sched_tick() class handler already did,
+but only for the current thread on some runqueue.
+
+Generalize this handler() to sched_yield() which operates on an
+arbitrary thread received as argument.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/sched.h     | 19 ++++++++++---------
+ kernel/evl/sched/core.c |  8 +++++---
+ kernel/evl/sched/fifo.c | 13 +++----------
+ kernel/evl/thread.c     |  2 +-
+ 4 files changed, 19 insertions(+), 23 deletions(-)
+
+diff --git a/include/evl/sched.h b/include/evl/sched.h
+index b774eeb3b..f915da411 100644
+--- a/include/evl/sched.h
++++ b/include/evl/sched.h
+@@ -120,7 +120,7 @@ struct evl_sched_class {
+ 	void (*sched_dequeue)(struct evl_thread *thread);
+ 	void (*sched_requeue)(struct evl_thread *thread);
+ 	struct evl_thread *(*sched_pick)(struct evl_rq *rq);
+-	void (*sched_tick)(struct evl_rq *rq);
++	void (*sched_yield)(struct evl_thread *thread);
+ 	void (*sched_migrate)(struct evl_thread *thread,
+ 			      struct evl_rq *rq);
+ 	/*
+@@ -468,7 +468,7 @@ static inline int evl_init_rq_thread(struct evl_thread *thread)
+ }
+ 
+ /* rq->lock held, hard irqs off */
+-static inline void evl_sched_tick(struct evl_rq *rq)
++static inline void evl_sched_yield(struct evl_rq *rq)
+ {
+ 	struct evl_thread *curr = rq->curr;
+ 	struct evl_sched_class *sched_class = curr->sched_class;
+@@ -476,15 +476,16 @@ static inline void evl_sched_tick(struct evl_rq *rq)
+ 	assert_hard_lock(&rq->lock);
+ 
+ 	/*
+-	 * A thread that undergoes round-robin scheduling only
+-	 * consumes its time slice when it runs within its own
+-	 * scheduling class, which excludes temporary PI boosts.
++	 * A thread may yield the CPU manually only when 1) it is
++	 * currently unblocked, 2) it runs within its own scheduling
++	 * class which excludes temporary PI boosts, 3) preemption is
++	 * enabled.
+ 	 */
+-	if (sched_class == curr->base_class &&
+-	    sched_class->sched_tick &&
+-	    (curr->state & (EVL_THREAD_BLOCK_BITS|EVL_T_RRB)) == EVL_T_RRB &&
++	if (sched_class->sched_yield &&
++	    !(curr->state & EVL_THREAD_BLOCK_BITS) &&
++	    sched_class == curr->base_class &&
+ 	    evl_preempt_count() == 0)
+-		sched_class->sched_tick(rq);
++		sched_class->sched_yield(curr);
+ }
+ 
+ static inline
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index a74186d95..7154481b7 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -132,11 +132,13 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
+ 
+ static void roundrobin_handler(struct evl_timer *timer) /* hard irqs off */
+ {
+-	struct evl_rq *this_rq;
++	struct evl_rq *this_rq = container_of(timer, struct evl_rq, rrbtimer);
+ 
+-	this_rq = container_of(timer, struct evl_rq, rrbtimer);
+ 	raw_spin_lock(&this_rq->lock);
+-	evl_sched_tick(this_rq);
++
++	if (this_rq->curr->state & EVL_T_RRB)
++		evl_sched_yield(this_rq);
++
+ 	raw_spin_unlock(&this_rq->lock);
+ }
+ 
+diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
+index c8d0456e7..57e0a0797 100644
+--- a/kernel/evl/sched/fifo.c
++++ b/kernel/evl/sched/fifo.c
+@@ -12,16 +12,9 @@ static void evl_fifo_init(struct evl_rq *rq)
+ 	evl_init_schedq(&rq->fifo.runnable);
+ }
+ 
+-static void evl_fifo_tick(struct evl_rq *rq)
++static void evl_fifo_yield(struct evl_thread *thread)
+ {
+-	/*
+-	 * The round-robin time credit is only consumed by a running
+-	 * thread that neither holds the scheduler lock nor was
+-	 * blocked before entering this callback. As the time slice is
+-	 * exhausted for the running thread, move it back to the
+-	 * run queue at the end of its priority group.
+-	 */
+-	evl_putback_thread(rq->curr);
++	evl_putback_thread(thread);
+ }
+ 
+ static int evl_fifo_chkparam(struct evl_thread *thread,
+@@ -73,7 +66,7 @@ static ssize_t evl_fifo_show(struct evl_thread *thread,
+ struct evl_sched_class evl_sched_fifo = {
+ 	.sched_init		=	evl_fifo_init,
+ 	.sched_pick		=	NULL, /* not used (see __pick_next_thread()) */
+-	.sched_tick		=	evl_fifo_tick,
++	.sched_yield		=	evl_fifo_yield,
+ 	.sched_chkparam		=	evl_fifo_chkparam,
+ 	.sched_setparam		=	evl_fifo_setparam,
+ 	.sched_trackprio	=	evl_fifo_trackprio,
+diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
+index 0bc447017..0191394bc 100644
+--- a/kernel/evl/thread.c
++++ b/kernel/evl/thread.c
+@@ -2000,7 +2000,7 @@ static int set_time_slice(struct evl_thread *thread, ktime_t quantum)
+ 		if (quantum <= evl_get_clock_gravity(&evl_mono_clock, user))
+ 			return -EINVAL;
+ 
+-		if (thread->base_class->sched_tick == NULL)
++		if (thread->base_class->sched_yield == NULL)
+ 			return -EINVAL;
+ 
+ 		thread->state |= EVL_T_RRB;
+-- 
+2.30.2
+

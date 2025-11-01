@@ -1,0 +1,53 @@
+From 6f546067b2bb47bc05daef042664c5caafa2e957 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 May 2020 15:26:14 +0200
+Subject: [PATCH 623/985] evl/proxy: fix handling of POLLIN by the out-of-band
+ poll handler
+
+Just like in the in-band case, we cannot fully rely on testing the
+ring buffer for (non-)emptiness in order to detect data
+availability. If so, kick the worker thread in order to perform some
+readahead, as a last resort.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/proxy.c | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
+index 5a3e225f0..e589d3de0 100644
+--- a/kernel/evl/proxy.c
++++ b/kernel/evl/proxy.c
+@@ -447,6 +447,7 @@ static __poll_t proxy_oob_poll(struct file *filp,
+ 	struct proxy_ring *oring = &proxy->output.ring;
+ 	struct proxy_ring *iring = &proxy->input.ring;
+ 	__poll_t ret = 0;
++	int peek;
+ 
+ 	if (!(proxy_is_readable(proxy) || proxy_is_writable(proxy)))
+ 		return POLLERR;
+@@ -457,8 +458,19 @@ static __poll_t proxy_oob_poll(struct file *filp,
+ 		atomic_read(&oring->fillsz) < oring->bufsz)
+ 		ret = POLLOUT|POLLWRNORM;
+ 
+-	if (proxy_is_readable(proxy) && atomic_read(&iring->fillsz) > 0)
+-		ret |= POLLIN|POLLRDNORM;
++	/*
++	 * If the input ring is empty, kick the worker to perform a
++	 * readahead as a last resort.
++	 */
++	if (proxy_is_readable(proxy)) {
++		if (atomic_read(&iring->fillsz) > 0)
++			ret |= POLLIN|POLLRDNORM;
++		else if (atomic_read(&proxy->input.reqsz) == 0) {
++			peek = iring->granularity ?: 1;
++			atomic_add(peek, &proxy->input.reqsz);
++			evl_call_inband_from(&iring->relay_work, iring->wq);
++		}
++	}
+ 
+ 	return ret;
+ }
+-- 
+2.30.2
+

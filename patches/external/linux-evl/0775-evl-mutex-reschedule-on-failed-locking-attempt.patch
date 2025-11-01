@@ -1,0 +1,57 @@
+From 2916a71ae95d5444d2c4769ea3792503ea98a410 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 2 Nov 2022 19:24:02 +0100
+Subject: [PATCH 775/985] evl/mutex: reschedule on failed locking attempt
+
+Since the scheduler state might change as a result of undoing the PI
+walk after a failed blocking attempt to lock a mutex, we have to call
+evl_schedule() at the first opportunity before returning on error from
+evl_lock_mutex_timeout().
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 4b1212e8c..abbecb828 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -597,6 +597,8 @@ static int wait_mutex_schedule(struct evl_mutex *mutex)
+  * owner's booster list, adjusting the boost value accordingly too.
+  *
+  * mutex->wchan.lock held (dropped at exit), irqs off
++ *
++ * NOTE: the caller MUST reschedule.
+  */
+ static void undo_pi_walk(struct evl_mutex *mutex)
+ {
+@@ -787,18 +789,22 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
+ 
+ 	/*
+ 	 * Otherwise, this means __evl_unlock_mutex() unblocked us, so
+-	 * we just need to retry grabbing the mutex. Check for any
+-	 * rescheduling opportunity before doing so.
++	 * we just need to retry grabbing the mutex. Keep in mind that
++	 * __evl_unlock_mutex() dropped the mutex from the previous
++	 * owner's booster list before unblocking us, so we do not
++	 * have to revert the effects of our PI walk.
+ 	 */
+ 	evl_schedule();
+ 	goto retry;
+ fail:
+ 	/*
+ 	 * On error, we may have done a partial boost of the PI chain,
+-	 * so we need to carefully revert this.
++	 * so we need to carefully revert this, then reschedule to
++	 * apply any priority change.
+ 	 */
+ 	undo_pi_walk(mutex);
+ 	hard_local_irq_enable();
++	evl_schedule();
+ 
+ 	return ret;
+ }
+-- 
+2.30.2
+

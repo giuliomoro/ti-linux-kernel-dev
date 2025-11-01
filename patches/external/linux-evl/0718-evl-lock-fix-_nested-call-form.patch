@@ -1,0 +1,37 @@
+From d0372923fbbab033432d94b6fc204fa4f24ac09b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 4 Nov 2021 08:49:15 +0100
+Subject: [PATCH 718/985] evl/lock: fix _nested call form
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/lock.h | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/evl/lock.h b/include/evl/lock.h
+index cd5ebd7f6..ffa02fd49 100644
+--- a/include/evl/lock.h
++++ b/include/evl/lock.h
+@@ -110,13 +110,13 @@ typedef struct evl_spinlock {
+ 		_evl_spin_lock_check();			\
+ 		__evl_spin_trylock(__lock);		\
+ 	})
+-#define evl_spin_lock(__lock)		_evl_spin_lock(__lock)
+-#define evl_spin_lock_nested(__lock)	_evl_spin_lock_nested(__lock)
+-#define evl_spin_trylock(__lock)	_evl_spin_trylock(__lock)
++#define evl_spin_lock(__lock)				_evl_spin_lock(__lock)
++#define evl_spin_lock_nested(__lock, __subclass)	_evl_spin_lock_nested(__lock, __subclass)
++#define evl_spin_trylock(__lock)			_evl_spin_trylock(__lock)
+ #else
+-#define evl_spin_lock(__lock)		__evl_spin_lock(__lock)
+-#define evl_spin_lock_nested(__lock)	__evl_spin_lock_nested(__lock)
+-#define evl_spin_trylock(__lock)	__evl_spin_trylock(__lock)
++#define evl_spin_lock(__lock)				__evl_spin_lock(__lock)
++#define evl_spin_lock_nested(__lock, __subclass)	__evl_spin_lock_nested(__lock, __subclass)
++#define evl_spin_trylock(__lock)			__evl_spin_trylock(__lock)
+ #endif	/* !CONFIG_EVL_DEBUG_CORE */
+ 
+ #define evl_spin_lock_irq(__lock)			\
+-- 
+2.30.2
+

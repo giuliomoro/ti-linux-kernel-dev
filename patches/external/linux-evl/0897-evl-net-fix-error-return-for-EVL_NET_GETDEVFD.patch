@@ -1,0 +1,26 @@
+From 2c8702fb4f4805e85ceac1b3687dd0f72dc8d0d7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 15 Oct 2024 18:22:56 +0200
+Subject: [PATCH 897/985] evl/net: fix error return for EVL_NET_GETDEVFD
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/net.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
+index 4998f627f..46e454cee 100644
+--- a/kernel/evl/net/net.c
++++ b/kernel/evl/net/net.c
+@@ -118,7 +118,7 @@ static long net_ioctl(struct file *filp, unsigned int cmd,
+ 		ufd = evl_net_dev_allocfd(current->nsproxy->net_ns, devname->name);
+ 		putname(devname);
+ 		if (ufd < 0)
+-			return ret;
++			return ufd;
+ 		ret = put_user((__u32)ufd, &u_req->fd);
+ 		if (ret)
+ 			return -EFAULT;
+-- 
+2.30.2
+

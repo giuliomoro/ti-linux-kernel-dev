@@ -1,0 +1,62 @@
+From b554335523d99fe85d39244ddf6a94688675ea28 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 19 Oct 2022 15:25:50 +0200
+Subject: [PATCH 760/985] evl/mutex: align PI/PP init helper names on wait
+ queue API
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/mutex.h  | 8 ++++----
+ kernel/evl/monitor.c | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/evl/mutex.h b/include/evl/mutex.h
+index 7af657840..53b9cafc7 100644
+--- a/include/evl/mutex.h
++++ b/include/evl/mutex.h
+@@ -41,17 +41,17 @@ void __evl_init_mutex(struct evl_mutex *mutex,
+ 		u32 *ceiling_ref,
+ 		const char *name);
+ 
+-#define __evl_init_mutex_pi(__mutex, __clock, __fastlock, __name)	\
++#define evl_init_named_mutex_pi(__mutex, __clock, __fastlock, __name)	\
+ 	__evl_init_mutex(__mutex, __clock, __fastlock, NULL, __name)
+ 
+ #define evl_init_mutex_pi(__mutex, __clock, __fastlock)			\
+-	__evl_init_mutex_pi(__mutex, __clock, __fastlock, #__mutex)
++	evl_init_named_mutex_pi(__mutex, __clock, __fastlock, #__mutex)
+ 
+-#define __evl_init_mutex_pp(__mutex, __clock, __fastlock, __ceiling, __name) \
++#define evl_init_named_mutex_pp(__mutex, __clock, __fastlock, __ceiling, __name) \
+ 	__evl_init_mutex(__mutex, __clock, __fastlock, __ceiling, __name)
+ 
+ #define evl_init_mutex_pp(__mutex, __clock, __fastlock, __ceiling)	\
+-	__evl_init_mutex_pp(__mutex, __clock, __fastlock, __ceiling, #__mutex)
++	evl_init_named_mutex_pp(__mutex, __clock, __fastlock, __ceiling, #__mutex)
+ 
+ void evl_destroy_mutex(struct evl_mutex *mutex);
+ 
+diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
+index 83746924f..b43340b5c 100644
+--- a/kernel/evl/monitor.c
++++ b/kernel/evl/monitor.c
+@@ -858,14 +858,14 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
+ 		switch (attrs.protocol) {
+ 		case EVL_GATE_PP:
+ 			state->u.gate.ceiling = attrs.initval;
+-			__evl_init_mutex_pp(&mon->mutex, clock,
++			evl_init_named_mutex_pp(&mon->mutex, clock,
+ 					&state->u.gate.owner,
+ 					&state->u.gate.ceiling,
+ 					evl_element_name(&mon->element));
+ 			INIT_LIST_HEAD(&mon->events);
+ 			break;
+ 		case EVL_GATE_PI:
+-			__evl_init_mutex_pi(&mon->mutex, clock,
++			evl_init_named_mutex_pi(&mon->mutex, clock,
+ 					&state->u.gate.owner,
+ 					evl_element_name(&mon->element));
+ 			INIT_LIST_HEAD(&mon->events);
+-- 
+2.30.2
+

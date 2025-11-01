@@ -1,0 +1,44 @@
+From 486ace39d2388d13de620018a8829b2517fbe936 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 15 Nov 2022 19:49:28 +0100
+Subject: [PATCH 784/985] evl/mutex: drop wrong assertion
+
+With a preemptible PI walk, we might find no waiter while adjusting
+the boost priority of an owner since waiters can leave the wait
+channel while the latter is unlocked, followed by a corresponding
+adjustment call if the mutex can be dropped from its owner's booster
+list.
+
+We still have to detect this condition though, aborting the adjustment
+process immediately in this case since we can expect another
+adjustment call to take place if need be (i.e. if the mutex has no
+more waiter).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/mutex.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
+index 5432694f7..56b724ecf 100644
+--- a/kernel/evl/mutex.c
++++ b/kernel/evl/mutex.c
+@@ -271,7 +271,14 @@ static void adjust_owner_boost(struct evl_thread *owner)
+ 		 * wchan -> (owner, waiter) [by address]
+ 		 */
+ 		raw_spin_lock(&mutex->wchan.lock);
+-		if (EVL_WARN_ON(CORE, list_empty(&mutex->wchan.wait_list))) {
++		/*
++		 * The last waiter might have dropped out under us
++		 * since the wait channel was unlocked until now, if
++		 * so expect a call to undo_pi_walk() to drop the
++		 * mutex from the owner's booster list if need be,
++		 * triggering an adjustment.
++		 */
++		if (list_empty(&mutex->wchan.wait_list)) {
+ 			raw_spin_unlock(&mutex->wchan.lock);
+ 			return;
+ 		}
+-- 
+2.30.2
+

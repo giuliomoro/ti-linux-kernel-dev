@@ -1,0 +1,26 @@
+From 4ef01defa9a53c4e6efa9311785f95cdac9f4018 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Wed, 7 May 2025 14:42:17 +0200
+Subject: [PATCH 928/985] evl/memory: fix page marking loop
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ kernel/evl/memory.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
+index acd5d6e26..1c7520932 100644
+--- a/kernel/evl/memory.c
++++ b/kernel/evl/memory.c
+@@ -81,7 +81,7 @@ static void mark_pages(struct evl_heap *heap,
+ 		enum evl_heap_pgtype type)
+ {
+ 	while (nrpages-- > 0)
+-		heap->pagemap[pg].type = type;
++		heap->pagemap[pg++].type = type;
+ }
+ 
+ #else
+-- 
+2.30.2
+

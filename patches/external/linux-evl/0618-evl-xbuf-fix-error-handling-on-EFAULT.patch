@@ -1,0 +1,44 @@
+From 3daa0e46297bc6fa098c0a46e2e394504ddbfe1e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 7 May 2020 18:41:17 +0200
+Subject: [PATCH 618/985] evl/xbuf: fix error handling on EFAULT
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/xbuf.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
+index 8bfcca355..9a2b7d6cb 100644
+--- a/kernel/evl/xbuf.c
++++ b/kernel/evl/xbuf.c
+@@ -178,10 +178,12 @@ static ssize_t do_xbuf_read(struct xbuf_ring *ring,
+ 			ring->unlock(ring, flags);
+ 
+ 			xret = rd->xfer(rd, ring->bufmem + rdoff, n);
+-			if (xret)
+-				return -EFAULT;
+-
+ 			flags = ring->lock(ring);
++			if (xret) {
++				ret = -EFAULT;
++				break;
++			}
++
+ 			rd->buf_ptr += n;
+ 			rbytes -= n;
+ 			rdoff = (rdoff + n) % ring->bufsz;
+@@ -268,8 +270,8 @@ static ssize_t do_xbuf_write(struct xbuf_ring *ring,
+ 			flags = ring->lock(ring);
+ 			if (xret) {
+ 				memset(ring->bufmem + wroff + n - xret, 0, xret);
+-				ring->unlock(ring, flags);
+-				return -EFAULT;
++				ret = -EFAULT;
++				break;
+ 			}
+ 
+ 			wd->buf_ptr += n;
+-- 
+2.30.2
+

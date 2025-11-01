@@ -1,0 +1,28 @@
+From d567ac558994902c4433f8e92c2cb3fc88bc06f8 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Wed, 16 Oct 2024 15:48:29 +0200
+Subject: [PATCH 129/985] net: dovetail: fix inline documentation
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/netdevice.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 22bf5382d..9f7bc88b7 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4367,8 +4367,8 @@ bool netif_receive_oob(struct sk_buff *skb);
+  *	netif_oob_diversion - is the ingress traffic diverted for out-of-band handling?
+  *	@dev: network device
+  *
+- * Check if the RX packets are currently diverted to a companion
+- * kernel for out-of-band handling.
++ * Check if the RX packets to this (real) device are currently
++ * diverted to a companion kernel for out-of-band handling.
+  */
+ static inline bool netif_oob_diversion(const struct net_device *dev)
+ {
+-- 
+2.30.2
+

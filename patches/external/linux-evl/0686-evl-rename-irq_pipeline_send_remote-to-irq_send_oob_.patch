@@ -1,0 +1,42 @@
+From b62436e90ea301f748e147fb02bb133d2f64acaf Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 10 Jan 2021 12:35:05 +0100
+Subject: [PATCH 686/985] evl: rename irq_pipeline_send_remote() to
+ irq_send_oob_ipi()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/sched/core.c | 3 +--
+ kernel/evl/tick.c       | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
+index a2a1cc010..8724c047c 100644
+--- a/kernel/evl/sched/core.c
++++ b/kernel/evl/sched/core.c
+@@ -874,8 +874,7 @@ static inline bool test_resched(struct evl_rq *this_rq)
+ #ifdef CONFIG_SMP
+ 	/* Send resched IPI to remote CPU(s). */
+ 	if (unlikely(!cpumask_empty(&this_rq->resched_cpus))) {
+-		irq_pipeline_send_remote(RESCHEDULE_OOB_IPI,
+-					&this_rq->resched_cpus);
++		irq_send_oob_ipi(RESCHEDULE_OOB_IPI, &this_rq->resched_cpus);
+ 		cpumask_clear(&this_rq->resched_cpus);
+ 		this_rq->local_flags &= ~RQ_SCHED;
+ 	}
+diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
+index bfaf74136..c622b287f 100644
+--- a/kernel/evl/tick.c
++++ b/kernel/evl/tick.c
+@@ -247,7 +247,6 @@ void evl_program_proxy_tick(struct evl_clock *clock)
+ #ifdef CONFIG_SMP
+ void evl_send_timer_ipi(struct evl_clock *clock, struct evl_rq *rq)
+ {
+-	irq_pipeline_send_remote(TIMER_OOB_IPI,
+-				cpumask_of(evl_rq_cpu(rq)));
++	irq_send_oob_ipi(TIMER_OOB_IPI,	cpumask_of(evl_rq_cpu(rq)));
+ }
+ #endif
+-- 
+2.30.2
+

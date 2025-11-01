@@ -1,0 +1,93 @@
+From dcd77b758ee033a7ac8aa3257093dea691a98ee5 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 24 May 2025 18:53:16 +0200
+Subject: [PATCH 147/985] x86: irq_pipeline: don't enable irqs on secondary CPU
+ boot
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ arch/x86/include/asm/hw_irq.h |  4 ++++
+ arch/x86/kernel/apic/vector.c | 20 +++++++++++++++-----
+ arch/x86/kernel/smpboot.c     |  4 ++--
+ 3 files changed, 21 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
+index 6bb3d9a86..d386deec0 100644
+--- a/arch/x86/include/asm/hw_irq.h
++++ b/arch/x86/include/asm/hw_irq.h
+@@ -105,9 +105,13 @@ extern void apic_ack_edge(struct irq_data *data);
+ #ifdef CONFIG_X86_LOCAL_APIC
+ extern void lock_vector_lock(void);
+ extern void unlock_vector_lock(void);
++extern void __lock_vector_lock(void);
++extern void __unlock_vector_lock(void);
+ #else
+ static inline void lock_vector_lock(void) {}
+ static inline void unlock_vector_lock(void) {}
++static inline void __lock_vector_lock(void) {}
++static inline void __unlock_vector_lock(void) {}
+ #endif
+ 
+ /* Statistics */
+diff --git a/arch/x86/kernel/apic/vector.c b/arch/x86/kernel/apic/vector.c
+index 663fff1eb..90ec12d37 100644
+--- a/arch/x86/kernel/apic/vector.c
++++ b/arch/x86/kernel/apic/vector.c
+@@ -135,6 +135,14 @@ static void vector_cleanup_callback(struct timer_list *tmr)
+ 
+ #endif	/* !CONFIG_SMP */
+ 
++void __lock_vector_lock(void)
++{
++	/* Used to the online set of cpus does not change
++	 * during assign_irq_vector.
++	 */
++	raw_spin_lock(&vector_lock);
++}
++
+ void lock_vector_lock(void)
+ {
+ 	/*
+@@ -144,15 +152,17 @@ void lock_vector_lock(void)
+ 	 */
+ 	WARN_ON_ONCE(irq_pipeline_debug() && !hard_irqs_disabled());
+ 	hard_cond_local_irq_disable();
+-	/* Used to the online set of cpus does not change
+-	 * during assign_irq_vector.
+-	 */
+-	raw_spin_lock(&vector_lock);
++	__lock_vector_lock();
+ }
+ 
+-void unlock_vector_lock(void)
++void __unlock_vector_lock(void)
+ {
+ 	raw_spin_unlock(&vector_lock);
++}
++
++void unlock_vector_lock(void)
++{
++	__unlock_vector_lock();
+ 	hard_cond_local_irq_enable();
+ }
+ 
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 0a511d7bd..2ac370d22 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -299,10 +299,10 @@ static void notrace start_secondary(void *unused)
+ 	 * to prevent a concurrent irq setup/teardown from seeing a
+ 	 * half valid vector space.
+ 	 */
+-	lock_vector_lock();
++	__lock_vector_lock();
+ 	set_cpu_online(smp_processor_id(), true);
+ 	lapic_online();
+-	unlock_vector_lock();
++	__unlock_vector_lock();
+ 	x86_platform.nmi_init();
+ 
+ 	/* enable local interrupts */
+-- 
+2.30.2
+

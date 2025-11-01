@@ -1,0 +1,29 @@
+From 115f81774dd4700dd5de54b2b517c213e238ecb0 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 14 Feb 2019 10:28:02 +0100
+Subject: [PATCH 298/985] evl/factory: robustify evl_element_name()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evenless/factory.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/include/evenless/factory.h b/include/evenless/factory.h
+index 5a28fe61d..7b37ccc19 100644
+--- a/include/evenless/factory.h
++++ b/include/evenless/factory.h
+@@ -83,7 +83,10 @@ struct evl_element {
+ static inline const char *
+ evl_element_name(struct evl_element *e)
+ {
+-	return e->devname->name;
++	if (e->devname)
++		return e->devname->name;
++
++	return NULL;
+ }
+ 
+ int evl_init_element(struct evl_element *e,
+-- 
+2.30.2
+

@@ -1,0 +1,26 @@
+From 42c262ca6f0df9f33f4fe2a74de523ebbd7b74f6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Thu, 18 Sep 2025 11:03:52 +0200
+Subject: [PATCH 217/985] net: dovetail: fix build (typo)
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/skbuff.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 74dda4e49..8eef760ad 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1176,7 +1176,7 @@ struct page_pool *napi_pp_get_pool(netmem_ref netmem)
+ 	 * and page_is_pfmemalloc() is checked in __page_pool_put_page()
+ 	 * to avoid recycling the pfmemalloc page.
+ 	 */
+-	if (unlikely(!is_pp_netmem(netmem)))
++	if (unlikely(!netmem_is_pp(netmem)))
+ 		return NULL;
+ 
+ 	return netmem_get_pp(netmem);
+-- 
+2.30.2
+

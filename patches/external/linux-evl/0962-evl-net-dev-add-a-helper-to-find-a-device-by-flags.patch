@@ -1,0 +1,90 @@
+From 2d08acbaf7d3a2d342971ecb88f76c1c9c81fbca Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <philippe.gerum@exail.com>
+Date: Mon, 23 Jun 2025 10:05:31 +0200
+Subject: [PATCH 962/985] evl/net: dev: add a helper to find a device by flags
+
+Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
+---
+ include/evl/net/device.h |  3 +++
+ kernel/evl/net/dev.c     | 30 +++++++++++++++++++++++++-----
+ 2 files changed, 28 insertions(+), 5 deletions(-)
+
+diff --git a/include/evl/net/device.h b/include/evl/net/device.h
+index 2d45ae898..d7a0519f5 100644
+--- a/include/evl/net/device.h
++++ b/include/evl/net/device.h
+@@ -27,6 +27,9 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ struct net_device *
+ evl_net_get_dev_by_index(struct net *net, int ifindex);
+ 
++struct net_device *
++evl_net_get_dev_by_flags(struct net *net, int flags);
++
+ struct net_device *
+ evl_net_get_dev_by_name(struct net *net, const char *name);
+ 
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 35dc0f531..32c8fcd69 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -379,8 +379,7 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 	raw_spin_lock_irqsave(&oob_port_lock, flags);
+ 
+ 	list_for_each_entry(nds, &oob_port_list, next) {
+-		dev = container_of(nds, struct net_device,
+-				oob_state);
++		dev = container_of(nds, struct net_device, oob_state);
+ 		if (dev_net(dev) == net && dev->ifindex == ifindex) {
+ 			evl_down_crossing(&nds->crossing);
+ 			ret = dev;
+@@ -393,6 +392,28 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)
+ 	return ret;
+ }
+ 
++struct net_device *evl_net_get_dev_by_flags(struct net *net, int ifflags)
++{
++	struct net_device *dev, *ret = NULL;
++	struct oob_netdev_state *nds;
++	unsigned long flags;
++
++	raw_spin_lock_irqsave(&oob_port_lock, flags);
++
++	list_for_each_entry(nds, &oob_port_list, next) {
++		dev = container_of(nds, struct net_device, oob_state);
++		if (dev_net(dev) == net && dev->flags & ifflags) {
++			evl_down_crossing(&nds->crossing);
++			ret = dev;
++			break;
++		}
++	}
++
++	raw_spin_unlock_irqrestore(&oob_port_lock, flags);
++
++	return ret;
++}
++
+ struct net_device *evl_net_get_dev_by_name(struct net *net, const char *name)
+ {
+ 	struct net_device *dev, *ret = NULL;
+@@ -402,8 +423,7 @@ struct net_device *evl_net_get_dev_by_name(struct net *net, const char *name)
+ 	raw_spin_lock_irqsave(&oob_port_lock, flags);
+ 
+ 	list_for_each_entry(nds, &oob_port_list, next) {
+-		dev = container_of(nds, struct net_device,
+-				oob_state);
++		dev = container_of(nds, struct net_device, oob_state);
+ 		if (dev_net(dev) == net && !strcmp(netdev_name(dev), name)) {
+ 			evl_down_crossing(&nds->crossing);
+ 			ret = dev;
+@@ -448,7 +468,7 @@ void evl_net_put_dev(struct net_device *dev)
+  *
+  *	Returns zero on success, an error code otherwise.
+  */
+-int netif_oob_switch_port(struct net_device *dev, bool enabled)
++int netif_oob_switch_port(struct net_device *dev, bool enabled) /* rtnl_lock held */
+ {
+ 	struct evl_netdev_activation act = {
+ 		.poolsz = 0,
+-- 
+2.30.2
+
