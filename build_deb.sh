@@ -144,7 +144,7 @@ fi
 #unset FULL_REBUILD
 FULL_REBUILD=1
 if [ "${FULL_REBUILD}" ] ; then
-	#/bin/sh -e "${DIR}/scripts/git.sh" || { exit 1 ; }
+	/bin/sh -e "${DIR}/scripts/git.sh" || { exit 1 ; }
 
 	if [ "${RUN_BISECT}" ] ; then
 		/bin/sh -e "${DIR}/scripts/bisect.sh" || { exit 1 ; }
