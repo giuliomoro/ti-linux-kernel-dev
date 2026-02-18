@@ -633,7 +633,7 @@ readme () {
 readme
 
 xenomai4 () {
-	# xenomai4_enable="enable"
+	xenomai4_enable="enable"
 	if [ "x${xenomai4_enable}" = "xenable" ] ; then
 		#regenerate="enable"
 		if [ "x${regenerate}" = "xenable" ] ; then
