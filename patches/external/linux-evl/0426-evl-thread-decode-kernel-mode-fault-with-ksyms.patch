@@ -1,7 +1,7 @@
 From d5eb58bb53f44c19c89699c563f4d4a1ced3272f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 28 Jun 2019 11:15:08 +0200
-Subject: [PATCH 426/985] evl/thread: decode kernel-mode fault with ksyms
+Subject: [PATCH 0426/1013] evl/thread: decode kernel-mode fault with ksyms
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index fe6929d56..c6b4d689c 100644
+index fe6929d5673d..c6b4d689caa1 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1567,13 +1567,20 @@ static inline void note_trap(struct evl_thread *curr,

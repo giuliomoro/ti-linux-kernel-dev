@@ -1,7 +1,7 @@
 From f5452c1b9d8603f43e3c5179baeefdef8fa21538 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 24 Jun 2025 08:46:48 +0200
-Subject: [PATCH 965/985] evl/stat: extend internal statistics interface
+Subject: [PATCH 0965/1013] evl/stat: extend internal statistics interface
 
 Upcoming statistics support for the network stack requires non-atomic
 but still careful helpers usable in concurrent readers/writer
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  6 files changed, 63 insertions(+), 65 deletions(-)
 
 diff --git a/include/evl/stat.h b/include/evl/stat.h
-index a94aa709c..08ee9ec9c 100644
+index a94aa709c9fe..08ee9ec9c023 100644
 --- a/include/evl/stat.h
 +++ b/include/evl/stat.h
 @@ -14,6 +14,33 @@
@@ -120,7 +120,7 @@ index a94aa709c..08ee9ec9c 100644
  #endif /* CONFIG_EVL_RUNSTATS */
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 7fb1f66b8..3344fa324 100644
+index 7fb1f66b830e..3344fa324885 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -138,10 +138,10 @@ struct evl_thread {
@@ -139,7 +139,7 @@ index 7fb1f66b8..3344fa324 100644
  		struct evl_account lastperiod;
  	} stat;
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index c5ce4a0ff..1e4327ff0 100644
+index c5ce4a0fff40..1e4327ff0a50 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -187,10 +187,8 @@ struct evl_timer {
@@ -201,7 +201,7 @@ index c5ce4a0ff..1e4327ff0 100644
  void evl_set_timer_name(struct evl_timer *timer, const char *name)
  {
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 8855afb71..5925f70ef 100644
+index 8855afb71ff2..5925f70ef43e 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1029,7 +1029,7 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */
@@ -223,7 +223,7 @@ index 8855afb71..5925f70ef 100644
  	trace_evl_switched_inband(curr);
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 63c4d8625..33fd07c4e 100644
+index 63c4d8625ef9..33fd07c4ed4a 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -305,7 +305,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs,
@@ -245,7 +245,7 @@ index 63c4d8625..33fd07c4e 100644
  
  	trace_evl_inband_sysexit(syscall_get_return_value(tsk, regs));
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 7d582d65c..5a822eeff 100644
+index 7d582d65cf10..5a822eeff740 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -617,7 +617,7 @@ static void evl_wakeup_thread_locked(struct evl_thread *thread,

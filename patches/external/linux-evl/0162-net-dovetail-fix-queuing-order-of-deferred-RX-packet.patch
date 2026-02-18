@@ -1,7 +1,7 @@
 From 9ba7c79e3482089fbfab0c3aec5809044f66487e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 23 Apr 2025 12:29:27 +0200
-Subject: [PATCH 162/985] net: dovetail: fix queuing order of deferred RX
+Subject: [PATCH 0162/1013] net: dovetail: fix queuing order of deferred RX
  packets
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 5b7e2ab4c..4ae484f61 100644
+index 5b7e2ab4c237..4ae484f6165d 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5305,7 +5305,7 @@ bool netif_receive_oob(struct sk_buff *skb)

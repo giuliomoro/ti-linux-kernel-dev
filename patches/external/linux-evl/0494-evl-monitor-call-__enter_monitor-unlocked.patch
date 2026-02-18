@@ -1,7 +1,7 @@
 From 77dc6e296233bed82e5ae809522b90270d05279a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 16:57:58 +0200
-Subject: [PATCH 494/985] evl/monitor: call __enter_monitor() unlocked
+Subject: [PATCH 0494/1013] evl/monitor: call __enter_monitor() unlocked
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index ad2382638..fd1c2e126 100644
+index ad2382638073..fd1c2e126e77 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -180,7 +180,6 @@ static void wakeup_waiters(struct evl_monitor *event)

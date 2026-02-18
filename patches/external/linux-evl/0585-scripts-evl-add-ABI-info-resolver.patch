@@ -1,7 +1,7 @@
 From e12a3cfa67336cda71708d50fe338d34b65d60d2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 29 Feb 2020 12:59:35 +0100
-Subject: [PATCH 585/985] scripts: evl: add ABI info resolver
+Subject: [PATCH 0585/1013] scripts: evl: add ABI info resolver
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/scripts/git-evlabi b/scripts/git-evlabi
 new file mode 100755
-index 000000000..32227196e
+index 000000000000..32227196e5f2
 --- /dev/null
 +++ b/scripts/git-evlabi
 @@ -0,0 +1,127 @@

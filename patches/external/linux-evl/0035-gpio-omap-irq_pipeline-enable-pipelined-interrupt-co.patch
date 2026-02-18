@@ -1,8 +1,8 @@
 From 05c96da0dd999ead48ccca0d1124a0baa2d649e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 4 Apr 2019 12:29:11 +0200
-Subject: [PATCH 035/985] gpio: omap: irq_pipeline: enable pipelined interrupt
- control
+Subject: [PATCH 0035/1013] gpio: omap: irq_pipeline: enable pipelined
+ interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/gpio/gpio-omap.c b/drivers/gpio/gpio-omap.c
-index 76d5d87e9..61f5359d8 100644
+index 76d5d87e9681..61f5359d8379 100644
 --- a/drivers/gpio/gpio-omap.c
 +++ b/drivers/gpio/gpio-omap.c
 @@ -56,8 +56,8 @@ struct gpio_bank {

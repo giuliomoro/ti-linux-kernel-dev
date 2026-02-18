@@ -1,7 +1,7 @@
 From 74cee5da461342724cb394a36e6c256e8b1468ea Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 5 Jun 2025 16:03:01 +0200
-Subject: [PATCH 936/985] evl/net: skb: move owning device to shared info
+Subject: [PATCH 0936/1013] evl/net: skb: move owning device to shared info
 
 We cannot safely use the control block to store the owning device
 pointer specifically when the NIC driver is not oob-capable, in which
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 20 insertions(+), 11 deletions(-)
 
 diff --git a/include/asm-generic/evl/skbuff.h b/include/asm-generic/evl/skbuff.h
-index c9515f135..c03521486 100644
+index c9515f135350..c03521486a38 100644
 --- a/include/asm-generic/evl/skbuff.h
 +++ b/include/asm-generic/evl/skbuff.h
 @@ -6,7 +6,11 @@
@@ -36,7 +36,7 @@ index c9515f135..c03521486 100644
  	ktime_t device_time;
  	/* Time at RX/TX thread dequeuing/queuing point. */
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index c1a980b3f..7b3b0a735 100644
+index c1a980b3f037..7b3b0a735127 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -19,6 +19,11 @@ struct evl_net_skb_queue;
@@ -52,7 +52,7 @@ index c1a980b3f..7b3b0a735 100644
  	/* Cached source/destination device. */
  	struct net_device *dev;
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 67ee062aa..36f036595 100644
+index 67ee062aa127..36f036595842 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -163,7 +163,6 @@ void evl_net_receive(struct sk_buff *skb,
@@ -64,7 +64,7 @@ index 67ee062aa..36f036595 100644
  	/*
  	 * Enqueue the packet. The NIC driver is expected to call
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 9d8e014a9..820f1861c 100644
+index 9d8e014a9a96..820f1861c033 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -168,6 +168,7 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,

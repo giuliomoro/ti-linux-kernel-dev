@@ -1,7 +1,7 @@
 From 5cd68a5f956492a3cae36d348f73b72c2809c151 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 24 Jun 2025 15:25:19 +0200
-Subject: [PATCH 968/985] evl/net: udp: fix buffer leak on dropping receive
+Subject: [PATCH 0968/1013] evl/net: udp: fix buffer leak on dropping receive
  slot
 
 Unconsumed buffers might linger in a receive slot which is no more
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 21 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index aa0893513..6cdb83777 100644
+index aa0893513abf..6cdb83777b7e 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -108,6 +108,20 @@ static int add_receive_slot(struct evl_socket *esk) /* inband */

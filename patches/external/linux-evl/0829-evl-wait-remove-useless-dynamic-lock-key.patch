@@ -1,7 +1,7 @@
 From 22927d4bf2d83e4642f08a7f338ae5dc3a6a60fa Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 29 Oct 2023 11:51:59 +0100
-Subject: [PATCH 829/985] evl/wait: remove useless dynamic lock key
+Subject: [PATCH 0829/1013] evl/wait: remove useless dynamic lock key
 
 Using a locally-defined static key for the lock serializing accesses
 to a wait queue is enough and non-ambiguous.
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 8 insertions(+), 40 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index ba58c0210..adb3e6d18 100644
+index ba58c0210e89..adb3e6d185f4 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -20,7 +20,6 @@ struct evl_thread;
@@ -80,7 +80,7 @@ index ba58c0210..adb3e6d18 100644
  
  struct evl_thread *evl_wait_head(struct evl_wait_queue *wq);
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index b5ab70d10..aac19df39 100644
+index b5ab70d106e3..aac19df39f7a 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -1058,8 +1058,7 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
@@ -94,7 +94,7 @@ index b5ab70d10..aac19df39 100644
  		atomic_set(&state->u.event.value, attrs.initval);
  		evl_init_poll_head(&mon->poll_head);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 5305a0a1b..26d48cee3 100644
+index 5305a0a1b132..26d48cee3b55 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -25,18 +25,8 @@ void __evl_init_wait(struct evl_wait_queue *wq,

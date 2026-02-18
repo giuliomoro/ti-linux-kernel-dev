@@ -1,8 +1,8 @@
 From 112d612aba3d19ca68477d557f6b075d8950f0a6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Jun 2025 11:02:05 +0200
-Subject: [PATCH 953/985] evl/net: ipv4: do not error out on non-ARP solicited
- peer
+Subject: [PATCH 0953/1013] evl/net: ipv4: do not error out on non-ARP
+ solicited peer
 
 Return silently with a success status if we can find a route to the
 solicited peer, which may not be reachable by an ARP request though
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 2 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 143012375..ecbdd3f7b 100644
+index 1430123757e9..ecbdd3f7b5f9 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -291,8 +291,6 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,

@@ -1,7 +1,8 @@
 From e55a6912d5a60371283aa1f223a1c0da6b286749 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 22 Dec 2020 17:11:23 +0100
-Subject: [PATCH 663/985] evl/thread: allow passing user-defined arg to kthread
+Subject: [PATCH 0663/1013] evl/thread: allow passing user-defined arg to
+ kthread
 
 We need more flexibility in the argument passed to the thread
 function. Change for an opaque pointer passed to evl_run_kthread() and
@@ -16,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 19 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 01c2f4281..bec9ca058 100644
+index 01c2f42810b5..bec9ca058449 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -394,13 +394,12 @@ static int rtswitch_register_task(struct rtswitch_context *ctx,
@@ -45,7 +46,7 @@ index 01c2f4281..bec9ca058 100644
  				"rtk%d@%u:%d",
  				ptask->index, ctx->cpu,
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 134e29109..65c8cbe51 100644
+index 134e29109a21..65c8cbe512da 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -439,14 +439,12 @@ static struct latmus_runner *create_sirq_runner(int cpu)
@@ -75,7 +76,7 @@ index 134e29109..65c8cbe51 100644
  				EVL_CLONE_PUBLIC,
  				"latmus-klat:%d",
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 40b14418e..4cdc0479c 100644
+index 40b14418ea76..4cdc0479c538 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -329,15 +329,16 @@ int activate_oob_mm_state(struct oob_mm_state *p);
@@ -130,7 +131,7 @@ index 40b14418e..4cdc0479c 100644
  void evl_set_kthread_priority(struct evl_kthread *kthread,
  			int priority);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 354f58e2b..d6c002bc9 100644
+index 354f58e2b650..d6c002bc9431 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -428,7 +428,7 @@ static int kthread_trampoline(void *arg)

@@ -1,7 +1,7 @@
 From 9b0a5bafe3b93cecd8a37e852f72e77ed8bb2d24 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 23 Sep 2024 18:02:04 +0200
-Subject: [PATCH 888/985] evl/net: skb: fix arguments to napi_pp_put_page()
+Subject: [PATCH 0888/1013] evl/net: skb: fix arguments to napi_pp_put_page()
  (v6.11)
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index e0bb6d1a1..32c571de8 100644
+index e0bb6d1a1971..32c571de8d56 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -216,7 +216,7 @@ static void __free_evl_skb(struct sk_buff *skb)

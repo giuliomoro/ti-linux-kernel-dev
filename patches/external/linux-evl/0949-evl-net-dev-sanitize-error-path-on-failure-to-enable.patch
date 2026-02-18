@@ -1,7 +1,7 @@
 From 9f7931eadf4c9071d3b273f2e622b5263d60a4dd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 17:56:10 +0200
-Subject: [PATCH 949/985] evl/net: dev: sanitize error path on failure to
+Subject: [PATCH 0949/1013] evl/net: dev: sanitize error path on failure to
  enable oob port
 
 The original code had serious issues on failure to enable an oob port:
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 17 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index bb1f8c764..37a56106b 100644
+index bb1f8c764c52..37a56106b3f6 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -184,8 +184,10 @@ static int enable_oob_port(struct net_device *dev,

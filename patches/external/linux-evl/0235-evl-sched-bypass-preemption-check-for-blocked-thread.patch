@@ -1,7 +1,7 @@
 From faa54af3272f82f0db9ef14a352a9dd4e9fb0c03 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 30 Jan 2019 10:16:12 +0100
-Subject: [PATCH 235/985] evl/sched: bypass preemption check for blocked
+Subject: [PATCH 0235/1013] evl/sched: bypass preemption check for blocked
  threads
 
 evl_schedule() should not enforce preemption disabling, but rather
@@ -33,7 +33,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 19 insertions(+), 39 deletions(-)
 
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 783b44985..8de66f8cb 100644
+index 783b44985727..8de66f8cbb00 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -266,18 +266,16 @@ static inline bool is_threading_cpu(int cpu)
@@ -96,7 +96,7 @@ index 783b44985..8de66f8cb 100644
  {
  	return !!(this_evl_rq()->lflags & RQ_IRQ);
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index f51339d9a..f4a118e3d 100644
+index f51339d9a260..f4a118e3dd9c 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -237,14 +237,13 @@ struct evl_thread *evl_pick_thread(struct evl_rq *rq)
@@ -157,7 +157,7 @@ index f51339d9a..f4a118e3d 100644
  					   "Evenless reschedule",
  					   &evl_machine_cpudata);
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
-index 51e228e90..a5895d48e 100644
+index 51e228e901e6..a5895d48e76b 100644
 --- a/kernel/evenless/synch.c
 +++ b/kernel/evenless/synch.c
 @@ -102,11 +102,7 @@ int block_thread_timed(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -174,7 +174,7 @@ index 51e228e90..a5895d48e 100644
  	return curr->info & (T_RMID|T_TIMEO|T_BREAK);
  }
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 6ed31fabf..83d8af8a6 100644
+index 6ed31fabfdd4..83d8af8a6bc4 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -531,8 +531,7 @@ void evl_block_thread_timeout(struct evl_thread *thread, int mask,
@@ -197,7 +197,7 @@ index 6ed31fabf..83d8af8a6 100644
  	dovetail_resume_inband();
  
 diff --git a/kernel/evenless/tick.c b/kernel/evenless/tick.c
-index d79b7864a..09061db66 100644
+index d79b7864ac88..09061db666fa 100644
 --- a/kernel/evenless/tick.c
 +++ b/kernel/evenless/tick.c
 @@ -275,7 +275,7 @@ void evl_program_proxy_tick(struct evl_clock *clock)

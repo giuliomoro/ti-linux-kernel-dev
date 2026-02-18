@@ -1,7 +1,7 @@
 From 4e66c72e735908627e9a42f83b06bf5dc5c341c2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 7 Dec 2015 11:49:50 +0100
-Subject: [PATCH 002/985] ARM: introduce raw console device
+Subject: [PATCH 0002/1013] ARM: introduce raw console device
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 arch/arm/kernel/raw_printk.c
 
 diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index aaae31b8c..88d32044a 100644
+index aaae31b8c4a5..88d32044aadd 100644
 --- a/arch/arm/kernel/Makefile
 +++ b/arch/arm/kernel/Makefile
 @@ -88,6 +88,9 @@ obj-y			+= head$(MMUEXT).o
@@ -28,7 +28,7 @@ index aaae31b8c..88d32044a 100644
  # nor global data is available. Everything has to be allocated on the stack.
 diff --git a/arch/arm/kernel/raw_printk.c b/arch/arm/kernel/raw_printk.c
 new file mode 100644
-index 000000000..9024b772f
+index 000000000000..9024b772fca4
 --- /dev/null
 +++ b/arch/arm/kernel/raw_printk.c
 @@ -0,0 +1,30 @@
@@ -63,7 +63,7 @@ index 000000000..9024b772f
 +}
 +console_initcall(raw_console_init);
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 8918fc41e..b74ccfb83 100644
+index 8918fc41ec02..b74ccfb8344a 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
 @@ -147,11 +147,14 @@ void early_printk(const char *s, ...) { }
@@ -82,7 +82,7 @@ index 8918fc41e..b74ccfb83 100644
  static inline __printf(1, 2) __cold
  void raw_printk(const char *s, ...) { }
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 48ba013ba..ab3473b31 100644
+index 48ba013ba088..ab3473b319e5 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -2490,21 +2490,28 @@ static void set_user_specified(struct console_cmdline *c, bool user_specified)

@@ -1,7 +1,7 @@
 From 8e67174929b432e60d94f7755526a2535bf50170 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 11 Jun 2020 15:28:52 +0200
-Subject: [PATCH 632/985] uapi/evl: annotate label of user pointers in ABI
+Subject: [PATCH 0632/1013] uapi/evl: annotate label of user pointers in ABI
 
 All pointers passed as 64 bit long integer in the ABI in order to deal
 with compat mode refer to user memory. Annotate their description
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index a578c8bab..4d3e3ff2c 100644
+index a578c8babd76..4d3e3ff2ca94 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -25,8 +25,8 @@
@@ -34,7 +34,7 @@ index a578c8bab..4d3e3ff2c 100644
  
  #define EVL_TIMERFD_IOCBASE	't'
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 9eebdb085..2e6562c46 100644
+index 9eebdb085fba..2e6562c466f9 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -31,7 +31,7 @@ struct evl_core_info {
@@ -47,7 +47,7 @@ index 9eebdb085..2e6562c46 100644
  
  #define EVL_CONTROL_IOCBASE	'C'
 diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
-index 4045e57a3..b9cfd2897 100644
+index 4045e57a305b..b9cfd28973d9 100644
 --- a/include/uapi/evl/devices/latmus.h
 +++ b/include/uapi/evl/devices/latmus.h
 @@ -46,13 +46,13 @@ struct latmus_measurement {
@@ -68,7 +68,7 @@ index 4045e57a3..b9cfd2897 100644
  };
  
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 50bf50e97..50dc36bdc 100644
+index 50bf50e97f8e..50dc36bdc63d 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -29,8 +29,8 @@ struct evl_element_ids {
@@ -83,7 +83,7 @@ index 50bf50e97..50dc36bdc 100644
  	/* Output on success: */
  	struct evl_element_ids eids;
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 40c5bdf2a..3d68eb0cd 100644
+index 40c5bdf2a604..3d68eb0cd624 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -53,7 +53,7 @@ struct evl_monitor_state {
@@ -96,7 +96,7 @@ index 40c5bdf2a..3d68eb0cd 100644
  	__s32 status;
  	__s32 value;
 diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
-index 321ebd016..d9475b8d3 100644
+index 321ebd016d63..d9475b8d3104 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll.h
 @@ -31,8 +31,8 @@ struct evl_poll_event {
@@ -111,7 +111,7 @@ index 321ebd016..d9475b8d3 100644
  };
  
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 534673c78..f66081a56 100644
+index 534673c788d2..f66081a56ab7 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -126,8 +126,8 @@ union evl_sched_ctlinfo {

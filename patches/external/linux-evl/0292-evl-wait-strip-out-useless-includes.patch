@@ -1,7 +1,7 @@
 From 269bb78771e3c629000f07b537a2b1c236d6feea Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 18:06:01 +0100
-Subject: [PATCH 292/985] evl/wait: strip out useless includes
+Subject: [PATCH 0292/1013] evl/wait: strip out useless includes
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 deletions(-)
 
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 9044dae51..f32c8210a 100644
+index 9044dae51fad..f32c8210a9b1 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -5,10 +5,6 @@

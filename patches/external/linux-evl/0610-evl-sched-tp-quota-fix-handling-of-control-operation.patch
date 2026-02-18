@@ -1,7 +1,7 @@
 From db891ae5b221e4889dbc5896c7f318f224d14f0c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 22 Apr 2020 15:04:59 +0200
-Subject: [PATCH 610/985] evl/sched: tp, quota: fix handling of control
+Subject: [PATCH 0610/1013] evl/sched: tp, quota: fix handling of control
  operation status
 
 The ->sched_control() returns the length of the information block to
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 19 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 919058063..a59c1ec93 100644
+index 919058063c07..a59c1ec9369a 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -114,9 +114,12 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)

@@ -1,7 +1,7 @@
 From 49ef1040d45a8243d9060ffd0da7e5db52037837 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 20 Feb 2022 16:51:17 +0100
-Subject: [PATCH 076/985] arm64: vDSO: export user-visible MMIO clocksources
+Subject: [PATCH 0076/1013] arm64: vDSO: export user-visible MMIO clocksources
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 104 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm64/include/asm/vdso.h b/arch/arm64/include/asm/vdso.h
-index 4305995c8..dcce639ce 100644
+index 4305995c8f82..dcce639ceb9c 100644
 --- a/arch/arm64/include/asm/vdso.h
 +++ b/arch/arm64/include/asm/vdso.h
 @@ -13,6 +13,11 @@
@@ -30,7 +30,7 @@ index 4305995c8..dcce639ce 100644
  #ifndef __ASSEMBLY__
  
 diff --git a/arch/arm64/include/asm/vdso/gettimeofday.h b/arch/arm64/include/asm/vdso/gettimeofday.h
-index 764d13e29..b3be784dd 100644
+index 764d13e2916c..b3be784ddc33 100644
 --- a/arch/arm64/include/asm/vdso/gettimeofday.h
 +++ b/arch/arm64/include/asm/vdso/gettimeofday.h
 @@ -113,6 +113,71 @@ const struct vdso_data *__arch_get_timens_vdso_data(const struct vdso_data *vd)
@@ -106,7 +106,7 @@ index 764d13e29..b3be784dd 100644
  
  #endif /* __ASM_VDSO_GETTIMEOFDAY_H */
 diff --git a/arch/arm64/kernel/vdso.c b/arch/arm64/kernel/vdso.c
-index 706c9c3a7..f93c18aac 100644
+index 706c9c3a7a50..f93c18aacb11 100644
 --- a/arch/arm64/kernel/vdso.c
 +++ b/arch/arm64/kernel/vdso.c
 @@ -34,6 +34,8 @@ enum vdso_abi {
@@ -166,7 +166,7 @@ index 706c9c3a7..f93c18aac 100644
  				       VM_READ|VM_MAYREAD|VM_PFNMAP,
  				       vdso_info[abi].dm);
 diff --git a/arch/arm64/kernel/vdso/vdso.lds.S b/arch/arm64/kernel/vdso/vdso.lds.S
-index a3f1e895e..788ab53fb 100644
+index a3f1e895e2a6..788ab53fb7b0 100644
 --- a/arch/arm64/kernel/vdso/vdso.lds.S
 +++ b/arch/arm64/kernel/vdso/vdso.lds.S
 @@ -25,6 +25,9 @@ SECTIONS
@@ -180,7 +180,7 @@ index a3f1e895e..788ab53fb 100644
  
  	.hash		: { *(.hash) }			:text
 diff --git a/arch/arm64/kernel/vdso32/vdso.lds.S b/arch/arm64/kernel/vdso32/vdso.lds.S
-index 8d95d7d35..4c99f36c7 100644
+index 8d95d7d35057..4c99f36c7ae2 100644
 --- a/arch/arm64/kernel/vdso32/vdso.lds.S
 +++ b/arch/arm64/kernel/vdso32/vdso.lds.S
 @@ -22,6 +22,9 @@ SECTIONS
@@ -194,7 +194,7 @@ index 8d95d7d35..4c99f36c7 100644
  
  	.hash		: { *(.hash) }			:text
 diff --git a/lib/vdso/Kconfig b/lib/vdso/Kconfig
-index 743d5db57..52c147c57 100644
+index 743d5db57b54..52c147c575c0 100644
 --- a/lib/vdso/Kconfig
 +++ b/lib/vdso/Kconfig
 @@ -32,7 +32,7 @@ config GENERIC_VDSO_TIME_NS

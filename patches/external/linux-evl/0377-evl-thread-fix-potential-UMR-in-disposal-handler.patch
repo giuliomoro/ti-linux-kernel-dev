@@ -1,7 +1,7 @@
 From a7164a75906532a984f8dc776272502672bca9fc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 May 2019 09:06:31 +0200
-Subject: [PATCH 377/985] evl/thread: fix potential UMR in disposal handler
+Subject: [PATCH 0377/1013] evl/thread: fix potential UMR in disposal handler
 
 Once the completion is signaled, a joiner might free the (k)thread
 descriptor memory. Make sure we don't refer to this descriptor after
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 34f0dd5f1..e929524b2 100644
+index 34f0dd5f1ada..e929524b2454 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2260,19 +2260,21 @@ thread_factory_build(struct evl_factory *fac, const char *name,

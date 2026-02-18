@@ -1,7 +1,7 @@
 From 2b3a78fa511ac3b1df3f3afc6ca03e2aca20a6de Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 12:36:14 +0100
-Subject: [PATCH 256/985] evl/timerfd: convert to evl_wait_event_timeout()
+Subject: [PATCH 0256/1013] evl/timerfd: convert to evl_wait_event_timeout()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 25 insertions(+), 38 deletions(-)
 
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
-index 0b7fcf250..2341d462a 100644
+index 0b7fcf2505a3..2341d462af7d 100644
 --- a/kernel/evenless/timerfd.c
 +++ b/kernel/evenless/timerfd.c
 @@ -14,6 +14,7 @@

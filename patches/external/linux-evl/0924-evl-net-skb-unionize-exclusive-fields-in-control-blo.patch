@@ -1,7 +1,7 @@
 From 10a0ecefe12dacc3e46097ac6518ea6d85ac7a00 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 2 May 2025 11:01:37 +0200
-Subject: [PATCH 924/985] evl/net: skb: unionize exclusive fields in control
+Subject: [PATCH 0924/1013] evl/net: skb: unionize exclusive fields in control
  block
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index 9103292f2..593ac7594 100644
+index 9103292f242c..593ac759485b 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -20,9 +20,11 @@ struct evl_socket;

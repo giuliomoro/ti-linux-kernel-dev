@@ -1,7 +1,7 @@
 From 262d6966df33e633f4a3d0641e3f021ef26f7cc7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 20 Mar 2025 16:03:45 +0100
-Subject: [PATCH 175/985] net/page_pool: add accessor to the pool of a page
+Subject: [PATCH 0175/1013] net/page_pool: add accessor to the pool of a page
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 20 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/skbuff_ref.h b/include/linux/skbuff_ref.h
-index 0f3c58007..aed841bd2 100644
+index 0f3c58007488..aed841bd24c1 100644
 --- a/include/linux/skbuff_ref.h
 +++ b/include/linux/skbuff_ref.h
 @@ -34,6 +34,8 @@ static inline void skb_frag_ref(struct sk_buff *skb, int f)
@@ -23,7 +23,7 @@ index 0f3c58007..aed841bd2 100644
  {
  #ifdef CONFIG_PAGE_POOL
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index af32fdff9..5852b5839 100644
+index af32fdff93a3..5852b5839266 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -1141,6 +1141,24 @@ int skb_cow_data_for_xdp(struct page_pool *pool, struct sk_buff **pskb,

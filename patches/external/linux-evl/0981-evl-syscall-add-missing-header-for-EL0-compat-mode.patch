@@ -1,7 +1,7 @@
 From 7a4d41090a9bde9d4e42851a048f3ef18534b4bb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 17 Sep 2025 10:02:25 +0200
-Subject: [PATCH 981/985] evl/syscall: add missing header for EL0 compat mode
+Subject: [PATCH 0981/1013] evl/syscall: add missing header for EL0 compat mode
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm64/include/asm/evl/syscall.h b/arch/arm64/include/asm/evl/syscall.h
-index 7459d82c3..175f37e33 100644
+index 7459d82c35b9..175f37e335bc 100644
 --- a/arch/arm64/include/asm/evl/syscall.h
 +++ b/arch/arm64/include/asm/evl/syscall.h
 @@ -3,6 +3,7 @@

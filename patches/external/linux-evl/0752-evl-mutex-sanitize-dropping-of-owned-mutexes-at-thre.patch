@@ -1,7 +1,7 @@
 From c1f005d81573a6f76d73896334cc04a7cd659e3a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 18 Oct 2022 11:05:31 +0200
-Subject: [PATCH 752/985] evl/mutex: sanitize dropping of owned mutexes at
+Subject: [PATCH 0752/1013] evl/mutex: sanitize dropping of owned mutexes at
  thread exit
 
 We should never rely on fundles to determine which mutexes should be
@@ -30,7 +30,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 28 insertions(+), 43 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 44b8c60ce..7af657840 100644
+index 44b8c60ce611..7af657840a17 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -32,7 +32,7 @@ struct evl_mutex {
@@ -52,7 +52,7 @@ index 44b8c60ce..7af657840 100644
  struct evl_kmutex {
  	struct evl_mutex mutex;
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 3b86eb2c8..0bf36a6d2 100644
+index 3b86eb2c861e..0bf36a6d2488 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -145,8 +145,7 @@ struct evl_thread {
@@ -66,7 +66,7 @@ index 3b86eb2c8..0bf36a6d2 100644
  	struct cpumask affinity;
  	struct completion exited;
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 4a5f7689a..7e9fdc90c 100644
+index 4a5f7689a0f0..7e9fdc90ca0b 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -484,9 +484,9 @@ static void untrack_owner(struct evl_mutex *mutex)
@@ -162,7 +162,7 @@ index 4a5f7689a..7e9fdc90c 100644
  
  static inline struct evl_mutex *
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index ce9112836..f83deca6f 100644
+index ce9112836973..f83deca6fdd2 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -224,8 +224,7 @@ int evl_init_thread(struct evl_thread *thread,

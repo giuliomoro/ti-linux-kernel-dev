@@ -1,7 +1,7 @@
 From f40065d2ca4d4fb2687813406a6a61629ef4462c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 3 Feb 2020 10:03:19 +0100
-Subject: [PATCH 570/985] evl/flag: clarify the pulse interface
+Subject: [PATCH 0570/1013] evl/flag: clarify the pulse interface
 
 Sending a pulse to a flag means flushing it with a broadcast signal,
 so that all waiters unblock regardless of the actual value of that
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 17 deletions(-)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 4a9ebed05..752404bdf 100644
+index 4a9ebed05174..752404bdf198 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -92,45 +92,40 @@ static inline void evl_raise_flag(struct evl_flag *wf)

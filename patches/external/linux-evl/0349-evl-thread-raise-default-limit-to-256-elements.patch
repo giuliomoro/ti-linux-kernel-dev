@@ -1,7 +1,7 @@
 From b56051cddd3a09ad9e09b58288328359ef21fba5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 18 Mar 2019 15:57:04 +0100
-Subject: [PATCH 349/985] evl/thread: raise default limit to 256 elements
+Subject: [PATCH 0349/1013] evl/thread: raise default limit to 256 elements
 
 The more CPUs we have, the more threads hectic instantiates. So move
 to 256 threads by default to cope with 8-core systems with no specific
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index 68abf12a7..fc11aba80 100644
+index 68abf12a7eb8..fc11aba80206 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -34,7 +34,7 @@ config EVL_COREMEM_SIZE

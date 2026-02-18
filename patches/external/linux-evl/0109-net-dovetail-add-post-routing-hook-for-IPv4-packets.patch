@@ -1,7 +1,8 @@
 From 0ad2bd8929fdece7467f2ef843fb41df69e878ce Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 15 Nov 2023 17:48:51 +0100
-Subject: [PATCH 109/985] net: dovetail: add post-routing hook for IPv4 packets
+Subject: [PATCH 0109/1013] net: dovetail: add post-routing hook for IPv4
+ packets
 
 Add the ip_learn_oob_route() (in-band) hook which is called when a new
 route is resolved for an egress IPv4 packet going through an
@@ -14,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 16 insertions(+)
 
 diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 261ddb654..faaffd3d3 100644
+index 261ddb6542a4..faaffd3d373a 100644
 --- a/net/ipv4/route.c
 +++ b/net/ipv4/route.c
 @@ -2879,6 +2879,14 @@ struct dst_entry *ipv4_blackhole_route(struct net *net, struct dst_entry *dst_or

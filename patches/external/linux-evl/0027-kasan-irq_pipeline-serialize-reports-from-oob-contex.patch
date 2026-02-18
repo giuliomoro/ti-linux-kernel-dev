@@ -1,7 +1,7 @@
 From 2509610c066290a5c3e2f1b723dab27e59f4ed0d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Dec 2018 15:28:26 +0100
-Subject: [PATCH 027/985] kasan: irq_pipeline: serialize reports from oob
+Subject: [PATCH 0027/1013] kasan: irq_pipeline: serialize reports from oob
  contexts
 
 KASAN may detect issues in code running out-of-band, so we have to
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/mm/kasan/report.c b/mm/kasan/report.c
-index f17265410..f655d1ee7 100644
+index f17265410156..f655d1ee7796 100644
 --- a/mm/kasan/report.c
 +++ b/mm/kasan/report.c
 @@ -200,7 +200,7 @@ static inline void fail_non_kasan_kunit_test(void) { }

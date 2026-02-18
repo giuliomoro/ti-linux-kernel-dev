@@ -1,7 +1,7 @@
 From cb2e89617e794bd775272d022d644ff7804bf948 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 Mar 2019 11:55:11 +0100
-Subject: [PATCH 333/985] evl: review copyright information
+Subject: [PATCH 0333/1013] evl: review copyright information
 
 A significant portion of EVL is derived from Xenomai's cobalt core:
 state this clearly and refer to https://xenomai.org in all related
@@ -55,7 +55,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  43 files changed, 48 insertions(+), 62 deletions(-)
 
 diff --git a/arch/arm/include/asm/evenless/thread.h b/arch/arm/include/asm/evenless/thread.h
-index 00a4649c2..235cc80b4 100644
+index 00a4649c2885..235cc80b4e1c 100644
 --- a/arch/arm/include/asm/evenless/thread.h
 +++ b/arch/arm/include/asm/evenless/thread.h
 @@ -1,20 +1,6 @@
@@ -81,7 +81,7 @@ index 00a4649c2..235cc80b4 100644
  #ifndef _EVENLESS_ARM_ASM_THREAD_H
  #define _EVENLESS_ARM_ASM_THREAD_H
 diff --git a/arch/arm/include/uapi/asm/evenless/fptest.h b/arch/arm/include/uapi/asm/evenless/fptest.h
-index c1d7f3764..df9f454d7 100644
+index c1d7f37642fd..df9f454d7b7e 100644
 --- a/arch/arm/include/uapi/asm/evenless/fptest.h
 +++ b/arch/arm/include/uapi/asm/evenless/fptest.h
 @@ -1,6 +1,7 @@
@@ -94,7 +94,7 @@ index c1d7f3764..df9f454d7 100644
   */
  #ifndef _EVENLESS_ARM_ASM_UAPI_FPTEST_H
 diff --git a/arch/arm64/include/uapi/asm/evenless/fptest.h b/arch/arm64/include/uapi/asm/evenless/fptest.h
-index e78f79848..d8df4641d 100644
+index e78f7984838a..d8df4641dd0b 100644
 --- a/arch/arm64/include/uapi/asm/evenless/fptest.h
 +++ b/arch/arm64/include/uapi/asm/evenless/fptest.h
 @@ -1,6 +1,7 @@
@@ -107,7 +107,7 @@ index e78f79848..d8df4641d 100644
   */
  #ifndef _EVENLESS_ARM64_ASM_UAPI_FPTEST_H
 diff --git a/drivers/evenless/hectic.c b/drivers/evenless/hectic.c
-index 44ead71f8..fe7b4a621 100644
+index 44ead71f8b62..fe7b4a621fb1 100644
 --- a/drivers/evenless/hectic.c
 +++ b/drivers/evenless/hectic.c
 @@ -1,8 +1,7 @@
@@ -121,7 +121,7 @@ index 44ead71f8..fe7b4a621 100644
   * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
   */
 diff --git a/drivers/evenless/latmus.c b/drivers/evenless/latmus.c
-index 6d3420c4a..15ff9607b 100644
+index 6d3420c4adae..15ff9607b65e 100644
 --- a/drivers/evenless/latmus.c
 +++ b/drivers/evenless/latmus.c
 @@ -1,8 +1,7 @@
@@ -135,7 +135,7 @@ index 6d3420c4a..15ff9607b 100644
   */
  
 diff --git a/include/evenless/assert.h b/include/evenless/assert.h
-index 6a68baccb..1e861be08 100644
+index 6a68baccb3c4..1e861be08535 100644
 --- a/include/evenless/assert.h
 +++ b/include/evenless/assert.h
 @@ -1,7 +1,7 @@
@@ -148,7 +148,7 @@ index 6a68baccb..1e861be08 100644
   */
  
 diff --git a/include/evenless/clock.h b/include/evenless/clock.h
-index c341ea4bd..ae96c1a2b 100644
+index c341ea4bdbcb..ae96c1a2b1ec 100644
 --- a/include/evenless/clock.h
 +++ b/include/evenless/clock.h
 @@ -1,7 +1,7 @@
@@ -161,7 +161,7 @@ index c341ea4bd..ae96c1a2b 100644
   */
  
 diff --git a/include/evenless/list.h b/include/evenless/list.h
-index 234272530..6b545e428 100644
+index 234272530dd2..6b545e4285dc 100644
 --- a/include/evenless/list.h
 +++ b/include/evenless/list.h
 @@ -1,7 +1,7 @@
@@ -174,7 +174,7 @@ index 234272530..6b545e428 100644
   */
  
 diff --git a/include/evenless/lock.h b/include/evenless/lock.h
-index 94e698957..af4983531 100644
+index 94e698957a6f..af49835310ac 100644
 --- a/include/evenless/lock.h
 +++ b/include/evenless/lock.h
 @@ -1,7 +1,7 @@
@@ -187,7 +187,7 @@ index 94e698957..af4983531 100644
   * Copyright (C) 2004,2005 Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
   *
 diff --git a/include/evenless/memory.h b/include/evenless/memory.h
-index f9bd28016..e340d1b12 100644
+index f9bd280169a3..e340d1b128a5 100644
 --- a/include/evenless/memory.h
 +++ b/include/evenless/memory.h
 @@ -1,7 +1,7 @@
@@ -200,7 +200,7 @@ index f9bd28016..e340d1b12 100644
   */
  
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 47a73542b..4b5007a85 100644
+index 47a73542b37b..4b5007a8586b 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -1,7 +1,7 @@
@@ -213,7 +213,7 @@ index 47a73542b..4b5007a85 100644
   */
  
 diff --git a/include/evenless/sched/idle.h b/include/evenless/sched/idle.h
-index a7e6f006b..cb3072a89 100644
+index a7e6f006b1cd..cb3072a89ac9 100644
 --- a/include/evenless/sched/idle.h
 +++ b/include/evenless/sched/idle.h
 @@ -1,7 +1,7 @@
@@ -226,7 +226,7 @@ index a7e6f006b..cb3072a89 100644
   */
  
 diff --git a/include/evenless/sched/param.h b/include/evenless/sched/param.h
-index d11f874f2..56355775e 100644
+index d11f874f25ff..56355775e8ac 100644
 --- a/include/evenless/sched/param.h
 +++ b/include/evenless/sched/param.h
 @@ -1,7 +1,7 @@
@@ -239,7 +239,7 @@ index d11f874f2..56355775e 100644
   */
  
 diff --git a/include/evenless/sched/queue.h b/include/evenless/sched/queue.h
-index 7a9f638a4..ff9cfc1a0 100644
+index 7a9f638a4624..ff9cfc1a0a7f 100644
 --- a/include/evenless/sched/queue.h
 +++ b/include/evenless/sched/queue.h
 @@ -1,7 +1,7 @@
@@ -252,7 +252,7 @@ index 7a9f638a4..ff9cfc1a0 100644
   */
  
 diff --git a/include/evenless/sched/quota.h b/include/evenless/sched/quota.h
-index 763ebe537..259ced3c3 100644
+index 763ebe53747e..259ced3c318f 100644
 --- a/include/evenless/sched/quota.h
 +++ b/include/evenless/sched/quota.h
 @@ -1,7 +1,7 @@
@@ -265,7 +265,7 @@ index 763ebe537..259ced3c3 100644
   */
  
 diff --git a/include/evenless/sched/rt.h b/include/evenless/sched/rt.h
-index f1eecc938..77ae8489c 100644
+index f1eecc9383ff..77ae8489c8f0 100644
 --- a/include/evenless/sched/rt.h
 +++ b/include/evenless/sched/rt.h
 @@ -1,7 +1,7 @@
@@ -278,7 +278,7 @@ index f1eecc938..77ae8489c 100644
   */
  
 diff --git a/include/evenless/sched/weak.h b/include/evenless/sched/weak.h
-index 2cbedab7c..145e13d8d 100644
+index 2cbedab7c329..145e13d8dbb6 100644
 --- a/include/evenless/sched/weak.h
 +++ b/include/evenless/sched/weak.h
 @@ -1,7 +1,7 @@
@@ -291,7 +291,7 @@ index 2cbedab7c..145e13d8d 100644
   */
  
 diff --git a/include/evenless/stat.h b/include/evenless/stat.h
-index 47da6d91e..bded74ef5 100644
+index 47da6d91e330..bded74ef52cb 100644
 --- a/include/evenless/stat.h
 +++ b/include/evenless/stat.h
 @@ -1,7 +1,7 @@
@@ -304,7 +304,7 @@ index 47da6d91e..bded74ef5 100644
   * Copyright (C) 2006 Dmitry Adamushko <dmitry.adamushko@gmail.com>
   * Copyright (C) 2008, 2018 Philippe Gerum  <rpm@xenomai.org>
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 0bf794edc..ac3d64566 100644
+index 0bf794edcd14..ac3d64566eb9 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -1,7 +1,7 @@
@@ -317,7 +317,7 @@ index 0bf794edc..ac3d64566 100644
   * Copyright Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>.
   */
 diff --git a/include/evenless/tick.h b/include/evenless/tick.h
-index db529b454..296592f97 100644
+index db529b4542d6..296592f97eb9 100644
 --- a/include/evenless/tick.h
 +++ b/include/evenless/tick.h
 @@ -1,7 +1,7 @@
@@ -330,7 +330,7 @@ index db529b454..296592f97 100644
   */
  
 diff --git a/include/evenless/timer.h b/include/evenless/timer.h
-index 9fe240c80..0a0655c54 100644
+index 9fe240c80fe6..0a0655c54cd6 100644
 --- a/include/evenless/timer.h
 +++ b/include/evenless/timer.h
 @@ -1,7 +1,7 @@
@@ -343,7 +343,7 @@ index 9fe240c80..0a0655c54 100644
   */
  
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
-index 49da5e3d4..0bbfe00f8 100644
+index 49da5e3d481a..0bbfe00f83a7 100644
 --- a/include/evenless/wait.h
 +++ b/include/evenless/wait.h
 @@ -1,7 +1,7 @@
@@ -356,7 +356,7 @@ index 49da5e3d4..0bbfe00f8 100644
   */
  
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index 369a7113f..decd77dff 100644
+index 369a7113f87a..decd77dffbdf 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -1,7 +1,7 @@
@@ -369,7 +369,7 @@ index 369a7113f..decd77dff 100644
   * Copyright (C) 2014, 2018 Philippe Gerum  <rpm@xenomai.org>
   */
 diff --git a/include/uapi/evenless/devices/hectic.h b/include/uapi/evenless/devices/hectic.h
-index 051029da1..28009ac83 100644
+index 051029da1d6a..28009ac83751 100644
 --- a/include/uapi/evenless/devices/hectic.h
 +++ b/include/uapi/evenless/devices/hectic.h
 @@ -1,7 +1,7 @@
@@ -382,7 +382,7 @@ index 051029da1..28009ac83 100644
   * Copyright (C) 2018 Philippe Gerum  <rpm@xenomai.org>
   */
 diff --git a/include/uapi/evenless/devices/latmus.h b/include/uapi/evenless/devices/latmus.h
-index 68718295b..d0fcca5b0 100644
+index 68718295b71d..d0fcca5b011a 100644
 --- a/include/uapi/evenless/devices/latmus.h
 +++ b/include/uapi/evenless/devices/latmus.h
 @@ -1,6 +1,7 @@
@@ -394,7 +394,7 @@ index 68718295b..d0fcca5b0 100644
   */
  
 diff --git a/include/uapi/evenless/mutex.h b/include/uapi/evenless/mutex.h
-index 0944647f4..02e652ac1 100644
+index 0944647f406f..02e652ac1dc4 100644
 --- a/include/uapi/evenless/mutex.h
 +++ b/include/uapi/evenless/mutex.h
 @@ -1,7 +1,7 @@
@@ -407,7 +407,7 @@ index 0944647f4..02e652ac1 100644
   * Copyright (C) 2008, 2009 Jan Kiszka <jan.kiszka@siemens.com>.
   */
 diff --git a/include/uapi/evenless/sched.h b/include/uapi/evenless/sched.h
-index 3ab7191cb..96fdcf6f0 100644
+index 3ab7191cb3e8..96fdcf6f0a13 100644
 --- a/include/uapi/evenless/sched.h
 +++ b/include/uapi/evenless/sched.h
 @@ -1,7 +1,7 @@
@@ -420,7 +420,7 @@ index 3ab7191cb..96fdcf6f0 100644
   */
  
 diff --git a/include/uapi/evenless/signal.h b/include/uapi/evenless/signal.h
-index 4c92f5a54..563839a7e 100644
+index 4c92f5a54533..563839a7e7be 100644
 --- a/include/uapi/evenless/signal.h
 +++ b/include/uapi/evenless/signal.h
 @@ -1,7 +1,7 @@
@@ -433,7 +433,7 @@ index 4c92f5a54..563839a7e 100644
   * Copyright (C) 2013, 2018 Philippe Gerum <rpm@xenomai.org>
   */
 diff --git a/include/uapi/evenless/thread.h b/include/uapi/evenless/thread.h
-index 4c1a5b702..fe6639f83 100644
+index 4c1a5b702720..fe6639f83162 100644
 --- a/include/uapi/evenless/thread.h
 +++ b/include/uapi/evenless/thread.h
 @@ -1,7 +1,7 @@
@@ -446,7 +446,7 @@ index 4c1a5b702..fe6639f83 100644
   */
  
 diff --git a/include/uapi/evenless/types.h b/include/uapi/evenless/types.h
-index 26a02ff9d..3cb3bebfd 100644
+index 26a02ff9dff6..3cb3bebfd258 100644
 --- a/include/uapi/evenless/types.h
 +++ b/include/uapi/evenless/types.h
 @@ -1,7 +1,7 @@
@@ -459,7 +459,7 @@ index 26a02ff9d..3cb3bebfd 100644
   */
  
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index dfe50b62e..879c72952 100644
+index dfe50b62e487..879c729522a0 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -1,7 +1,7 @@
@@ -472,7 +472,7 @@ index dfe50b62e..879c72952 100644
   * Copyright Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
   */
 diff --git a/kernel/evenless/lock.c b/kernel/evenless/lock.c
-index 2150252c6..35a995b32 100644
+index 2150252c65ec..35a995b32918 100644
 --- a/kernel/evenless/lock.c
 +++ b/kernel/evenless/lock.c
 @@ -1,13 +1,13 @@
@@ -493,7 +493,7 @@ index 2150252c6..35a995b32 100644
  
  #include <linux/module.h>
 diff --git a/kernel/evenless/memory.c b/kernel/evenless/memory.c
-index 816a51b76..83f3a04cf 100644
+index 816a51b76ed6..83f3a04cf316 100644
 --- a/kernel/evenless/memory.c
 +++ b/kernel/evenless/memory.c
 @@ -1,7 +1,7 @@
@@ -506,7 +506,7 @@ index 816a51b76..83f3a04cf 100644
   */
  
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index efecc5905..5b41ed315 100644
+index efecc5905023..5b41ed315656 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -1,7 +1,7 @@
@@ -519,7 +519,7 @@ index efecc5905..5b41ed315 100644
   */
  
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 77ed93f85..a3f4aa2dd 100644
+index 77ed93f85558..a3f4aa2dd23d 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -1,7 +1,7 @@
@@ -532,7 +532,7 @@ index 77ed93f85..a3f4aa2dd 100644
   */
  
 diff --git a/kernel/evenless/sched/idle.c b/kernel/evenless/sched/idle.c
-index 489a65286..5b872fed4 100644
+index 489a65286285..5b872fed467a 100644
 --- a/kernel/evenless/sched/idle.c
 +++ b/kernel/evenless/sched/idle.c
 @@ -1,7 +1,7 @@
@@ -545,7 +545,7 @@ index 489a65286..5b872fed4 100644
   */
  
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
-index db85432ce..bc96bd771 100644
+index db85432cef9d..bc96bd7713c3 100644
 --- a/kernel/evenless/sched/quota.c
 +++ b/kernel/evenless/sched/quota.c
 @@ -1,7 +1,7 @@
@@ -567,7 +567,7 @@ index db85432ce..bc96bd771 100644
  static DECLARE_BITMAP(group_map, MAX_QUOTA_GROUPS);
  
 diff --git a/kernel/evenless/sched/rt.c b/kernel/evenless/sched/rt.c
-index 4f727a3be..3ee18dfc9 100644
+index 4f727a3be9d4..3ee18dfc9cae 100644
 --- a/kernel/evenless/sched/rt.c
 +++ b/kernel/evenless/sched/rt.c
 @@ -1,7 +1,7 @@
@@ -580,7 +580,7 @@ index 4f727a3be..3ee18dfc9 100644
   */
  
 diff --git a/kernel/evenless/sched/weak.c b/kernel/evenless/sched/weak.c
-index 83da85783..a8ec88bb9 100644
+index 83da85783ada..a8ec88bb945d 100644
 --- a/kernel/evenless/sched/weak.c
 +++ b/kernel/evenless/sched/weak.c
 @@ -1,7 +1,7 @@
@@ -593,7 +593,7 @@ index 83da85783..a8ec88bb9 100644
   */
  
 diff --git a/kernel/evenless/syscall.c b/kernel/evenless/syscall.c
-index cd5fab3ea..ec127d2c6 100644
+index cd5fab3ea101..ec127d2c6e12 100644
 --- a/kernel/evenless/syscall.c
 +++ b/kernel/evenless/syscall.c
 @@ -1,8 +1,7 @@
@@ -607,7 +607,7 @@ index cd5fab3ea..ec127d2c6 100644
   * Copyright (C) 2005 Gilles Chanteperdrix  <gilles.chanteperdrix@xenomai.org>
   */
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 6a4dbb647..e02de1143 100644
+index 6a4dbb647fe1..e02de1143fd0 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -1,7 +1,7 @@
@@ -620,7 +620,7 @@ index 6a4dbb647..e02de1143 100644
   * Copyright (C) 2001, 2018 Philippe Gerum  <rpm@xenomai.org>
   */
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
-index 0f7f59ac8..9995da246 100644
+index 0f7f59ac8619..9995da246524 100644
 --- a/kernel/evenless/timer.c
 +++ b/kernel/evenless/timer.c
 @@ -1,7 +1,7 @@
@@ -633,7 +633,7 @@ index 0f7f59ac8..9995da246 100644
   * Copyright (C) 2001, 2018 Philippe Gerum  <rpm@xenomai.org>
   */
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index f32c8210a..41ad07b31 100644
+index f32c8210a9b1..41ad07b31541 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -1,7 +1,7 @@

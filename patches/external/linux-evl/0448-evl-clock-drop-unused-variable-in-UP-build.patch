@@ -1,7 +1,7 @@
 From 940e0d07dc2d032b9c1b907a434e7ff7ddcf2e13 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 14 Jul 2019 22:32:19 +0200
-Subject: [PATCH 448/985] evl/clock: drop unused variable in UP build
+Subject: [PATCH 0448/1013] evl/clock: drop unused variable in UP build
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index c8428b096..81ad32141 100644
+index c8428b096933..81ad32141cd0 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -358,7 +358,6 @@ void evl_core_tick(struct clock_event_device *dummy) /* hard irqs off */

@@ -1,7 +1,7 @@
 From 6e67a5ebe78c94b476a853d909683f3df67c2f36 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 16:18:28 +0200
-Subject: [PATCH 491/985] evl/monitor: commit PP unlocked in enter_monitor()
+Subject: [PATCH 0491/1013] evl/monitor: commit PP unlocked in enter_monitor()
 
 In addition, don't attempt to (re-)commit PP pointlessly on return
 from evl_wait_timeout() (wait_monitor() -> __enter_monitor()), since a
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 5dcd1e496..018263e86 100644
+index 5dcd1e496605..018263e86a19 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -186,8 +186,6 @@ static int __enter_monitor(struct evl_monitor *gate,

@@ -1,7 +1,7 @@
 From 5d004315aeae46ecda352742000b7af0d03c19b3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 19:01:55 +0200
-Subject: [PATCH 606/985] evl/sched: tp: advance to next partition properly
+Subject: [PATCH 0606/1013] evl/sched: tp: advance to next partition properly
 
 This fixes an infinite loop in the tp tick handler when advancing to
 the next partition.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 28 insertions(+), 31 deletions(-)
 
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 2d371e212..6eb7f4380 100644
+index 2d371e212b83..6eb7f438051a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -19,42 +19,39 @@ static void tp_schedule_next(struct evl_sched_tp *tp)

@@ -1,7 +1,7 @@
 From 501abf0c7b3371b7d1e35c87e5786b637c1a0921 Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Wed, 17 Sep 2025 09:14:11 +0200
-Subject: [PATCH 214/985] irq_pipeline: Fix system freeze triggered by edge
+Subject: [PATCH 0214/1013] irq_pipeline: Fix system freeze triggered by edge
  IRQs
 
 When IRQ pipelining is enabled, it could happen that handle_edge_irq()
@@ -71,7 +71,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  1 file changed, 24 insertions(+)
 
 diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 4e81a93fc..ce9b09d6d 100644
+index 4e81a93fc7f5..ce9b09d6d07b 100644
 --- a/kernel/irq/chip.c
 +++ b/kernel/irq/chip.c
 @@ -676,6 +676,28 @@ static inline bool should_feed_pipeline(struct irq_desc *desc, int state)

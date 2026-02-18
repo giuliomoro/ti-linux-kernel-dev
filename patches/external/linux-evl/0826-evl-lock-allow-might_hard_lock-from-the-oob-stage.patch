@@ -1,7 +1,8 @@
 From facddb5121cb309af6b11c50619f422e694c90ee Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 28 Oct 2023 18:08:17 +0200
-Subject: [PATCH 826/985] evl/lock: allow might_hard_lock() from the oob stage
+Subject: [PATCH 0826/1013] evl/lock: allow might_hard_lock() from the oob
+ stage
 
 We should allow disabling lazy lock class registration from any stage
 by a call to might_hard_lock(), not to impose significant restriction
@@ -17,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+), 9 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 34580d1a7..8aef7ea7f 100644
+index 34580d1a7eb8..8aef7ea7f97b 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -10,21 +10,18 @@

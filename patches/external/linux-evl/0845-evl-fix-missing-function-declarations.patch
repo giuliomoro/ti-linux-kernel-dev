@@ -1,7 +1,7 @@
 From e1bc194ae2bb3cccbd6bead1dfa248df84dba146 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Mar 2024 19:45:37 +0100
-Subject: [PATCH 845/985] evl: fix missing function declarations
+Subject: [PATCH 0845/1013] evl: fix missing function declarations
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index b8731fc09..447ebd9d0 100644
+index b8731fc09a71..447ebd9d071e 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -439,7 +439,7 @@ static struct latmus_runner *create_sirq_runner(int cpu)
@@ -24,7 +24,7 @@ index b8731fc09..447ebd9d0 100644
  	struct kthread_runner *k_runner = arg;
  	ktime_t now;
 diff --git a/include/evl/sem.h b/include/evl/sem.h
-index 9378e3888..43d2b9e77 100644
+index 9378e38886cd..43d2b9e7795f 100644
 --- a/include/evl/sem.h
 +++ b/include/evl/sem.h
 @@ -43,4 +43,6 @@ int evl_trydown(struct evl_ksem *ksem);
@@ -35,7 +35,7 @@ index 9378e3888..43d2b9e77 100644
 +
  #endif /* !_EVL_SEM_H */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 8775bd791..e41d26d65 100644
+index 8775bd791a6b..e41d26d65fde 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -58,7 +58,7 @@ struct evl_monitor {

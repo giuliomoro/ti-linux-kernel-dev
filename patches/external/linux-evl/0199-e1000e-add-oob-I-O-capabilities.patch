@@ -1,7 +1,7 @@
 From a813cdc7251eb3e04f866dd348848c4fd2056988 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 16 Jun 2025 12:27:48 +0200
-Subject: [PATCH 199/985] e1000e: add oob I/O capabilities
+Subject: [PATCH 0199/1013] e1000e: add oob I/O capabilities
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  5 files changed, 693 insertions(+), 106 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
-index 6e27c8f4f..349c461d6 100644
+index 6e27c8f4ff4b..349c461d6829 100644
 --- a/drivers/net/ethernet/intel/Kconfig
 +++ b/drivers/net/ethernet/intel/Kconfig
 @@ -87,6 +87,15 @@ config E1000E_HWTS
@@ -33,7 +33,7 @@ index 6e27c8f4f..349c461d6 100644
  	tristate "Intel(R) 82575/82576 PCI-Express Gigabit Ethernet support"
  	depends on PCI
 diff --git a/drivers/net/ethernet/intel/e1000e/defines.h b/drivers/net/ethernet/intel/e1000e/defines.h
-index ba331899d..a249928d0 100644
+index ba331899d186..a249928d0af6 100644
 --- a/drivers/net/ethernet/intel/e1000e/defines.h
 +++ b/drivers/net/ethernet/intel/e1000e/defines.h
 @@ -398,6 +398,12 @@
@@ -50,7 +50,7 @@ index ba331899d..a249928d0 100644
  #define E1000_PBA_ECC_COUNTER_MASK  0xFFF00000 /* ECC counter mask */
  #define E1000_PBA_ECC_COUNTER_SHIFT 20         /* ECC counter shift value */
 diff --git a/drivers/net/ethernet/intel/e1000e/e1000.h b/drivers/net/ethernet/intel/e1000e/e1000.h
-index ba9c19e69..9e2d479e1 100644
+index ba9c19e6994c..9e2d479e18e2 100644
 --- a/drivers/net/ethernet/intel/e1000e/e1000.h
 +++ b/drivers/net/ethernet/intel/e1000e/e1000.h
 @@ -10,6 +10,7 @@
@@ -194,7 +194,7 @@ index ba9c19e69..9e2d479e1 100644
 +
  #endif /* _E1000_H_ */
 diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 5fe54e9b7..230eeb434 100644
+index 5fe54e9b71e2..230eeb434d6b 100644
 --- a/drivers/net/ethernet/intel/e1000e/netdev.c
 +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
 @@ -7,6 +7,7 @@
@@ -1397,7 +1397,7 @@ index 5fe54e9b7..230eeb434 100644
  	if (adapter->flags & FLAG_HAS_HW_TIMESTAMP) {
  		cancel_work_sync(&adapter->tx_hwtstamp_work);
 diff --git a/drivers/net/ethernet/intel/e1000e/ptp.c b/drivers/net/ethernet/intel/e1000e/ptp.c
-index ea3c3eb2e..f476868f1 100644
+index ea3c3eb2ef20..f476868f1080 100644
 --- a/drivers/net/ethernet/intel/e1000e/ptp.c
 +++ b/drivers/net/ethernet/intel/e1000e/ptp.c
 @@ -39,19 +39,19 @@ static int e1000e_phc_adjfine(struct ptp_clock_info *ptp, long delta)

@@ -1,7 +1,8 @@
 From 7b51709002bbb806fd793b8f7096ec580dddb501 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 29 Sep 2024 11:01:31 +0200
-Subject: [PATCH 893/985] scripts: git-evlabi: don't probe for obsolete header
+Subject: [PATCH 0893/1013] scripts: git-evlabi: don't probe for obsolete
+ header
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/scripts/git-evlabi b/scripts/git-evlabi
-index 5a100d1d8..5d81ee3cf 100755
+index 5a100d1d8dfc..5d81ee3cf04b 100755
 --- a/scripts/git-evlabi
 +++ b/scripts/git-evlabi
 @@ -50,7 +50,7 @@ if test x$help = xtrue; then

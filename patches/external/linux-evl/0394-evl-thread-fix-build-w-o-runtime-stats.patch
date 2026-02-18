@@ -1,7 +1,7 @@
 From fb60dd6386081c118506cafb366a1fe194d3bc90 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 7 Jun 2019 15:34:42 +0200
-Subject: [PATCH 394/985] evl/thread: fix build w/o runtime stats
+Subject: [PATCH 0394/1013] evl/thread: fix build w/o runtime stats
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index a3ae619d1..d01334452 100644
+index a3ae619d1f9e..d0133445218c 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2343,6 +2343,8 @@ static ssize_t sched_show(struct device *dev,

@@ -1,7 +1,7 @@
 From 8f910c9bcec8b08251abc26ce43b523aaefe4c27 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 9 Apr 2024 18:58:39 +0200
-Subject: [PATCH 846/985] evl/factory: fix massive delay in element release
+Subject: [PATCH 0846/1013] evl/factory: fix massive delay in element release
 
 The RCU-based synchronization between evl_open_element() and
 __do_put_element() via synchronize_rcu() creates a massive slowdown
@@ -39,7 +39,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 23 insertions(+), 47 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 6b7f82de2..6cc1a835b 100644
+index 6b7f82de2807..6cc1a835b1d1 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -114,10 +114,15 @@ int evl_init_user_element(struct evl_element *e,
@@ -61,7 +61,7 @@ index 6b7f82de2..6cc1a835b 100644
  
  struct evl_element *
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index ffffa3a6a..0d22783ee 100644
+index ffffa3a6a5a8..0d22783ee369 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -153,20 +153,10 @@ static struct evl_element *unbind_file_from_element(struct file *filp)

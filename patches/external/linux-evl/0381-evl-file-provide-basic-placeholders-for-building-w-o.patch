@@ -1,8 +1,8 @@
 From 213350a1bd20cd4f236fba927f126c68d3c9675c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 24 May 2019 12:28:09 +0200
-Subject: [PATCH 381/985] evl/file: provide basic placeholders for building w/o
- EVL
+Subject: [PATCH 0381/1013] evl/file: provide basic placeholders for building
+ w/o EVL
 
 It is important to have the kernel build properly when EVL is disabled
 in Kconfig, and we want to reduce the noise in the mainline code
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 10 deletions(-)
 
 diff --git a/include/evl/file.h b/include/evl/file.h
-index affd014ca..67adafb56 100644
+index affd014ca6c6..67adafb56a01 100644
 --- a/include/evl/file.h
 +++ b/include/evl/file.h
 @@ -19,6 +19,8 @@ struct files_struct;

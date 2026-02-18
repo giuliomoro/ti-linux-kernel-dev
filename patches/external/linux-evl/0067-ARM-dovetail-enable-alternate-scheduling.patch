@@ -1,7 +1,7 @@
 From cb7e2476e7f6206988f11a23a70ee96598610fdb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 May 2020 17:55:17 +0200
-Subject: [PATCH 067/985] ARM: dovetail: enable alternate scheduling
+Subject: [PATCH 0067/1013] ARM: dovetail: enable alternate scheduling
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 45 insertions(+), 10 deletions(-)
 
 diff --git a/arch/arm/include/asm/efi.h b/arch/arm/include/asm/efi.h
-index e408399d5..bd0ed146e 100644
+index e408399d5f0e..bd0ed146e735 100644
 --- a/arch/arm/include/asm/efi.h
 +++ b/arch/arm/include/asm/efi.h
 @@ -44,7 +44,11 @@ int efi_set_mapping_permissions(struct mm_struct *mm, efi_memory_desc_t *md, boo
@@ -27,7 +27,7 @@ index e408399d5..bd0ed146e 100644
  
  void efi_virtmap_load(void);
 diff --git a/arch/arm/include/asm/mmu_context.h b/arch/arm/include/asm/mmu_context.h
-index db2cb06aa..228e022d1 100644
+index db2cb06aa8cf..228e022d1228 100644
 --- a/arch/arm/include/asm/mmu_context.h
 +++ b/arch/arm/include/asm/mmu_context.h
 @@ -14,6 +14,7 @@
@@ -106,7 +106,7 @@ index db2cb06aa..228e022d1 100644
 +
  #endif
 diff --git a/arch/arm/mm/context.c b/arch/arm/mm/context.c
-index 4204ffa2d..3bac4d2f4 100644
+index 4204ffa2d104..3bac4d2f469b 100644
 --- a/arch/arm/mm/context.c
 +++ b/arch/arm/mm/context.c
 @@ -39,7 +39,7 @@

@@ -1,7 +1,7 @@
 From b36a75c7ad9955c890fce56912829b863099a848 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 May 2020 16:12:03 +0200
-Subject: [PATCH 625/985] evl/proxy: deal with O_NONBLOCK for target file
+Subject: [PATCH 0625/1013] evl/proxy: deal with O_NONBLOCK for target file
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 19 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 009e32720..6626f4fbe 100644
+index 009e32720464..6626f4fbe3b7 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -314,8 +314,7 @@ static ssize_t do_proxy_read(struct file *filp,

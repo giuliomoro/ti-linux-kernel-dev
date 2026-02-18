@@ -1,7 +1,7 @@
 From 337bccbb6a3c0c5b493bc4276abb0d3d01de7b69 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Jul 2021 17:24:30 +0200
-Subject: [PATCH 705/985] evl/wait: add memory shortage as a wait abort cause
+Subject: [PATCH 0705/1013] evl/wait: add memory shortage as a wait abort cause
 
 In some circumstances, a wait operation cannot complete because we
 don't have enough memory to prepare the waiter for wake up, such as
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 10 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 41a7f512f..ad198b1d2 100644
+index 41a7f512f5f4..ad198b1d20f5 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -29,7 +29,7 @@
@@ -32,7 +32,7 @@ index 41a7f512f..ad198b1d2 100644
  #define EVL_THREAD_MODE_BITS	(T_WOSS|T_WOLI|T_WOSX|T_HMSIG|T_HMOBS)
  
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 615290465..9f23455be 100644
+index 615290465236..9f23455be698 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -55,6 +55,7 @@
@@ -44,7 +44,7 @@ index 615290465..9f23455be 100644
  /* Local information flags (private to current thread) */
  
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 715b82a0a..83144c9e0 100644
+index 715b82a0ac48..83144c9e06ee 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -164,9 +164,11 @@ int evl_wait_schedule(struct evl_wait_queue *wq)

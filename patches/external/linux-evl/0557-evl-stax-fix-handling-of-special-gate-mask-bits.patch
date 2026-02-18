@@ -1,7 +1,7 @@
 From 8e8e4ca212617df6113e7a8f017ae4cae690ce84 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 22 Jan 2020 12:01:07 +0100
-Subject: [PATCH 557/985] evl/stax: fix handling of special gate mask bits
+Subject: [PATCH 0557/1013] evl/stax: fix handling of special gate mask bits
 
 Have the claim bit managed on the consumer side (waiter) to prevent
 any leakage which would lead to missed wakeups. In addition, fix the
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 62 insertions(+), 48 deletions(-)
 
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index 35899ca20..bc90aea57 100644
+index 35899ca20a79..bc90aea57e5e 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -34,6 +34,15 @@ void evl_destroy_stax(struct evl_stax *stax)

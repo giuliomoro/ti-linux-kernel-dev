@@ -1,7 +1,8 @@
 From 2bd98d72f1589da2018a79fad977af4b9ae0d764 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 17 Apr 2020 20:22:03 +0200
-Subject: [PATCH 607/985] evl/timerfd: skip timer pinning for detached callers
+Subject: [PATCH 0607/1013] evl/timerfd: skip timer pinning for detached
+ callers
 
 Pinning is done relatively to the active rq of the current EVL thread,
 which may be NULL since plain threads are allowed to set/get an EVL
@@ -13,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 8d68b6d7d..dd4b2dc44 100644
+index 8d68b6d7d549..dd4b2dc444d8 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -593,7 +593,9 @@ static int set_timerfd(struct evl_timerfd *timerfd,

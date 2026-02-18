@@ -1,7 +1,7 @@
 From 029207f2bde8fc4e4fb20302301dd6a97d842b1e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 9 Mar 2020 10:41:43 +0100
-Subject: [PATCH 588/985] scripts: git-evlabi: fix wording in help strings
+Subject: [PATCH 0588/1013] scripts: git-evlabi: fix wording in help strings
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/scripts/git-evlabi b/scripts/git-evlabi
-index d9016c3e8..5a100d1d8 100755
+index d9016c3e81cb..5a100d1d8dfc 100755
 --- a/scripts/git-evlabi
 +++ b/scripts/git-evlabi
 @@ -2,7 +2,7 @@

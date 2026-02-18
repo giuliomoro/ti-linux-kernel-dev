@@ -1,8 +1,8 @@
 From a3fefd6ce2dac5791409d7383d66a8e53bcaa092 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 15:58:30 +0200
-Subject: [PATCH 498/985] evl/monitor: call evl_wait_timeout() unlocked on wait
- op
+Subject: [PATCH 0498/1013] evl/monitor: call evl_wait_timeout() unlocked on
+ wait op
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 616beda83..ab8c9a311 100644
+index 616beda838c7..ab8c9a3115bf 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -325,17 +325,21 @@ static int wait_monitor_ungated(struct file *filp,

@@ -1,7 +1,7 @@
 From 7514bfd3d70733e03402a770eb7765e75a8d8985 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 1 Feb 2019 15:47:20 +0100
-Subject: [PATCH 240/985] evl/thread: split forcible release and event-based
+Subject: [PATCH 0240/1013] evl/thread: split forcible release and event-based
  wakeup calls
 
 This completes the simplification work by dedicating calls to resume
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 98 insertions(+), 51 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 050c0b3be..f7b1a90a8 100644
+index 050c0b3be9c5..f7b1a90a831c 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -218,12 +218,15 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -45,7 +45,7 @@ index 050c0b3be..f7b1a90a8 100644
  
  ktime_t evl_delay_thread(ktime_t timeout,
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index f2642df85..fd4026ae1 100644
+index f2642df85e9c..fd4026ae1ca5 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -336,25 +336,47 @@ TRACE_EVENT(evl_sleep_on,
@@ -100,7 +100,7 @@ index f2642df85..fd4026ae1 100644
  	TP_ARGS(thread, mask),
  
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 1e4c36cd2..9ad8ebcc5 100644
+index 1e4c36cd2927..9ad8ebcc569a 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -353,7 +353,7 @@ bool evl_destroy_mutex(struct evl_mutex *mutex)
@@ -122,7 +122,7 @@ index 1e4c36cd2..9ad8ebcc5 100644
  	if (mutex->flags & EVL_MUTEX_CLAIMED)
  		clear_pi_boost(mutex, lastowner);
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index ddbad6c78..58842d480 100644
+index ddbad6c78d8a..58842d4808d0 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -909,7 +909,7 @@ int evl_sched_yield(void)
@@ -135,7 +135,7 @@ index ddbad6c78..58842d480 100644
  		return 0;
  
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 84b4e461f..79533e451 100644
+index 84b4e461f31c..79533e4511f8 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -47,10 +47,7 @@ static void timeout_handler(struct evl_timer *timer) /* hard irqs off */
@@ -347,7 +347,7 @@ index 84b4e461f..79533e451 100644
  
  	evl_schedule();
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 0e471be2b..902d4bf10 100644
+index 0e471be2b4c7..902d4bf10bee 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -83,7 +83,7 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

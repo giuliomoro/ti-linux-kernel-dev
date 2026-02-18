@@ -1,7 +1,8 @@
 From adc3430448e1534b582d71161639a734513cc646 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Jan 2019 11:40:05 +0100
-Subject: [PATCH 223/985] evl/syn: evl_release_syn() can only apply to current
+Subject: [PATCH 0223/1013] evl/syn: evl_release_syn() can only apply to
+ current
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/include/evenless/synch.h b/include/evenless/synch.h
-index 452550186..95080e910 100644
+index 45255018615f..95080e91073c 100644
 --- a/include/evenless/synch.h
 +++ b/include/evenless/synch.h
 @@ -102,7 +102,7 @@ int __must_check evl_acquire_syn(struct evl_syn *synch,
@@ -26,7 +27,7 @@ index 452550186..95080e910 100644
  bool evl_flush_syn(struct evl_syn *synch, int reason);
  
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index ca65075ef..cf7295618 100644
+index ca65075ef40d..cf7295618f3d 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -204,7 +204,7 @@ static void __exit_monitor(struct evl_monitor *gate,
@@ -39,7 +40,7 @@ index ca65075ef..cf7295618 100644
  
  /* nklock held, irqs off */
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 9e489c7be..78f64d6c2 100644
+index 9e489c7be498..78f64d6c2105 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -63,9 +63,7 @@ EXPORT_SYMBOL_GPL(evl_lock);
@@ -54,7 +55,7 @@ index 9e489c7be..78f64d6c2 100644
  }
  EXPORT_SYMBOL_GPL(evl_unlock);
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
-index 28513e2be..a67753f9e 100644
+index 28513e2be87a..a67753f9e6e3 100644
 --- a/kernel/evenless/synch.c
 +++ b/kernel/evenless/synch.c
 @@ -731,8 +731,9 @@ static bool transfer_ownership(struct evl_syn *synch,
@@ -69,7 +70,7 @@ index 28513e2be..a67753f9e 100644
  	unsigned long flags;
  	fundle_t currh, h;
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 5cc32555b..6d9c13559 100644
+index 5cc32555ba6e..6d9c135597d6 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -236,7 +236,7 @@ static inline void release_all_ownerships(struct evl_thread *curr)

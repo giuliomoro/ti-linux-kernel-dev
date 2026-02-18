@@ -1,8 +1,8 @@
 From b36bd1a450286da3be1138a6a2630c5be6ad0134 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 27 Jun 2025 22:07:26 +0200
-Subject: [PATCH 975/985] evl/net: socket: deny solicitation if bound device is
- invalid
+Subject: [PATCH 0975/1013] evl/net: socket: deny solicitation if bound device
+ is invalid
 
 So far, we passed a null device pointer to the solicitation service in
 case the device bound to the socket did exist but was not an oob
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index ff8536749..18c8c0bbc 100644
+index ff853674957c..18c8c0bbcb46 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -261,6 +261,9 @@ int evl_net_ipv4_solicit(struct net *net,
@@ -39,7 +39,7 @@ index ff8536749..18c8c0bbc 100644
  
  	/*
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 123ea4f30..447c5fad4 100644
+index 123ea4f3030f..447c5fad40f0 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -722,8 +722,15 @@ static int socket_solicit_peer(struct evl_socket *esk,

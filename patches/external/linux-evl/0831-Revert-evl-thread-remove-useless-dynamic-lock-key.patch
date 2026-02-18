@@ -1,7 +1,8 @@
 From afc9b9179d48af73a6d172dee51ee4ea5204a045 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 5 Nov 2023 15:53:19 +0100
-Subject: [PATCH 831/985] Revert "evl/thread: remove useless dynamic lock key"
+Subject: [PATCH 0831/1013] Revert "evl/thread: remove useless dynamic lock
+ key"
 
 This reverts commit 5ae263a6ca027c4b79c4dfacfcf4eca8209eefd0, because
 disambiguating the per-thread lock is not as useless as it seemed at
@@ -43,7 +44,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 16 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 1c2e4a269..1164962cd 100644
+index 1c2e4a269ebe..1164962cdc72 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -63,6 +63,7 @@ struct evl_init_thread_attr {
@@ -55,7 +56,7 @@ index 1c2e4a269..1164962cd 100644
  	/*
  	 * Shared thread-specific data, covered by ->lock.
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 1c5bfe12d..76d7e8eaa 100644
+index 1c5bfe12d231..76d7e8eaad7d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -224,7 +224,6 @@ int evl_init_thread(struct evl_thread *thread,

@@ -1,7 +1,7 @@
 From 9ca65adf15390caf8bba1538c5f4e2a571cccab9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 7 Nov 2019 10:52:27 +0100
-Subject: [PATCH 542/985] evl/sem: fix count leakage in non-blocking case
+Subject: [PATCH 0542/1013] evl/sem: fix count leakage in non-blocking case
 
 We need decrement-unless-zero-or-negative semantics in the
 non-blocking case.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index a98e49fb4..f36a9e4c1 100644
+index a98e49fb4224..f36a9e4c1175 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -319,27 +319,35 @@ static int wait_monitor_ungated(struct file *filp,

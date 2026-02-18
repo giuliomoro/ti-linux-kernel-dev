@@ -1,7 +1,7 @@
 From 48a59dff1a5a7f8848e57568de75f40827358636 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 28 Nov 2022 09:21:57 +0100
-Subject: [PATCH 798/985] evl/mutex: account for unbalanced
+Subject: [PATCH 0798/1013] evl/mutex: account for unbalanced
  fast_lock/slow_unlock pattern
 
 A thread might have acquired a lock from user-space via the fast
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 9d85516c2..d1bad9f21 100644
+index 9d85516c29df..d1bad9f210bc 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -771,6 +771,20 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)

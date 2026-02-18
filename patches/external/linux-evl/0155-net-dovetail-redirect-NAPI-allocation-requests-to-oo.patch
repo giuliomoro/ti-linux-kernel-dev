@@ -1,7 +1,7 @@
 From 03d00d3002c3bcf15509b3612165c5f62dc2ca25 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 24 Mar 2025 10:47:44 +0100
-Subject: [PATCH 155/985] net: dovetail: redirect NAPI allocation requests to
+Subject: [PATCH 0155/1013] net: dovetail: redirect NAPI allocation requests to
  oob allocator
 
 Redirect out-of-band requests to allocate/free skbs from the NAPI
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 36 insertions(+), 11 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 5b7178726..65884f4c4 100644
+index 5b7178726268..65884f4c4763 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -5318,11 +5318,10 @@ static inline void __skb_inband_clone(struct sk_buff *skb)
@@ -35,7 +35,7 @@ index 5b7178726..65884f4c4 100644
  static inline bool __skb_oob_free_head(struct sk_buff *skb)
  {
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 26939e405..8122feaea 100644
+index 26939e405221..8122feaea227 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -351,6 +351,9 @@ static struct sk_buff *napi_skb_cache_get(void)

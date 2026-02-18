@@ -1,7 +1,7 @@
 From 5152429b89e97b46bd98978590693c664ae01b2c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 Nov 2023 14:47:19 +0100
-Subject: [PATCH 840/985] evl/proxy: introduce proxied polling operation
+Subject: [PATCH 0840/1013] evl/proxy: introduce proxied polling operation
 
 Allow for collecting events from the proxied file which might
 implement any of the poll and oob_poll handlers.
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 include/evl/poll_head.h
 
 diff --git a/include/asm-generic/evl/poll.h b/include/asm-generic/evl/poll.h
-index f7e15b75d..972698553 100644
+index f7e15b75d71f..97269855377a 100644
 --- a/include/asm-generic/evl/poll.h
 +++ b/include/asm-generic/evl/poll.h
 @@ -4,7 +4,7 @@
@@ -78,7 +78,7 @@ index f7e15b75d..972698553 100644
  
  #endif /* !_ASM_GENERIC_EVL_POLL_H */
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index fba3da8d9..c16ed26bb 100644
+index fba3da8d9373..c16ed26bb285 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -12,6 +12,7 @@
@@ -142,7 +142,7 @@ index fba3da8d9..c16ed26bb 100644
  void evl_drop_watchpoints(struct list_head *drop_list);
 diff --git a/include/evl/poll_head.h b/include/evl/poll_head.h
 new file mode 100644
-index 000000000..253571f30
+index 000000000000..253571f30d29
 --- /dev/null
 +++ b/include/evl/poll_head.h
 @@ -0,0 +1,48 @@
@@ -195,7 +195,7 @@ index 000000000..253571f30
 +
 +#endif /* !_EVL_POLL_HEAD_H */
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 801e6e7dd..f9b933803 100644
+index 801e6e7ddfc0..f9b933803542 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -208,7 +208,7 @@ index 801e6e7dd..f9b933803 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 35f07a2ad..d8d70fd78 100644
+index 35f07a2adb6d..d8d70fd78d63 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -11,6 +11,7 @@

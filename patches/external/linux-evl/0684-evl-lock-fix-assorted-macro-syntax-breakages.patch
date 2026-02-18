@@ -1,7 +1,7 @@
 From 09ebee623bc716ae77bb29e5186b3b1ffaa7ff27 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Jan 2021 11:43:45 +0100
-Subject: [PATCH 684/985] evl/lock: fix assorted macro syntax breakages
+Subject: [PATCH 0684/1013] evl/lock: fix assorted macro syntax breakages
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index a9b1a186a..cd5ebd7f6 100644
+index a9b1a186aa35..cd5ebd7f6d16 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -96,13 +96,13 @@ typedef struct evl_spinlock {

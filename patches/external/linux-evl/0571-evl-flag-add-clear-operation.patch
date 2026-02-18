@@ -1,7 +1,7 @@
 From 43721c7cbad0b2390c8a3ba2e42dcfcf41ac0727 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 3 Feb 2020 10:05:31 +0100
-Subject: [PATCH 571/985] evl/flag: add clear operation
+Subject: [PATCH 0571/1013] evl/flag: add clear operation
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 752404bdf..afebf811a 100644
+index 752404bdf198..afebf811a0d3 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -128,4 +128,9 @@ static inline void evl_pulse_flag(struct evl_flag *wf)

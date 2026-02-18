@@ -1,7 +1,7 @@
 From 1397c34c53ac973ec311e03086c599e29d1d0265 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 14 Oct 2022 15:29:10 +0200
-Subject: [PATCH 751/985] evl/mutex: introduce flat PI chain walk
+Subject: [PATCH 0751/1013] evl/mutex: introduce flat PI chain walk
 
 This starts addressing the general ABBA issue for the PI boost and
 deadlock detection paths (deboosting will be addressed by subsequent
@@ -31,7 +31,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 592 insertions(+), 150 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 4eb5eac5f..44b8c60ce 100644
+index 4eb5eac5f863..44b8c60ce611 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -41,11 +41,17 @@ void __evl_init_mutex(struct evl_mutex *mutex,
@@ -86,7 +86,7 @@ index 4eb5eac5f..44b8c60ce 100644
 +
  #endif /* !_EVL_MUTEX_H */
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index fa8ce163e..3b86eb2c8 100644
+index fa8ce163e589..3b86eb2c861e 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -406,4 +406,13 @@ evl_current_kthread(void)
@@ -104,7 +104,7 @@ index fa8ce163e..3b86eb2c8 100644
 +
  #endif /* !_EVL_THREAD_H */
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index d7b2dee13..429b83bc1 100644
+index d7b2dee13e0d..429b83bc1d30 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -21,11 +21,12 @@ struct evl_thread;
@@ -143,7 +143,7 @@ index d7b2dee13..429b83bc1 100644
 +
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 1a2fefcd9..89f5c23bf 100644
+index 1a2fefcd941a..89f5c23bf344 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -858,14 +858,16 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
@@ -168,7 +168,7 @@ index 1a2fefcd9..89f5c23bf 100644
  			break;
  		}
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index a949988be..4a5f7689a 100644
+index a949988beeb7..4a5f7689a0f0 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -16,9 +16,14 @@
@@ -1005,7 +1005,7 @@ index a949988be..4a5f7689a 100644
  	 * Raise FLCEIL, which indicates a kernel entry will be
  	 * required for releasing this resource.
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f3bba2e57..20c4aca84 100644
+index f3bba2e57286..20c4aca8431c 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -598,24 +598,29 @@ void evl_protect_thread_priority(struct evl_thread *thread, int prio)
@@ -1048,7 +1048,7 @@ index f3bba2e57..20c4aca84 100644
  	raw_spin_unlock(&thread->rq->lock);
  }
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 906c58dc7..ce9112836 100644
+index 906c58dc7ce5..ce9112836973 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1051,6 +1051,14 @@ int evl_set_thread_schedparam(struct evl_thread *thread,
@@ -1125,7 +1125,7 @@ index 906c58dc7..ce9112836 100644
  {
  	if (thread->state & (T_ROOT|T_DORMANT|T_ZOMBIE))
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index ed4869fec..9fc2c1108 100644
+index ed4869fec38a..9fc2c110807c 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -20,9 +20,10 @@ void __evl_init_wait(struct evl_wait_queue *wq,

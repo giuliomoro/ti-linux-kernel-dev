@@ -1,7 +1,7 @@
 From 7219bc9937dfcb3e155f3bcc7734f1cc93c8cd45 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 12:53:16 +0200
-Subject: [PATCH 603/985] evl/sched: tp: reschedule after control updates
+Subject: [PATCH 0603/1013] evl/sched: tp: reschedule after control updates
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 1690b4023..83c562541 100644
+index 1690b40237e8..83c5625413b5 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -339,11 +339,11 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,

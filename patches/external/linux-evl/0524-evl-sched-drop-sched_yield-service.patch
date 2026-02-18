@@ -1,7 +1,7 @@
 From fe1ff44dd24f87a18bb147bbefb9900d1e1b16c9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Oct 2019 15:54:33 +0200
-Subject: [PATCH 524/985] evl/sched: drop sched_yield service
+Subject: [PATCH 0524/1013] evl/sched: drop sched_yield service
 
 Manual round-robin is a relic from the dark ages, in most cases used
 to paper over an implementation issue, which eventually yields to
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 12 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index db3c74ec3..ce2fd0280 100644
+index db3c74ec3094..ce2fd02803cc 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -541,8 +541,6 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -27,7 +27,7 @@ index db3c74ec3..ce2fd0280 100644
  
  void __init evl_cleanup_sched(void);
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 51a59dd79..3b406d9af 100644
+index 51a59dd794dd..3b406d9afa78 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -776,16 +776,6 @@ evl_find_sched_class(union evl_sched_param *param,

@@ -1,7 +1,7 @@
 From a30c56c822fe86e88670c48e196acc770abc6aba Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 May 2019 17:09:23 +0200
-Subject: [PATCH 082/985] x86: dovetail: enable alternate scheduling
+Subject: [PATCH 0082/1013] x86: dovetail: enable alternate scheduling
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 119 insertions(+), 13 deletions(-)
 
 diff --git a/arch/x86/include/asm/dovetail.h b/arch/x86/include/asm/dovetail.h
-index ee9cc35e6..771a275c6 100644
+index ee9cc35e6c47..771a275c6da4 100644
 --- a/arch/x86/include/asm/dovetail.h
 +++ b/arch/x86/include/asm/dovetail.h
 @@ -6,4 +6,26 @@
@@ -45,7 +45,7 @@ index ee9cc35e6..771a275c6 100644
 +
  #endif /* _ASM_X86_DOVETAIL_H */
 diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index f71fc6084..9118b5742 100644
+index f71fc6084fb9..9118b5742f40 100644
 --- a/arch/x86/kernel/process_64.c
 +++ b/arch/x86/kernel/process_64.c
 @@ -616,6 +616,8 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
@@ -102,7 +102,7 @@ index f71fc6084..9118b5742 100644
  	}
  	case ARCH_GET_FS: {
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 60986f67c..8be876cec 100644
+index 60986f67c35a..8be876cec354 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
 @@ -3729,6 +3729,7 @@ static inline size_t fxstate_size(struct x86_emulate_ctxt *ctxt)
@@ -114,7 +114,7 @@ index 60986f67c..8be876cec 100644
  
  	rc = check_fxsr(ctxt);
 diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 6b97cd279..e2bd0b8a3 100644
+index 6b97cd2798e9..e2bd0b8a30bd 100644
 --- a/arch/x86/mm/fault.c
 +++ b/arch/x86/mm/fault.c
 @@ -1541,3 +1541,41 @@ DEFINE_IDTENTRY_RAW_ERRORCODE(exc_page_fault)
@@ -160,7 +160,7 @@ index 6b97cd279..e2bd0b8a3 100644
 +
 +#endif
 diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 8629d90fd..61b258881 100644
+index 8629d90fdcd9..61b25888170a 100644
 --- a/arch/x86/mm/tlb.c
 +++ b/arch/x86/mm/tlb.c
 @@ -5,6 +5,7 @@
@@ -318,7 +318,7 @@ index 8629d90fd..61b258881 100644
  	 * The condition we want to check is
  	 * current_mm->pgd == __va(read_cr3_pa()).  This may be slow, though,
 diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 91d31ac42..634fcb660 100644
+index 91d31ac422d6..634fcb660c45 100644
 --- a/arch/x86/platform/efi/efi_64.c
 +++ b/arch/x86/platform/efi/efi_64.c
 @@ -476,15 +476,23 @@ void __init efi_dump_pagetable(void)

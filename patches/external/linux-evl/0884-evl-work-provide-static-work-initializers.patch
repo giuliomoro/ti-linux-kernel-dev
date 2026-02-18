@@ -1,7 +1,7 @@
 From 3656775fc098526201413bff4cc4a75763e72968 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Sep 2024 11:35:47 +0200
-Subject: [PATCH 884/985] evl/work: provide static work initializers
+Subject: [PATCH 0884/1013] evl/work: provide static work initializers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 38 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/work.h b/include/evl/work.h
-index 647e45f91..c67d7f303 100644
+index 647e45f91073..c67d7f303e22 100644
 --- a/include/evl/work.h
 +++ b/include/evl/work.h
 @@ -24,12 +24,36 @@ struct evl_work {
@@ -60,7 +60,7 @@ index 647e45f91..c67d7f303 100644
 +
  #endif /* !_EVL_WORK_H */
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index cc9759f73..b6c4a3fd0 100644
+index cc9759f73735..b6c4a3fd0e7e 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -6,7 +6,7 @@

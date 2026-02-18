@@ -1,7 +1,7 @@
 From 632e80fbe9b4c00c17e7f8f13470c10b4ab87d40 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 17 Jun 2019 15:44:12 +0200
-Subject: [PATCH 409/985] evl/monitor: fix polling support
+Subject: [PATCH 0409/1013] evl/monitor: fix polling support
 
 Requires a couple of ABI changes.
 
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 120 insertions(+), 71 deletions(-)
 
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index 8de44e236..d0439f42f 100644
+index 8de44e236bde..d0439f42f9b2 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -17,6 +17,8 @@
@@ -63,7 +63,7 @@ index 8de44e236..d0439f42f 100644
  void __evl_signal_poll_events(struct evl_poll_head *head,
  			      int events);
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index f3e6a05f6..f5109f21e 100644
+index f3e6a05f6d1f..f5109f21e1c5 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -76,7 +76,7 @@ index f3e6a05f6..f5109f21e 100644
  struct evl_core_info {
  	__u32 abi_level;
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index ecd071fc7..577388d7a 100644
+index ecd071fc79c1..577388d7a4da 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -43,8 +43,9 @@ struct evl_monitor_state {
@@ -91,7 +91,7 @@ index ecd071fc7..577388d7a 100644
  	} u;
  };
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index c2b2a2198..58fa2aa1d 100644
+index c2b2a21987f7..58fa2aa1d4b5 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -688,7 +688,7 @@ static __poll_t timerfd_oob_poll(struct file *filp,
@@ -104,7 +104,7 @@ index c2b2a2198..58fa2aa1d 100644
  	return timerfd->ticked ? POLLIN|POLLRDNORM : 0;
  }
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index b7d09861d..adf49ea5d 100644
+index b7d09861d7f5..adf49ea5d5ba 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -61,7 +61,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -323,7 +323,7 @@ index b7d09861d..adf49ea5d 100644
  		ret = POLLIN|POLLRDNORM;
  		break;
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 6bc459826..c118af3cc 100644
+index 6bc459826034..c118af3cc9a2 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -43,27 +43,14 @@ struct poll_waiter {
@@ -467,7 +467,7 @@ index 6bc459826..c118af3cc 100644
  	return count;
  }
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index f950928e5..0a8ea816d 100644
+index f950928e5a02..0a8ea816d942 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -531,7 +531,7 @@ static __poll_t xbuf_oob_poll(struct file *filp,

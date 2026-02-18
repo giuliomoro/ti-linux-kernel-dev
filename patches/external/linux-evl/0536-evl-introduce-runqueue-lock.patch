@@ -1,7 +1,7 @@
 From 78e9b5707c1894163bb8952cb331dd80d35ca2cf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 31 Oct 2019 18:31:28 +0100
-Subject: [PATCH 536/985] evl: introduce runqueue lock
+Subject: [PATCH 0536/1013] evl: introduce runqueue lock
 
 This is the last step to get rid of the ugly lock, which was still
 required for serializing accesses to the runqueue information.
@@ -28,7 +28,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  17 files changed, 766 insertions(+), 697 deletions(-)
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index ad5faf866..2fff3c558 100644
+index ad5faf8667f9..2fff3c558112 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -36,10 +36,18 @@
@@ -52,7 +52,7 @@ index ad5faf866..2fff3c558 100644
  /* TEMP: needed until we have gotten rid of the infamous nklock. */
  #ifdef CONFIG_SMP
 diff --git a/include/evl/irq.h b/include/evl/irq.h
-index dd5cd274f..8720c8969 100644
+index dd5cd274f66b..8720c8969846 100644
 --- a/include/evl/irq.h
 +++ b/include/evl/irq.h
 @@ -9,20 +9,20 @@
@@ -91,7 +91,7 @@ index dd5cd274f..8720c8969 100644
  		if (!hard_irqs_disabled())
  			hard_local_irq_disable();
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 884c8433c..4b1cd974c 100644
+index 884c8433c4c7..4b1cd974c4d4 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -19,19 +19,18 @@
@@ -493,7 +493,7 @@ index 884c8433c..4b1cd974c 100644
  	thread->info |= T_KICKED;
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index c6dcbe321..e639c84cf 100644
+index c6dcbe321089..e639c84cf00d 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -86,7 +86,8 @@ struct evl_thread {
@@ -577,7 +577,7 @@ index c6dcbe321..e639c84cf 100644
  
  void evl_kick_thread(struct evl_thread *thread);
 diff --git a/include/evl/tick.h b/include/evl/tick.h
-index 79bb5a852..581bb106b 100644
+index 79bb5a852c79..581bb106b5d7 100644
 --- a/include/evl/tick.h
 +++ b/include/evl/tick.h
 @@ -45,7 +45,7 @@ static inline void evl_notify_proxy_tick(struct evl_rq *this_rq)
@@ -590,7 +590,7 @@ index 79bb5a852..581bb106b 100644
  }
  
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index b25c66613..04dc8f67c 100644
+index b25c6661368f..04dc8f67ce0d 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -319,15 +319,10 @@ static inline ktime_t evl_get_timer_expiry(struct evl_timer *timer)
@@ -643,7 +643,7 @@ index b25c66613..04dc8f67c 100644
  					struct evl_clock *clock,
  					struct evl_rq *rq)
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 96f9a86b7..7d654ea8f 100644
+index 96f9a86b71a0..7d654ea8f374 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -217,34 +217,32 @@ DECLARE_EVENT_CLASS(evl_clock_ident,
@@ -695,7 +695,7 @@ index 96f9a86b7..7d654ea8f 100644
  
  TRACE_EVENT(evl_switch_context,
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index cd6db5865..f96d878ab 100644
+index cd6db5865c99..f96d878abb81 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -300,7 +300,7 @@ static void do_clock_tick(struct evl_clock *clock, struct evl_timerbase *tmb)
@@ -776,7 +776,7 @@ index cd6db5865..f96d878ab 100644
  	return set_timer_value(&timerfd->timer, value);
  }
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 9ffa6de1c..d9108063a 100644
+index 9ffa6de1cb04..d9108063a5c2 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -84,9 +84,9 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -817,7 +817,7 @@ index 9ffa6de1c..d9108063a 100644
  	evl_spin_unlock(&event->wait_queue.lock);
  	__exit_monitor(gate, curr);
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 39049f1d0..64ed8f27f 100644
+index 39049f1d0047..64ed8f27fd66 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -63,7 +63,7 @@ static void raise_boost_flag(struct evl_thread *owner)
@@ -935,7 +935,7 @@ index 39049f1d0..64ed8f27f 100644
  	disable_inband_switch(curr);
  
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index d83a6443c..01c5eda0e 100644
+index d83a6443c8f9..01c5eda0e029 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -22,6 +22,7 @@
@@ -1710,7 +1710,7 @@ index d83a6443c..01c5eda0e 100644
  struct evl_sched_class *
  evl_find_sched_class(union evl_sched_param *param,
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index d184afd79..694986b3e 100644
+index d184afd797a1..694986b3e567 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -154,7 +154,7 @@ static void quota_refill_handler(struct evl_timer *timer) /* oob stage stalled *
@@ -1848,7 +1848,7 @@ index d184afd79..694986b3e 100644
  	return -EINVAL;
  }
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index b9a178e1f..e2338518d 100644
+index b9a178e1f12a..e2338518d6be 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -16,7 +16,8 @@ static void tp_schedule_next(struct evl_sched_tp *tp)
@@ -1970,7 +1970,7 @@ index b9a178e1f..e2338518d 100644
  	if (ogps)
  		put_tp_schedule(ogps);
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 5473e2ca4..20630358d 100644
+index 5473e2ca4b85..20630358d3bd 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -67,7 +67,11 @@ static void prepare_for_signal(struct task_struct *p,
@@ -1996,7 +1996,7 @@ index 5473e2ca4..20630358d 100644
  	evl_test_cancel();
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 2a6c4b72c..b032fbb8e 100644
+index 2a6c4b72c7d6..b032fbb8efaa 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -116,38 +116,6 @@ static inline void drop_u_cap(struct evl_thread *thread,
@@ -2879,7 +2879,7 @@ index 2a6c4b72c..b032fbb8e 100644
  EXPORT_SYMBOL_GPL(evl_get_thread_state);
  
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 625040277..1a82d8d46 100644
+index 625040277e1e..1a82d8d46b22 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -68,9 +68,9 @@ static int proxy_set_oneshot_stopped(struct clock_event_device *proxy_dev)
@@ -2928,7 +2928,7 @@ index 625040277..1a82d8d46 100644
  			}
  		}
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 0e7afa891..de545c180 100644
+index 0e7afa891961..de545c180970 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -71,9 +71,11 @@ static inline void double_timer_base_lock(struct evl_timerbase *tb1,

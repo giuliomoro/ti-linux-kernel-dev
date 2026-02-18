@@ -1,7 +1,7 @@
 From dada7f5b2b1883b03eebb3a13910a5d0e23d7316 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 13 Jun 2025 11:19:18 +0200
-Subject: [PATCH 192/985] igb: refactor conditional build of oob-specific
+Subject: [PATCH 0192/1013] igb: refactor conditional build of oob-specific
  features
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 125 insertions(+), 86 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 9c4122ad9..85b81520e 100644
+index 9c4122ad9c6c..85b81520ea98 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -821,13 +821,42 @@ static void igb_create_oob_pool(struct igb_ring *ring)

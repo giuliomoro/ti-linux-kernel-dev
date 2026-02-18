@@ -1,7 +1,7 @@
 From 014b1a302307e2fc3bd88e5a7aa170b1af70bf2c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 16:31:57 +0100
-Subject: [PATCH 302/985] evl/mutex: export flushing routine
+Subject: [PATCH 0302/1013] evl/mutex: export flushing routine
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 15 insertions(+), 11 deletions(-)
 
 diff --git a/include/evenless/mutex.h b/include/evenless/mutex.h
-index 9253b47d7..d52fef5ca 100644
+index 9253b47d73ac..d52fef5cafaa 100644
 --- a/include/evenless/mutex.h
 +++ b/include/evenless/mutex.h
 @@ -48,7 +48,7 @@ void evl_init_mutex_pp(struct evl_mutex *mutex,
@@ -33,7 +33,7 @@ index 9253b47d7..d52fef5ca 100644
  
  #ifdef CONFIG_EVENLESS_DEBUG_MUTEX_INBAND
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 183453f9b..efecc5905 100644
+index 183453f9b129..efecc5905023 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -334,31 +334,32 @@ void evl_init_mutex_pp(struct evl_mutex *mutex,

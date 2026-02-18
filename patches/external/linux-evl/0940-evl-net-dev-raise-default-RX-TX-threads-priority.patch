@@ -1,7 +1,7 @@
 From 34718625acd49366bf71b60a525ef68b08528dcf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 7 Jun 2025 17:34:16 +0200
-Subject: [PATCH 940/985] evl/net: dev: raise default RX/TX threads priority
+Subject: [PATCH 0940/1013] evl/net: dev: raise default RX/TX threads priority
 
 Move the default priority of the internal threads to 50.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 6bcdced6b..b199fba82 100644
+index 6bcdced6b66e..b199fba82fd9 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -33,14 +33,14 @@

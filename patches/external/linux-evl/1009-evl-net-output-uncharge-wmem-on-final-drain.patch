@@ -1,0 +1,38 @@
+From 8dc10ba82a1daa7e0bf0747a02339871cecb5fd2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 15:26:30 +0100
+Subject: [PATCH 1009/1013] evl/net: output: uncharge wmem on final drain
+
+The per-socket wmem crossing of every buffer which is about to be
+purged needs to be decremented by the amount of dropped data, in order
+to prevent a leak causing a hang at release for that socket.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/output.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 712da8144239..45a8f1a6fe9d 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -146,7 +146,15 @@ void evl_net_do_tx(void *arg)
+ 		}
+ 	}
+ 
+-	qdisc->oob_ops->flush(qdisc);
++	/* Purge the output queue from the buffers in flight. */
++	for (;;) {
++		bool more;
++		skb = qdisc->oob_ops->dequeue(qdisc, &more);
++		if (skb == NULL)
++			break;
++		evl_net_uncharge_skb_wmem(skb);
++		evl_net_free_skb(skb);
++	}
+ }
+ 
+ static void skb_xmit_inband(struct sk_buff *skb)
+-- 
+2.30.2
+

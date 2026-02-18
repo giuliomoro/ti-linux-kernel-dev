@@ -1,7 +1,7 @@
 From 3b5a548216e0446aa87955ec67f2ca05dd954266 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 31 Jan 2025 10:16:08 +0100
-Subject: [PATCH 905/985] evl/factory: export factory building interface
+Subject: [PATCH 0905/1013] evl/factory: export factory building interface
 
 So that drivers implementing EVL-based extensions/features can provide
 their own set of factories.
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 44 insertions(+), 22 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 14ace1510..dbecef12b 100644
+index 14ace151002b..dbecef12b7bc 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -188,9 +188,9 @@ int evl_open_element(struct inode *inode,
@@ -41,7 +41,7 @@ index 14ace1510..dbecef12b 100644
  void evl_delete_factory(struct evl_factory *fac);
  
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 3e8dd473f..7cf4bc304 100644
+index 3e8dd473f66b..7cf4bc3042ad 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -168,7 +168,7 @@ static int init_clock(struct evl_clock *clock, struct evl_clock *master)
@@ -54,7 +54,7 @@ index 3e8dd473f..7cf4bc304 100644
  					clock->name);
  	if (ret) {
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index a2f87b89f..e399c52e1 100644
+index a2f87b89f075..e399c52e129d 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -189,6 +189,7 @@ int evl_open_element(struct inode *inode, struct file *filp)
@@ -186,7 +186,7 @@ index a2f87b89f..e399c52e1 100644
  {
  	struct task_struct *p;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 0191394bc..7d582d65c 100644
+index 0191394bc835..7d582d65cf10 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -467,7 +467,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)

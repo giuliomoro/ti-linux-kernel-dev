@@ -1,7 +1,7 @@
 From 68d4bf902e158e082f96f5f7f19ff4605b15c0b8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 25 Feb 2019 17:54:50 +0100
-Subject: [PATCH 324/985] evl/poll: convert to evl_spin_lock API
+Subject: [PATCH 0324/1013] evl/poll: convert to evl_spin_lock API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 22 insertions(+), 21 deletions(-)
 
 diff --git a/include/evenless/poll.h b/include/evenless/poll.h
-index a9cdb3c35..391577752 100644
+index a9cdb3c35f1d..391577752ccc 100644
 --- a/include/evenless/poll.h
 +++ b/include/evenless/poll.h
 @@ -12,18 +12,19 @@
@@ -45,7 +45,7 @@ index a9cdb3c35..391577752 100644
  
  void evl_poll_watch(struct evl_poll_head *head,
 diff --git a/kernel/evenless/poll.c b/kernel/evenless/poll.c
-index 30b722e7d..98305c292 100644
+index 30b722e7d8d6..98305c29257f 100644
 --- a/kernel/evenless/poll.c
 +++ b/kernel/evenless/poll.c
 @@ -24,7 +24,7 @@ struct poll_group {

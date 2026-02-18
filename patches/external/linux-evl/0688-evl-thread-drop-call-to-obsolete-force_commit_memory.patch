@@ -1,7 +1,7 @@
 From 7935b5e2949a74a46797f0dc31c43c43beebdbb9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 21 Mar 2021 12:13:17 +0100
-Subject: [PATCH 688/985] evl/thread: drop call to obsolete
+Subject: [PATCH 0688/1013] evl/thread: drop call to obsolete
  force_commit_memory()
 
 A process is now marked for COW-breaking on fork() upon the first call
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 25 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 36c930f96..950af5e87 100644
+index 36c930f96e68..950af5e872fb 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1361,27 +1361,6 @@ void evl_notify_thread(struct evl_thread *thread,

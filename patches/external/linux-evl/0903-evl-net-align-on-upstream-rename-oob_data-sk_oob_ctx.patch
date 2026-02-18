@@ -1,7 +1,7 @@
 From 0335c0f76c15a4e775e9b1367609e689bb455825 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Jan 2025 18:18:52 +0100
-Subject: [PATCH 903/985] evl/net: align on upstream rename: oob_data ->
+Subject: [PATCH 0903/1013] evl/net: align on upstream rename: oob_data ->
  sk_oob_ctx
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 79439168e..7c68fd7bd 100644
+index 79439168e3cf..7c68fd7bdf71 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -57,7 +57,7 @@ struct domain_list_head {

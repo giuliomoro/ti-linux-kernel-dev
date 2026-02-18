@@ -1,7 +1,7 @@
 From 4c25d11b873e1068319af32ea7be03c5aab94097 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 15:56:19 +0200
-Subject: [PATCH 508/985] evl/flag: add pre-locked form of operations
+Subject: [PATCH 0508/1013] evl/flag: add pre-locked form of operations
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 31 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 5b6a0b065..aa6510c19 100644
+index 5b6a0b065872..aa6510c19aa4 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -62,13 +62,19 @@ struct evl_thread *evl_wait_flag_head(struct evl_flag *wf)
@@ -78,7 +78,7 @@ index 5b6a0b065..aa6510c19 100644
  
  static inline void evl_flush_flag(struct evl_flag *wf, int reason)
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index ff1b8e18b..742895527 100644
+index ff1b8e18b08a..742895527358 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -166,6 +166,7 @@ void evl_flush_wait(struct evl_wait_queue *wq, int reason)

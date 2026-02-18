@@ -1,7 +1,7 @@
 From 44cc122b1c03173a9be0ffad323cc60cd65496a9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 17:07:21 +0200
-Subject: [PATCH 510/985] evl/{wait, mutex}: move lock out of wait channel
+Subject: [PATCH 0510/1013] evl/{wait, mutex}: move lock out of wait channel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 592ad0f68..8f9bd4b92 100644
+index 592ad0f680d6..8f9bd4b924ab 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -31,6 +31,7 @@ struct evl_mutex {
@@ -38,7 +38,7 @@ index 592ad0f68..8f9bd4b92 100644
  		},							\
  		.fastlock = ATOMIC_INIT(0),				\
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 9eec58ecc..26de3a313 100644
+index 9eec58ecc736..26de3a3139d2 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -47,7 +47,6 @@ struct evl_wait_channel {
@@ -50,7 +50,7 @@ index 9eec58ecc..26de3a313 100644
  
  struct evl_thread {
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 742895527..d51ca7766 100644
+index 742895527358..d51ca77665da 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -26,16 +26,17 @@ struct evl_wait_queue {
@@ -73,7 +73,7 @@ index 742895527..d51ca7766 100644
  	}
  
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index a06b66eb9..13d842086 100644
+index a06b66eb9cb6..13d8420867b7 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -377,7 +377,7 @@ static void init_mutex(struct evl_mutex *mutex,
@@ -86,7 +86,7 @@ index a06b66eb9..13d842086 100644
  
  void evl_init_mutex_pi(struct evl_mutex *mutex,
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 6f8bfa10c..cd76f88a2 100644
+index 6f8bfa10c644..cd76f88a24dc 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -18,10 +18,10 @@ void evl_init_wait(struct evl_wait_queue *wq,

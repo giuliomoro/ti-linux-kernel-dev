@@ -1,8 +1,8 @@
 From 342f46e1dd77ea42ac00fe99cb0dc2716098040d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 1 Jul 2025 12:41:59 +0200
-Subject: [PATCH 977/985] evl/net: stats: track checksum and buffer allocation
- failures
+Subject: [PATCH 0977/1013] evl/net: stats: track checksum and buffer
+ allocation failures
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  6 files changed, 40 insertions(+), 4 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index 71f9cadda..54517674d 100644
+index 71f9caddaf5e..54517674d77f 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -59,8 +59,11 @@ struct evl_netdev_state {
@@ -31,7 +31,7 @@ index 71f9cadda..54517674d 100644
  	/* Count of oob ports referring to this device. */
  	int refs;
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index ef7c89f2e..d0085b3c8 100644
+index ef7c89f2ef72..d0085b3c862b 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -42,6 +42,8 @@ int __evl_net_dev_allocfd(struct net_device *dev);
@@ -58,7 +58,7 @@ index ef7c89f2e..d0085b3c8 100644
  
  #endif /* !_EVL_NET_DEVICE_H */
 diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
-index 6eec8fefb..b23fd665d 100644
+index 6eec8fefb9d1..b23fd665d126 100644
 --- a/include/uapi/evl/net/device-abi.h
 +++ b/include/uapi/evl/net/device-abi.h
 @@ -20,7 +20,13 @@ struct evl_net_devstat {
@@ -77,7 +77,7 @@ index 6eec8fefb..b23fd665d 100644
  
  #define EVL_NDEVIOC_SETRXEBPF	_IOW(EVL_NETDEV_IOCBASE, 0, __s32 /* fd */)
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 679352fb4..35679bd0c 100644
+index 679352fb49e7..35679bd0c129 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -609,11 +609,15 @@ static int get_dev_stat(struct net_device *dev, struct evl_net_devstat *devs)
@@ -113,7 +113,7 @@ index 679352fb4..35679bd0c 100644
  			unsigned long arg)
  {
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index e4faac6cb..568058694 100644
+index e4faac6cbd8f..568058694b8e 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -852,8 +852,11 @@ int evl_net_deliver_udp(struct sk_buff *skb)
@@ -130,7 +130,7 @@ index e4faac6cb..568058694 100644
  	if (skb_is_oob_timestamped(skb))
  		skb_shinfo_oob(skb)->delivery_time = evl_ktime_monotonic();
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index d38e3fb35..50090c181 100644
+index d38e3fb35a00..50090c181327 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -158,11 +158,13 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,

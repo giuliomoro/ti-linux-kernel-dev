@@ -1,7 +1,7 @@
 From 7c5a870d30bee7f473e661ee275b47bd6af50abc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 1 Feb 2019 15:54:28 +0100
-Subject: [PATCH 241/985] evl: rename match inband kernel naming with
+Subject: [PATCH 0241/1013] evl: rename match inband kernel naming with
  evl_current()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  15 files changed, 46 insertions(+), 46 deletions(-)
 
 diff --git a/include/evenless/monitor.h b/include/evenless/monitor.h
-index fc9dd31e1..da5b9e6d3 100644
+index fc9dd31e1d1a..da5b9e6d35c7 100644
 --- a/include/evenless/monitor.h
 +++ b/include/evenless/monitor.h
 @@ -18,7 +18,7 @@ void __evl_commit_monitor_ceiling(void);
@@ -37,7 +37,7 @@ index fc9dd31e1..da5b9e6d3 100644
  	if (curr->u_window->pp_pending != EVL_NO_HANDLE)
  		__evl_commit_monitor_ceiling();
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index f7b1a90a8..b34d183d2 100644
+index f7b1a90a831c..b34d183d25b7 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -173,7 +173,7 @@ void __evl_test_cancel(struct evl_thread *curr);
@@ -80,7 +80,7 @@ index f7b1a90a8..b34d183d2 100644
  
  void evl_set_kthread_priority(struct evl_kthread *thread,
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index fd4026ae1..82f3d97b0 100644
+index fd4026ae1ca5..82f3d97b0759 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -322,7 +322,7 @@ TRACE_EVENT(evl_sleep_on,
@@ -93,7 +93,7 @@ index fd4026ae1..82f3d97b0 100644
  		__entry->timeout_mode = timeout_mode;
  		__entry->wchan = wchan;
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index cd3e61569..f8308d388 100644
+index cd3e6156995d..f8308d388b5a 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -415,7 +415,7 @@ static long restart_clock_delay(struct restart_block *param)
@@ -106,7 +106,7 @@ index cd3e61569..f8308d388 100644
  	struct restart_block *restart;
  	struct timespec remain;
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 40e2d49fb..b16d4af9e 100644
+index 40e2d49fbfcf..b16d4af9ebbf 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -91,7 +91,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -146,7 +146,7 @@ index 40e2d49fb..b16d4af9e 100644
  	struct evl_monitor *gate;
  	struct evl_file *sfilp;
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 9ad8ebcc5..d14a61123 100644
+index 9ad8ebcc569a..d14a611230a1 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -367,7 +367,7 @@ EXPORT_SYMBOL_GPL(evl_destroy_mutex);
@@ -186,7 +186,7 @@ index 9ad8ebcc5..d14a61123 100644
  	atomic_t *lockp;
  
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index f0820531f..2ea832fa7 100644
+index f0820531f008..2ea832fa70bf 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -285,7 +285,7 @@ static int collect_events(struct event_poller *poller,
@@ -208,7 +208,7 @@ index f0820531f..2ea832fa7 100644
  	unsigned long flags;
  	int n;
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 58842d480..f6f6180ba 100644
+index 58842d4808d0..f6f6180bae65 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -905,7 +905,7 @@ static int yield_inband(void)	/* OOB only */
@@ -221,7 +221,7 @@ index 58842d480..f6f6180ba 100644
  	oob_context_only();
  
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index f3488d7cc..8b80ea193 100644
+index f3488d7cc88a..8b80ea193c2b 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -33,7 +33,7 @@ struct sem_wait_data {
@@ -234,7 +234,7 @@ index f3488d7cc..8b80ea193 100644
  	struct sem_wait_data wda;
  	enum evl_tmode tmode;
 diff --git a/kernel/evenless/syscall.c b/kernel/evenless/syscall.c
-index 845561deb..2b6b786eb 100644
+index 845561deb00e..2b6b786ebe46 100644
 --- a/kernel/evenless/syscall.c
 +++ b/kernel/evenless/syscall.c
 @@ -100,7 +100,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs)
@@ -256,7 +256,7 @@ index 845561deb..2b6b786eb 100644
  	unsigned int nr;
  	int ret;
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 79533e451..c8c67a2c0 100644
+index 79533e4511f8..c8c67a2c020f 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -268,7 +268,7 @@ static void do_cleanup_current(struct evl_thread *curr)
@@ -428,7 +428,7 @@ index 79533e451..c8c67a2c0 100644
  		cleanup_current_thread();
  	}
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
-index 8edfd7b8a..7e5104755 100644
+index 8edfd7b8a271..7e5104755491 100644
 --- a/kernel/evenless/timer.c
 +++ b/kernel/evenless/timer.c
 @@ -430,7 +430,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
@@ -441,7 +441,7 @@ index 8edfd7b8a..7e5104755 100644
  		return 0;
  
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
-index ac74a11e1..0b7fcf250 100644
+index ac74a11e1b84..0b7fcf2505a3 100644
 --- a/kernel/evenless/timerfd.c
 +++ b/kernel/evenless/timerfd.c
 @@ -69,7 +69,7 @@ static int set_timerfd(struct evl_timerfd *timerfd,
@@ -454,7 +454,7 @@ index ac74a11e1..0b7fcf250 100644
  
  	return set_timer_value(&timerfd->timer, &sreq->value);
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 902d4bf10..22a41876d 100644
+index 902d4bf10bee..22a41876dd10 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -38,7 +38,7 @@ EXPORT_SYMBOL_GPL(evl_destroy_wait);
@@ -467,7 +467,7 @@ index 902d4bf10..22a41876d 100644
  	int ret;
  
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index ea7ca547f..cc3be3f12 100644
+index ea7ca547f15a..cc3be3f12707 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -342,7 +342,7 @@ static void inbound_signal_input(struct xbuf_ring *ring)

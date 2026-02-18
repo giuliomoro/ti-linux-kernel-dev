@@ -1,7 +1,7 @@
 From 8c4cc2be9135231a28a3f5304be949a9976101e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 12 Jul 2019 17:22:47 +0200
-Subject: [PATCH 441/985] evl/irq: exit_oob_irq() must return with irqs off
+Subject: [PATCH 0441/1013] evl/irq: exit_oob_irq() must return with irqs off
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/irq.c b/kernel/evl/irq.c
-index 46cf6cf0e..eba62d308 100644
+index 46cf6cf0e0c3..eba62d308d59 100644
 --- a/kernel/evl/irq.c
 +++ b/kernel/evl/irq.c
 @@ -28,7 +28,13 @@ void exit_oob_irq(void)

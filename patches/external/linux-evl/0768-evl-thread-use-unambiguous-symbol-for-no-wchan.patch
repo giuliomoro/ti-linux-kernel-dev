@@ -1,7 +1,7 @@
 From ba76cd29e5ff58f441d6e21fac3e9214c0696ffc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 25 Oct 2022 20:19:40 +0200
-Subject: [PATCH 768/985] evl/thread: use unambiguous symbol for no wchan
+Subject: [PATCH 0768/1013] evl/thread: use unambiguous symbol for no wchan
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 88f719432..7e8a76e2d 100644
+index 88f7194324f2..7e8a76e2d8d5 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2808,7 +2808,7 @@ static ssize_t wchan_show(struct device *dev,

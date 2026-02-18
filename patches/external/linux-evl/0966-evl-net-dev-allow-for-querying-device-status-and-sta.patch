@@ -1,7 +1,7 @@
 From 0a4e165989391ae951f36880e027e6991b35bd44 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 16:18:00 +0200
-Subject: [PATCH 966/985] evl/net: dev: allow for querying device status and
+Subject: [PATCH 0966/1013] evl/net: dev: allow for querying device status and
  statistics
 
 Implement ioctl(EVL_NDEVIOC_GETSTAT) which returns a structure filled
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  7 files changed, 81 insertions(+), 3 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index c762b14af..71f9cadda 100644
+index c762b14afd71..71f9caddaf5e 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -11,6 +11,7 @@
@@ -55,7 +55,7 @@ index c762b14af..71f9cadda 100644
  	int refs;
  };
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 0cf83bb16..f2137a477 100644
+index 0cf83bb169ca..f2137a4772de 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -68,7 +68,7 @@ index 0cf83bb16..f2137a477 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
-index fb2a30de7..6eec8fefb 100644
+index fb2a30de7a08..6eec8fefb9d1 100644
 --- a/include/uapi/evl/net/device-abi.h
 +++ b/include/uapi/evl/net/device-abi.h
 @@ -11,7 +11,20 @@
@@ -93,7 +93,7 @@ index fb2a30de7..6eec8fefb 100644
  
  #endif /* !_EVL_UAPI_NET_DEVICE_ABI_H */
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 0e61c3a76..679352fb4 100644
+index 0e61c3a7618c..679352fb49e7 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -601,9 +601,32 @@ static int set_rx_filter(struct net_device *dev, unsigned long arg)
@@ -146,7 +146,7 @@ index 0e61c3a76..679352fb4 100644
  
  	return ret;
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index ad53f62ec..c9aa66c1c 100644
+index ad53f62ecd5e..c9aa66c1c4a9 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -78,7 +78,9 @@ void evl_net_do_rx(void *arg)
@@ -179,7 +179,7 @@ index ad53f62ec..c9aa66c1c 100644
  
  		evl_net_ipv4_gc(dev_net(dev));
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 089d4aff3..239880b9f 100644
+index 089d4aff3d01..239880b9fec5 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -111,8 +111,10 @@ void evl_net_do_tx(void *arg)
@@ -214,7 +214,7 @@ index 089d4aff3..239880b9f 100644
  		}
  	}
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 51e466864..d38e3fb35 100644
+index 51e4668645a5..d38e3fb35a00 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -106,8 +106,11 @@ static struct page *alloc_bufpage(struct net_device *dev,

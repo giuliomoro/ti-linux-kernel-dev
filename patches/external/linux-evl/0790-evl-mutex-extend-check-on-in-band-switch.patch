@@ -1,7 +1,7 @@
 From 0cc97c3689e95865214e2ad0350a0ace93a2574d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 20 Nov 2022 12:44:26 +0100
-Subject: [PATCH 790/985] evl/mutex: extend check on in-band switch
+Subject: [PATCH 0790/1013] evl/mutex: extend check on in-band switch
 
 Checking for PI/PP boosting mutex is not enough when dropping to
 in-band context: owning any mutex in this case would be wrong, since
@@ -91,7 +91,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 16 insertions(+), 60 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index b8c421561..9c5604f56 100644
+index b8c421561497..9c5604f5606b 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -80,7 +80,7 @@ void evl_flush_mutex(struct evl_mutex *mutex,
@@ -104,7 +104,7 @@ index b8c421561..9c5604f56 100644
  void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
  			struct evl_thread *waiter);
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 8217fad46..6215ffa7d 100644
+index 8217fad468eb..6215ffa7d61e 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -20,9 +20,6 @@
@@ -210,7 +210,7 @@ index 8217fad46..6215ffa7d 100644
  
  	walk_mode = evl_pi_check;
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 4de8f786c..360a424be 100644
+index 4de8f786c6e8..360a424be596 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1292,7 +1292,7 @@ void evl_switch_inband(int cause)

@@ -1,7 +1,7 @@
 From 2515d7afa77191a68a636f01fe71fd503918a981 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Sep 2020 19:03:38 +0200
-Subject: [PATCH 651/985] evl/thread: do not switch stage in trap over NMI
+Subject: [PATCH 0651/1013] evl/thread: do not switch stage in trap over NMI
  context
 
 We cannot safely run the stage switching machinery while running in
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index a2512db9e..37ef40a95 100644
+index a2512db9e671..37ef40a95052 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1518,6 +1518,13 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)

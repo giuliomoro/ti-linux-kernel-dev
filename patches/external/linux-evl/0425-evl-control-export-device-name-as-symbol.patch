@@ -1,7 +1,7 @@
 From bd82149b506605e1098dd378b4e427c00b1d85e4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 28 Jun 2019 11:08:41 +0200
-Subject: [PATCH 425/985] evl/control: export device name as symbol
+Subject: [PATCH 0425/1013] evl/control: export device name as symbol
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 424d2119e..9bc017e90 100644
+index 424d2119ea43..9bc017e90a84 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -12,6 +12,8 @@

@@ -1,7 +1,7 @@
 From dca49b4e15703a6aafc367264bc22301b4df5d21 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 3 Jul 2019 12:53:45 +0200
-Subject: [PATCH 435/985] evl/sched: generalize use of evl_schedq_is_empty()
+Subject: [PATCH 0435/1013] evl/sched: generalize use of evl_schedq_is_empty()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 765fd4b74..143e0193c 100644
+index 765fd4b7466b..143e0193cf5a 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -537,7 +537,7 @@ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)

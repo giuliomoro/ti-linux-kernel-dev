@@ -1,7 +1,7 @@
 From 714182454b9856bc2c94fcec8a875790c9ca55f9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 14:46:12 +0200
-Subject: [PATCH 505/985] evl/xbuf: read: do not resched holding the nklock
+Subject: [PATCH 0505/1013] evl/xbuf: read: do not resched holding the nklock
 
 This also fixes a (nk)lock leakage on detection of an invalid
 read size (len > ring->bufsz).
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 42 insertions(+), 39 deletions(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 1794ddb16..34e48f9ce 100644
+index 1794ddb16536..34e48f9ce0a5 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -122,9 +122,8 @@ static ssize_t do_xbuf_read(struct xbuf_ring *ring,

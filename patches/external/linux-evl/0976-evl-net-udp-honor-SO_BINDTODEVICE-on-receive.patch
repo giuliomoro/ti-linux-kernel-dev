@@ -1,7 +1,7 @@
 From b4977d3c8122c9d021a8334374078e9aa7bdaae8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 30 Jun 2025 14:47:15 +0200
-Subject: [PATCH 976/985] evl/net: udp: honor SO_BINDTODEVICE on receive
+Subject: [PATCH 0976/1013] evl/net: udp: honor SO_BINDTODEVICE on receive
 
 A socket may be bound to a device, consider such binding so that only
 packets received from that device are returned to readers of such
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 45 insertions(+), 18 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index f62966370..e4faac6cb 100644
+index f629663700ea..e4faac6cbd8f 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -526,14 +526,18 @@ static ssize_t receive_udp(struct evl_socket *esk,

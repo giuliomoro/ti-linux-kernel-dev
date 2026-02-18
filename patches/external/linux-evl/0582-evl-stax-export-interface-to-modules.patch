@@ -1,7 +1,7 @@
 From 0bece02aad372dc8c5f5ea5516d871afa9f769f7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 24 Feb 2020 13:06:09 +0100
-Subject: [PATCH 582/985] evl/stax: export interface to modules
+Subject: [PATCH 0582/1013] evl/stax: export interface to modules
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+)
 
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index 17da6dac5..91148d147 100644
+index 17da6dac5da5..91148d147ac8 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -28,11 +28,13 @@ void evl_init_stax(struct evl_stax *stax)

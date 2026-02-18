@@ -1,8 +1,8 @@
 From e161ed175d90af2272200c2021ddea3afbb750a6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 16 Jun 2020 11:04:16 +0200
-Subject: [PATCH 022/985] rcu: irq_pipeline: handle non-maskable pipeline entry
- context
+Subject: [PATCH 0022/1013] rcu: irq_pipeline: handle non-maskable pipeline
+ entry context
 
 From the standpoint of the in-band context, an interrupt entry is
 logically similar to a NMI when pipelining is enabled, since it may
@@ -39,7 +39,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 66 insertions(+), 9 deletions(-)
 
 diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index c6c4e9143..2ba79d080 100644
+index c6c4e9143959..2ba79d08005c 100644
 --- a/include/linux/hardirq.h
 +++ b/include/linux/hardirq.h
 @@ -148,4 +148,14 @@ static inline bool on_pipeline_entry(void)
@@ -58,7 +58,7 @@ index c6c4e9143..2ba79d080 100644
 +
  #endif /* LINUX_HARDIRQ_H */
 diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 0844ab328..9e32a025a 100644
+index 0844ab328851..9e32a025a974 100644
 --- a/include/linux/rcupdate.h
 +++ b/include/linux/rcupdate.h
 @@ -160,6 +160,14 @@ static inline void rcu_nocb_flush_deferred_wakeup(void) { }
@@ -118,7 +118,7 @@ index 0844ab328..9e32a025a 100644
  }
  
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 938c48952..5139dd2b0 100644
+index 938c48952d26..5139dd2b0eff 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
 @@ -239,7 +239,7 @@ void noinstr ct_nmi_exit(void)
@@ -149,7 +149,7 @@ index 938c48952..5139dd2b0 100644
  		rcu_irq_enter_check_tick();
  	} else  {
 diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 7b073b8b5..57540186a 100644
+index 7b073b8b5e91..57540186ab65 100644
 --- a/kernel/rcu/tree.c
 +++ b/kernel/rcu/tree.c
 @@ -649,7 +649,7 @@ void __rcu_irq_enter_check_tick(void)
@@ -181,7 +181,7 @@ index 7b073b8b5..57540186a 100644
  	preempt_disable_notrace();
  	rdp = this_cpu_ptr(&rcu_data);
 diff --git a/kernel/rcu/tree_plugin.h b/kernel/rcu/tree_plugin.h
-index 2d865b209..d338c2d5d 100644
+index 2d865b2096be..d338c2d5ded3 100644
 --- a/kernel/rcu/tree_plugin.h
 +++ b/kernel/rcu/tree_plugin.h
 @@ -663,8 +663,9 @@ static void rcu_read_unlock_special(struct task_struct *t)
@@ -206,7 +206,7 @@ index 2d865b209..d338c2d5d 100644
  
  	/*
 diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index f8436969e..5cef5e6af 100644
+index f8436969e0c8..5cef5e6af33c 100644
 --- a/kernel/rcu/update.c
 +++ b/kernel/rcu/update.c
 @@ -102,6 +102,11 @@ module_param(rcu_normal_after_boot, int, 0444);

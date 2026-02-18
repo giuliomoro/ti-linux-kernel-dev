@@ -1,7 +1,7 @@
 From ee7e794506e8a7ef0454f62651f1022dc0e6b3c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 18:17:10 +0200
-Subject: [PATCH 762/985] evl/mutex: use two-phase tracking on release
+Subject: [PATCH 0762/1013] evl/mutex: use two-phase tracking on release
 
 Releasing a mutex may involve transferring ownership to the next
 waiter in line. This entails the same actions than performed by
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 59 insertions(+), 31 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 9c73f21b1..6337b5607 100644
+index 9c73f21b1a65..6337b560791c 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -486,9 +486,9 @@ static void untrack_owner(struct evl_mutex *mutex)

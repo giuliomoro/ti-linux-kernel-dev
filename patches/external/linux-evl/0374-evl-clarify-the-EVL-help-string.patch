@@ -1,7 +1,7 @@
 From 4c4aaac36ec0163fd0e397c4981f583b5222f9c7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 14 May 2019 19:53:42 +0200
-Subject: [PATCH 374/985] evl: clarify the EVL help string
+Subject: [PATCH 0374/1013] evl: clarify the EVL help string
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/Kconfig.evl b/kernel/Kconfig.evl
-index 9d8256629..b9ab8aeb5 100644
+index 9d8256629839..b9ab8aeb5403 100644
 --- a/kernel/Kconfig.evl
 +++ b/kernel/Kconfig.evl
 @@ -4,14 +4,16 @@ config HAVE_ARCH_EVL

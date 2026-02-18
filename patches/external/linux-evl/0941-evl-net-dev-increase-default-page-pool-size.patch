@@ -1,7 +1,7 @@
 From 76721bd1c458b50f22374488fa7d0624afee6b26 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 8 Jun 2025 11:41:33 +0200
-Subject: [PATCH 941/985] evl/net: dev: increase default page pool size
+Subject: [PATCH 0941/1013] evl/net: dev: increase default page pool size
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index b199fba82..bb1f8c764 100644
+index b199fba82fd9..bb1f8c764c52 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -47,7 +47,7 @@

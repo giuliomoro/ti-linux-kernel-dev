@@ -1,7 +1,7 @@
 From 9223b15ffa53a06bfa3e0127f73c8ec968e330f1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 24 Mar 2020 19:08:55 +0100
-Subject: [PATCH 591/985] uapi/evl: sched: make interface C++ friendly
+Subject: [PATCH 0591/1013] uapi/evl: sched: make interface C++ friendly
 
 EVL uapi headers are pulled unmodified into user code, make sure we
 can use them in C++ applications.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 39 insertions(+), 33 deletions(-)
 
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 4710e71ed..80147c0a8 100644
+index 4710e71edb2e..80147c0a82b1 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -18,25 +18,27 @@
@@ -129,7 +129,7 @@ index 4710e71ed..80147c0a8 100644
  };
  
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 10ba184be..82662b6a3 100644
+index 10ba184be3d4..82662b6a3d47 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -100,7 +100,7 @@ static int stop_services(void)
@@ -177,7 +177,7 @@ index 10ba184be..82662b6a3 100644
  	int ret;
  
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index ef0f330ef..2d5a0444d 100644
+index ef0f330efd64..2d5a0444d847 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -314,7 +314,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,

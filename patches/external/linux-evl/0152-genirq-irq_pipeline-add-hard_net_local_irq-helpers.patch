@@ -1,7 +1,8 @@
 From d519540c6436f321cd79f07dcea0bdc68abdaf04 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 13 Mar 2025 17:32:54 +0100
-Subject: [PATCH 152/985] genirq: irq_pipeline: add hard_net_local_irq* helpers
+Subject: [PATCH 0152/1013] genirq: irq_pipeline: add hard_net_local_irq*
+ helpers
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 17 insertions(+)
 
 diff --git a/include/asm-generic/irq_pipeline.h b/include/asm-generic/irq_pipeline.h
-index 4b8999678..8eb12fd9d 100644
+index 4b8999678d53..8eb12fd9daa1 100644
 --- a/include/asm-generic/irq_pipeline.h
 +++ b/include/asm-generic/irq_pipeline.h
 @@ -31,6 +31,18 @@ int inband_irqs_disabled(void);

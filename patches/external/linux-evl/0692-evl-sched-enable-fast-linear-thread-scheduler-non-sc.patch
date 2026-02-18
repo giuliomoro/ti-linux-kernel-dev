@@ -1,7 +1,7 @@
 From 3ae0e6c656b5de8a9636cb4052806eceef0e075f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 6 Feb 2021 16:19:37 +0100
-Subject: [PATCH 692/985] evl/sched: enable fast linear thread scheduler
+Subject: [PATCH 0692/1013] evl/sched: enable fast linear thread scheduler
  (non-scalable)
 
 For applications with only few runnable tasks at any point in time, a
@@ -42,7 +42,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 135 insertions(+), 59 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index a6ade43ee..232be199b 100644
+index a6ade43eeab2..232be199b713 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -59,7 +59,7 @@
@@ -55,7 +55,7 @@ index a6ade43ee..232be199b 100644
  
  struct evl_rq {
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index ee2d1a563..93c874d24 100644
+index ee2d1a563a2d..93c874d249a7 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -23,42 +23,45 @@
@@ -209,7 +209,7 @@ index ee2d1a563..93c874d24 100644
 +
  #endif /* !_EVL_SCHED_QUEUE_H */
 diff --git a/include/evl/sched/tp.h b/include/evl/sched/tp.h
-index 0e1b0404a..00db7845e 100644
+index 0e1b0404ab56..00db7845e8e2 100644
 --- a/include/evl/sched/tp.h
 +++ b/include/evl/sched/tp.h
 @@ -34,7 +34,7 @@ struct evl_tp_schedule {
@@ -222,7 +222,7 @@ index 0e1b0404a..00db7845e 100644
  	struct evl_tp_rq idle;
  	struct evl_tp_rq *tps;
 diff --git a/include/evl/sched/weak.h b/include/evl/sched/weak.h
-index 198654eea..60cc4ef96 100644
+index 198654eeacae..60cc4ef96de6 100644
 --- a/include/evl/sched/weak.h
 +++ b/include/evl/sched/weak.h
 @@ -16,15 +16,10 @@
@@ -243,7 +243,7 @@ index 198654eea..60cc4ef96 100644
  
  static inline int evl_weak_init_thread(struct evl_thread *thread)
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index bbac32c39..196138db2 100644
+index bbac32c3944a..196138db2c5b 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -60,6 +60,19 @@ config EVL_TIMER_RBTREE
@@ -267,7 +267,7 @@ index bbac32c39..196138db2 100644
  	bool "Collect runtime statistics"
  	default y
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index a129cb749..c73e0fc60 100644
+index a129cb74909a..c73e0fc60a12 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -620,7 +620,9 @@ void evl_protect_thread_priority(struct evl_thread *thread, int prio)

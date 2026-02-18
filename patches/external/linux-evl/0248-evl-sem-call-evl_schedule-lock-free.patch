@@ -1,7 +1,7 @@
 From 4bdfd0bc4bc799ef28f712f650e8024670b3af5d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 10:58:37 +0100
-Subject: [PATCH 248/985] evl/sem: call evl_schedule() lock-free
+Subject: [PATCH 0248/1013] evl/sem: call evl_schedule() lock-free
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 8b80ea193..173045571 100644
+index 8b80ea193c2b..1730455719c6 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -118,11 +118,11 @@ static int release_sem(struct evl_sem *sem, int count)

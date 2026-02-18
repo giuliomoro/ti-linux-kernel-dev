@@ -1,7 +1,7 @@
 From 9ab28b3156a55c77e689f00a8c2eee0c4977be20 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 16 Apr 2025 16:05:35 +0200
-Subject: [PATCH 165/985] mm: dovetail: catch alloc/release page from oob
+Subject: [PATCH 0165/1013] mm: dovetail: catch alloc/release page from oob
  context
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index a951de920..76041caee 100644
+index a951de920e20..76041caee3a2 100644
 --- a/include/linux/gfp.h
 +++ b/include/linux/gfp.h
 @@ -263,7 +263,7 @@ static inline void warn_if_node_offline(int this_node, gfp_t gfp_mask)
@@ -33,7 +33,7 @@ index a951de920..76041caee 100644
  
  	return __folio_alloc_noprof(gfp, order, nid, NULL);
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 752576749..d20a243d0 100644
+index 752576749db9..d20a243d0b71 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
 @@ -2680,6 +2680,8 @@ void free_unref_page(struct page *page, unsigned int order)

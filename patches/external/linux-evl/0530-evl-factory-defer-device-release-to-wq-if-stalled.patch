@@ -1,7 +1,7 @@
 From 3225a758e28af744f622a7761012cc5a64bf31a2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 30 Oct 2019 17:12:36 +0100
-Subject: [PATCH 530/985] evl/factory: defer device release to wq if stalled
+Subject: [PATCH 0530/1013] evl/factory: defer device release to wq if stalled
 
 We may not use the inband infrastructure when the out-of-band stage is
 stalled. If oob is stalled upon release of the last reference to an
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 3a4d99f49..632cfb337 100644
+index 3a4d99f496f5..632cfb3370ac 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -179,11 +179,11 @@ static void put_element(struct evl_element *e)

@@ -1,7 +1,7 @@
 From de81f94bb87c17e8fbaf4d75b820f3b297b2b5fb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 07:57:05 +0200
-Subject: [PATCH 753/985] evl/thread: use assert_thread_pinned() instead of
+Subject: [PATCH 0753/1013] evl/thread: use assert_thread_pinned() instead of
  open code
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 7 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 20c4aca84..2bfa16642 100644
+index 20c4aca8431c..2bfa16642f66 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -391,8 +391,7 @@ static inline void check_cpu_affinity(struct task_struct *p)
@@ -45,7 +45,7 @@ index 20c4aca84..2bfa16642 100644
  	thread->bprio = prio;
  	if (wprio == thread->wprio)
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index f83deca6f..799195242 100644
+index f83deca6fdd2..799195242dd6 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -503,8 +503,7 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,

@@ -1,7 +1,7 @@
 From 1da96a1612ad0764fd72b6d94d9a21c02e795b00 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 25 Jun 2025 18:53:00 +0200
-Subject: [PATCH 970/985] evl/net: arp: resolve broadcast address via a
+Subject: [PATCH 0970/1013] evl/net: arp: resolve broadcast address via a
  pseudo-entry
 
 Since the (limited) broadcast address is an IPv4 constant, we can
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index a447a077a..8efc0b084 100644
+index a447a077a3c5..8efc0b084b69 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -220,7 +220,7 @@ evl_net_get_arp_entry_or_pseudo(struct net_device *dev, __be32 addr,

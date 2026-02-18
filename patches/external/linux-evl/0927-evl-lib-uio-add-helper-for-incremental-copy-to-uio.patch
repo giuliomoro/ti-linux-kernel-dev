@@ -1,7 +1,8 @@
 From 32cb510e53af0b9bcf4724a530c6446f44be31db Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 6 May 2025 15:20:09 +0200
-Subject: [PATCH 927/985] evl/lib: uio: add helper for incremental copy to uio
+Subject: [PATCH 0927/1013] evl/lib: uio: add helper for incremental copy to
+ uio
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 45 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/uio.h b/include/evl/uio.h
-index 00026af6c..f92ab7270 100644
+index 00026af6cb24..f92ab7270c1d 100644
 --- a/include/evl/uio.h
 +++ b/include/evl/uio.h
 @@ -7,14 +7,14 @@
@@ -33,7 +34,7 @@ index 00026af6c..f92ab7270 100644
  			void *data, size_t len, size_t *remainder);
  
 diff --git a/kernel/evl/lib/uio.c b/kernel/evl/lib/uio.c
-index cf015cb20..604832cbd 100644
+index cf015cb2067e..604832cbd391 100644
 --- a/kernel/evl/lib/uio.c
 +++ b/kernel/evl/lib/uio.c
 @@ -129,6 +129,47 @@ ssize_t evl_copy_to_uio(const struct iovec *iov, size_t iovlen,

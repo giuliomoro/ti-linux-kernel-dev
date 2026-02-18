@@ -1,7 +1,7 @@
 From f931f811c7c50f2b32511b3786e7b91b50af5f6e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 11:41:16 +0100
-Subject: [PATCH 228/985] evl/thread: open code transition to in-band context
+Subject: [PATCH 0228/1013] evl/thread: open code transition to in-band context
 
 Move the code handling the transition from OOB to in-band from
 evl_thread_suspend() to evl_switch_inband().
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 80 insertions(+), 113 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index a1863a169..25da9090d 100644
+index a1863a1690a4..25da9090ded3 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -29,7 +29,7 @@
@@ -32,7 +32,7 @@ index a1863a169..25da9090d 100644
  struct evl_thread;
  struct evl_rq;
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index c1e08d9e1..c16271acb 100644
+index c1e08d9e126d..c16271acb1cb 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -732,7 +732,7 @@ irqreturn_t __evl_schedule_handler(int irq, void *dev_id)
@@ -102,7 +102,7 @@ index c1e08d9e1..c16271acb 100644
  EXPORT_SYMBOL_GPL(___evl_schedule);
  
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 286a04b1f..7a386d523 100644
+index 286a04b1f71c..7a386d523d7f 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -461,14 +461,15 @@ void evl_suspend_thread(struct evl_thread *thread, int mask,

@@ -1,7 +1,7 @@
 From 06f245a18e4197d34bd3cb88c3944f64ecf7737f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 1 Sep 2023 15:16:09 +0200
-Subject: [PATCH 822/985] drivers/gpio: evl: fix line event initialization
+Subject: [PATCH 0822/1013] drivers/gpio: evl: fix line event initialization
 
 The in-band wait queue was lacking an init call.
 
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
-index b29093ac3..adec20c0c 100644
+index b29093ac39e1..adec20c0c3bd 100644
 --- a/drivers/gpio/gpiolib-cdev.c
 +++ b/drivers/gpio/gpiolib-cdev.c
 @@ -2436,6 +2436,7 @@ static int lineevent_create(struct gpio_device *gdev, void __user *ip)

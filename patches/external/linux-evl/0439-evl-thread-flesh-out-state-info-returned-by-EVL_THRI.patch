@@ -1,7 +1,7 @@
 From fc6f6dbd6e59dcfb89bd37f97437e0e61c8b3458 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 11 Jul 2019 17:15:49 +0200
-Subject: [PATCH 439/985] evl/thread: flesh out state info returned by
+Subject: [PATCH 0439/1013] evl/thread: flesh out state info returned by
  EVL_THRIOC_GET_STATE
 
 This enables threads running out-of-band to retrieve most of the raw
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 7dcf042f5..bfedf4287 100644
+index 7dcf042f597d..bfedf4287fd1 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -29,7 +29,7 @@ index 7dcf042f5..bfedf4287 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index b45dba787..f75b07542 100644
+index b45dba787948..f75b07542fa1 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -82,7 +82,12 @@ struct evl_user_window {
@@ -47,7 +47,7 @@ index b45dba787..f75b07542 100644
  
  #define EVL_THREAD_IOCBASE	'T'
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index c6b4d689c..956d7bda8 100644
+index c6b4d689caa1..956d7bda8eb6 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2017,6 +2017,11 @@ void evl_get_thread_state(struct evl_thread *thread,

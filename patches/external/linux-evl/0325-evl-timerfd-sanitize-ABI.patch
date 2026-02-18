@@ -1,7 +1,7 @@
 From 6a7b8c704abea94e03e05212ffcf469cb360aed0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 28 Feb 2019 18:37:11 +0100
-Subject: [PATCH 325/985] evl/timerfd: sanitize ABI
+Subject: [PATCH 0325/1013] evl/timerfd: sanitize ABI
 
 We want userland to receive EFAULT when bad pointers are passed to the
 SET/GET operations, not SIGSEGV. So we need to handle any itimerspec
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+), 14 deletions(-)
 
 diff --git a/include/uapi/evenless/timerfd.h b/include/uapi/evenless/timerfd.h
-index 2018997b9..65a4e72fd 100644
+index 2018997b93f4..65a4e72fdcbc 100644
 --- a/include/uapi/evenless/timerfd.h
 +++ b/include/uapi/evenless/timerfd.h
 @@ -15,12 +15,12 @@ struct evl_timerfd_attrs {
@@ -37,7 +37,7 @@ index 2018997b9..65a4e72fd 100644
  
  #define EVL_TIMERFD_IOCBASE	't'
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
-index 339c32fa6..fc0b56a3b 100644
+index 339c32fa61f0..fc0b56a3b9ec 100644
 --- a/kernel/evenless/timerfd.c
 +++ b/kernel/evenless/timerfd.c
 @@ -53,7 +53,8 @@ static int set_timer_value(struct evl_timer *__restrict__ timer,

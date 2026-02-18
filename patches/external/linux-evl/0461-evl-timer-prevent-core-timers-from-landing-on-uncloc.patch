@@ -1,7 +1,7 @@
 From cbe4dffc244cfb8f997265c2381fd8966d1a2dea Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Aug 2019 16:01:42 +0200
-Subject: [PATCH 461/985] evl/timer: prevent core timers from landing on
+Subject: [PATCH 0461/1013] evl/timer: prevent core timers from landing on
  unclocked CPUs
 
 We must make sure that evl_init_core_timer() is not set up on a CPU
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 77 insertions(+), 111 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index ad6ef7968..b835a78c4 100644
+index ad6ef79684e2..b835a78c446e 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -320,12 +320,6 @@ static inline ktime_t evl_get_timer_expiry(struct evl_timer *timer)
@@ -88,7 +88,7 @@ index ad6ef7968..b835a78c4 100644
  
  static inline bool evl_timer_on_rq(struct evl_timer *timer,
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index c04cda039..96f9a86b7 100644
+index c04cda0396da..96f9a86b71a0 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -631,7 +631,7 @@ TRACE_EVENT(evl_timer_start,
@@ -101,7 +101,7 @@ index c04cda039..96f9a86b7 100644
  		 struct evl_clock *clock,
  		 unsigned int cpu),
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index c4625bc84..8795f353e 100644
+index c4625bc8480d..8795f353e2fd 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -49,7 +49,8 @@ static void adjust_timer(struct evl_clock *clock,
@@ -172,7 +172,7 @@ index c4625bc84..8795f353e 100644
  		return ret;
  
 diff --git a/kernel/evl/init.c b/kernel/evl/init.c
-index 9c0583a74..442e3d1f3 100644
+index 9c0583a74269..442e3d1f3d10 100644
 --- a/kernel/evl/init.c
 +++ b/kernel/evl/init.c
 @@ -160,8 +160,9 @@ static int __init evl_init(void)
@@ -188,7 +188,7 @@ index 9c0583a74..442e3d1f3 100644
  	if (oobcpus_arg && *oobcpus_arg) {
  		if (cpulist_parse(oobcpus_arg, &evl_oob_cpus)) {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 68337d5a0..3feb011f2 100644
+index 68337d5a0365..3feb011f244f 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -57,9 +57,6 @@ static void periodic_handler(struct evl_timer *timer) /* hard irqs off */
@@ -293,7 +293,7 @@ index 68337d5a0..3feb011f2 100644
  	if (!cpumask_test_cpu(cpu, &thread->affinity))
  		cpumask_set_cpu(cpu, &thread->affinity);
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index c5ed85314..461968fa6 100644
+index c5ed85314333..461968fa66f6 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -262,57 +262,27 @@ static inline int get_clock_cpu(struct evl_clock *clock, int cpu)

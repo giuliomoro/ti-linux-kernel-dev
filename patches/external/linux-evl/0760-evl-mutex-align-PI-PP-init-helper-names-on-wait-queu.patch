@@ -1,7 +1,7 @@
 From b554335523d99fe85d39244ddf6a94688675ea28 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 15:25:50 +0200
-Subject: [PATCH 760/985] evl/mutex: align PI/PP init helper names on wait
+Subject: [PATCH 0760/1013] evl/mutex: align PI/PP init helper names on wait
  queue API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 7af657840..53b9cafc7 100644
+index 7af657840a17..53b9cafc7cb7 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -41,17 +41,17 @@ void __evl_init_mutex(struct evl_mutex *mutex,
@@ -37,7 +37,7 @@ index 7af657840..53b9cafc7 100644
  void evl_destroy_mutex(struct evl_mutex *mutex);
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 83746924f..b43340b5c 100644
+index 83746924f3c8..b43340b5c2dc 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -858,14 +858,14 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,

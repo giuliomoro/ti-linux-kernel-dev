@@ -1,7 +1,7 @@
 From 54366b9c658be3b346794b8025bd51d46b906c4e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 2 Jul 2019 15:18:55 +0200
-Subject: [PATCH 434/985] evl/control: add query for CPU state
+Subject: [PATCH 0434/1013] evl/control: add query for CPU state
 
 A practical LART is to know beforehand when some out-of-band work is
 about to run on a non-isolated CPU, so that the application may warn
@@ -29,7 +29,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 41 insertions(+), 1 deletion(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 5d9a0a4ae..7dcf042f5 100644
+index 5d9a0a4ae3d3..7dcf042f597d 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -58,7 +58,7 @@ index 5d9a0a4ae..7dcf042f5 100644
  
  #endif /* !_EVL_UAPI_CONTROL_H */
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 54ae0453a..90c248a34 100644
+index 54ae0453a166..90c248a343e5 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -10,6 +10,10 @@
@@ -73,7 +73,7 @@ index 54ae0453a..90c248a34 100644
  
  #define sched_rr_quantum	sched_u.rr.__sched_rr_quantum
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index a2594a417..8e5586d22 100644
+index a2594a41758f..8e5586d22143 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -6,6 +6,7 @@

@@ -1,7 +1,7 @@
 From 6041880a0b26362a846f2cf9cf518b7ef143dd5e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 9 Feb 2019 18:07:21 +0100
-Subject: [PATCH 285/985] evl/poller: fix, finalize synchronous multipexing
+Subject: [PATCH 0285/1013] evl/poller: fix, finalize synchronous multipexing
  support on efds
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 111 insertions(+), 62 deletions(-)
 
 diff --git a/include/evenless/poller.h b/include/evenless/poller.h
-index 0e9ca03a0..38b5f10c6 100644
+index 0e9ca03a0acb..38b5f10c6a23 100644
 --- a/include/evenless/poller.h
 +++ b/include/evenless/poller.h
 @@ -62,4 +62,6 @@ evl_clear_poll_events(struct evl_poll_head *head,
@@ -23,7 +23,7 @@ index 0e9ca03a0..38b5f10c6 100644
 +
  #endif /* !_EVENLESS_POLLER_H */
 diff --git a/include/uapi/evenless/poller.h b/include/uapi/evenless/poller.h
-index 2263861f0..be14e7199 100644
+index 2263861f06f3..be14e71993db 100644
 --- a/include/uapi/evenless/poller.h
 +++ b/include/uapi/evenless/poller.h
 @@ -30,8 +30,8 @@ struct evl_poll_event {
@@ -38,7 +38,7 @@ index 2263861f0..be14e7199 100644
  
  #define EVL_POLIOC_CTL	_IOW(EVL_POLLER_IOCBASE, 0, struct evl_poller_ctlreq)
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 3c0ededca..23a2fc33e 100644
+index 3c0ededcafd7..23a2fc33e7e4 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -10,12 +10,14 @@

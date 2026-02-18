@@ -1,7 +1,7 @@
 From d2e6d8299bd2f6797478798b9b742807218069c9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 7 Feb 2019 18:17:24 +0100
-Subject: [PATCH 273/985] evl/thread: move mode setting to control device
+Subject: [PATCH 0273/1013] evl/thread: move mode setting to control device
 
 Runtime mode setting is a self-applicable operation, and as such must
 go through the control device where evl_current() implicitly applies.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 39 insertions(+), 37 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index fa00ac0a9..62a016ff1 100644
+index fa00ac0a9587..62a016ff19ec 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -255,6 +255,8 @@ int evl_switch_oob(void);
@@ -29,7 +29,7 @@ index fa00ac0a9..62a016ff1 100644
  
  void __evl_kick_thread(struct evl_thread *thread);
 diff --git a/include/uapi/evenless/control.h b/include/uapi/evenless/control.h
-index 9c00a4e5b..43170c0b1 100644
+index 9c00a4e5bcf1..43170c0b14b6 100644
 --- a/include/uapi/evenless/control.h
 +++ b/include/uapi/evenless/control.h
 @@ -19,5 +19,7 @@ struct evl_core_info {
@@ -41,7 +41,7 @@ index 9c00a4e5b..43170c0b1 100644
  
  #endif /* !_EVENLESS_UAPI_CONTROL_H */
 diff --git a/include/uapi/evenless/thread.h b/include/uapi/evenless/thread.h
-index 52486524f..503819008 100644
+index 52486524f3cc..5038190083ed 100644
 --- a/include/uapi/evenless/thread.h
 +++ b/include/uapi/evenless/thread.h
 @@ -80,7 +80,5 @@ struct evl_user_window {
@@ -53,7 +53,7 @@ index 52486524f..503819008 100644
  
  #endif /* !_EVENLESS_UAPI_THREAD_H */
 diff --git a/kernel/evenless/control.c b/kernel/evenless/control.c
-index 8bf430b8e..3e15e2407 100644
+index 8bf430b8e7fc..3e15e2407944 100644
 --- a/kernel/evenless/control.c
 +++ b/kernel/evenless/control.c
 @@ -99,6 +99,7 @@ static long control_ioctl(struct file *filp, unsigned int cmd,
@@ -79,7 +79,7 @@ index 8bf430b8e..3e15e2407 100644
  		ret = evl_detach_self();
  		break;
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 6c9f64e8a..e181a029b 100644
+index 6c9f64e8a96c..e181a029bacd 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -1615,6 +1615,32 @@ int evl_killall(int mask)

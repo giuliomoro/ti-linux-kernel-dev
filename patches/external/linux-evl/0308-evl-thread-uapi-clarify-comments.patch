@@ -1,7 +1,7 @@
 From aa8de5afbf7c367db244500e1052bcb085dd1faa Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 19:59:45 +0100
-Subject: [PATCH 308/985] evl/thread: uapi: clarify comments
+Subject: [PATCH 0308/1013] evl/thread: uapi: clarify comments
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 15 deletions(-)
 
 diff --git a/include/uapi/evenless/thread.h b/include/uapi/evenless/thread.h
-index 9184321d1..d580cfb33 100644
+index 9184321d197d..d580cfb33ab9 100644
 --- a/include/uapi/evenless/thread.h
 +++ b/include/uapi/evenless/thread.h
 @@ -13,19 +13,19 @@

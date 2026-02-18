@@ -1,7 +1,7 @@
 From a56637fa647717168bc10c7996b8f176796a8195 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Mar 2019 16:40:34 +0100
-Subject: [PATCH 328/985] evl/ksem: switch to evl_sem
+Subject: [PATCH 0328/1013] evl/ksem: switch to evl_sem
 
 Now that we don't have the evl_sem element in kernel space anymore,
 convert evl_ksem from the kernel API to evl_sem.
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evenless/ksem.h b/include/evenless/ksem.h
 deleted file mode 100644
-index 2da8f588a..000000000
+index 2da8f588a9c2..000000000000
 --- a/include/evenless/ksem.h
 +++ /dev/null
 @@ -1,32 +0,0 @@
@@ -57,7 +57,7 @@ index 2da8f588a..000000000
 -#endif /* !_EVENLESS_KSEM_H */
 diff --git a/include/evenless/sem.h b/include/evenless/sem.h
 new file mode 100644
-index 000000000..6abdefaf5
+index 000000000000..6abdefaf5f3e
 --- /dev/null
 +++ b/include/evenless/sem.h
 @@ -0,0 +1,32 @@
@@ -94,7 +94,7 @@ index 000000000..6abdefaf5
 +
 +#endif /* !_EVENLESS_SEM_H */
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 968c4848f..7c276dc08 100644
+index 968c4848f33a..7c276dc08a64 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -9,13 +9,13 @@ evenless-y :=		\
@@ -116,7 +116,7 @@ diff --git a/kernel/evenless/ksem.c b/kernel/evenless/sem.c
 similarity index 77%
 rename from kernel/evenless/ksem.c
 rename to kernel/evenless/sem.c
-index 3597aab44..375b496aa 100644
+index 3597aab44b1a..375b496aa219 100644
 --- a/kernel/evenless/ksem.c
 +++ b/kernel/evenless/sem.c
 @@ -8,22 +8,22 @@

@@ -1,7 +1,7 @@
 From 1300dcdb96800b5ca3816907569939c61adbb2f4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 8 Apr 2020 17:48:19 +0200
-Subject: [PATCH 597/985] spidev: evl: enable out-of-band mode
+Subject: [PATCH 0597/1013] spidev: evl: enable out-of-band mode
 
 This code illustrates the usage of the out-of-band SPI transfer API in
 kernel space, interfacing with the EVL core for synchronizing on
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 include/uapi/evl/devices/spidev.h
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index fa86b4aea..3b0561258 100644
+index fa86b4aea2a7..3b056125840e 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
 @@ -1241,6 +1241,10 @@ config SPI_SPIDEV
@@ -33,7 +33,7 @@ index fa86b4aea..3b0561258 100644
  	tristate "spi loopback test framework support"
  	depends on m
 diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index 653f82984..dae0be4b6 100644
+index 653f82984216..dae0be4b67a2 100644
 --- a/drivers/spi/spidev.c
 +++ b/drivers/spi/spidev.c
 @@ -25,7 +25,8 @@
@@ -309,7 +309,7 @@ index 653f82984..dae0be4b6 100644
  /*-------------------------------------------------------------------------*/
 diff --git a/include/uapi/evl/devices/spidev.h b/include/uapi/evl/devices/spidev.h
 new file mode 100644
-index 000000000..a4b3f97f3
+index 000000000000..a4b3f97f384c
 --- /dev/null
 +++ b/include/uapi/evl/devices/spidev.h
 @@ -0,0 +1,24 @@

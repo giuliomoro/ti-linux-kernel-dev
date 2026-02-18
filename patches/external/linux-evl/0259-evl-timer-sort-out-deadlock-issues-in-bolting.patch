@@ -1,7 +1,7 @@
 From 4e17738251b232a3b1ce4a54fa57dc3d3eab2b82 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 18:29:52 +0100
-Subject: [PATCH 259/985] evl/timer: sort out deadlock issues in bolting
+Subject: [PATCH 0259/1013] evl/timer: sort out deadlock issues in bolting
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 55 insertions(+), 25 deletions(-)
 
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
-index 7e5104755..de4eb5212 100644
+index 7e5104755491..de4eb5212922 100644
 --- a/kernel/evenless/timer.c
 +++ b/kernel/evenless/timer.c
 @@ -43,6 +43,29 @@ static inline void unlock_timer_base(struct evl_timerbase *base,

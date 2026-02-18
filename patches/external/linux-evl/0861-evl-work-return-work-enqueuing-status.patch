@@ -1,7 +1,7 @@
 From 1f6d5c7807bfafc9ac32fc5e9bb22714d45b77fe Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 14 Nov 2023 14:59:39 +0100
-Subject: [PATCH 861/985] evl/work: return work enqueuing status
+Subject: [PATCH 0861/1013] evl/work: return work enqueuing status
 
 This comes in handy when we need to manage references into the posted
 data manually. Returns true if the in-band worker was triggered as a
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/work.h b/include/evl/work.h
-index 48fe6b2e6..647e45f91 100644
+index 48fe6b2e6279..647e45f91073 100644
 --- a/include/evl/work.h
 +++ b/include/evl/work.h
 @@ -40,12 +40,12 @@ void evl_init_work_safe(struct evl_work *work,
@@ -34,7 +34,7 @@ index 48fe6b2e6..647e45f91 100644
  
  static inline
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index 4a7f4a0ac..cc9759f73 100644
+index 4a7f4a0acc02..cc9759f73735 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -71,7 +71,7 @@ void evl_init_sync_work(struct evl_sync_work *sync_work,

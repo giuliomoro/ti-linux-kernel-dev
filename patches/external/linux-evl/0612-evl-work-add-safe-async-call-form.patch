@@ -1,7 +1,7 @@
 From 34b3596521115bf8ec1655c461c5a3190887f6e8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Apr 2020 15:21:24 +0200
-Subject: [PATCH 612/985] evl/work: add safe async call form
+Subject: [PATCH 0612/1013] evl/work: add safe async call form
 
 We need a safe form of async workers to address the following issue:
 
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 40 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/work.h b/include/evl/work.h
-index 32f2e4a66..e3cc4a2a9 100644
+index 32f2e4a66290..e3cc4a2a9409 100644
 --- a/include/evl/work.h
 +++ b/include/evl/work.h
 @@ -11,11 +11,14 @@
@@ -62,7 +62,7 @@ index 32f2e4a66..e3cc4a2a9 100644
  }
  
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index cb14c6840..eb7eef177 100644
+index cb14c6840316..eb7eef177ada 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -4,6 +4,7 @@

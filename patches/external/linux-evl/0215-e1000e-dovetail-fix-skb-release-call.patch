@@ -1,7 +1,7 @@
 From d085f5431a0c5ce471548a2a4779e86f3beada4b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 17 Sep 2025 09:50:29 +0200
-Subject: [PATCH 215/985] e1000e: dovetail: fix skb release call
+Subject: [PATCH 0215/1013] e1000e: dovetail: fix skb release call
 
 This fixes a fallout from forward porting a change from 6.1.x.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/intel/e1000e/netdev.c b/drivers/net/ethernet/intel/e1000e/netdev.c
-index 230eeb434..dca408fe9 100644
+index 230eeb434d6b..dca408fe97f5 100644
 --- a/drivers/net/ethernet/intel/e1000e/netdev.c
 +++ b/drivers/net/ethernet/intel/e1000e/netdev.c
 @@ -605,7 +605,7 @@ static struct sk_buff *e1000e_alloc_rx_skb(struct e1000_adapter *adapter,

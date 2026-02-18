@@ -1,7 +1,7 @@
 From d918ae854888c29170802c31480b225af09f3759 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 14:46:12 +0200
-Subject: [PATCH 504/985] evl/xbuf: write: do not resched holding the nklock
+Subject: [PATCH 0504/1013] evl/xbuf: write: do not resched holding the nklock
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 19 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index cebaa21c6..1794ddb16 100644
+index cebaa21c6c74..1794ddb16536 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -238,16 +238,25 @@ static ssize_t do_xbuf_write(struct xbuf_ring *ring,

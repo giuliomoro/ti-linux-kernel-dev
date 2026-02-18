@@ -1,7 +1,7 @@
 From fe753a15890852fb3c1cb46216ace5a98f97c4bd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 1 Aug 2019 17:56:44 +0200
-Subject: [PATCH 458/985] evl/lock: complete spinlock ops
+Subject: [PATCH 0458/1013] evl/lock: complete spinlock ops
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 28 insertions(+)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 6bb2fa600..d92e6bdbc 100644
+index 6bb2fa6006ab..d92e6bdbcad2 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -171,6 +171,28 @@ typedef struct evl_spinlock {

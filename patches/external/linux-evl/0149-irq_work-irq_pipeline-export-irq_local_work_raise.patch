@@ -1,7 +1,8 @@
 From 362e192975c330b1a6aab9e229dfd767bc48ede5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 13 Mar 2025 14:21:10 +0100
-Subject: [PATCH 149/985] irq_work: irq_pipeline: export irq_local_work_raise()
+Subject: [PATCH 0149/1013] irq_work: irq_pipeline: export
+ irq_local_work_raise()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/linux/irq_work.h b/include/linux/irq_work.h
-index aee95059a..0c4b9aff8 100644
+index aee95059a646..0c4b9aff87dd 100644
 --- a/include/linux/irq_work.h
 +++ b/include/linux/irq_work.h
 @@ -74,6 +74,7 @@ void arch_irq_work_raise(void);

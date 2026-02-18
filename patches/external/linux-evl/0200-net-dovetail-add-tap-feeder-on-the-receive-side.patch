@@ -1,7 +1,7 @@
 From 01f3471beb43627415eb48a671909c4c969e3de4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 21 Jun 2025 19:56:13 +0200
-Subject: [PATCH 200/985] net: dovetail: add tap feeder on the receive side
+Subject: [PATCH 0200/1013] net: dovetail: add tap feeder on the receive side
 
 We need an RX counterpart to dev_queue_xmit_nit() for use by the oob
 netstack, in order to feed the in-band sniffers listening to ETH_ALL
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 8523ef46e..d5b9289d9 100644
+index 8523ef46e8a8..d5b9289d9578 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4362,6 +4362,9 @@ void netif_device_attach(struct net_device *dev);
@@ -32,7 +32,7 @@ index 8523ef46e..d5b9289d9 100644
   *	netif_oob_diversion - is the ingress traffic diverted for out-of-band handling?
   *	@dev: network device
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 5a7bc4418..0e238ab83 100644
+index 5a7bc4418a59..0e238ab83d3f 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5316,6 +5316,31 @@ bool netif_receive_oob(struct sk_buff *skb)

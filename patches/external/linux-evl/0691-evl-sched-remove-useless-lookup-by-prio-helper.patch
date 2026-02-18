@@ -1,7 +1,7 @@
 From 376d91745140945903b2259d1e772f140658e3a3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 6 Feb 2021 15:45:54 +0100
-Subject: [PATCH 691/985] evl/sched: remove useless lookup-by-prio helper
+Subject: [PATCH 0691/1013] evl/sched: remove useless lookup-by-prio helper
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 17 deletions(-)
 
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index 8b8f432e2..ee2d1a563 100644
+index 8b8f432e2848..ee2d1a563a2d 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -44,9 +44,6 @@ void evl_init_schedq(struct evl_multilevel_queue *q);
@@ -24,7 +24,7 @@ index 8b8f432e2..ee2d1a563 100644
  int evl_schedq_is_empty(struct evl_multilevel_queue *q)
  {
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 8724c047c..a129cb749 100644
+index 8724c047c382..a129cb74909a 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -648,20 +648,6 @@ struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q)

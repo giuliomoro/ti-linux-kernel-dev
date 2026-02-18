@@ -1,7 +1,7 @@
 From 15f5d82f819d690ad884b235faef0e78876d5d90 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 24 Jun 2025 16:22:55 +0200
-Subject: [PATCH 969/985] evl/net: arp: simplify pseudo-entry handling
+Subject: [PATCH 0969/1013] evl/net: arp: simplify pseudo-entry handling
 
 We currently maintain a full-fledged, dynamically allowed, refcounted
 and semi-permanent ARP entry for the loopback address. This is 100%
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  5 files changed, 47 insertions(+), 113 deletions(-)
 
 diff --git a/include/asm-generic/evl/net.h b/include/asm-generic/evl/net.h
-index f1005430c..845639c1b 100644
+index f1005430c60b..845639c1bfd9 100644
 --- a/include/asm-generic/evl/net.h
 +++ b/include/asm-generic/evl/net.h
 @@ -78,14 +78,6 @@ struct oob_net_state {
@@ -43,7 +43,7 @@ index f1005430c..845639c1b 100644
  };
  
 diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
-index aa8a0b967..f6715ce7e 100644
+index aa8a0b967bcb..f6715ce7e989 100644
 --- a/include/evl/net/ipv4/arp.h
 +++ b/include/evl/net/ipv4/arp.h
 @@ -34,15 +34,13 @@ void evl_net_cleanup_arp(struct net *net);
@@ -67,7 +67,7 @@ index aa8a0b967..f6715ce7e 100644
  {
  	evl_put_cache_entry(&earp->entry);
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index 59f5272a1..a447a077a 100644
+index 59f5272a14e6..a447a077a3c5 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -199,28 +199,37 @@ struct evl_net_arp_entry *evl_net_get_arp_entry(struct net_device *dev, __be32 a
@@ -194,7 +194,7 @@ index 59f5272a1..a447a077a 100644
 -	swap_pseudo_entry(&net->oob, NULL, earpp);
 -}
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 2d0b0e891..76510ba98 100644
+index 2d0b0e891ff0..76510ba9880c 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -315,40 +315,26 @@ int evl_net_ipv4_solicit(struct net *net,
@@ -248,7 +248,7 @@ index 2d0b0e891..76510ba98 100644
  
  static struct evl_net_proto *match_ipv4_domain(int type, int protocol)
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 6cdb83777..ad1758b67 100644
+index 6cdb83777b7e..ad1758b67d03 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -214,14 +214,17 @@ static ssize_t offload_send_udp(struct evl_socket *esk,

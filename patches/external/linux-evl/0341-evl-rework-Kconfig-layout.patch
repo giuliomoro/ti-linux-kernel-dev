@@ -1,7 +1,7 @@
 From d15bdbc1dcb36d985acb217c7f8e2fd8fab93f65 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Mar 2019 18:20:36 +0100
-Subject: [PATCH 341/985] evl: rework Kconfig layout
+Subject: [PATCH 0341/1013] evl: rework Kconfig layout
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index a92755e1c..68abf12a7 100644
+index a92755e1c1e4..68abf12a7eb8 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -1,8 +1,6 @@

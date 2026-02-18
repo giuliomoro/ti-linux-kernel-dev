@@ -1,7 +1,7 @@
 From 96293027e882a0a03ff9084600a2bd579afc49c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 8 May 2022 11:45:54 +0200
-Subject: [PATCH 727/985] evl/observable: fix misnomer EVL_CLONE_MASTER ->
+Subject: [PATCH 0727/1013] evl/observable: fix misnomer EVL_CLONE_MASTER ->
  EVL_CLONE_UNICAST
 
 Fixing a longstanding misnomer: this flag is really about sending
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 50dc36bdc..fde46bc92 100644
+index 50dc36bdc63d..fde46bc92bd5 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -22,11 +22,17 @@ struct evl_element_ids {
@@ -39,7 +39,7 @@ index 50dc36bdc..fde46bc92 100644
  struct evl_clone_req {
  	__u64 name_ptr;		/* (const char __user *name) */
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index 65cfa4ba9..dab0272cc 100644
+index 65cfa4ba9e5c..dab0272ccde5 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -20,7 +20,7 @@
@@ -86,7 +86,7 @@ index 65cfa4ba9..dab0272cc 100644
  	else
  		do_flush = notify_all(observable, &nfr, &len);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 215d453b0..9670b3740 100644
+index 215d453b0507..9670b37402e0 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -43,7 +43,7 @@

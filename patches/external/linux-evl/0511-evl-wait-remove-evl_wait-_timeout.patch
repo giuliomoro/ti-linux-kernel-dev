@@ -1,7 +1,7 @@
 From 7f5c7108595e60abf2174e9dc83c5b3281c4c20a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 17:10:39 +0200
-Subject: [PATCH 511/985] evl/wait: remove evl_wait[_timeout]()
+Subject: [PATCH 0511/1013] evl/wait: remove evl_wait[_timeout]()
 
 For waiting for some condition to be fulfilled, the correct pattern is
 either:
@@ -31,7 +31,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index d51ca7766..03108ab70 100644
+index d51ca77665da..03108ab70a10 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -67,19 +67,6 @@ struct evl_wait_queue {

@@ -1,7 +1,7 @@
 From 8a5cdde72d2688f1250540e30ea082c673c5c1c8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 23 Jun 2019 12:12:17 +0200
-Subject: [PATCH 419/985] evl/thread: fix leaking ready state in
+Subject: [PATCH 0419/1013] evl/thread: fix leaking ready state in
  evl_switch_inband()
 
 When arming T_INBAND for the stage switching thread, we have to remove
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 9 insertions(+), 42 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index b428e103f..abd418e54 100644
+index b428e103f4e2..abd418e543f4 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -691,6 +691,10 @@ void evl_switch_inband(int cause)

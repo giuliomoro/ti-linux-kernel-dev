@@ -1,7 +1,7 @@
 From 263efb9ccb1f8ec88296fb0361b62b68d8ff8919 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 5 Aug 2019 12:28:16 +0200
-Subject: [PATCH 465/985] evl/lock: fix all _irq* forms to use
+Subject: [PATCH 0465/1013] evl/lock: fix all _irq* forms to use
  oob_irq_enable/disable()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index d92e6bdbc..878f069e3 100644
+index d92e6bdbcad2..878f069e3884 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -190,7 +190,8 @@ typedef struct evl_spinlock {

@@ -1,7 +1,7 @@
 From 3a65766d5ad0a1c0bf1846041883439d54e760bf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 2 Feb 2024 15:21:13 +0100
-Subject: [PATCH 865/985] evl/net: socket: rename sock_oob_detach() to
+Subject: [PATCH 0865/1013] evl/net: socket: rename sock_oob_detach() to
  sock_oob_destroy()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 19ee8c2ab..e9ee0c60a 100644
+index 19ee8c2ab021..e9ee0c60afef 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -438,7 +438,7 @@ void evl_net_uncharge_skb_wmem(struct sk_buff *skb)
@@ -24,7 +24,7 @@ index 19ee8c2ab..e9ee0c60a 100644
  	if (esk) {
  		EVL_NET_CB(skb)->tracker = NULL;
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 11bc0de7f..ee5c52d23 100644
+index 11bc0de7f6c8..ee5c52d230bf 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -173,7 +173,7 @@ void evl_uncharge_socket_wmem(struct evl_socket *esk, size_t size)

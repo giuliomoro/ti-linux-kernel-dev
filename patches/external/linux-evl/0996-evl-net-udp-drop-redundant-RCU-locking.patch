@@ -1,0 +1,27 @@
+From e72f9c554f02fb2c67eb2fc4648e44ae194bdb30 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 26 Oct 2025 17:25:54 +0100
+Subject: [PATCH 0996/1013] evl/net: udp: drop redundant RCU locking
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/udp.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index b385c519c3ac..fea590648249 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -450,9 +450,7 @@ static ssize_t send_udp(struct evl_socket *esk,
+ 		if (ipv4_is_multicast(daddr)) {
+ 			saddr = inet->mc_addr;
+ 		} else {
+-			rcu_read_lock();
+ 			saddr = inet_select_addr(ert->rt->dst.dev, daddr, RT_SCOPE_LINK);
+-			rcu_read_unlock();
+ 		}
+ 	}
+ 
+-- 
+2.30.2
+

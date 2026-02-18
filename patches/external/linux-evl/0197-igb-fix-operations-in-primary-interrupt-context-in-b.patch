@@ -1,7 +1,7 @@
 From 3cbdce56c4165d7e73a0ae10d5fd7e6ceb33f182 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 18 Jun 2025 16:53:10 +0200
-Subject: [PATCH 197/985] igb: fix operations in primary interrupt context
+Subject: [PATCH 0197/1013] igb: fix operations in primary interrupt context
  (in-band vs oob)
 
 The set of operations required for proper IRQ handling depends on the
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 104 insertions(+), 69 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index dac0a2541..e7f35325b 100644
+index dac0a2541f0d..e7f35325b362 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -977,23 +977,32 @@ static inline bool igb_is_oob_tx(struct igb_tx_buffer *tx_buffer)

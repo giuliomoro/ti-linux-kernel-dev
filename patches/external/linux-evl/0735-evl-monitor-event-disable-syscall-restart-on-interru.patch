@@ -1,7 +1,7 @@
 From ae21c262649e7aea68d374d298f81ebe1a4089f1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Jul 2022 16:46:07 +0200
-Subject: [PATCH 735/985] evl/monitor: event: disable syscall restart on
+Subject: [PATCH 0735/1013] evl/monitor: event: disable syscall restart on
  interrupted wait
 
 When interrupted by a signal, a wait operation on a gated monitor
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 15 insertions(+), 10 deletions(-)
 
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 9f23455be..47bad95a8 100644
+index 9f23455be698..47bad95a890b 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -62,6 +62,7 @@
@@ -37,7 +37,7 @@ index 9f23455be..47bad95a8 100644
  /*
   * Must follow strictly the declaration order of the state flags
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 9b2aafb96..26486ead5 100644
+index 9b2aafb9627b..26486ead5497 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -527,13 +527,19 @@ static int wait_monitor(struct file *filp,
@@ -63,7 +63,7 @@ index 9b2aafb96..26486ead5 100644
  	}
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 12b14ee3a..be5b92416 100644
+index 12b14ee3afa2..be5b92416f57 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -164,13 +164,6 @@ static void prepare_for_signal(struct task_struct *p,

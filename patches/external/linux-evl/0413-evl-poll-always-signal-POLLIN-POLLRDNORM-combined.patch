@@ -1,7 +1,7 @@
 From 890212d59e3c88c6fa7fe1bb9791e8a9f651f6cc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Jun 2019 14:58:08 +0200
-Subject: [PATCH 413/985] evl/poll: always signal POLLIN|POLLRDNORM combined
+Subject: [PATCH 0413/1013] evl/poll: always signal POLLIN|POLLRDNORM combined
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 58fa2aa1d..1a470e6fa 100644
+index 58fa2aa1d4b5..1a470e6fa9c9 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -598,7 +598,7 @@ static void timerfd_handler(struct evl_timer *timer) /* hard IRQs off */
@@ -23,7 +23,7 @@ index 58fa2aa1d..1a470e6fa 100644
  }
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index ba2205ccd..16189445a 100644
+index ba2205ccdeff..16189445ac58 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -281,7 +281,8 @@ static int exit_monitor(struct evl_monitor *gate)

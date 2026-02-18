@@ -1,7 +1,8 @@
 From 2d1db34f9d31e3772a6d7a3780de11901a8ce32a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 24 Apr 2025 18:10:48 +0200
-Subject: [PATCH 166/985] dma: dovetail: catch map/unmap calls from oob context
+Subject: [PATCH 0166/1013] dma: dovetail: catch map/unmap calls from oob
+ context
 
 With more existing drivers being added out-of-band I/O support, we
 need some debug instrumentation for detecting calls to DMA routines
@@ -17,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/kernel/dma/mapping.c b/kernel/dma/mapping.c
-index c7cc4e33e..2098ac409 100644
+index c7cc4e33ec6e..2098ac4090e0 100644
 --- a/kernel/dma/mapping.c
 +++ b/kernel/dma/mapping.c
 @@ -159,6 +159,8 @@ dma_addr_t dma_map_page_attrs(struct device *dev, struct page *page,

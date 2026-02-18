@@ -1,7 +1,7 @@
 From 73a10dcdc0b4eef493e7c00aeea7f5c253136e42 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Oct 2022 15:45:51 +0200
-Subject: [PATCH 763/985] evl/mutex: finalize conversion to set_mutex_owner()
+Subject: [PATCH 0763/1013] evl/mutex: finalize conversion to set_mutex_owner()
 
 Convert the last callers of set_current_owner[_locked]() to using
 set_mutex_owner() instead, namely the lazy ceiling code for priority
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 89 insertions(+), 135 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 6337b5607..5e34e2d16 100644
+index 6337b560791c..5e34e2d163df 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -433,49 +433,6 @@ static int old_adjust_boost(struct evl_mutex *origin,

@@ -1,7 +1,7 @@
 From 90650ac9f49a96000dd359703709b21d3bac9dbc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 28 Sep 2022 11:18:27 +0200
-Subject: [PATCH 742/985] evl/mutex: remove redundant irq disabling
+Subject: [PATCH 0742/1013] evl/mutex: remove redundant irq disabling
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 1a02b2f07..3d3ffca20 100644
+index 1a02b2f07b72..3d3ffca20f55 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -236,14 +236,13 @@ static void ceil_owner_priority(struct evl_mutex *mutex,

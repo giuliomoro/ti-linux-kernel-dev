@@ -1,7 +1,7 @@
 From 02bdfc4413e7610fbb3e54db02244fdd900d4e15 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 5 Apr 2017 19:15:47 +0200
-Subject: [PATCH 055/985] clocksource/timer-imx-gpt: irq_pipeline: enable
+Subject: [PATCH 0055/1013] clocksource/timer-imx-gpt: irq_pipeline: enable
  pipelined clock events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clocksource/timer-imx-gpt.c b/drivers/clocksource/timer-imx-gpt.c
-index 952cdeef8..d3a1bd465 100644
+index 952cdeef8c2c..d3a1bd46568f 100644
 --- a/drivers/clocksource/timer-imx-gpt.c
 +++ b/drivers/clocksource/timer-imx-gpt.c
 @@ -263,7 +263,7 @@ static irqreturn_t mxc_timer_interrupt(int irq, void *dev_id)

@@ -1,7 +1,7 @@
 From e1573b8a221f32b0da76c910b94e159d41be2841 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 18:15:15 +0100
-Subject: [PATCH 232/985] evl/thread: sanitize naming for thread block call
+Subject: [PATCH 0232/1013] evl/thread: sanitize naming for thread block call
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 40 insertions(+), 38 deletions(-)
 
 diff --git a/drivers/evenless/hectic.c b/drivers/evenless/hectic.c
-index 8d20d98cf..1bb352b8f 100644
+index 8d20d98cff83..1bb352b8fc74 100644
 --- a/drivers/evenless/hectic.c
 +++ b/drivers/evenless/hectic.c
 @@ -90,7 +90,7 @@ static void handle_fpu_error(struct rtswitch_context *ctx,
@@ -27,7 +27,7 @@ index 8d20d98cf..1bb352b8f 100644
  }
  
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 3e6207a21..b5a79270b 100644
+index 3e6207a218a2..b5a79270b7b1 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -212,18 +212,19 @@ int evl_init_thread(struct evl_thread *thread,
@@ -57,7 +57,7 @@ index 3e6207a21..b5a79270b 100644
  ktime_t evl_delay_thread(ktime_t timeout,
  			 enum evl_tmode timeout_mode,
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index 3d7f960c0..e0a3cf40b 100644
+index 3d7f960c0f32..e0a3cf40b6af 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -305,7 +305,7 @@ TRACE_EVENT(evl_init_thread,
@@ -70,7 +70,7 @@ index 3d7f960c0..e0a3cf40b 100644
  		 enum evl_tmode timeout_mode, struct evl_clock *clock,
  		 struct evl_syn *wchan),
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index a81783df2..f51339d9a 100644
+index a81783df277f..f51339d9a260 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -100,9 +100,9 @@ static void watchdog_handler(struct evl_timer *timer) /* hard irqs off */
@@ -87,7 +87,7 @@ index a81783df2..f51339d9a 100644
  		 */
  		xnlock_get(&nklock);
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
-index ee99ed8b6..3cdcc0f82 100644
+index ee99ed8b6747..3cdcc0f829ff 100644
 --- a/kernel/evenless/synch.c
 +++ b/kernel/evenless/synch.c
 @@ -100,7 +100,8 @@ int block_thread_timed(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -101,7 +101,7 @@ index ee99ed8b6..3cdcc0f82 100644
  	 * FIXME: bypass sched_lock test until the situation is fixed
  	 * for evl_enable/disable_preempt().
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 7d5913d46..6ed31fabf 100644
+index 7d5913d46f0d..6ed31fabfdd4 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -343,7 +343,7 @@ static int map_kthread_self(struct evl_kthread *kthread)

@@ -1,7 +1,7 @@
 From 5d885115a15e90496be9323c1c2c6f7ddf6c0495 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 22 Apr 2025 15:37:19 +0200
-Subject: [PATCH 916/985] evl/net: skb: align on skbuff oob API updates
+Subject: [PATCH 0916/1013] evl/net: skb: align on skbuff oob API updates
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 0230e1f1c..b9c796506 100644
+index 0230e1f1c02b..b9c79650662f 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -30,7 +30,7 @@

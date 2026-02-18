@@ -1,7 +1,7 @@
 From 0ef3cbe3870f0a614eafa60ee6ea1460e6edbf3d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 12 Jun 2020 20:56:13 +0200
-Subject: [PATCH 631/985] evl/factory: export creation, deletion routines
+Subject: [PATCH 0631/1013] evl/factory: export creation, deletion routines
 
 Enable drivers to create EVL factories in order to extend the core
 services with new elements/features, benefiting from the object
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index a2d2d5c06..7847158dd 100644
+index a2d2d5c062eb..7847158dd5a9 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -188,6 +188,10 @@ static inline void evl_unindex_factory_element(struct evl_element *e)
@@ -29,7 +29,7 @@ index a2d2d5c06..7847158dd 100644
  
  void evl_early_cleanup_factories(void);
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 037d43b13..e160e322b 100644
+index 037d43b13e27..e160e322be6a 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -799,7 +799,7 @@ static void delete_element_class(struct evl_factory *fac)

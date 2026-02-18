@@ -1,7 +1,7 @@
 From 1e69a8d901338bb8c81bb48dfa7dd73660cc9820 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 6 May 2025 15:46:45 +0200
-Subject: [PATCH 931/985] evl/net: udp: implement support for oob_poll()
+Subject: [PATCH 0931/1013] evl/net: udp: implement support for oob_poll()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 22 insertions(+)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 6d60865ba..48cec3ab3 100644
+index 6d60865ba7af..48cec3ab3eee 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -601,6 +601,28 @@ static ssize_t receive_udp(struct evl_socket *esk,

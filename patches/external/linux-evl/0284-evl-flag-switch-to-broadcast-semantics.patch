@@ -1,7 +1,7 @@
 From 060bf149ff3a6e094228b2621dd86c4a2996affc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 Feb 2019 12:23:13 +0100
-Subject: [PATCH 284/985] evl/flag: switch to broadcast semantics
+Subject: [PATCH 0284/1013] evl/flag: switch to broadcast semantics
 
 All waiters are unblocked upon signaling.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 24 insertions(+), 10 deletions(-)
 
 diff --git a/include/evenless/flag.h b/include/evenless/flag.h
-index 31e11a476..c95258be8 100644
+index 31e11a47641e..c95258be867a 100644
 --- a/include/evenless/flag.h
 +++ b/include/evenless/flag.h
 @@ -12,19 +12,19 @@

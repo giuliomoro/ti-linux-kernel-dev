@@ -1,7 +1,7 @@
 From fac7fda711f2c75c5b5713a69eeaae06ef744c56 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 Jan 2020 10:26:56 +0100
-Subject: [PATCH 554/985] evl/proxy: run deferred output on dedicated wq
+Subject: [PATCH 0554/1013] evl/proxy: run deferred output on dedicated wq
 
 A proxy might indefinitely sleep writing to the target file, denying
 other users from getting their work handled by the system
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 62dab0aab..aa7397efc 100644
+index 62dab0aab59c..aa7397efc813 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -40,6 +40,7 @@ struct proxy_out {		/* oob_write->write */

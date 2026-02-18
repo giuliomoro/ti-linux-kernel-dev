@@ -1,7 +1,8 @@
 From d2e933022c3cd80fba8554de6a5eff5b81b9e3f5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 Apr 2020 17:16:46 +0200
-Subject: [PATCH 092/985] spi: bcm2835: dovetail: enable out-of-band transfers
+Subject: [PATCH 0092/1013] spi: bcm2835: dovetail: enable out-of-band
+ transfers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
@@ -26,7 +27,7 @@ Signed-off-by: Dani Sanz <sbrk.modules@gmail.com>
  2 files changed, 99 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index c80e92c4d..fa86b4aea 100644
+index c80e92c4dc93..fa86b4aea2a7 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
 @@ -186,6 +186,13 @@ config SPI_BCM2835
@@ -44,7 +45,7 @@ index c80e92c4d..fa86b4aea 100644
  	tristate "BCM2835 SPI auxiliary controller"
  	depends on ((ARCH_BCM2835 || ARCH_BRCMSTB) && GPIOLIB) || COMPILE_TEST
 diff --git a/drivers/spi/spi-bcm2835.c b/drivers/spi/spi-bcm2835.c
-index 5926e004d..d08791ff8 100644
+index 5926e004d9a6..d08791ff83d2 100644
 --- a/drivers/spi/spi-bcm2835.c
 +++ b/drivers/spi/spi-bcm2835.c
 @@ -1049,18 +1049,10 @@ static int bcm2835_spi_transfer_one_poll(struct spi_controller *ctlr,

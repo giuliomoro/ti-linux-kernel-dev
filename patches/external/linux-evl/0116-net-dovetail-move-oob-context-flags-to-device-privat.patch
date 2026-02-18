@@ -1,7 +1,7 @@
 From 2fd180505e31f18acdcfc7df64d10b847b4c1dcd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 1 Mar 2024 11:12:58 +0100
-Subject: [PATCH 116/985] net: dovetail: move oob context flags to device
+Subject: [PATCH 0116/1013] net: dovetail: move oob context flags to device
  private flags
 
 Out-of-band capability is a generic information which should be
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 51 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 2572745bf..5e778a36b 100644
+index 2572745bf5a0..5e778a36b987 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -1364,14 +1364,12 @@ struct netdev_net_notifier {
@@ -139,7 +139,7 @@ index 2572745bf..5e778a36b 100644
  	return false;
  }
 diff --git a/include/net/netoob.h b/include/net/netoob.h
-index 55fd2357a..02ec893d7 100644
+index 55fd2357afb2..02ec893d7d7c 100644
 --- a/include/net/netoob.h
 +++ b/include/net/netoob.h
 @@ -5,14 +5,8 @@

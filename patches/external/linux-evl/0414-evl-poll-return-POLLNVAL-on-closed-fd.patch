@@ -1,7 +1,7 @@
 From f04153e22237f3971f0b4801dfb3329d59559cfc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Jun 2019 15:30:04 +0200
-Subject: [PATCH 414/985] evl/poll: return POLLNVAL on closed fd
+Subject: [PATCH 0414/1013] evl/poll: return POLLNVAL on closed fd
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index f2e4d62fd..2ef902d73 100644
+index f2e4d62fd49c..2ef902d73b7b 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -424,13 +424,10 @@ static int collect_events(struct poll_group *group,

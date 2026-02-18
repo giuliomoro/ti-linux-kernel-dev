@@ -1,7 +1,7 @@
 From 1bebe3152a1fb3601041436c7d1b0733ce410882 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 7 Feb 2019 17:54:07 +0100
-Subject: [PATCH 272/985] evl/sched: drop mapping of SCHED_FIFO,-prio to
+Subject: [PATCH 0272/1013] evl/sched: drop mapping of SCHED_FIFO,-prio to
  SCHED_WEAK,prio
 
 Such mapping has no particular upside, drop it for consistency and
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 22 deletions(-)
 
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 2fe027fab..5163b893b 100644
+index 2fe027fab6a9..5163b893b08b 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -801,16 +801,6 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -61,7 +61,7 @@ index 2fe027fab..5163b893b 100644
  		break;
  #ifdef CONFIG_EVENLESS_SCHED_QUOTA
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index a21f9eece..6c9f64e8a 100644
+index a21f9eece0f0..6c9f64e8a96c 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -2038,12 +2038,6 @@ static int get_sched_attrs(struct evl_thread *thread,

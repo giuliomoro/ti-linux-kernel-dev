@@ -1,7 +1,7 @@
 From 42be867a31eab769aee3f6de32bc255a55d73aba Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 674/985] evl/file: convert file table lock to hard lock
+Subject: [PATCH 0674/1013] evl/file: convert file table lock to hard lock
 
 The data protected by the file table lock is frequently accessed from
 the in-band stage where holding it with hard irqs off is
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evl/file.c b/kernel/evl/file.c
-index 0ba2c7d7f..2a3f45ad0 100644
+index 0ba2c7d7f4e3..2a3f45ad0a68 100644
 --- a/kernel/evl/file.c
 +++ b/kernel/evl/file.c
 @@ -21,7 +21,7 @@

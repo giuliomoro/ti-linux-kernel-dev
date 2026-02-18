@@ -1,7 +1,7 @@
 From 2cfdb6ffb02f7f37ae6399009d50a4fcd75d2ba8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Mar 2019 11:57:55 +0100
-Subject: [PATCH 339/985] evl/file: export external services
+Subject: [PATCH 0339/1013] evl/file: export external services
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/kernel/evl/file.c b/kernel/evl/file.c
-index 5e2cde8ea..0593211fe 100644
+index 5e2cde8ea180..0593211fe4e8 100644
 --- a/kernel/evl/file.c
 +++ b/kernel/evl/file.c
 @@ -199,6 +199,7 @@ struct evl_file *evl_get_file(unsigned int fd)

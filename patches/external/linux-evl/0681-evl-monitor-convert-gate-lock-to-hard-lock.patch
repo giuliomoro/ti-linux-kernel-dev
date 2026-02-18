@@ -1,7 +1,7 @@
 From 288ebd42435f4b63c32fc612178b23bc1533e943 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 681/985] evl/monitor: convert gate lock to hard lock
+Subject: [PATCH 0681/1013] evl/monitor: convert gate lock to hard lock
 
 For the most part, the gate lock is nested with a wait queue hard lock
 - which requires hard irqs to be off - to access the protected
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 0f216aab4..fc1061c51 100644
+index 0f216aab4a19..fc1061c51156 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -14,7 +14,6 @@

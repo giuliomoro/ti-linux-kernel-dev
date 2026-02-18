@@ -1,8 +1,8 @@
 From e86d106b496d2f33cad0cb815d2a0299a2e6f312 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 18 Oct 2022 19:31:48 +0200
-Subject: [PATCH 743/985] evl/thread: release the oob state unconditionally on
- cleanup
+Subject: [PATCH 0743/1013] evl/thread: release the oob state unconditionally
+ on cleanup
 
 A thread running a fork+exec sequence has its own mm_struct which is
 different from its parent internally, therefore we must release the
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4dc3aca39..75c98781d 100644
+index 4dc3aca39bec..75c98781da65 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1863,14 +1863,13 @@ static void handle_cleanup_event(struct mm_struct *mm)

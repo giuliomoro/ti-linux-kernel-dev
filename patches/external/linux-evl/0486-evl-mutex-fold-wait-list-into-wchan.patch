@@ -1,7 +1,7 @@
 From 70809d93e62aa4364f587c0bdde153c80c7edc76 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 14:52:06 +0200
-Subject: [PATCH 486/985] evl/mutex: fold wait list into wchan
+Subject: [PATCH 0486/1013] evl/mutex: fold wait list into wchan
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 23 insertions(+), 21 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 14438f6ec..592ad0f68 100644
+index 14438f6ec429..592ad0f680d6 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -32,13 +32,12 @@ struct evl_mutex {
@@ -43,7 +43,7 @@ index 14438f6ec..592ad0f68 100644
  			},						\
  		},							\
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index dbb5ce165..9eec58ecc 100644
+index dbb5ce165995..9eec58ecc736 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -46,6 +46,7 @@ struct evl_wait_channel {
@@ -55,7 +55,7 @@ index dbb5ce165..9eec58ecc 100644
  };
  
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 386083326..9074fab6a 100644
+index 386083326ac6..9074fab6a65b 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -103,8 +103,8 @@ static void adjust_boost(struct evl_thread *owner, struct evl_thread *target)

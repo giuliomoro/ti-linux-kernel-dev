@@ -1,7 +1,8 @@
 From 65e3c8b379ee83cd70acefc42fe752352cd86f17 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 12 Jun 2021 09:09:42 +0200
-Subject: [PATCH 698/985] evl/irq: fix SMP kernel boot on uniprocessor machine
+Subject: [PATCH 0698/1013] evl/irq: fix SMP kernel boot on uniprocessor
+ machine
 
 We may be running a SMP kernel on a uniprocessor machine whose
 interrupt controller supports no IPI. We should attempt to hook IPIs
@@ -15,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 25 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index dcda37f09..5b4720e0d 100644
+index dcda37f09b48..5b4720e0ded7 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -719,6 +719,7 @@ static inline void leave_inband(struct evl_thread *root)
@@ -56,7 +57,7 @@ index dcda37f09..5b4720e0d 100644
  
  	for_each_online_cpu(cpu) {
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index c622b287f..46ac430ef 100644
+index c622b287f0aa..46ac430ef20e 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -81,14 +81,14 @@ static int proxy_set_oneshot_stopped(struct clock_event_device *proxy_dev)

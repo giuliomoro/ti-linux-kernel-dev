@@ -1,8 +1,8 @@
 From 8cfd71de8a911abc0e53f4d9d2ddfdc2738fde4a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 17:45:06 +0100
-Subject: [PATCH 231/985] evl/sched: substitute sched_lock with common preempt
- count protection
+Subject: [PATCH 0231/1013] evl/sched: substitute sched_lock with common
+ preempt count protection
 
 The legacy scheduler lock implementation inherited from Xenomai is
 terminally racy and slow, fix this with a stack-based counter like the
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 34 insertions(+), 71 deletions(-)
 
 diff --git a/include/asm-generic/evenless/thread_info.h b/include/asm-generic/evenless/thread_info.h
-index 233d737a3..441e721fe 100644
+index 233d737a3001..441e721fef6c 100644
 --- a/include/asm-generic/evenless/thread_info.h
 +++ b/include/asm-generic/evenless/thread_info.h
 @@ -6,12 +6,14 @@ struct evl_thread;
@@ -43,7 +43,7 @@ index 233d737a3..441e721fe 100644
  
  #endif /* !_ASM_GENERIC_EVENLESS_THREAD_INFO_H */
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 5c2e19b5f..78fada0ba 100644
+index 5c2e19b5f31b..78fada0ba29c 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -292,19 +292,20 @@ static inline bool __evl_schedule(struct evl_rq *this_rq)
@@ -126,7 +126,7 @@ index 5c2e19b5f..78fada0ba 100644
  }
  
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 25da9090d..3e6207a21 100644
+index 25da9090ded3..3e6207a218a2 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -71,8 +71,6 @@ struct evl_thread {
@@ -139,7 +139,7 @@ index 25da9090d..3e6207a21 100644
  	struct list_head syn_next;	/* evl_syn->wait_list */
  	struct list_head next;	/* evl_thread_list */
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 73f71c0bd..a81783df2 100644
+index 73f71c0bd4d3..a81783df277f 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -244,7 +244,7 @@ struct evl_thread *evl_pick_thread(struct evl_rq *rq)
@@ -199,7 +199,7 @@ index 73f71c0bd..a81783df2 100644
  EXPORT_SYMBOL(evl_enable_preempt);
  
 diff --git a/kernel/evenless/sched/rt.c b/kernel/evenless/sched/rt.c
-index be2307dc0..922501805 100644
+index be2307dc0005..922501805d35 100644
 --- a/kernel/evenless/sched/rt.c
 +++ b/kernel/evenless/sched/rt.c
 @@ -59,7 +59,7 @@ static void evl_rt_rotate(struct evl_rq *rq,
@@ -212,7 +212,7 @@ index be2307dc0..922501805 100644
  }
  
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 14b830094..7d5913d46 100644
+index 14b8300943f7..7d5913d46f0d 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -161,7 +161,6 @@ int evl_init_thread(struct evl_thread *thread,

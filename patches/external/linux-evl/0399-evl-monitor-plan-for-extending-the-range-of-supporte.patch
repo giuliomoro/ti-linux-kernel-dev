@@ -1,7 +1,7 @@
 From 6a05e6e0300a6289d96dbb951c6ac96a040c22db Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 11 Jun 2019 16:48:28 +0200
-Subject: [PATCH 399/985] evl/monitor: plan for extending the range of
+Subject: [PATCH 0399/1013] evl/monitor: plan for extending the range of
  supported protocols
 
 Introduce a 'protocol' specifier for monitors along with a basic type
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 78 insertions(+), 48 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 55191cfc8..1ee901bdd 100644
+index 55191cfc843a..1ee901bdd92a 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -33,7 +33,7 @@ index 55191cfc8..1ee901bdd 100644
  struct evl_core_info {
  	__u32 abi_level;
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 6caa8a58e..dc1d1aee0 100644
+index 6caa8a58e7e1..dc1d1aee08a5 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -13,13 +13,17 @@
@@ -69,7 +69,7 @@ index 6caa8a58e..dc1d1aee0 100644
  };
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 0c56505a2..5c2170cbe 100644
+index 0c56505a208e..5c2170cbe656 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -26,7 +26,8 @@

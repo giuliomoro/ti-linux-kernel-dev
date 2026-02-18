@@ -1,7 +1,7 @@
 From 11b086d56dc8e2248af0c67233525f6fe3ecb1d9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 22 Jul 2018 16:45:45 +0200
-Subject: [PATCH 069/985] ARM: vDSO: export user-visible MMIO clocksources
+Subject: [PATCH 0069/1013] ARM: vDSO: export user-visible MMIO clocksources
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 125 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/include/asm/vdso/gettimeofday.h b/arch/arm/include/asm/vdso/gettimeofday.h
-index 2134cbd54..eadbcde36 100644
+index 2134cbd5469f..eadbcde3679e 100644
 --- a/arch/arm/include/asm/vdso/gettimeofday.h
 +++ b/arch/arm/include/asm/vdso/gettimeofday.h
 @@ -142,6 +142,66 @@ static __always_inline const struct vdso_data *__arch_get_vdso_data(void)
@@ -84,7 +84,7 @@ index 2134cbd54..eadbcde36 100644
  
  #endif /* __ASM_VDSO_GETTIMEOFDAY_H */
 diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
-index 7e7f01fc7..7123a881f 100644
+index 7e7f01fc75f0..7123a881f798 100644
 --- a/arch/arm/kernel/asm-offsets.c
 +++ b/arch/arm/kernel/asm-offsets.c
 @@ -157,6 +157,7 @@ int main(void)
@@ -96,7 +96,7 @@ index 7e7f01fc7..7123a881f 100644
    BLANK();
  #ifdef CONFIG_ARM_MPU
 diff --git a/arch/arm/kernel/vdso.c b/arch/arm/kernel/vdso.c
-index d499ad461..c7a8ea608 100644
+index d499ad461b00..c7a8ea608d7c 100644
 --- a/arch/arm/kernel/vdso.c
 +++ b/arch/arm/kernel/vdso.c
 @@ -31,7 +31,10 @@ static struct page **vdso_text_pagelist;
@@ -215,7 +215,7 @@ index d499ad461..c7a8ea608 100644
  }
  
 diff --git a/arch/arm/vdso/datapage.S b/arch/arm/vdso/datapage.S
-index 9cd73b725..9beb76db2 100644
+index 9cd73b725d9f..9beb76db2ec3 100644
 --- a/arch/arm/vdso/datapage.S
 +++ b/arch/arm/vdso/datapage.S
 @@ -5,6 +5,8 @@
@@ -241,7 +241,7 @@ index 9cd73b725..9beb76db2 100644
 +	.fnend
 +ENDPROC(__get_privpage)
 diff --git a/lib/vdso/Kconfig b/lib/vdso/Kconfig
-index 5eb2cc3a9..743d5db57 100644
+index 5eb2cc3a9570..743d5db57b54 100644
 --- a/lib/vdso/Kconfig
 +++ b/lib/vdso/Kconfig
 @@ -32,6 +32,7 @@ config GENERIC_VDSO_TIME_NS

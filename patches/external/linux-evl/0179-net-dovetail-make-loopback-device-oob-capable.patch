@@ -1,7 +1,7 @@
 From f16e1ffd5e006787b7d7b1753a3dd35c8ac3d9f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 4 Jun 2025 09:30:58 +0200
-Subject: [PATCH 179/985] net: dovetail: make loopback device oob-capable
+Subject: [PATCH 0179/1013] net: dovetail: make loopback device oob-capable
 
 We don't need any specific support to make the stock 'lo' device
 oob-capable now that [__]netif_rx() relays packets to the oob
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 15 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/net/loopback.c b/drivers/net/loopback.c
-index 491e56b32..14e3791fd 100644
+index 491e56b3263f..14e3791fd58b 100644
 --- a/drivers/net/loopback.c
 +++ b/drivers/net/loopback.c
 @@ -218,6 +218,9 @@ static __net_init int loopback_net_init(struct net *net)
@@ -29,7 +29,7 @@ index 491e56b32..14e3791fd 100644
  	net->loopback_dev = dev;
  	return 0;
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 7dec86b43..6e6732fa5 100644
+index 7dec86b4374e..6e6732fa5aec 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4423,6 +4423,7 @@ int napi_poll_oob(struct napi_struct *n, struct list_head *repoll);
@@ -72,7 +72,7 @@ index 7dec86b43..6e6732fa5 100644
  	return false;
  }
 diff --git a/net/core/dev.c b/net/core/dev.c
-index ac72995f8..5a7bc4418 100644
+index ac72995f8f5b..5a7bc4418a59 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5381,8 +5381,10 @@ static int netif_rx_internal(struct sk_buff *skb)

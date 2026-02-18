@@ -1,7 +1,7 @@
 From 5e00f17fc72f94c9f9050955c13afa13c157550a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Sep 2020 19:03:07 +0200
-Subject: [PATCH 650/985] evl/thread: align trap_entry/exit on new Dovetail
+Subject: [PATCH 0650/1013] evl/thread: align trap_entry/exit on new Dovetail
  rules
 
 The trap_entry handler may expect hard irqs off on entry. It may
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index b58295c51..a2512db9e 100644
+index b58295c51cbd..a2512db9e671 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1510,12 +1510,14 @@ static inline void note_trap(struct evl_thread *curr,

@@ -1,7 +1,7 @@
 From ca067843858c65fc5cdb0010ad0c4eebb0a5483a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Jan 2020 19:13:02 +0100
-Subject: [PATCH 553/985] evl: add stage exclusion lock mechanism
+Subject: [PATCH 0553/1013] evl: add stage exclusion lock mechanism
 
 A STAge eXclusion lock (aka stax) serializes in-band vs out-of-band
 thread activities for accessing a resource. Multiple threads which run
@@ -39,7 +39,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evl/stax.h b/include/evl/stax.h
 new file mode 100644
-index 000000000..c8695a87a
+index 000000000000..c8695a87a546
 --- /dev/null
 +++ b/include/evl/stax.h
 @@ -0,0 +1,32 @@
@@ -76,7 +76,7 @@ index 000000000..c8695a87a
 +
 +#endif /* !_EVL_STAX_H */
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 9c59f62b0..25b15107e 100644
+index 9c59f62b0e17..25b15107e9ce 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -89,7 +89,7 @@ index 9c59f62b0..25b15107e 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index 27d2f4f11..dbd29b21f 100644
+index 27d2f4f11d67..dbd29b21f2e0 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -12,6 +12,7 @@ evl-y :=		\
@@ -102,7 +102,7 @@ index 27d2f4f11..dbd29b21f 100644
  	tick.o		\
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
 new file mode 100644
-index 000000000..35899ca20
+index 000000000000..35899ca20a79
 --- /dev/null
 +++ b/kernel/evl/stax.c
 @@ -0,0 +1,365 @@

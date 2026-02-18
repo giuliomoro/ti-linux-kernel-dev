@@ -1,7 +1,7 @@
 From 171357c82259737b44aef0b6f3e5dfd3555346ee Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 17 Jun 2018 19:43:28 +0200
-Subject: [PATCH 003/985] tty: pl011: add raw console channel
+Subject: [PATCH 0003/1013] tty: pl011: add raw console channel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 39 insertions(+)
 
 diff --git a/drivers/tty/serial/amba-pl011.c b/drivers/tty/serial/amba-pl011.c
-index 9529a512c..49ba9bea3 100644
+index 9529a512cbd4..49ba9bea394f 100644
 --- a/drivers/tty/serial/amba-pl011.c
 +++ b/drivers/tty/serial/amba-pl011.c
 @@ -1960,6 +1960,8 @@ static void pl011_shutdown(struct uart_port *port)

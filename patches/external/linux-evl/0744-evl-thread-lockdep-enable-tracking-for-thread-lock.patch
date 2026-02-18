@@ -1,7 +1,8 @@
 From 5ea780c62909d3adb786f119e2a2c8a84a3593af Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 3 Oct 2022 16:26:14 +0200
-Subject: [PATCH 744/985] evl/thread: lockdep: enable tracking for thread->lock
+Subject: [PATCH 0744/1013] evl/thread: lockdep: enable tracking for
+ thread->lock
 
 Help lockdep in disambiguating thread locks by defining a per-thread
 lock class. To this end, add a per-thread lock key, which the thread's
@@ -18,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 14 insertions(+)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 952517370..279ef6442 100644
+index 952517370dfc..279ef6442b43 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -79,6 +79,7 @@ struct evl_rq {
@@ -30,7 +31,7 @@ index 952517370..279ef6442 100644
  	ktime_t last_account_switch;
  	struct evl_account *current_account;
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index bf663949c..fa8ce163e 100644
+index bf663949cdf9..fa8ce163e589 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -58,6 +58,7 @@ struct evl_init_thread_attr {
@@ -42,7 +43,7 @@ index bf663949c..fa8ce163e 100644
  	/*
  	 * Shared thread-specific data, covered by ->lock.
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 75c98781d..59dffe661 100644
+index 75c98781da65..59dffe66105c 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -249,6 +249,15 @@ int evl_init_thread(struct evl_thread *thread,

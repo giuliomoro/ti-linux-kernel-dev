@@ -1,7 +1,7 @@
 From 909cfe1b8a69ada827c164cafbc1cf46463c4439 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 15:57:40 +0200
-Subject: [PATCH 206/985] fec: send notice on oob mode switch
+Subject: [PATCH 0206/1013] fec: send notice on oob mode switch
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 968037edc..6ccca8a1e 100644
+index 968037edc67f..6ccca8a1e83a 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -342,6 +342,9 @@ static int fec_enet_enable_oob(struct net_device *ndev)

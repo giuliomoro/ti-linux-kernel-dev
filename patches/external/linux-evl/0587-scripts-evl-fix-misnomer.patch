@@ -1,7 +1,7 @@
 From 1f57cbd0e6c2243c4dfce9c673581a6d051f3ce3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 6 Mar 2020 17:19:33 +0100
-Subject: [PATCH 587/985] scripts: evl: fix misnomer
+Subject: [PATCH 0587/1013] scripts: evl: fix misnomer
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/scripts/git-evlabi b/scripts/git-evlabi
-index 32227196e..d9016c3e8 100755
+index 32227196e5f2..d9016c3e81cb 100755
 --- a/scripts/git-evlabi
 +++ b/scripts/git-evlabi
 @@ -117,7 +117,7 @@ if $GIT rev-parse -q --no-revs --verify $object:include/uapi/evl/control.h; then

@@ -1,7 +1,7 @@
 From fe32bba1373be5e0e57330a6480bd2d8ec3b76e9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 4 Jul 2019 20:53:26 +0200
-Subject: [PATCH 438/985] evl/sched: shorten rescheduling path when oob
+Subject: [PATCH 0438/1013] evl/sched: shorten rescheduling path when oob
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 0193b800e..463767378 100644
+index 0193b800e130..463767378b5c 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -280,7 +280,11 @@ static inline bool evl_schedule(void)

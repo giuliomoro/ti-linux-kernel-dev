@@ -1,7 +1,7 @@
 From 66bf7ecac0f0fa6979a086aecaff37ef774f9592 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Jun 2025 17:00:38 +0200
-Subject: [PATCH 955/985] evl/net: ipv4: use ARP pseudo-entry for lo device
+Subject: [PATCH 0955/1013] evl/net: ipv4: use ARP pseudo-entry for lo device
 
 Using a regular entry in the ARP cache for the special loopback device
 is an issue because it is affected when flushing the cache, although
@@ -31,7 +31,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  8 files changed, 180 insertions(+), 76 deletions(-)
 
 diff --git a/include/asm-generic/evl/net.h b/include/asm-generic/evl/net.h
-index 845639c1b..f1005430c 100644
+index 845639c1bfd9..f1005430c60b 100644
 --- a/include/asm-generic/evl/net.h
 +++ b/include/asm-generic/evl/net.h
 @@ -78,6 +78,14 @@ struct oob_net_state {
@@ -50,7 +50,7 @@ index 845639c1b..f1005430c 100644
  };
  
 diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
-index 19c319f96..2ce1aa50b 100644
+index 19c319f96f96..2ce1aa50be96 100644
 --- a/include/evl/net/ipv4.h
 +++ b/include/evl/net/ipv4.h
 @@ -39,6 +39,10 @@ int evl_net_init_ipv4(struct net *net);
@@ -65,7 +65,7 @@ index 19c319f96..2ce1aa50b 100644
  			struct sockaddr *addr, int flags);
  
 diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
-index d255aed1a..aa8a0b967 100644
+index d255aed1a086..aa8a0b967bcb 100644
 --- a/include/evl/net/ipv4/arp.h
 +++ b/include/evl/net/ipv4/arp.h
 @@ -34,9 +34,11 @@ void evl_net_cleanup_arp(struct net *net);
@@ -83,7 +83,7 @@ index d255aed1a..aa8a0b967 100644
  struct evl_net_arp_entry *
  evl_net_get_arp_entry(struct net_device *dev, __be32 addr);
 diff --git a/include/evl/net/route.h b/include/evl/net/route.h
-index 4ee23115d..d977e03b3 100644
+index 4ee23115d318..d977e03b3113 100644
 --- a/include/evl/net/route.h
 +++ b/include/evl/net/route.h
 @@ -35,9 +35,9 @@ static inline void evl_net_put_route(struct evl_net_route *ert)
@@ -99,7 +99,7 @@ index 4ee23115d..d977e03b3 100644
  void evl_net_flush_routes(struct net *net, struct net_device *dev);
  
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 37a56106b..35dc0f531 100644
+index 37a56106b3f6..35dc0f5318cb 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -72,6 +72,8 @@ static struct evl_net_ebpf_filter *
@@ -162,7 +162,7 @@ index 37a56106b..35dc0f531 100644
  	}
  
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index f690a5c0a..59f5272a1 100644
+index f690a5c0a6c3..59f5272a14e6 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -23,6 +23,32 @@ DECLARE_WAIT_QUEUE_HEAD(evl_arp_event);
@@ -387,7 +387,7 @@ index f690a5c0a..59f5272a1 100644
 +	swap_pseudo_entry(&net->oob, NULL, earpp);
  }
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index ecbdd3f7b..32326814b 100644
+index ecbdd3f7b5f9..32326814b276 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -247,11 +247,17 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
@@ -471,7 +471,7 @@ index ecbdd3f7b..32326814b 100644
  {
  	switch (protocol) {
 diff --git a/kernel/evl/net/route.c b/kernel/evl/net/route.c
-index 25f5ba1fc..b717901fb 100644
+index 25f5ba1fc7b6..b717901fb38d 100644
 --- a/kernel/evl/net/route.c
 +++ b/kernel/evl/net/route.c
 @@ -7,8 +7,8 @@

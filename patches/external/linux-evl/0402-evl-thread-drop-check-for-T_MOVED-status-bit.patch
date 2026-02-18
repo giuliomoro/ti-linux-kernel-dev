@@ -1,7 +1,7 @@
 From a825680785de3de83c735b356482411d239a97b7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 12 Jun 2019 19:07:48 +0200
-Subject: [PATCH 402/985] evl/thread: drop check for T_MOVED status bit
+Subject: [PATCH 0402/1013] evl/thread: drop check for T_MOVED status bit
 
 We don't plan for switching CPU from out-of-band context anymore, so
 T_MOVED is basically pointless now.
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 4 insertions(+), 13 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 1ee901bdd..f3e6a05f6 100644
+index 1ee901bdd92a..f3e6a05f6d1f 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -27,7 +27,7 @@ index 1ee901bdd..f3e6a05f6 100644
  struct evl_core_info {
  	__u32 abi_level;
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index b7acf7b64..5519a51bc 100644
+index b7acf7b6412a..5519a51bcb9a 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -49,10 +49,9 @@
@@ -45,7 +45,7 @@ index b7acf7b64..5519a51bc 100644
  /*
   * Must follow strictly the declaration order of the state flags
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 763f6be48..879df473e 100644
+index 763f6be4804c..879df473ec78 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -702,14 +702,6 @@ void evl_switch_inband(int cause)

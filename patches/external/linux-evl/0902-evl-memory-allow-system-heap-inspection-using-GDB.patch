@@ -1,7 +1,7 @@
 From e0a8f100f126f395482d69e10d3c6b5d0abd0289 Mon Sep 17 00:00:00 2001
 From: Qichen Qiu <ruiqurm@gmail.com>
 Date: Tue, 17 Dec 2024 14:40:15 +0000
-Subject: [PATCH 902/985] evl/memory: allow system heap inspection using GDB
+Subject: [PATCH 0902/1013] evl/memory: allow system heap inspection using GDB
 
 GDB was unable to inspect the evl shared heap mapping regions(i.e.
 __current_evl_window) due to limitations imposed by the VM_IO flag when
@@ -19,7 +19,7 @@ Signed-off-by: Qichen Qiu <ruiqurm@gmail.com>
  2 files changed, 16 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 2d1b44f3b..ebbb38a02 100644
+index 2d1b44f3b0dc..ebbb38a0263d 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -338,13 +338,24 @@ static long control_ioctl(struct file *filp, unsigned int cmd,
@@ -50,7 +50,7 @@ index 2d1b44f3b..ebbb38a02 100644
  
  static const struct file_operations control_fops = {
 diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
-index 1da5be623..acd5d6e26 100644
+index 1da5be623d69..acd5d6e264d2 100644
 --- a/kernel/evl/memory.c
 +++ b/kernel/evl/memory.c
 @@ -630,13 +630,13 @@ static int init_shared_heap(void)

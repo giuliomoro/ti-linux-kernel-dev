@@ -1,7 +1,7 @@
 From 7b839a6feec93543bea292f438e4f689c56ed27c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 5 Nov 2022 16:29:22 +0100
-Subject: [PATCH 777/985] evl/factory: use refcount_t for tracking references
+Subject: [PATCH 0777/1013] evl/factory: use refcount_t for tracking references
  to elements
 
 This makes the logic clearer and less expensive.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 45 insertions(+), 88 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index c5bb1a58a..358aac28f 100644
+index c5bb1a58aa5b..358aac28f561 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -19,6 +19,8 @@
@@ -65,7 +65,7 @@ index c5bb1a58a..358aac28f 100644
  int evl_open_element(struct inode *inode,
  		struct file *filp);
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 68f3d98bf..1966f50ef 100644
+index 68f3d98bf6c6..1966f50ef2af 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -72,15 +72,13 @@ int evl_init_element(struct evl_element *e,

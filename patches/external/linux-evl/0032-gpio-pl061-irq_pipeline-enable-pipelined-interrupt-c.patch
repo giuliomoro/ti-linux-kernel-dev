@@ -1,8 +1,8 @@
 From 92f2ca258a7bf338986ced0dfed825276d7b7522 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Jun 2018 14:02:35 +0200
-Subject: [PATCH 032/985] gpio: pl061: irq_pipeline: enable pipelined interrupt
- control
+Subject: [PATCH 0032/1013] gpio: pl061: irq_pipeline: enable pipelined
+ interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-index a211a02d4..7edfb7107 100644
+index a211a02d4b4a..7edfb71070e2 100644
 --- a/drivers/gpio/gpio-pl061.c
 +++ b/drivers/gpio/gpio-pl061.c
 @@ -49,7 +49,7 @@ struct pl061_context_save_regs {

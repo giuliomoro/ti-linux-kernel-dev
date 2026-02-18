@@ -1,0 +1,38 @@
+From 49a9351840dc61321f35ab7ae2283e34f8f4d34e Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sat, 11 Oct 2025 18:00:01 +0200
+Subject: [PATCH 0987/1013] mm: dovetail: fix MMF_DOVETAIL bit position
+
+Fix conflict with MMF_TOPDOWN. The new MMF_DOVETAIL position is set in
+order to cause a merge conflict next time some non-dumpable MMF* flag
+is added, likely to reuse the position of the obsolete
+MMF_EXE_FILE_CHANGED.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/sched/coredump.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/linux/sched/coredump.h b/include/linux/sched/coredump.h
+index 73de18353e79..06d03b16a0b9 100644
+--- a/include/linux/sched/coredump.h
++++ b/include/linux/sched/coredump.h
+@@ -64,6 +64,7 @@ static inline int get_dumpable(struct mm_struct *mm)
+  * on NFS restore
+  */
+ //#define MMF_EXE_FILE_CHANGED	18	/* see prctl_set_mm_exe_file() */
++#define MMF_DOVETAILED		18	/* mm belongs to a dovetailed process */
+ 
+ #define MMF_HAS_UPROBES		19	/* has uprobes */
+ #define MMF_RECALC_UPROBES	20	/* MMF_HAS_UPROBES can be wrong */
+@@ -91,7 +92,6 @@ static inline int get_dumpable(struct mm_struct *mm)
+ 
+ #define MMF_VM_MERGE_ANY	30
+ #define MMF_VM_MERGE_ANY_MASK	(1 << MMF_VM_MERGE_ANY)
+-#define MMF_DOVETAILED		31	/* mm belongs to a dovetailed process */
+ 
+ #define MMF_TOPDOWN		31	/* mm searches top down by default */
+ #define MMF_TOPDOWN_MASK	(1 << MMF_TOPDOWN)
+-- 
+2.30.2
+

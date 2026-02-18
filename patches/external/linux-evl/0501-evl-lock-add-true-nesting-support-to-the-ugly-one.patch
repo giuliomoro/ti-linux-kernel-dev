@@ -1,7 +1,7 @@
 From 9dcbd807b178f1ea0333f0c4b53c265cf206c6f1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Oct 2019 10:46:01 +0200
-Subject: [PATCH 501/985] evl/lock: add true nesting support to the ugly one
+Subject: [PATCH 0501/1013] evl/lock: add true nesting support to the ugly one
 
 As it stands, xnlock_put() would re-enable interrupts unconditionally
 even if nested inside a xnlock_get_irqsave() ->
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 40 insertions(+), 37 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 878f069e3..972f73817 100644
+index 878f069e3884..972f738171ce 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -15,21 +15,23 @@

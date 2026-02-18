@@ -1,7 +1,8 @@
 From 7b52fe5d21d976c8e52f50f8542c78ad8637f581 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 08:52:48 +0200
-Subject: [PATCH 961/985] evl/net: ipv4: allow for device-directed solicitation
+Subject: [PATCH 0961/1013] evl/net: ipv4: allow for device-directed
+ solicitation
 
 We may want to restrict the (ARP) solicitation to a particular (oob)
 device.
@@ -19,7 +20,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 40 insertions(+), 11 deletions(-)
 
 diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
-index 2ce1aa50b..a0d6d6cc3 100644
+index 2ce1aa50be96..a0d6d6cc3c2d 100644
 --- a/include/evl/net/ipv4.h
 +++ b/include/evl/net/ipv4.h
 @@ -43,7 +43,8 @@ int evl_net_ipv4_add_device(struct net_device *dev);
@@ -33,7 +34,7 @@ index 2ce1aa50b..a0d6d6cc3 100644
  
  extern struct evl_socket_domain evl_net_ipv4;
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 828a4c6ba..1fcc9895c 100644
+index 828a4c6baf63..1fcc9895cf67 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -41,7 +41,8 @@ struct evl_net_proto {
@@ -47,7 +48,7 @@ index 828a4c6ba..1fcc9895c 100644
  	ssize_t (*oob_send)(struct evl_socket *esk,
  			const struct user_oob_msghdr __user *u_msghdr,
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index c27f5fab9..2d0b0e891 100644
+index c27f5fab9524..2d0b0e891ff0 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -234,14 +234,21 @@ void __evl_net_ipv4_gc(struct evl_net_frag_tdir *ftdir)
@@ -86,7 +87,7 @@ index c27f5fab9..2d0b0e891 100644
  		return PTR_ERR(rt);
  
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 4d0386ce7..38065222f 100644
+index 4d0386ce75ef..38065222f592 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -710,6 +710,28 @@ static int socket_iocget_option(struct evl_socket *esk,

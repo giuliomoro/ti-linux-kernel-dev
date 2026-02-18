@@ -1,7 +1,7 @@
 From 45fa8891f5a8716198a51114a8d048a86f93f2a2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 7 Feb 2019 12:11:08 +0100
-Subject: [PATCH 271/985] evl/sem: switch to implicit single
+Subject: [PATCH 0271/1013] evl/sem: switch to implicit single
  increment/decrement ops
 
 Significant optimizations can happen only when acquire/release ops
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 26 insertions(+), 79 deletions(-)
 
 diff --git a/include/evenless/ksem.h b/include/evenless/ksem.h
-index 3f661e54f..2da8f588a 100644
+index 3f661e54f2e3..2da8f588a9c2 100644
 --- a/include/evenless/ksem.h
 +++ b/include/evenless/ksem.h
 @@ -25,6 +25,8 @@ int evl_down_timeout(struct evl_ksem *sem,
@@ -33,7 +33,7 @@ index 3f661e54f..2da8f588a 100644
  
  #endif /* !_EVENLESS_KSEM_H */
 diff --git a/include/uapi/evenless/sem.h b/include/uapi/evenless/sem.h
-index 2e841b29a..c08295873 100644
+index 2e841b29a8b3..c08295873211 100644
 --- a/include/uapi/evenless/sem.h
 +++ b/include/uapi/evenless/sem.h
 @@ -31,13 +31,12 @@ struct evl_sem_state {
@@ -53,7 +53,7 @@ index 2e841b29a..c08295873 100644
  
  #endif /* !_EVENLESS_UAPI_SEM_H */
 diff --git a/kernel/evenless/ksem.c b/kernel/evenless/ksem.c
-index 6861623ee..3597aab44 100644
+index 6861623eea13..3597aab44b1a 100644
 --- a/kernel/evenless/ksem.c
 +++ b/kernel/evenless/ksem.c
 @@ -47,6 +47,19 @@ int evl_down(struct evl_ksem *sem)
@@ -77,7 +77,7 @@ index 6861623ee..3597aab44 100644
  {
  	unsigned long flags;
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 30b5b9a3a..819d8a7e3 100644
+index 30b5b9a3a92f..819d8a7e3ff1 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -26,47 +26,30 @@ struct evl_sem {

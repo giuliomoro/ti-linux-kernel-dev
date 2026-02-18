@@ -1,7 +1,7 @@
 From 0c8baa5b8bdab290f9dec586a257753eaa38c768 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 5 Feb 2019 17:52:44 +0100
-Subject: [PATCH 263/985] evl/thread: hide info bits update into
+Subject: [PATCH 0263/1013] evl/thread: hide info bits update into
  evl_release_thread()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 20 insertions(+), 19 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 56e511fab..e73fade65 100644
+index 56e511fabce9..e73fade656cc 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -227,7 +227,7 @@ void evl_hold_thread(struct evl_thread *thread,
@@ -26,7 +26,7 @@ index 56e511fab..e73fade65 100644
  bool evl_unblock_thread(struct evl_thread *thread,
  			int reason);
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index 95f56c53a..9cc9adcd3 100644
+index 95f56c53ad22..9cc9adcd32a0 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -379,23 +379,26 @@ TRACE_EVENT(evl_hold_thread,
@@ -62,7 +62,7 @@ index 95f56c53a..9cc9adcd3 100644
  
  TRACE_EVENT(evl_thread_fault,
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 6618613f7..2fe027fab 100644
+index 6618613f7e0c..2fe027fab6a9 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -862,7 +862,7 @@ bool evl_sched_yield(void)
@@ -75,7 +75,7 @@ index 6618613f7..2fe027fab 100644
  	return evl_schedule();
  }
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 8ee282046..42637d070 100644
+index 8ee2820465c0..42637d070658 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -306,7 +306,7 @@ static int map_kthread_self(struct evl_kthread *kthread)

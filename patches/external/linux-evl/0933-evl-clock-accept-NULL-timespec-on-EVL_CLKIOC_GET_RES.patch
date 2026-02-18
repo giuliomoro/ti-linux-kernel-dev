@@ -1,7 +1,8 @@
 From 930b111497288b92f5f2e2b5115c4027040a19c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 27 May 2025 15:02:22 +0200
-Subject: [PATCH 933/985] evl/clock: accept NULL timespec on EVL_CLKIOC_GET_RES
+Subject: [PATCH 0933/1013] evl/clock: accept NULL timespec on
+ EVL_CLKIOC_GET_RES
 
 Emulate the POSIX behavior which accepts a NULLL timespec for the
 purpose of validating the clock id without actually caring for the
@@ -13,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 7cf4bc304..842db49c8 100644
+index 7cf4bc3042ad..842db49c8691 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -793,9 +793,16 @@ static long clock_common_ioctl(struct evl_clock *clock,

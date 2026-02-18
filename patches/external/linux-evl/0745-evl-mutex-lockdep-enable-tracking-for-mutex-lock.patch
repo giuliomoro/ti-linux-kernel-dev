@@ -1,7 +1,7 @@
 From 9fbebc1cb9d11e47628746f5b3dfc9cb34dbb4bf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 4 Oct 2022 11:32:08 +0200
-Subject: [PATCH 745/985] evl/mutex: lockdep: enable tracking for mutex->lock
+Subject: [PATCH 0745/1013] evl/mutex: lockdep: enable tracking for mutex->lock
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 13 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index faa3ee3e4..bb1f93573 100644
+index faa3ee3e4a32..bb1f935738b4 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -25,13 +25,14 @@ struct evl_thread;
@@ -51,7 +51,7 @@ index faa3ee3e4..bb1f93573 100644
  
  void evl_destroy_mutex(struct evl_mutex *mutex);
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 3d3ffca20..7f8721d08 100644
+index 3d3ffca20f55..7f8721d08728 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -442,6 +442,7 @@ void __evl_init_mutex(struct evl_mutex *mutex,

@@ -1,7 +1,7 @@
 From 29f23a481c410cb4bf503f979b53ff4b31a3485d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 22 Dec 2019 17:32:22 +0100
-Subject: [PATCH 013/985] lib/vdso: export MMIO clocksources to applications
+Subject: [PATCH 0013/1013] lib/vdso: export MMIO clocksources to applications
 
 Make any MMIO-accessed clocksource which can be mapped to user-space
 (clocksource_user_mmio) visible to applications via the generic vDSO.
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 345 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 03733101e..62c127ef9 100644
+index 03733101e231..62c127ef9afc 100644
 --- a/drivers/clocksource/arm_arch_timer.c
 +++ b/drivers/clocksource/arm_arch_timer.c
 @@ -23,6 +23,7 @@
@@ -60,7 +60,7 @@ index 03733101e..62c127ef9 100644
  		arch_timer_read_counter = arch_counter_get_cntvct_mem;
  		scr = arch_counter_get_cntvct_mem;
 diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
-index 58a0c0230..bbc66d49e 100644
+index 58a0c02309b7..bbc66d49e744 100644
 --- a/drivers/clocksource/mmio.c
 +++ b/drivers/clocksource/mmio.c
 @@ -464,6 +464,8 @@ int __init clocksource_user_mmio_init(struct clocksource_user_mmio *ucs,
@@ -73,7 +73,7 @@ index 58a0c0230..bbc66d49e 100644
  		err = ucs_create_cdev(user_mmio_class, ucs);
  		if (err < 0) {
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index 5b31e4b90..1c002c1a5 100644
+index 5b31e4b90aef..1c002c1a50b2 100644
 --- a/include/linux/clocksource.h
 +++ b/include/linux/clocksource.h
 @@ -33,6 +33,7 @@ struct module;
@@ -93,7 +93,7 @@ index 5b31e4b90..1c002c1a5 100644
  	struct clocksource_base *base;
  
 diff --git a/include/vdso/datapage.h b/include/vdso/datapage.h
-index b85f24cac..97bccb9d3 100644
+index b85f24cac3f5..97bccb9d3569 100644
 --- a/include/vdso/datapage.h
 +++ b/include/vdso/datapage.h
 @@ -114,9 +114,34 @@ struct vdso_data {
@@ -132,7 +132,7 @@ index b85f24cac..97bccb9d3 100644
   * struct vdso_rng_data - vdso RNG state information
   * @generation:	counter representing the number of RNG reseeds
 diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index ae862ad96..18b0359de 100644
+index ae862ad9642c..18b0359ded81 100644
 --- a/kernel/time/clocksource.c
 +++ b/kernel/time/clocksource.c
 @@ -1217,8 +1217,8 @@ void __clocksource_update_freq_scale(struct clocksource *cs, u32 scale, u32 freq
@@ -184,7 +184,7 @@ index ae862ad96..18b0359de 100644
  };
  ATTRIBUTE_GROUPS(clocksource);
 diff --git a/kernel/time/vsyscall.c b/kernel/time/vsyscall.c
-index 9193d6133..9ae58381e 100644
+index 9193d6133e5d..9ae58381eeb7 100644
 --- a/kernel/time/vsyscall.c
 +++ b/kernel/time/vsyscall.c
 @@ -75,16 +75,42 @@ static inline void update_vdso_data(struct vdso_data *vdata,
@@ -249,7 +249,7 @@ index 9193d6133..9ae58381e 100644
  }
  
 diff --git a/lib/vdso/Kconfig b/lib/vdso/Kconfig
-index 82fe827af..5eb2cc3a9 100644
+index 82fe827af542..5eb2cc3a9570 100644
 --- a/lib/vdso/Kconfig
 +++ b/lib/vdso/Kconfig
 @@ -30,6 +30,13 @@ config GENERIC_VDSO_TIME_NS
@@ -267,7 +267,7 @@ index 82fe827af..5eb2cc3a9 100644
  	bool
  	help
 diff --git a/lib/vdso/gettimeofday.c b/lib/vdso/gettimeofday.c
-index c01eaafd8..930d8e785 100644
+index c01eaafd8041..930d8e785d5d 100644
 --- a/lib/vdso/gettimeofday.c
 +++ b/lib/vdso/gettimeofday.c
 @@ -5,6 +5,245 @@

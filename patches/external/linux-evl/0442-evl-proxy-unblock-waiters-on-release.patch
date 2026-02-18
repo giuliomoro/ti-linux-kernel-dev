@@ -1,7 +1,7 @@
 From 58722c01c0040f3f1ef599a80ca1ffcac0a1b767 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 12 Jul 2019 17:25:35 +0200
-Subject: [PATCH 442/985] evl/proxy: unblock waiters on release
+Subject: [PATCH 0442/1013] evl/proxy: unblock waiters on release
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 48 insertions(+), 40 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 978c3e959..482775ef5 100644
+index 978c3e959309..482775ef5752 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -34,6 +34,7 @@ struct proxy_ring {

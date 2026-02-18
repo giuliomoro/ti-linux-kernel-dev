@@ -1,7 +1,7 @@
 From ab821ecc036513b5b7fe40943f8ed6ffaf50e3f9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 11 May 2025 17:04:45 +0200
-Subject: [PATCH 932/985] evl/net: socket: intercept inband set/getsockopt()
+Subject: [PATCH 0932/1013] evl/net: socket: intercept inband set/getsockopt()
  calls
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 149 insertions(+), 105 deletions(-)
 
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index 1b641d85d..22c5395e3 100644
+index 1b641d85dc96..22c5395e389b 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -15,6 +15,12 @@
@@ -29,7 +29,7 @@ index 1b641d85d..22c5395e3 100644
  	/* Time at device<->netstack boundary (monotonic). */
  	__u64 device_time;
 diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
-index 26d2ea3ee..8a49ac645 100644
+index 26d2ea3eee00..8a49ac64545e 100644
 --- a/kernel/evl/net/Makefile
 +++ b/kernel/evl/net/Makefile
 @@ -2,5 +2,6 @@ obj-$(CONFIG_EVL_NET) += ethernet/ packet/ ipv4/ qdisc/
@@ -42,7 +42,7 @@ index 26d2ea3ee..8a49ac645 100644
 +		input.o output.o route.o \
 +		timestamping.o
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index c0c9d7a5f..01df9a365 100644
+index c0c9d7a5f3cb..01df9a365a61 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -513,76 +513,6 @@ static int socket_send_recv(struct evl_socket *esk,

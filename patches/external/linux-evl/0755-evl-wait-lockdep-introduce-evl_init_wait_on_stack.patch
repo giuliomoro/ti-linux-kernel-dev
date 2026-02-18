@@ -1,7 +1,8 @@
 From c0791e4c75cf6744b4578c03e34cd75f3ad1634b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 11:57:59 +0200
-Subject: [PATCH 755/985] evl/wait: lockdep: introduce evl_init_wait_on_stack()
+Subject: [PATCH 0755/1013] evl/wait: lockdep: introduce
+ evl_init_wait_on_stack()
 
 We need a static lock class for wait queues we want to initialize from
 oob context, we cannot register classes dynamically since this would
@@ -23,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 53 insertions(+), 16 deletions(-)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 44633dd04..08c223731 100644
+index 44633dd04f75..08c2237316f0 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -29,6 +29,12 @@ static inline void evl_init_flag(struct evl_flag *wf)
@@ -40,7 +41,7 @@ index 44633dd04..08c223731 100644
  {
  	evl_destroy_wait(&wf->wait);
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 429b83bc1..354e55c80 100644
+index 429b83bc1d30..354e55c80730 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -31,15 +31,27 @@ struct evl_wait_channel {
@@ -92,7 +93,7 @@ index 429b83bc1..354e55c80 100644
  void evl_destroy_wait(struct evl_wait_queue *wq);
  
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 9fc2c1108..c2c161a57 100644
+index 9fc2c110807c..c2c161a57c46 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -14,7 +14,8 @@

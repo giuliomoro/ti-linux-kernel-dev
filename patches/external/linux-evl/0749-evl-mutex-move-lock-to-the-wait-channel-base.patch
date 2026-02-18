@@ -1,7 +1,7 @@
 From b11f232878d23451e1dde8899f367fbfe708d1f1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 14 Oct 2022 10:33:21 +0200
-Subject: [PATCH 749/985] evl/mutex: move lock to the wait channel base
+Subject: [PATCH 0749/1013] evl/mutex: move lock to the wait channel base
 
 This is the second and last step to using the private lock provided by
 the wait channel descriptor, this time fixing up the mutex
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 74 insertions(+), 81 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index d6100d49e..db29f9dd8 100644
+index d6100d49ecba..db29f9dd8c6c 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -25,8 +25,6 @@ struct evl_thread;
@@ -68,7 +68,7 @@ index d6100d49e..db29f9dd8 100644
  		},							\
  		.fastlock = ATOMIC_INIT(0),				\
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index e879e3304..a618f4f0f 100644
+index e879e3304854..a618f4f0f21e 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -119,10 +119,10 @@ static int inherit_thread_priority(struct evl_thread *owner,

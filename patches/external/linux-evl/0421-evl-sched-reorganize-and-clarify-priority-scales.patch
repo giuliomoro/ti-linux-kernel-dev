@@ -1,7 +1,7 @@
 From b3be3e0162c8c3adeeb874eab0cf14f2fec36971 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 25 Jun 2019 11:04:56 +0200
-Subject: [PATCH 421/985] evl/sched: reorganize and clarify priority scales
+Subject: [PATCH 0421/1013] evl/sched: reorganize and clarify priority scales
 
 The new hierachy of priority scales is as follows:
 
@@ -45,7 +45,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  12 files changed, 54 insertions(+), 66 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 906a88cbe..d64b48abb 100644
+index 906a88cbe01b..d64b48abb80a 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -38,7 +38,7 @@
@@ -113,7 +113,7 @@ index 906a88cbe..d64b48abb 100644
  #endif
  };
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index 42fd21fd3..39c04e581 100644
+index 42fd21fd3bce..39c04e5810cd 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -11,15 +11,26 @@
@@ -166,7 +166,7 @@ index 42fd21fd3..39c04e581 100644
  
  #endif /* !_EVL_SCHED_QUEUE_H */
 diff --git a/include/evl/sched/quota.h b/include/evl/sched/quota.h
-index 32c273015..dfe3b7390 100644
+index 32c273015856..dfe3b7390958 100644
 --- a/include/evl/sched/quota.h
 +++ b/include/evl/sched/quota.h
 @@ -14,8 +14,8 @@
@@ -181,7 +181,7 @@ index 32c273015..dfe3b7390 100644
  	(EVL_QUOTA_MAX_PRIO - EVL_QUOTA_MIN_PRIO + 1)
  
 diff --git a/include/evl/sched/rt.h b/include/evl/sched/rt.h
-index c823535f0..97d77be28 100644
+index c823535f0b42..97d77be2848c 100644
 --- a/include/evl/sched/rt.h
 +++ b/include/evl/sched/rt.h
 @@ -13,22 +13,13 @@
@@ -228,7 +228,7 @@ index c823535f0..97d77be28 100644
  
  	return 0;
 diff --git a/include/evl/sched/tp.h b/include/evl/sched/tp.h
-index c175b66b4..0e1b0404a 100644
+index c175b66b4867..0e1b0404ab56 100644
 --- a/include/evl/sched/tp.h
 +++ b/include/evl/sched/tp.h
 @@ -14,8 +14,8 @@
@@ -243,7 +243,7 @@ index c175b66b4..0e1b0404a 100644
  
  extern struct evl_sched_class evl_sched_tp;
 diff --git a/include/evl/sched/weak.h b/include/evl/sched/weak.h
-index 043398945..198654eea 100644
+index 043398945240..198654eeacae 100644
 --- a/include/evl/sched/weak.h
 +++ b/include/evl/sched/weak.h
 @@ -24,7 +24,7 @@
@@ -256,7 +256,7 @@ index 043398945..198654eea 100644
  
  static inline int evl_weak_init_thread(struct evl_thread *thread)
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index b22a446e2..0b940d1b8 100644
+index b22a446e256a..0b940d1b8eca 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -154,7 +154,6 @@ DECLARE_EVENT_CLASS(syscall_exit,
@@ -268,7 +268,7 @@ index b22a446e2..0b940d1b8 100644
  
  const char *evl_trace_sched_attrs(struct trace_seq *seq,
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 7f7eec6c1..54ae0453a 100644
+index 7f7eec6c1de1..54ae0453a166 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -10,7 +10,6 @@
@@ -280,7 +280,7 @@ index 7f7eec6c1..54ae0453a 100644
  
  #define sched_rr_quantum	sched_u.rr.__sched_rr_quantum
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 16189445a..f8225c064 100644
+index 16189445ac58..f8225c064069 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -745,7 +745,7 @@ monitor_factory_build(struct evl_factory *fac, const char *name,
@@ -293,7 +293,7 @@ index 16189445a..f8225c064 100644
  			break;
  		case EVL_GATE_PI:
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 8233bd682..0cefb73eb 100644
+index 8233bd682871..0cefb73ebbb4 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -22,7 +22,7 @@ static inline int get_ceiling_value(struct evl_mutex *mutex)
@@ -306,7 +306,7 @@ index 8233bd682..0cefb73eb 100644
  
  static inline void disable_inband_switch(struct evl_thread *curr)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index eeff98654..a7975b6c8 100644
+index eeff98654a6a..a7975b6c829c 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -477,12 +477,8 @@ void evl_init_schedq(struct evl_multilevel_queue *q)
@@ -352,7 +352,7 @@ index eeff98654..a7975b6c8 100644
  	default:
  		trace_seq_printf(p, "priority=%d", attrs->sched_priority);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 2d1dfae3e..bf7910629 100644
+index 2d1dfae3e5bf..bf7910629fd0 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1214,8 +1214,8 @@ void __evl_propagate_schedparam_change(struct evl_thread *curr)

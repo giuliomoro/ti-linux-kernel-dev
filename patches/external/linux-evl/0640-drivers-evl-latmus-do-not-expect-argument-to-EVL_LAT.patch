@@ -1,7 +1,7 @@
 From 6508717e7258e53a0f4a53e20475c4dbe57e9892 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 13 Aug 2020 10:23:30 +0200
-Subject: [PATCH 640/985] drivers/evl: latmus: do not expect argument to
+Subject: [PATCH 0640/1013] drivers/evl: latmus: do not expect argument to
  EVL_LATIOC_RESET
 
 Suggested-by: lio <liu.hailong6@zte.com.cn>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 3633d8460..f90e88c7e 100644
+index 3633d8460c9f..f90e88c7e13b 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -1018,6 +1018,13 @@ static long latmus_ioctl(struct file *filp, unsigned int cmd,

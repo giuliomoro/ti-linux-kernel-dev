@@ -1,7 +1,8 @@
 From 77bb0e0d7d67010106beee14c82f1329c8fdf0fb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 16 Jul 2024 15:04:15 +0200
-Subject: [PATCH 848/985] evl/trace: align on upstream change to __assign_str()
+Subject: [PATCH 0848/1013] evl/trace: align on upstream change to
+ __assign_str()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 1fb2ba92b..7136437d0 100644
+index 1fb2ba92b623..7136437d0022 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -75,7 +75,7 @@ DECLARE_EVENT_CLASS(wchan_event,

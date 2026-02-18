@@ -1,7 +1,7 @@
 From 976347e5d96a7a98af2701588da96f3a02c7152e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 26 Mar 2020 18:53:16 +0100
-Subject: [PATCH 592/985] evl: add support for compat mode
+Subject: [PATCH 0592/1013] evl: add support for compat mode
 
 Compat mode (CONFIG_COMPAT) allows application binaries built for a
 32bit architecture to issue system calls to a 64bit kernel which
@@ -55,7 +55,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 include/evl/uaccess.h
 
 diff --git a/arch/arm/include/asm/evl/syscall.h b/arch/arm/include/asm/evl/syscall.h
-index 0c0727dfe..57f7d11de 100644
+index 0c0727dfe87f..57f7d11de337 100644
 --- a/arch/arm/include/asm/evl/syscall.h
 +++ b/arch/arm/include/asm/evl/syscall.h
 @@ -6,30 +6,34 @@
@@ -123,7 +123,7 @@ index 0c0727dfe..57f7d11de 100644
 +
  #endif /* !_EVL_ARM_ASM_SYSCALL_H */
 diff --git a/arch/arm64/include/asm/evl/syscall.h b/arch/arm64/include/asm/evl/syscall.h
-index 52579d000..4750f77c4 100644
+index 52579d000951..4750f77c48ee 100644
 --- a/arch/arm64/include/asm/evl/syscall.h
 +++ b/arch/arm64/include/asm/evl/syscall.h
 @@ -5,14 +5,11 @@
@@ -205,7 +205,7 @@ index 52579d000..4750f77c4 100644
  #endif /* !_EVL_ARM64_ASM_SYSCALL_H */
 diff --git a/arch/arm64/include/uapi/asm/evl/syscall.h b/arch/arm64/include/uapi/asm/evl/syscall.h
 deleted file mode 100644
-index 212ff2528..000000000
+index 212ff2528aac..000000000000
 --- a/arch/arm64/include/uapi/asm/evl/syscall.h
 +++ /dev/null
 @@ -1,7 +0,0 @@
@@ -217,7 +217,7 @@ index 212ff2528..000000000
 -
 -#endif /* !_EVL_ARM64_ASM_UAPI_SYSCALL_H */
 diff --git a/arch/x86/include/asm/evl/syscall.h b/arch/x86/include/asm/evl/syscall.h
-index e0b6652c7..379bde60f 100644
+index e0b6652c7452..379bde60f625 100644
 --- a/arch/x86/include/asm/evl/syscall.h
 +++ b/arch/x86/include/asm/evl/syscall.h
 @@ -5,14 +5,11 @@
@@ -289,7 +289,7 @@ index e0b6652c7..379bde60f 100644
  #endif /* !_EVL_X86_ASM_SYSCALL_H */
 diff --git a/arch/x86/include/uapi/asm/evl/syscall.h b/arch/x86/include/uapi/asm/evl/syscall.h
 deleted file mode 100644
-index f3464ae53..000000000
+index f3464ae53572..000000000000
 --- a/arch/x86/include/uapi/asm/evl/syscall.h
 +++ /dev/null
 @@ -1,7 +0,0 @@
@@ -301,7 +301,7 @@ index f3464ae53..000000000
 -
 -#endif /* !_EVL_X86_ASM_UAPI_SYSCALL_H */
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 01cf64686..35c31fdcb 100644
+index 01cf64686ab4..35c31fdcb294 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -661,6 +661,10 @@ static const struct file_operations hectic_fops = {
@@ -316,7 +316,7 @@ index 01cf64686..35c31fdcb 100644
  
  static dev_t hectic_devt;
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 286fc3b83..1a320ddeb 100644
+index 286fc3b830ac..1a320ddeb1b0 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -14,12 +14,12 @@
@@ -383,7 +383,7 @@ index 286fc3b83..1a320ddeb 100644
  static dev_t latmus_devt;
 diff --git a/include/evl/uaccess.h b/include/evl/uaccess.h
 new file mode 100644
-index 000000000..679bc5b80
+index 000000000000..679bc5b80877
 --- /dev/null
 +++ b/include/evl/uaccess.h
 @@ -0,0 +1,27 @@
@@ -415,7 +415,7 @@ index 000000000..679bc5b80
 +
 +#endif /* !_EVL_UACCESS_H */
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index ca5570c49..a578c8bab 100644
+index ca5570c49ad2..a578c8babd76 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -25,8 +25,8 @@
@@ -430,7 +430,7 @@ index ca5570c49..a578c8bab 100644
  
  #define EVL_TIMERFD_IOCBASE	't'
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 89ee3c491..029a9f676 100644
+index 89ee3c4912a8..029a9f6761de 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -11,14 +11,14 @@
@@ -460,7 +460,7 @@ index 89ee3c491..029a9f676 100644
  
  #define EVL_CONTROL_IOCBASE	'C'
 diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
-index 50bb814a8..0b0207c3a 100644
+index 50bb814a814d..0b0207c3a5ac 100644
 --- a/include/uapi/evl/devices/latmus.h
 +++ b/include/uapi/evl/devices/latmus.h
 @@ -44,13 +44,13 @@ struct latmus_measurement {
@@ -481,7 +481,7 @@ index 50bb814a8..0b0207c3a 100644
  };
  
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 3424bfd13..28efded62 100644
+index 3424bfd137a2..28efded6222a 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -18,8 +18,8 @@ struct evl_element_ids {
@@ -496,7 +496,7 @@ index 3424bfd13..28efded62 100644
  };
  
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 6bfd8829a..40c5bdf2a 100644
+index 6bfd8829acda..40c5bdf2a604 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -53,7 +53,7 @@ struct evl_monitor_state {
@@ -509,7 +509,7 @@ index 6bfd8829a..40c5bdf2a 100644
  	__s32 status;
  	__s32 value;
 diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
-index 095270f3b..bb14c1edb 100644
+index 095270f3bee9..bb14c1edb7da 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll.h
 @@ -29,8 +29,8 @@ struct evl_poll_event {
@@ -524,7 +524,7 @@ index 095270f3b..bb14c1edb 100644
  };
  
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 80147c0a8..431514f3c 100644
+index 80147c0a82b1..431514f3c3e7 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -121,8 +121,8 @@ union evl_sched_ctlinfo {
@@ -539,7 +539,7 @@ index 80147c0a8..431514f3c 100644
  
  #endif /* !_EVL_UAPI_SCHED_H */
 diff --git a/include/uapi/evl/syscall.h b/include/uapi/evl/syscall.h
-index 70807eb54..e181464b1 100644
+index 70807eb54551..e181464b1485 100644
 --- a/include/uapi/evl/syscall.h
 +++ b/include/uapi/evl/syscall.h
 @@ -7,8 +7,6 @@
@@ -552,7 +552,7 @@ index 70807eb54..e181464b1 100644
  #define sys_evl_write	1	/* oob_write() */
  #define sys_evl_ioctl	2	/* oob_ioctl() */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index b4b8d97a6..294536021 100644
+index b4b8d97a6bff..294536021186 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -32,6 +32,7 @@
@@ -613,7 +613,7 @@ index b4b8d97a6..294536021 100644
  
  /*
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 82662b6a3..a10118805 100644
+index 82662b6a3d47..a101188059a0 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -14,6 +14,7 @@
@@ -710,7 +710,7 @@ index 82662b6a3..a10118805 100644
  
  static const char *state_labels[] = {
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 1d8f1c7cf..d2228f512 100644
+index 1d8f1c7cf041..d2228f512497 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -25,6 +25,7 @@
@@ -760,7 +760,7 @@ index 1d8f1c7cf..d2228f512 100644
  
  static int index_element_at(struct evl_element *e, fundle_t fundle)
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 7180e2bc4..c15f2332b 100644
+index 7180e2bc474f..c15f2332b126 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -19,6 +19,7 @@
@@ -792,7 +792,7 @@ index 7180e2bc4..c15f2332b 100644
  
  static struct evl_element *
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 614995819..ffda2e96f 100644
+index 61499581992e..ffda2e96f90c 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -18,6 +18,7 @@
@@ -848,7 +848,7 @@ index 614995819..ffda2e96f 100644
  
  struct evl_factory evl_poll_factory = {
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index bfd59bbf4..4c6f2bcb6 100644
+index bfd59bbf4ad5..4c6f2bcb664b 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -13,6 +13,7 @@
@@ -1145,7 +1145,7 @@ index bfd59bbf4..4c6f2bcb6 100644
 -	__EVL_CALL_ENTRIES
 -};
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 722a6d8b2..f5d81701b 100644
+index 722a6d8b2b5f..f5d81701b478 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2127,6 +2127,10 @@ static const struct file_operations thread_fops = {
@@ -1160,7 +1160,7 @@ index 722a6d8b2..f5d81701b 100644
  
  static int map_uthread_self(struct evl_thread *thread)
 diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
-index ee9a7122a..224480947 100644
+index ee9a7122a46f..22448094700e 100644
 --- a/kernel/evl/trace.c
 +++ b/kernel/evl/trace.c
 @@ -80,6 +80,10 @@ static const struct file_operations trace_fops = {
@@ -1175,7 +1175,7 @@ index ee9a7122a..224480947 100644
  
  struct evl_factory evl_trace_factory = {
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index d8c1e1b0a..4b4654892 100644
+index d8c1e1b0ad32..4b465489276b 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -569,6 +569,10 @@ static const struct file_operations xbuf_fops = {

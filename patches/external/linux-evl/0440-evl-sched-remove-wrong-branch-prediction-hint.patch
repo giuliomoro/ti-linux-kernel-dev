@@ -1,7 +1,7 @@
 From abd46203ba66d82738d5137fde7625e84ac25a9c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 11 Jul 2019 22:16:17 +0200
-Subject: [PATCH 440/985] evl/sched: remove wrong branch prediction hint
+Subject: [PATCH 0440/1013] evl/sched: remove wrong branch prediction hint
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 463767378..b6cb04125 100644
+index 463767378b5c..b6cb041255cd 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -280,11 +280,10 @@ static inline bool evl_schedule(void)
@@ -29,7 +29,7 @@ index 463767378..b6cb04125 100644
  
  static inline int evl_preempt_count(void)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 8dba933b8..f5d366f85 100644
+index 8dba933b834b..f5d366f85f4f 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -594,7 +594,7 @@ static inline void set_thread_running(struct evl_rq *rq,

@@ -1,7 +1,7 @@
 From b6b8bc127f2c1f4ff258b1649ae39cfbfc612880 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Mar 2019 15:02:07 +0100
-Subject: [PATCH 326/985] evl/monitor: add ungated signal-wait operations
+Subject: [PATCH 0326/1013] evl/monitor: add ungated signal-wait operations
 
 This is a special form of the wait operation which is not protected by
 a lock. Userland is assumed to deal with signal-vs-wait races in its
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 89 insertions(+), 14 deletions(-)
 
 diff --git a/include/uapi/evenless/monitor.h b/include/uapi/evenless/monitor.h
-index 9ef7a454f..450dac31d 100644
+index 9ef7a454f6a3..450dac31d741 100644
 --- a/include/uapi/evenless/monitor.h
 +++ b/include/uapi/evenless/monitor.h
 @@ -16,8 +16,8 @@
@@ -68,7 +68,7 @@ index 9ef7a454f..450dac31d 100644
  
  #endif /* !_EVENLESS_UAPI_MONITOR_H */
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index fde244222..5b6984860 100644
+index fde244222206..5b698486004c 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -283,12 +283,62 @@ static void untrack_event(struct evl_monitor *event,

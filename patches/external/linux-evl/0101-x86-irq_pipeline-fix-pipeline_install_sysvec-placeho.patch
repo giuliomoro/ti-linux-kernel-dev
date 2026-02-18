@@ -1,7 +1,7 @@
 From 87582f4d5a70a702b35b1aab62e64c3ba31aff8d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 14 Sep 2024 17:43:54 +0200
-Subject: [PATCH 101/985] x86: irq_pipeline: fix pipeline_install_sysvec()
+Subject: [PATCH 0101/1013] x86: irq_pipeline: fix pipeline_install_sysvec()
  placeholder
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/include/asm/idtentry.h b/arch/x86/include/asm/idtentry.h
-index 3ae14d188..1b9264e5b 100644
+index 3ae14d18866f..1b9264e5b3d0 100644
 --- a/arch/x86/include/asm/idtentry.h
 +++ b/arch/x86/include/asm/idtentry.h
 @@ -281,7 +281,8 @@ __visible noinstr void func(struct pt_regs *regs,			\

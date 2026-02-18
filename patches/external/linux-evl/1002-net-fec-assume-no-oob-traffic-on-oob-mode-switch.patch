@@ -1,0 +1,73 @@
+From a9387af33a3afbb3b925fc6402bbccedd2569d0b Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 27 Oct 2025 16:23:47 +0100
+Subject: [PATCH 1002/1013] net: fec: assume no oob traffic on oob mode switch
+
+We may assume that no RX/TX oob traffic can happen while the {disable,
+enable}_oob handlers are running. This MUST be enforced by the oob
+netstack.
+
+For this reason, synchronizing with the NAPI and/or oob TX is
+pointless (the former may even cause the operation to hang
+indefinitely).
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/net/ethernet/freescale/fec_main.c | 21 ++++-----------------
+ 1 file changed, 4 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+index 6ccca8a1e83a..9f1f57fdc8c6 100644
+--- a/drivers/net/ethernet/freescale/fec_main.c
++++ b/drivers/net/ethernet/freescale/fec_main.c
+@@ -325,27 +325,20 @@ static int fec_enet_get_irq_cnt(struct platform_device *pdev);
+ static int fec_enet_enable_oob(struct net_device *ndev)
+ {
+ 	struct fec_enet_private *fep = netdev_priv(ndev);
+-	int nr_irqs = fec_enet_get_irq_cnt(fep->pdev), n, ret = 0;
+-
+-	napi_disable(&fep->napi);
+-	netif_tx_lock_bh(ndev);
++	int nr_irqs = fec_enet_get_irq_cnt(fep->pdev), n, ret;
+ 
+ 	for (n = 0; n < nr_irqs; n++) {
+ 		ret = irq_switch_oob(fep->irq[n], true);
+ 		if (ret) {
+ 			while (--n > 0)
+ 				irq_switch_oob(fep->irq[n], false);
+-			break;
++			return ret;
+ 		}
+ 	}
+ 
+-	netif_tx_unlock_bh(ndev);
+-	napi_enable(&fep->napi);
+-
+-	if (!ret)
+-		pr_info("%s: enabled out-of-band I/O mode\n", netdev_name(ndev));
++	pr_info("%s: enabled out-of-band I/O mode\n", netdev_name(ndev));
+ 
+-	return ret;
++	return 0;
+ }
+ 
+ static void fec_enet_disable_oob(struct net_device *ndev)
+@@ -353,15 +346,9 @@ static void fec_enet_disable_oob(struct net_device *ndev)
+ 	struct fec_enet_private *fep = netdev_priv(ndev);
+ 	int nr_irqs = fec_enet_get_irq_cnt(fep->pdev), n;
+ 
+-	napi_disable(&fep->napi);
+-	netif_tx_lock_bh(ndev);
+-
+ 	for (n = 0; n < nr_irqs; n++)
+ 		irq_switch_oob(fep->irq[n], false);
+ 
+-	netif_tx_unlock_bh(ndev);
+-	napi_enable(&fep->napi);
+-
+ 	pr_info("%s: disabled out-of-band I/O mode\n", netdev_name(ndev));
+ }
+ 
+-- 
+2.30.2
+

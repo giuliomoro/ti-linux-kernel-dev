@@ -1,7 +1,7 @@
 From 0cea46c309d6af275c38a335a2c3c05b43f4d8b1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 22 Apr 2025 15:38:07 +0200
-Subject: [PATCH 161/985] net: dovetail: fix skb-related misnomers
+Subject: [PATCH 0161/1013] net: dovetail: fix skb-related misnomers
 
 This patch fixes two serious misnomers which are error-prone to any
 newcomer to the oob netstack:
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 25 insertions(+), 24 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index c82c295dd..144fface3 100644
+index c82c295dd1d0..144fface3e7e 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -520,8 +520,9 @@ enum {
@@ -135,7 +135,7 @@ index c82c295dd..144fface3 100644
  	return DMA_MAPPING_ERROR;
  }
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 43d1fd518..bb6cd03c1 100644
+index 43d1fd518a4d..bb6cd03c1ded 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -601,10 +601,10 @@ bool recycle_skb_oob(struct sk_buff *skb)

@@ -1,7 +1,7 @@
 From b9edc40cfc26975fad9363e6dd7c0b77ae9f3b44 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Feb 2019 11:57:55 +0100
-Subject: [PATCH 309/985] evl/file: convert to new locking rules
+Subject: [PATCH 0309/1013] evl/file: convert to new locking rules
 
 Dovetails now invokes *inband_fd() notifiers while holding
 files->file_lock in most cases.
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 10 insertions(+), 30 deletions(-)
 
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
-index 0f916f537..fbdcea66b 100644
+index 0f916f537b20..fbdcea66b273 100644
 --- a/kernel/evenless/file.c
 +++ b/kernel/evenless/file.c
 @@ -13,11 +13,10 @@
@@ -100,7 +100,7 @@ index 0f916f537..fbdcea66b 100644
 -	return 0;
 -}
 diff --git a/kernel/evenless/init.c b/kernel/evenless/init.c
-index 0ebb75176..63865f251 100644
+index 0ebb751764ce..63865f251a01 100644
 --- a/kernel/evenless/init.c
 +++ b/kernel/evenless/init.c
 @@ -102,10 +102,6 @@ static __init int init_core(void)

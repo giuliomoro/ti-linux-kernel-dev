@@ -1,7 +1,7 @@
 From 4905070c50c8231244a9c66d2afa16c5594ca474 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 30 Oct 2019 17:29:11 +0100
-Subject: [PATCH 532/985] evl/mutex: add deadlock detection
+Subject: [PATCH 0532/1013] evl/mutex: add deadlock detection
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 202 insertions(+), 75 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 1023c9e36..04c1f029c 100644
+index 1023c9e36c19..04c1f029c718 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -69,7 +69,11 @@ void evl_commit_mutex_ceiling(struct evl_mutex *mutex);
@@ -39,7 +39,7 @@ index 1023c9e36..04c1f029c 100644
  			},						\
  		},							\
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 23f0ede20..c6dcbe321 100644
+index 23f0ede20a12..c6dcbe321089 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -42,7 +42,10 @@ struct evl_init_thread_attr {
@@ -55,7 +55,7 @@ index 23f0ede20..c6dcbe321 100644
  };
  
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index cf935723e..49547ad5b 100644
+index cf935723ec76..49547ad5be3c 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -35,6 +35,7 @@ struct evl_wait_queue {
@@ -79,7 +79,7 @@ index cf935723e..49547ad5b 100644
  
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 0c317e906..39049f1d0 100644
+index 0c317e90666c..39049f1d0047 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -75,10 +75,12 @@ static void raise_boost_flag(struct evl_thread *owner)
@@ -485,7 +485,7 @@ index 0c317e906..39049f1d0 100644
  	 * Raise FLCEIL, which indicates a kernel entry will be
  	 * required for releasing this resource.
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 48f8562ac..2a6c4b72c 100644
+index 48f8562ac76c..2a6c4b72c7d6 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1251,7 +1251,7 @@ int evl_set_thread_schedparam_locked(struct evl_thread *thread,
@@ -498,7 +498,7 @@ index 48f8562ac..2a6c4b72c 100644
  	thread->info |= T_SCHEDP;
  	/* Ask the target thread to call back if in-band. */
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 6fbdbccc5..fbbae5017 100644
+index 6fbdbccc5a49..fbbae501738a 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -21,6 +21,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,

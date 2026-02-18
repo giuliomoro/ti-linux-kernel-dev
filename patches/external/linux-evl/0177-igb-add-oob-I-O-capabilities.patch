@@ -1,7 +1,7 @@
 From 179ff511fcd222fb5738d187770c5bdb83d03dae Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 15:38:12 +0100
-Subject: [PATCH 177/985] igb: add oob I/O capabilities
+Subject: [PATCH 0177/1013] igb: add oob I/O capabilities
 
 Enable the IGB driver for out-of-band I/O traffic. In a nutshell, this
 entails the following steps:
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  5 files changed, 616 insertions(+), 147 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
-index 0375c7448..6e27c8f4f 100644
+index 0375c7448a57..6e27c8f4ff4b 100644
 --- a/drivers/net/ethernet/intel/Kconfig
 +++ b/drivers/net/ethernet/intel/Kconfig
 @@ -106,6 +106,15 @@ config IGB
@@ -45,7 +45,7 @@ index 0375c7448..6e27c8f4f 100644
  	bool "Intel(R) PCI-Express Gigabit adapters HWMON support"
  	default y
 diff --git a/drivers/net/ethernet/intel/igb/igb.h b/drivers/net/ethernet/intel/igb/igb.h
-index 3c2dc7bde..d5af48090 100644
+index 3c2dc7bdebb5..d5af48090abe 100644
 --- a/drivers/net/ethernet/intel/igb/igb.h
 +++ b/drivers/net/ethernet/intel/igb/igb.h
 @@ -18,6 +18,7 @@
@@ -175,7 +175,7 @@ index 3c2dc7bde..d5af48090 100644
  		   struct igb_nfc_filter *input);
  int igb_erase_filter(struct igb_adapter *adapter,
 diff --git a/drivers/net/ethernet/intel/igb/igb_ethtool.c b/drivers/net/ethernet/intel/igb/igb_ethtool.c
-index 6412c84e2..4d12b8f30 100644
+index 6412c84e2d17..4d12b8f30078 100644
 --- a/drivers/net/ethernet/intel/igb/igb_ethtool.c
 +++ b/drivers/net/ethernet/intel/igb/igb_ethtool.c
 @@ -1920,7 +1920,9 @@ static int igb_run_loopback_test(struct igb_adapter *adapter)
@@ -203,7 +203,7 @@ index 6412c84e2..4d12b8f30 100644
  	if (flags != adapter->flags) {
  		adapter->flags = flags;
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 18284a838..e280c24d4 100644
+index 18284a838e24..e280c24d46d6 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -6,6 +6,7 @@
@@ -1209,7 +1209,7 @@ index 18284a838..e280c24d4 100644
  
  	return true;
 diff --git a/drivers/net/ethernet/intel/igb/igb_ptp.c b/drivers/net/ethernet/intel/igb/igb_ptp.c
-index f94570556..93625401a 100644
+index f94570556120..93625401a87c 100644
 --- a/drivers/net/ethernet/intel/igb/igb_ptp.c
 +++ b/drivers/net/ethernet/intel/igb/igb_ptp.c
 @@ -173,9 +173,9 @@ static void igb_ptp_systim_to_hwtstamp(struct igb_adapter *adapter,

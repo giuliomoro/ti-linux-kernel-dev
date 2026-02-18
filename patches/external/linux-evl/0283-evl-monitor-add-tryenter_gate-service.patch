@@ -1,7 +1,7 @@
 From 46beeddcf46bd0658a6e8b81422df47a36fba6f0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 9 Feb 2019 15:57:53 +0100
-Subject: [PATCH 283/985] evl/monitor: add tryenter_gate() service
+Subject: [PATCH 0283/1013] evl/monitor: add tryenter_gate() service
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+), 4 deletions(-)
 
 diff --git a/include/uapi/evenless/monitor.h b/include/uapi/evenless/monitor.h
-index 5733b5a87..9ef7a454f 100644
+index 5733b5a87336..9ef7a454f6a3 100644
 --- a/include/uapi/evenless/monitor.h
 +++ b/include/uapi/evenless/monitor.h
 @@ -60,9 +60,10 @@ struct evl_monitor_binding {
@@ -29,7 +29,7 @@ index 5733b5a87..9ef7a454f 100644
  
  #endif /* !_EVENLESS_UAPI_MONITOR_H */
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 40abfebf6..f6914e7d3 100644
+index 40abfebf6328..f6914e7d33fa 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -210,6 +210,22 @@ static int enter_monitor(struct evl_monitor *gate,

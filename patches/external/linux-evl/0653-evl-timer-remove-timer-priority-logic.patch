@@ -1,7 +1,7 @@
 From f4df0b7904e1554f7245a222f104b11fd95f862b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 31 Oct 2020 11:16:36 +0100
-Subject: [PATCH 653/985] evl/timer: remove timer priority logic
+Subject: [PATCH 0653/1013] evl/timer: remove timer priority logic
 
 Prioritization of timers in timer queues dates back to the Dark Ages
 of Xenomai 2.x, when multiple time bases would co-exist in the core,
@@ -43,7 +43,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 3 insertions(+), 22 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 04dc8f67c..8471f3392 100644
+index 04dc8f67ce0d..8471f33928a1 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -63,15 +63,9 @@ enum evl_tmode {
@@ -76,7 +76,7 @@ index 04dc8f67c..8471f3392 100644
  		struct evl_clock *clock,
  		void (*handler)(struct evl_timer *timer),
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 116e426f7..cdf77302d 100644
+index 116e426f7fe6..cdf77302d321 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -176,17 +176,14 @@ static void init_rq(struct evl_rq *rq, int cpu)
@@ -98,7 +98,7 @@ index 116e426f7..cdf77302d 100644
  
  	evl_set_current_account(rq, &rq->root_thread.stat.account);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 37ef40a95..d44d2476c 100644
+index 37ef40a95052..d44d2476c72b 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -237,11 +237,9 @@ int evl_init_thread(struct evl_thread *thread,
@@ -114,7 +114,7 @@ index 37ef40a95..d44d2476c 100644
  	thread->base_class = NULL; /* evl_set_thread_policy() sets it. */
  	ret = evl_init_rq_thread(thread);
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 2353bec4a..5eba69380 100644
+index 2353bec4a1c0..5eba693801ce 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -297,7 +297,6 @@ void __evl_init_timer(struct evl_timer *timer,

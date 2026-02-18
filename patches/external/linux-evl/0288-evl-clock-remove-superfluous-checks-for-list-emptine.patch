@@ -1,7 +1,7 @@
 From 0956bd929957fa1ea51f5107c59819774efe031a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 09:36:44 +0100
-Subject: [PATCH 288/985] evl/clock: remove superfluous checks for list
+Subject: [PATCH 0288/1013] evl/clock: remove superfluous checks for list
  emptiness
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index 6fafa5d65..8c33a290c 100644
+index 6fafa5d656a6..8c33a290c991 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -137,11 +137,9 @@ void inband_clock_was_set(void)

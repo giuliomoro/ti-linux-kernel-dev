@@ -1,7 +1,7 @@
 From 83b9e54a6f700cec56e06753693daee6d5d0cd6e Mon Sep 17 00:00:00 2001
 From: Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>
 Date: Thu, 28 Mar 2019 12:03:12 +0100
-Subject: [PATCH 354/985] uapi: evl: define the user available elements and
+Subject: [PATCH 0354/1013] uapi: evl: define the user available elements and
  utilities
 
 Elements:
@@ -40,7 +40,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  12 files changed, 22 insertions(+), 8 deletions(-)
 
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index cd24ac982..3882fa548 100644
+index cd24ac98239b..3882fa548d22 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -7,6 +7,10 @@
@@ -55,7 +55,7 @@ index cd24ac982..3882fa548 100644
  #define EVL_CLOCK_REALTIME   (-CLOCK_REALTIME)
  
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index ba592b4e8..cc62fea2e 100644
+index ba592b4e8c50..cc62fea2ea34 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -10,6 +10,8 @@
@@ -68,7 +68,7 @@ index ba592b4e8..cc62fea2e 100644
  #define EVL_MONITOR_PI  1	/* Gate with priority inheritance. */
  #define EVL_MONITOR_PP  2	/* Gate with priority protection (ceiling). */
 diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
-index 64e154cc1..8834c034f 100644
+index 64e154cc1c7a..8834c034fec8 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll.h
 @@ -7,6 +7,8 @@
@@ -81,7 +81,7 @@ index 64e154cc1..8834c034f 100644
  
  #define EVL_POLL_CTLADD  0
 diff --git a/include/uapi/evl/proxy.h b/include/uapi/evl/proxy.h
-index 9ffdf00bb..7e112c129 100644
+index 9ffdf00bbc1f..7e112c129964 100644
 --- a/include/uapi/evl/proxy.h
 +++ b/include/uapi/evl/proxy.h
 @@ -7,6 +7,8 @@
@@ -94,7 +94,7 @@ index 9ffdf00bb..7e112c129 100644
  	__u32 fd;
  	__u32 bufsz;
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 12898149c..4acd323e7 100644
+index 12898149c76e..4acd323e75f9 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -10,6 +10,8 @@
@@ -107,7 +107,7 @@ index 12898149c..4acd323e7 100644
  
  #define T_SUSP    0x00000001 /*< Suspended */
 diff --git a/include/uapi/evl/xbuf.h b/include/uapi/evl/xbuf.h
-index 636bad907..d982ab18a 100644
+index 636bad907452..d982ab18ab30 100644
 --- a/include/uapi/evl/xbuf.h
 +++ b/include/uapi/evl/xbuf.h
 @@ -7,6 +7,8 @@
@@ -120,7 +120,7 @@ index 636bad907..d982ab18a 100644
  	__u32 i_bufsz;
  	__u32 o_bufsz;
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 594dd137e..a6923c7aa 100644
+index 594dd137ef5c..a6923c7aaa43 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -960,7 +960,7 @@ static struct attribute *clock_attrs[] = {
@@ -151,7 +151,7 @@ index 594dd137e..a6923c7aa 100644
  	.ops = {
  		.read = read_realtime_clock,
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 74e0b6ee2..3aa4c32b0 100644
+index 74e0b6ee25a0..3aa4c32b0302 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -722,7 +722,7 @@ static struct attribute *monitor_attrs[] = {
@@ -164,7 +164,7 @@ index 74e0b6ee2..3aa4c32b0 100644
  	.build =	monitor_factory_build,
  	.dispose =	monitor_factory_dispose,
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 389deb6e6..b2a82e047 100644
+index 389deb6e6ab6..b2a82e04766a 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -656,7 +656,7 @@ static const struct file_operations poll_fops = {
@@ -177,7 +177,7 @@ index 389deb6e6..b2a82e047 100644
  	.flags	=	EVL_FACTORY_SINGLE,
  };
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 9c2764efa..90c9bdb33 100644
+index 9c2764efa8ff..90c9bdb33772 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -262,7 +262,7 @@ static void proxy_factory_dispose(struct evl_element *e)
@@ -190,7 +190,7 @@ index 9c2764efa..90c9bdb33 100644
  	.build =	proxy_factory_build,
  	.dispose =	proxy_factory_dispose,
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 418942487..bed564614 100644
+index 41894248729c..bed5646146bb 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2483,7 +2483,7 @@ static struct attribute *thread_attrs[] = {
@@ -203,7 +203,7 @@ index 418942487..bed564614 100644
  	.build	=	thread_factory_build,
  	.dispose =	thread_factory_dispose,
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 9c4305a42..29f5ff2b6 100644
+index 9c4305a4222f..29f5ff2b6c45 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -776,7 +776,7 @@ static struct attribute *xbuf_attrs[] = {

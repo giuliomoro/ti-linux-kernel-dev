@@ -1,7 +1,7 @@
 From 486ace39d2388d13de620018a8829b2517fbe936 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 15 Nov 2022 19:49:28 +0100
-Subject: [PATCH 784/985] evl/mutex: drop wrong assertion
+Subject: [PATCH 0784/1013] evl/mutex: drop wrong assertion
 
 With a preemptible PI walk, we might find no waiter while adjusting
 the boost priority of an owner since waiters can leave the wait
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 5432694f7..56b724ecf 100644
+index 5432694f7c72..56b724ecf729 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -271,7 +271,14 @@ static void adjust_owner_boost(struct evl_thread *owner)

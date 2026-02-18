@@ -1,7 +1,7 @@
 From a426c8691123bceeccdf895dd9c0dabd76f6ff88 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 5 Apr 2017 20:48:20 +0200
-Subject: [PATCH 056/985] clocksource/arm_arch_timer: irq_pipeline: enable
+Subject: [PATCH 0056/1013] clocksource/arm_arch_timer: irq_pipeline: enable
  pipelined clock events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/clocksource/arm_arch_timer.c b/drivers/clocksource/arm_arch_timer.c
-index 62c127ef9..b4a49a000 100644
+index 62c127ef9afc..b4a49a000d73 100644
 --- a/drivers/clocksource/arm_arch_timer.c
 +++ b/drivers/clocksource/arm_arch_timer.c
 @@ -672,7 +672,7 @@ static __always_inline irqreturn_t timer_handler(const int access,

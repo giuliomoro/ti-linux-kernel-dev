@@ -1,7 +1,7 @@
 From b53195ebed2bb144179a6e248f856714ab4293f7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 16:13:35 +0200
-Subject: [PATCH 490/985] evl/monitor: commit PP unlocked in tryenter()
+Subject: [PATCH 0490/1013] evl/monitor: commit PP unlocked in tryenter()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 8b2fb5baa..5dcd1e496 100644
+index 8b2fb5baa2d3..5dcd1e496605 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -92,7 +92,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)

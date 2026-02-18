@@ -1,7 +1,7 @@
 From e834aec0fa9a5ccb7dd99afcf19d8086a5d04357 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Oct 2023 12:46:00 +0200
-Subject: [PATCH 855/985] evl/net: socket: handle connection requests
+Subject: [PATCH 0855/1013] evl/net: socket: handle connection requests
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 57 insertions(+), 11 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 651c27c64..9123209d3 100644
+index 651c27c64a4d..9123209d334e 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -30,6 +30,8 @@ struct evl_net_proto {
@@ -34,7 +34,7 @@ index 651c27c64..9123209d3 100644
 +
  #endif /* !_EVL_NET_SOCKET_H */
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 8eb30072b..94f7d8c04 100644
+index 8eb30072be0e..94f7d8c04556 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -35,14 +35,14 @@
@@ -68,7 +68,7 @@ index 8eb30072b..94f7d8c04 100644
  	real_dev = vlan_dev_real_dev(dev);
  	nds = &real_dev->oob_context.dev_state;
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index cd765ea29..6f8bf5f15 100644
+index cd765ea29846..6f8bf5f151ad 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -661,6 +661,7 @@ static struct evl_net_proto ether_packet_proto = {
@@ -80,7 +80,7 @@ index cd765ea29..6f8bf5f15 100644
  	.oob_poll = poll_packet,
  	.oob_receive = receive_packet,
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index a9c6eb82c..445b9dde4 100644
+index a9c6eb82c7d4..445b9dde4e5f 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -498,10 +498,11 @@ void sock_oob_detach(struct sock *sk)

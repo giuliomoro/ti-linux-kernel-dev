@@ -1,7 +1,7 @@
 From 132ba4ea758cb7443e02471134a4d0030d88ddd8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 6 Feb 2019 20:29:16 +0100
-Subject: [PATCH 270/985] evl/sem: general fix of release operation
+Subject: [PATCH 0270/1013] evl/sem: general fix of release operation
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 52 insertions(+), 34 deletions(-)
 
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index ede8837b0..30b5b9a3a 100644
+index ede8837b0926..30b5b9a3a92f 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -36,33 +36,37 @@ static int acquire_sem(struct evl_sem *sem,

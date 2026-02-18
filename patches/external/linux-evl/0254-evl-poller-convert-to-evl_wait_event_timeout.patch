@@ -1,7 +1,7 @@
 From 168b8eb284cabfbd2fa1bde427a448c8df51845d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 12:35:40 +0100
-Subject: [PATCH 254/985] evl/poller: convert to evl_wait_event_timeout()
+Subject: [PATCH 0254/1013] evl/poller: convert to evl_wait_event_timeout()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 2ea832fa7..5130b93c3 100644
+index 2ea832fa70bf..5130b93c306b 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -400,9 +400,8 @@ int wait_events(struct file *filp,

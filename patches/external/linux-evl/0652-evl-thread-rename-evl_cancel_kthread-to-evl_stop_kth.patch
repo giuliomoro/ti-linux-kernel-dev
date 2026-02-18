@@ -1,7 +1,7 @@
 From 98c39b2564bbca5b902f84936a2085daced78b22 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 31 Oct 2020 09:16:08 +0100
-Subject: [PATCH 652/985] evl/thread: rename evl_cancel_kthread() to
+Subject: [PATCH 0652/1013] evl/thread: rename evl_cancel_kthread() to
  evl_stop_kthread()
 
 Align naming of the kthread termination-related calls on the in-band
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index fd384e067..01c2f4281 100644
+index fd384e0672b8..01c2f42810b5 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -450,7 +450,7 @@ static int rtswitch_create_kthread(struct rtswitch_context *ctx,
@@ -38,7 +38,7 @@ index fd384e067..01c2f4281 100644
  			evl_destroy_flag(&task->rt_synch);
  		}
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index f90e88c7e..7e2cd9556 100644
+index f90e88c7e13b..7e2cd9556fcb 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -475,7 +475,7 @@ void kthread_handler(struct evl_kthread *kthread)
@@ -60,7 +60,7 @@ index f90e88c7e..7e2cd9556 100644
  	destroy_runner_base(runner);
  	kfree(k_runner);
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 1d300a7e6..cbca3eaf4 100644
+index 1d300a7e64f9..cbca3eaf4f1c 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -363,15 +363,15 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags);

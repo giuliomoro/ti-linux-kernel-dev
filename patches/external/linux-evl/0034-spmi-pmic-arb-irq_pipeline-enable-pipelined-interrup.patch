@@ -1,7 +1,7 @@
 From 7a843a99bc9f1f03eb3ae19602d22390b57cb499 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 18:52:44 +0100
-Subject: [PATCH 034/985] spmi: pmic-arb: irq_pipeline: enable pipelined
+Subject: [PATCH 0034/1013] spmi: pmic-arb: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/spmi/spmi-pmic-arb.c b/drivers/spmi/spmi-pmic-arb.c
-index ea843159b..7eeee2165 100644
+index ea843159b745..7eeee2165729 100644
 --- a/drivers/spmi/spmi-pmic-arb.c
 +++ b/drivers/spmi/spmi-pmic-arb.c
 @@ -160,7 +160,7 @@ struct spmi_pmic_arb_bus {

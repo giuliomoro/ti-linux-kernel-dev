@@ -1,8 +1,8 @@
 From 7934b28c3722efa01e485b2905ff58df5eb7691d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 22 Apr 2025 15:17:11 +0200
-Subject: [PATCH 176/985] net/page_pool: dovetail: silently ignore shared pages
- on free
+Subject: [PATCH 0176/1013] net/page_pool: dovetail: silently ignore shared
+ pages on free
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 26 insertions(+), 29 deletions(-)
 
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index 1c49fd2f9..72a3c18d7 100644
+index 1c49fd2f91ce..72a3c18d7f3f 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -889,42 +889,39 @@ static bool __page_pool_page_can_be_recycled(netmem_ref netmem)

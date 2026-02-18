@@ -1,7 +1,7 @@
 From a16e0da26e6c344f63b5994e25b879d85808338a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 15:29:02 +0200
-Subject: [PATCH 605/985] evl/sched: tp: fix handling of input/output setup
+Subject: [PATCH 0605/1013] evl/sched: tp: fix handling of input/output setup
  data
 
 tp_control() did not receive the proper input on tp_install requests,
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 62 insertions(+), 37 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index fe1909511..05f6250a8 100644
+index fe1909511beb..05f6250a81de 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -163,8 +163,8 @@ struct evl_sched_class {
@@ -33,7 +33,7 @@ index fe1909511..05f6250a8 100644
  	struct evl_sched_class *next;
  	int weight;
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 4b5440527..534673c78 100644
+index 4b544052798d..534673c788d2 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -90,13 +90,17 @@ struct evl_tp_ctlparam {
@@ -57,7 +57,7 @@ index 4b5440527..534673c78 100644
  
  struct evl_sched_attrs {
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 3df23aace..919058063 100644
+index 3df23aace49c..919058063c07 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -139,39 +139,60 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
@@ -142,7 +142,7 @@ index 3df23aace..919058063 100644
  	return ret;
  }
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index 8daa51fbd..836c74e77 100644
+index 8daa51fbdcc2..836c74e77145 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -647,7 +647,7 @@ find_quota_group(struct evl_rq *rq, int tgid)
@@ -164,7 +164,7 @@ index 8daa51fbd..836c74e77 100644
  	evl_spin_unlock_irqrestore(&rq->lock, flags);
  
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 83c562541..2d371e212 100644
+index 83c5625413b5..2d371e212b83 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -294,6 +294,8 @@ get_tp_schedule(struct evl_rq *rq)

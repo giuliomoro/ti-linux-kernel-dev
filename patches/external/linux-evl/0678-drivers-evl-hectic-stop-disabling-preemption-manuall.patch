@@ -1,7 +1,7 @@
 From de5c6d0163515b54685fb320054a6dfbc20d50ad Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Dec 2020 18:51:05 +0100
-Subject: [PATCH 678/985] drivers/evl: hectic: stop disabling preemption
+Subject: [PATCH 0678/1013] drivers/evl: hectic: stop disabling preemption
  manually
 
 Given the semantics of an evl_flag, disabling preemption manually
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index bec9ca058..3882c5e85 100644
+index bec9ca058449..3882c5e85dab 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -173,18 +173,15 @@ static int rtswitch_to_rt(struct rtswitch_context *ctx,

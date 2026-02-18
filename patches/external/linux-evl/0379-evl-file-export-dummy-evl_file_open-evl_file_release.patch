@@ -1,7 +1,7 @@
 From 8e1b2e9c66e6283446be05f19bea9e9be003f7cd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 21 May 2019 16:42:25 +0200
-Subject: [PATCH 379/985] evl/file: export dummy evl_file_open(),
+Subject: [PATCH 0379/1013] evl/file: export dummy evl_file_open(),
  evl_file_release() in disable case
 
 We can reduce the noise due to adding EVL bits to upstream drivers by
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+)
 
 diff --git a/include/evl/file.h b/include/evl/file.h
-index 15f6cd518..affd014ca 100644
+index 15f6cd5184cf..affd014ca6c6 100644
 --- a/include/evl/file.h
 +++ b/include/evl/file.h
 @@ -39,11 +39,21 @@ struct evl_file_binding {

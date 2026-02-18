@@ -1,7 +1,7 @@
 From 8c1d769a56dc2cfc2705b6edc9a9debbcc167e92 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 13 Aug 2019 15:31:30 +0200
-Subject: [PATCH 472/985] include/evl: file: remove placeholders
+Subject: [PATCH 0472/1013] include/evl: file: remove placeholders
 
 Moved to evl/devices.h.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 deletions(-)
 
 diff --git a/include/evl/file.h b/include/evl/file.h
-index e90104abc..15f6cd518 100644
+index e90104abcb27..15f6cd5184cf 100644
 --- a/include/evl/file.h
 +++ b/include/evl/file.h
 @@ -7,8 +7,6 @@

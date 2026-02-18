@@ -1,7 +1,7 @@
 From 68d3e72c9f0e8d94dd964fdb1a279ef791f61bc5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Oct 2019 18:18:03 +0200
-Subject: [PATCH 519/985] evl/wait: defer handling of timeout and break
+Subject: [PATCH 0519/1013] evl/wait: defer handling of timeout and break
  conditions
 
 Handling an aborted wait due to a timeout/break condition directly
@@ -47,7 +47,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 130 insertions(+), 129 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 0a001a988..c1e4baa36 100644
+index 0a001a98835f..c1e4baa36ea4 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -72,9 +72,6 @@ void evl_commit_mutex_ceiling(struct evl_mutex *mutex);
@@ -69,7 +69,7 @@ index 0a001a988..c1e4baa36 100644
  				.wait_list = LIST_HEAD_INIT((__name).mutex.wchan.wait_list), \
  			},						\
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 9fa17c8c8..226b32f6f 100644
+index 9fa17c8c87b8..226b32f6f960 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -28,7 +28,6 @@
@@ -90,7 +90,7 @@ index 9fa17c8c8..226b32f6f 100644
  	struct list_head wait_list;
  };
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 8408d559a..4d6bef86e 100644
+index 8408d559a644..4d6bef86e8a2 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -34,7 +34,6 @@ struct evl_wait_queue {
@@ -172,7 +172,7 @@ index 8408d559a..4d6bef86e 100644
  
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index ab8c9a311..8dce3de0c 100644
+index ab8c9a3115bf..8dce3de0cae9 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -185,7 +185,6 @@ static int __enter_monitor(struct evl_monitor *gate,
@@ -203,7 +203,7 @@ index ab8c9a311..8dce3de0c 100644
  
  static int enter_monitor(struct evl_monitor *gate,
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index bb8787bc8..707f32bbd 100644
+index bb8787bc8ba3..707f32bbd353 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -12,6 +12,7 @@
@@ -380,7 +380,7 @@ index bb8787bc8..707f32bbd 100644
  void evl_reorder_mutex_wait(struct evl_thread *thread)
  {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index be460a5f1..4c683cfcd 100644
+index be460a5f1121..4c683cfcdfbc 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -459,16 +459,6 @@ int __evl_run_kthread(struct evl_kthread *kthread)
@@ -423,7 +423,7 @@ index be460a5f1..4c683cfcd 100644
  
  		if (!(thread->state & EVL_THREAD_BLOCK_BITS)) {
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 03762ead8..870fccf4b 100644
+index 03762ead8df5..870fccf4bad1 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -19,7 +19,6 @@ void evl_init_wait(struct evl_wait_queue *wq,

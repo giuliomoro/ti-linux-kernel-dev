@@ -1,7 +1,7 @@
 From 746e6cd814681d3819647790e410886172c5036f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 17 Nov 2019 18:56:28 +0100
-Subject: [PATCH 544/985] uapi/evl: fptest: try harder not to shadow local
+Subject: [PATCH 0544/1013] uapi/evl: fptest: try harder not to shadow local
  variables
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/arch/x86/include/uapi/asm/evl/fptest.h b/arch/x86/include/uapi/asm/evl/fptest.h
-index b8ace9fca..0c9ceb694 100644
+index b8ace9fcaeb0..0c9ceb6943f4 100644
 --- a/arch/x86/include/uapi/asm/evl/fptest.h
 +++ b/arch/x86/include/uapi/asm/evl/fptest.h
 @@ -16,9 +16,9 @@

@@ -1,7 +1,7 @@
 From 34b810be8f10240eacb6f49da6df4ce6eed2d78a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 14 Apr 2025 11:43:28 +0200
-Subject: [PATCH 912/985] evl/net: input: fold napi_complete_oob() into
+Subject: [PATCH 0912/1013] evl/net: input: fold napi_complete_oob() into
  napi_schedule_oob()
 
 The generic oob interface now expects us to provide a single
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 15 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index d07c3566f..b72d09177 100644
+index d07c3566fa80..b72d091774ba 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -101,6 +101,7 @@ void evl_net_do_rx(void *arg)

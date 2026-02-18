@@ -1,8 +1,8 @@
 From 67117dbe226499cedb5e9050062fd0cd39c7911a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Feb 2019 10:34:59 +0100
-Subject: [PATCH 244/985] evl/thread: wait_period: remove useless dependency on
- nklock
+Subject: [PATCH 0244/1013] evl/thread: wait_period: remove useless dependency
+ on nklock
 
 We don't need to serialize on the big lock for preparing to wait for
 the next periodic wakeup.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 26 insertions(+), 47 deletions(-)
 
 diff --git a/drivers/evenless/latmus.c b/drivers/evenless/latmus.c
-index 30444297d..6d3420c4a 100644
+index 30444297d630..6d3420c4adae 100644
 --- a/drivers/evenless/latmus.c
 +++ b/drivers/evenless/latmus.c
 @@ -328,8 +328,8 @@ void kthread_handler(struct evl_kthread *kthread)
@@ -31,7 +31,7 @@ index 30444297d..6d3420c4a 100644
  			break;
  
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index f571ab23c..0a4b32db0 100644
+index f571ab23c835..0a4b32db01ab 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -239,7 +239,7 @@ int evl_sleep_until(ktime_t timeout);
@@ -44,7 +44,7 @@ index f571ab23c..0a4b32db0 100644
  
  int evl_wait_thread_period(unsigned long *overruns_r);
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index 82f3d97b0..f6512e1af 100644
+index 82f3d97b0759..f6512e1af3e3 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -464,11 +464,6 @@ DEFINE_EVENT(curr_thread_event, evl_thread_missed_period,
@@ -60,7 +60,7 @@ index 82f3d97b0..f6512e1af 100644
  	TP_PROTO(struct evl_thread *thread, unsigned int cpu),
  	TP_ARGS(thread, cpu),
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 1c505bd4b..b857a3865 100644
+index 1c505bd4be6b..b857a3865c93 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -958,27 +958,23 @@ int evl_set_thread_period(struct evl_clock *clock,

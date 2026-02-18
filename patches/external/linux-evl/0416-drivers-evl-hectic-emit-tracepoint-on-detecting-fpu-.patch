@@ -1,8 +1,8 @@
 From 5016ebba8169a29bb915de2dc77c866d38190493 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 21 Jun 2019 20:05:33 +0200
-Subject: [PATCH 416/985] drivers/evl: hectic: emit tracepoint on detecting fpu
- bug
+Subject: [PATCH 0416/1013] drivers/evl: hectic: emit tracepoint on detecting
+ fpu bug
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 22 insertions(+)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 029e651bf..81c858375 100644
+index 029e651bfd39..81c85837506c 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -54,6 +54,12 @@ struct rtswitch_context {
@@ -52,7 +52,7 @@ index 029e651bf..81c858375 100644
  		return raw_copy_to_user(u_lerr, &ctx->error, sizeof(ctx->error)) ?
  			-EFAULT : 0;
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 33449630a..b22a446e2 100644
+index 33449630afae..b22a446e256a 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -863,6 +863,19 @@ TRACE_EVENT(evl_latspot,

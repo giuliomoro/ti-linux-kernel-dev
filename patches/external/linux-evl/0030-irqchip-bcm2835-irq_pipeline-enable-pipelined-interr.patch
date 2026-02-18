@@ -1,7 +1,7 @@
 From 10b1a2958fcdcfc3399b2f16b79cc38867911011 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Aug 2017 19:00:50 +0200
-Subject: [PATCH 030/985] irqchip/bcm2835: irq_pipeline: enable pipelined
+Subject: [PATCH 0030/1013] irqchip/bcm2835: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/irqchip/irq-bcm2835.c b/drivers/irqchip/irq-bcm2835.c
-index 6c20604c2..0689a9567 100644
+index 6c20604c2242..0689a956737c 100644
 --- a/drivers/irqchip/irq-bcm2835.c
 +++ b/drivers/irqchip/irq-bcm2835.c
 @@ -104,7 +104,8 @@ static struct irq_chip armctrl_chip = {

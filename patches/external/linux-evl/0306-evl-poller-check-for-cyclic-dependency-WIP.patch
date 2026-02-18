@@ -1,7 +1,7 @@
 From ce91b612ba89e7d41e1e585dc3369457214345d9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 Feb 2019 17:31:19 +0100
-Subject: [PATCH 306/985] evl/poller: check for cyclic dependency - WIP
+Subject: [PATCH 0306/1013] evl/poller: check for cyclic dependency - WIP
 
 Pollers may watch pollers, make sure we don't get a cyclic dependency
 graph.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 39 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 827b479a4..85b5bd64d 100644
+index 827b479a403d..85b5bd64d24c 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -149,12 +149,43 @@ static inline void new_generation(struct event_poller *poller)

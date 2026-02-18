@@ -1,7 +1,7 @@
 From 9fe4bfc48d20b78b14b256a23a3af6eb5d89b4f6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Jun 2019 11:52:01 +0200
-Subject: [PATCH 407/985] evl/monitor: finalize polling support
+Subject: [PATCH 0407/1013] evl/monitor: finalize polling support
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 58 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index f392883fc..b7d09861d 100644
+index f392883fc82b..b7d09861d7f5 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -369,9 +369,13 @@ static int wait_monitor_ungated(struct evl_monitor *event,

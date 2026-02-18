@@ -1,7 +1,7 @@
 From 2f42315338d3e639e796d787f2904eb102c00551 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 11 Aug 2020 20:03:34 +0200
-Subject: [PATCH 014/985] clocksource/drivers/timer-ti-dm: turn into
+Subject: [PATCH 0014/1013] clocksource/drivers/timer-ti-dm: turn into
  user-visible MMIO clocksource
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index d546903db..91bb3a838 100644
+index d546903dba4f..91bb3a8389be 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
 @@ -25,6 +25,7 @@ config I8253_LOCK
@@ -23,7 +23,7 @@ index d546903db..91bb3a838 100644
  config CLKBLD_I8253
  	def_bool y if CLKSRC_I8253 || CLKEVT_I8253 || I8253_LOCK
 diff --git a/drivers/clocksource/timer-ti-dm-systimer.c b/drivers/clocksource/timer-ti-dm-systimer.c
-index d1c144d6f..19267f62f 100644
+index d1c144d6f328..19267f62ff93 100644
 --- a/drivers/clocksource/timer-ti-dm-systimer.c
 +++ b/drivers/clocksource/timer-ti-dm-systimer.c
 @@ -57,7 +57,7 @@ struct dmtimer_clockevent {

@@ -1,7 +1,7 @@
 From 0222126892e084539208cf89856470802452dc96 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Aug 2019 16:50:25 +0200
-Subject: [PATCH 463/985] evl/thread: replace static cpumask w/ dynamic var
+Subject: [PATCH 0463/1013] evl/thread: replace static cpumask w/ dynamic var
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 3feb011f2..dacde886c 100644
+index 3feb011f244f..dacde886c0e5 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -133,9 +133,11 @@ int evl_init_thread(struct evl_thread *thread,

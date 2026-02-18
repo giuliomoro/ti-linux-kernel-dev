@@ -1,7 +1,7 @@
 From f8273af98bcccdf77f844a45ec5ed8860d4c046a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 6 Nov 2023 14:23:29 +0100
-Subject: [PATCH 862/985] evl/lib: add dynamically-growable cache
+Subject: [PATCH 0862/1013] evl/lib: add dynamically-growable cache
 
 We have multiple upcoming uses of a fast cache in the oob netstack
 (e.g. IPv4 routes, ARP entries) which must be accessed locklessly for
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 
 diff --git a/include/evl/cache.h b/include/evl/cache.h
 new file mode 100644
-index 000000000..846503eb6
+index 000000000000..846503eb64c8
 --- /dev/null
 +++ b/include/evl/cache.h
 @@ -0,0 +1,111 @@
@@ -139,7 +139,7 @@ index 000000000..846503eb6
 +
 +#endif /* !_EVL_CACHE_H */
 diff --git a/kernel/evl/lib/Makefile b/kernel/evl/lib/Makefile
-index f49e5dc94..d6bdc3111 100644
+index f49e5dc94cfd..d6bdc311139e 100644
 --- a/kernel/evl/lib/Makefile
 +++ b/kernel/evl/lib/Makefile
 @@ -1,3 +1,3 @@
@@ -149,7 +149,7 @@ index f49e5dc94..d6bdc3111 100644
 +lib-y := cache.o uio.o
 diff --git a/kernel/evl/lib/cache.c b/kernel/evl/lib/cache.c
 new file mode 100644
-index 000000000..82c6faf13
+index 000000000000..82c6faf13e8b
 --- /dev/null
 +++ b/kernel/evl/lib/cache.c
 @@ -0,0 +1,400 @@

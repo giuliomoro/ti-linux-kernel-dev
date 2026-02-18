@@ -1,7 +1,7 @@
 From 67bfd634c8262e2f5da47c3ff1631559b836faa4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 22 Jul 2022 10:29:41 +0200
-Subject: [PATCH 733/985] evl/net: skb: ask for DMA-usable memory to
+Subject: [PATCH 0733/1013] evl/net: skb: ask for DMA-usable memory to
  __netdev_alloc_oob_skb()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 26999b1c1..229a99da1 100644
+index 26999b1c1b01..229a99da1190 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -387,7 +387,8 @@ static struct sk_buff *alloc_one_skb(struct net_device *dev)

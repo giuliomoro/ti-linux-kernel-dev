@@ -1,7 +1,7 @@
 From f5ea98f96821cf9134d207db0a728eaa6e3205c1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Nov 2019 19:12:24 +0100
-Subject: [PATCH 540/985] evl/thread: cleanup breakpoint trap identification
+Subject: [PATCH 0540/1013] evl/thread: cleanup breakpoint trap identification
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 22 insertions(+), 22 deletions(-)
 
 diff --git a/arch/arm/include/asm/evl/thread.h b/arch/arm/include/asm/evl/thread.h
-index bde236884..393aa65a4 100644
+index bde236884c49..393aa65a461a 100644
 --- a/arch/arm/include/asm/evl/thread.h
 +++ b/arch/arm/include/asm/evl/thread.h
 @@ -5,10 +5,9 @@
@@ -32,7 +32,7 @@ index bde236884..393aa65a4 100644
  
  #endif /* !_EVL_ARM_ASM_THREAD_H */
 diff --git a/arch/arm64/include/asm/evl/thread.h b/arch/arm64/include/asm/evl/thread.h
-index 78a7f77d7..3939cdbd1 100644
+index 78a7f77d7ebc..3939cdbd110e 100644
 --- a/arch/arm64/include/asm/evl/thread.h
 +++ b/arch/arm64/include/asm/evl/thread.h
 @@ -2,10 +2,9 @@
@@ -51,7 +51,7 @@ index 78a7f77d7..3939cdbd1 100644
  
  #endif /* !_EVL_ARM64_ASM_THREAD_H */
 diff --git a/arch/x86/include/asm/evl/thread.h b/arch/x86/include/asm/evl/thread.h
-index e07cb475e..50c07d74f 100644
+index e07cb475e109..50c07d74f94e 100644
 --- a/arch/x86/include/asm/evl/thread.h
 +++ b/arch/x86/include/asm/evl/thread.h
 @@ -4,10 +4,9 @@
@@ -70,7 +70,7 @@ index e07cb475e..50c07d74f 100644
  
  #endif /* !_EVL_X86_ASM_THREAD_H */
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index f2c6013ee..707b46dcb 100644
+index f2c6013ee7af..707b46dcbc57 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -15,6 +15,7 @@
@@ -82,7 +82,7 @@ index f2c6013ee..707b46dcb 100644
  #include <evl/lock.h>
  #include <evl/stat.h>
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index d4f0cf23e..357234462 100644
+index d4f0cf23ee51..357234462d61 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1424,10 +1424,11 @@ static inline void note_trap(struct evl_thread *curr,

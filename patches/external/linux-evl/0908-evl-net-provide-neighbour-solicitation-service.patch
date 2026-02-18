@@ -1,7 +1,7 @@
 From 044bd66d3e20bee6ee7b82e56bbe057e0daff0de Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 25 Mar 2025 15:08:07 +0100
-Subject: [PATCH 908/985] evl/net: provide neighbour solicitation service
+Subject: [PATCH 0908/1013] evl/net: provide neighbour solicitation service
 
 We need a way to guarantee zero-delay output to a given IP
 destination, which implies to resolve all routing and neighbour
@@ -29,7 +29,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  9 files changed, 104 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/net/ipv4.h b/include/evl/net/ipv4.h
-index b2930539b..19c319f96 100644
+index b2930539b2ab..19c319f96f96 100644
 --- a/include/evl/net/ipv4.h
 +++ b/include/evl/net/ipv4.h
 @@ -13,6 +13,8 @@
@@ -52,7 +52,7 @@ index b2930539b..19c319f96 100644
  
  #endif /* !_EVL_NET_IPV4_H */
 diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
-index 7c074d49e..ce58cb236 100644
+index 7c074d49e0a4..ce58cb2363b1 100644
 --- a/include/evl/net/ipv4/arp.h
 +++ b/include/evl/net/ipv4/arp.h
 @@ -7,6 +7,7 @@
@@ -71,7 +71,7 @@ index 7c074d49e..ce58cb236 100644
 +
  #endif /* !_EVL_NET_IPV4_ARP_H */
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index fbe6c73fe..6dacc0e6c 100644
+index fbe6c73feebd..6dacc0e6c21a 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -39,6 +39,8 @@ struct evl_net_proto {
@@ -84,7 +84,7 @@ index fbe6c73fe..6dacc0e6c 100644
  			const struct user_oob_msghdr __user *u_msghdr,
  			struct iovec *iov,
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 39e005195..03f298b73 100644
+index 39e005195fa6..03f298b73a3c 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -97,7 +97,7 @@ index 39e005195..03f298b73 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index 4973e7d0d..9664c0fb9 100644
+index 4973e7d0daee..9664c0fb9214 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -34,11 +34,19 @@ struct evl_netdev_activation {
@@ -121,7 +121,7 @@ index 4973e7d0d..9664c0fb9 100644
  
  #endif /* !_EVL_UAPI_NET_SOCKET_ABI_H */
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index abfaf5715..7c47a113f 100644
+index abfaf5715abf..7c47a113fd07 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -14,10 +14,13 @@
@@ -158,7 +158,7 @@ index abfaf5715..7c47a113f 100644
  		/*
  		 * Try uncaching any invalidated, stale or dead entry.
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 3f02f7605..42e8bbb16 100644
+index 3f02f76055ee..42e8bbb16ecf 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -14,6 +14,7 @@
@@ -242,7 +242,7 @@ index 3f02f7605..42e8bbb16 100644
  {
  	switch (protocol) {
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index f08e54175..bae36f061 100644
+index f08e5417526b..bae36f06190e 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -844,6 +844,7 @@ struct evl_net_proto evl_net_udp_proto = {
@@ -254,7 +254,7 @@ index f08e54175..bae36f061 100644
  	.oob_poll = poll_udp,
  	.oob_receive = receive_udp,
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 83dea0bae..4157f9821 100644
+index 83dea0bae446..4157f9821de3 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -601,11 +601,12 @@ static int socket_set_wmem(struct evl_socket *esk, int __user *u_val)

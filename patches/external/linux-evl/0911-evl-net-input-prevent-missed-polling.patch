@@ -1,7 +1,7 @@
 From 3add9c5b593806fa444f168e69af39433e21ee7a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 2 Apr 2025 17:14:43 +0200
-Subject: [PATCH 911/985] evl/net: input: prevent missed polling
+Subject: [PATCH 0911/1013] evl/net: input: prevent missed polling
 
 napi_poll_oob() might rechedule itself for a next run asap without
 posting the wake up event of the RX thread by leaving
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 26a4048a3..d07c3566f 100644
+index 26a4048a3d6a..d07c3566fa80 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -95,12 +95,13 @@ void evl_net_do_rx(void *arg)

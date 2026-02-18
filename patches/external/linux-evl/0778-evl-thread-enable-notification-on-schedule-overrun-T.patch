@@ -1,7 +1,7 @@
 From 58ed62d8b6173428d20f2a65b60843f7a49b0542 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 5 Nov 2022 17:08:43 +0100
-Subject: [PATCH 778/985] evl/thread: enable notification on schedule overrun
+Subject: [PATCH 0778/1013] evl/thread: enable notification on schedule overrun
  (T_WOSO)
 
 Some scheduler policies may want to notify a thread which overruns its
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 24350bf97..dee22479a 100644
+index 24350bf9780b..dee22479aa8a 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -32,7 +32,7 @@
@@ -35,7 +35,7 @@ index 24350bf97..dee22479a 100644
  /*
   * These are special internal values of HM diags which are never sent
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index acb254cde..e5894d044 100644
+index acb254cde0e1..e5894d04405d 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -824,7 +824,8 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
@@ -49,7 +49,7 @@ index acb254cde..e5894d044 100644
  TRACE_EVENT(evl_thread_update_mode,
  	TP_PROTO(struct evl_thread *thread, int mode, bool set),
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 0d601c4ef..950b9e248 100644
+index 0d601c4efffd..950b9e248649 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -62,7 +62,7 @@ index 0d601c4ef..950b9e248 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 2dbe7f77f..e039b6f21 100644
+index 2dbe7f77fef2..e039b6f21621 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -37,6 +37,7 @@
@@ -82,7 +82,7 @@ index 2dbe7f77f..e039b6f21 100644
  struct evl_user_window {
  	__u32 state;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4a3c6b5bb..ea320d56d 100644
+index 4a3c6b5bb941..ea320d56d36b 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2145,10 +2145,10 @@ static int update_mode(struct evl_thread *thread, __u32 mask,

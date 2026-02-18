@@ -1,7 +1,7 @@
 From 887e3435117f1c8c3878144192db2a0286f537be Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 1 Feb 2024 10:34:34 +0100
-Subject: [PATCH 111/985] net: dovetail: notify oob about socket shutdown
+Subject: [PATCH 0111/1013] net: dovetail: notify oob about socket shutdown
  requests
 
 A companion core providing a network stack extension to existing
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/net/socket.c b/net/socket.c
-index 02e9eaa45..cd4bc91fb 100644
+index 02e9eaa458dc..cd4bc91fb1cc 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -173,6 +173,11 @@ int __weak sock_oob_connect(struct socket *sock,

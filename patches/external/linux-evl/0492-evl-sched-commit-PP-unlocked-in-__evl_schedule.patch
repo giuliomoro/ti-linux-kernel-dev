@@ -1,7 +1,7 @@
 From 1720ee9c520620a6f9139e6bb9f3e44ee1120692 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 16:46:50 +0200
-Subject: [PATCH 492/985] evl/sched: commit PP unlocked in  __evl_schedule()
+Subject: [PATCH 0492/1013] evl/sched: commit PP unlocked in  __evl_schedule()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 21 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 018263e86..0b8d9f436 100644
+index 018263e86a19..0b8d9f43686a 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -97,6 +97,8 @@ void __evl_commit_monitor_ceiling(void)
@@ -23,7 +23,7 @@ index 018263e86..0b8d9f436 100644
  	 * curr->u_window has to be valid since curr bears T_USER.  If
  	 * pp_pending is a bad handle, just skip ceiling.
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index b89f2d9af..dfd2cf027 100644
+index b89f2d9afa8c..dfd2cf027dd7 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -621,6 +621,12 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)

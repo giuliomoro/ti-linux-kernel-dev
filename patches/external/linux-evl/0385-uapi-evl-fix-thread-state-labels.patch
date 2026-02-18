@@ -1,7 +1,7 @@
 From dd21b43a998dfa23ca4df86ca050d3d3a65a1246 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 30 May 2019 15:51:22 +0200
-Subject: [PATCH 385/985] uapi/evl: fix thread state labels
+Subject: [PATCH 0385/1013] uapi/evl: fix thread state labels
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 574394d4e..b7acf7b64 100644
+index 574394d4e9d5..b7acf7b6412a 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -61,8 +61,10 @@

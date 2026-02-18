@@ -1,7 +1,7 @@
 From f0b308c643257c3d7e1cc618ea8f82339ab18b42 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 14:42:09 +0100
-Subject: [PATCH 229/985] evl/thread: explicitly check for rescheduling
+Subject: [PATCH 0229/1013] evl/thread: explicitly check for rescheduling
  following evl_suspend_thread()
 
 We want to get rid of automatic rescheduling in evl_suspend_thread()
@@ -44,7 +44,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 9 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index c16271acb..83e6e985c 100644
+index c16271acb1cb..83e6e985cd7c 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -102,7 +102,7 @@ static void watchdog_handler(struct evl_timer *timer) /* hard irqs off */
@@ -75,7 +75,7 @@ index c16271acb..83e6e985c 100644
  	 * Refresh the current rq and thread pointers, this is
  	 * required to cope with in-band<->oob stage transitions.
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
-index a67753f9e..ee99ed8b6 100644
+index a67753f9e6e3..ee99ed8b6747 100644
 --- a/kernel/evenless/synch.c
 +++ b/kernel/evenless/synch.c
 @@ -100,8 +100,12 @@ int block_thread_timed(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -94,7 +94,7 @@ index a67753f9e..ee99ed8b6 100644
  	return curr->info & (T_RMID|T_TIMEO|T_BREAK);
  }
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 7a386d523..e237c4072 100644
+index 7a386d523d7f..e237c40724d7 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -735,6 +735,7 @@ void evl_stop_thread(struct evl_thread *thread, int mask)

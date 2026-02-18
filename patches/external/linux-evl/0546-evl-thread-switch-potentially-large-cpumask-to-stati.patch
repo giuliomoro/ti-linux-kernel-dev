@@ -1,7 +1,7 @@
 From c047866fe996d5fd93ef3b24274aea58029e5d18 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 13 Dec 2019 13:31:36 +0100
-Subject: [PATCH 546/985] evl/thread: switch potentially large cpumask to
+Subject: [PATCH 0546/1013] evl/thread: switch potentially large cpumask to
  static storage
 
 When a huge number of CPUs is available (e.g. CONFIG_MAXSMP/x86), we
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 707b46dcb..04dff620f 100644
+index 707b46dcbc57..04dff620f920 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -36,7 +36,7 @@ struct evl_sched_class;
@@ -42,7 +42,7 @@ index 707b46dcb..04dff620f 100644
  
  static inline void evl_cancel_kthread(struct evl_kthread *kthread)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 58329572a..d6e77fc52 100644
+index 58329572a17a..d6e77fc52872 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -187,7 +187,7 @@ static void init_rq(struct evl_rq *rq, int cpu)
@@ -55,7 +55,7 @@ index 58329572a..d6e77fc52 100644
  	iattr.sched_param.idle.prio = EVL_IDLE_PRIO;
  	evl_init_thread(&rq->root_thread, &iattr, rq, name_fmt, cpu);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 6dd105c80..372bdb239 100644
+index 6dd105c808c7..372bdb239ae6 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -172,7 +172,7 @@ int evl_init_thread(struct evl_thread *thread,

@@ -1,8 +1,8 @@
 From 9ec11267908f55a9d494ed6148b26313eed42905 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 16:03:27 +0200
-Subject: [PATCH 186/985] genirq: irq_pipeline: deny switching threaded IRQ to
- oob mode
+Subject: [PATCH 0186/1013] genirq: irq_pipeline: deny switching threaded IRQ
+ to oob mode
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 18 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index bd0e8d171..3a65fa887 100644
+index bd0e8d171585..3a65fa887319 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
 @@ -943,7 +943,8 @@ EXPORT_SYMBOL(irq_set_irq_wake);

@@ -1,7 +1,7 @@
 From 8eb92894e51ee3cb5b81b700d7fa6386cd7763e3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 7 Feb 2021 11:30:34 +0100
-Subject: [PATCH 696/985] evl/syscall: remove indirection via pointer table
+Subject: [PATCH 0696/1013] evl/syscall: remove indirection via pointer table
 
 We have only very few syscalls, prefer a plain switch to a pointer
 indirection which ends up being fairly costly due to exploit
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 27 insertions(+), 22 deletions(-)
 
 diff --git a/include/uapi/evl/syscall.h b/include/uapi/evl/syscall.h
-index e181464b1..1378aeb6d 100644
+index e181464b1485..1378aeb6d7dc 100644
 --- a/include/uapi/evl/syscall.h
 +++ b/include/uapi/evl/syscall.h
 @@ -11,4 +11,6 @@
@@ -25,7 +25,7 @@ index e181464b1..1378aeb6d 100644
 +
  #endif /* !_EVL_UAPI_SYSCALL_H */
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 544b8251c..3724b8286 100644
+index 544b8251c37b..3724b8286973 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -111,19 +111,6 @@ static EVL_SYSCALL(ioctl, (int fd, unsigned int request, unsigned long arg))

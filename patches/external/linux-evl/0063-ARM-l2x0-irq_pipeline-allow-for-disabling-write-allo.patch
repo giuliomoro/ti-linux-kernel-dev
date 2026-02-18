@@ -1,7 +1,7 @@
 From 0efd28258773f6352d93bb381e3a0579e781ffe2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 11 Dec 2016 18:07:58 +0100
-Subject: [PATCH 063/985] ARM: l2x0: irq_pipeline: allow for disabling
+Subject: [PATCH 0063/1013] ARM: l2x0: irq_pipeline: allow for disabling
  write-allocate
 
 HACK ALERT. Introduce the 'l2x0_write_allocate' kernel switch for
@@ -33,7 +33,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 28 insertions(+)
 
 diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 43d91bfd2..e3e816012 100644
+index 43d91bfd2360..e3e816012e7e 100644
 --- a/arch/arm/mm/cache-l2x0.c
 +++ b/arch/arm/mm/cache-l2x0.c
 @@ -48,6 +48,16 @@ struct l2x0_regs l2x0_saved_regs;

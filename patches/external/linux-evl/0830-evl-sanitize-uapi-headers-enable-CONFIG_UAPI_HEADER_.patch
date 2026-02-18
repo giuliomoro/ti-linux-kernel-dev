@@ -1,7 +1,7 @@
 From 3d60d6785454922449386a2869274768792522eb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 4 Nov 2023 16:45:21 +0100
-Subject: [PATCH 830/985] evl: sanitize uapi/ headers (enable
+Subject: [PATCH 0830/1013] evl: sanitize uapi/ headers (enable
  CONFIG_UAPI_HEADER_TEST)
 
 Ensure that CONFIG_UAPI_HEADER_TEST passes with the EVL uapi/
@@ -86,7 +86,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  rename include/uapi/evl/{xbuf.h => xbuf-abi.h} (72%)
 
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index 8822ea7af..cb1bbf2cc 100644
+index 8822ea7afb4c..cb1bbf2cc8b1 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -14,7 +14,8 @@
@@ -100,7 +100,7 @@ index 8822ea7af..cb1bbf2cc 100644
  #define ONE_BILLION  1000000000
  
 diff --git a/include/evl/control.h b/include/evl/control.h
-index 5a736ab2e..dcc90775f 100644
+index 5a736ab2e5ea..dcc90775f0de 100644
 --- a/include/evl/control.h
 +++ b/include/evl/control.h
 @@ -10,6 +10,8 @@
@@ -113,7 +113,7 @@ index 5a736ab2e..dcc90775f 100644
  enum evl_run_states {
  	EVL_STATE_DISABLED,
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 358aac28f..6b7f82de2 100644
+index 358aac28f561..6b7f82de2807 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -23,7 +23,7 @@
@@ -126,7 +126,7 @@ index 358aac28f..6b7f82de2 100644
  #define element_of(__filp, __type)					\
  	({								\
 diff --git a/include/evl/monitor.h b/include/evl/monitor.h
-index 441decab3..632f95d48 100644
+index 441decab3aad..632f95d48551 100644
 --- a/include/evl/monitor.h
 +++ b/include/evl/monitor.h
 @@ -7,9 +7,8 @@
@@ -141,7 +141,7 @@ index 441decab3..632f95d48 100644
  int evl_signal_monitor_targeted(struct evl_thread *target,
  				int monfd);
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 8b3287b69..0313768cd 100644
+index 8b3287b6953c..0313768cdb81 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -15,7 +15,6 @@
@@ -166,7 +166,7 @@ index 8b3287b69..0313768cd 100644
  	struct evl_mutex mutex;
  	atomic_t fastlock;
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 94bafd0ca..8a62114c0 100644
+index 94bafd0cad7a..8a62114c0f4b 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -16,7 +16,9 @@
@@ -181,7 +181,7 @@ index 94bafd0ca..8a62114c0 100644
  struct evl_socket;
  struct net;
 diff --git a/include/evl/observable.h b/include/evl/observable.h
-index aff0364e4..21f57ab9a 100644
+index aff0364e439e..21f57ab9aa4b 100644
 --- a/include/evl/observable.h
 +++ b/include/evl/observable.h
 @@ -14,7 +14,8 @@
@@ -195,7 +195,7 @@ index aff0364e4..21f57ab9a 100644
  struct file;
  
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index efa2b9535..fba3da8d9 100644
+index efa2b9535197..fba3da8d9373 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -14,7 +14,8 @@
@@ -209,7 +209,7 @@ index efa2b9535..fba3da8d9 100644
  struct file;
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2d1d6f874..1c2e4a269 100644
+index 2d1d6f8745c0..1c2e4a269ebe 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -22,9 +22,9 @@
@@ -228,7 +228,7 @@ diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock-abi.h
 similarity index 90%
 rename from include/uapi/evl/clock.h
 rename to include/uapi/evl/clock-abi.h
-index 4d3e3ff2c..1d678d966 100644
+index 4d3e3ff2ca94..1d678d9665a2 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock-abi.h
 @@ -4,10 +4,10 @@
@@ -255,7 +255,7 @@ diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control-abi.h
 similarity index 89%
 rename from include/uapi/evl/control.h
 rename to include/uapi/evl/control-abi.h
-index 4a33e38e6..9532d57c0 100644
+index 4a33e38e6b9d..9532d57c04e8 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -4,11 +4,10 @@
@@ -282,7 +282,7 @@ diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory-abi.h
 similarity index 92%
 rename from include/uapi/evl/factory.h
 rename to include/uapi/evl/factory-abi.h
-index fde46bc92..84e495910 100644
+index fde46bc92bd5..84e495910345 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory-abi.h
 @@ -4,8 +4,8 @@
@@ -306,7 +306,7 @@ diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor-abi.h
 similarity index 90%
 rename from include/uapi/evl/monitor.h
 rename to include/uapi/evl/monitor-abi.h
-index 434bb0894..d77da9038 100644
+index 434bb089464d..d77da903816b 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor-abi.h
 @@ -4,12 +4,10 @@
@@ -351,7 +351,7 @@ index 434bb0894..d77da9038 100644
 +#endif /* !_EVL_UAPI_MONITOR_ABI_H */
 diff --git a/include/uapi/evl/mutex.h b/include/uapi/evl/mutex.h
 deleted file mode 100644
-index 9a1979483..000000000
+index 9a1979483313..000000000000
 --- a/include/uapi/evl/mutex.h
 +++ /dev/null
 @@ -1,43 +0,0 @@
@@ -400,7 +400,7 @@ index 9a1979483..000000000
 -#endif /* !_EVL_UAPI_MUTEX_H */
 diff --git a/include/uapi/evl/net/sched.h b/include/uapi/evl/net/sched.h
 deleted file mode 100644
-index 583103d5a..000000000
+index 583103d5a405..000000000000
 --- a/include/uapi/evl/net/sched.h
 +++ /dev/null
 @@ -1,10 +0,0 @@
@@ -418,7 +418,7 @@ diff --git a/include/uapi/evl/net/socket.h b/include/uapi/evl/net/socket-abi.h
 similarity index 88%
 rename from include/uapi/evl/net/socket.h
 rename to include/uapi/evl/net/socket-abi.h
-index aee01982c..4973e7d0d 100644
+index aee01982c11d..4973e7d0daee 100644
 --- a/include/uapi/evl/net/socket.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -4,11 +4,10 @@
@@ -446,7 +446,7 @@ diff --git a/include/uapi/evl/observable.h b/include/uapi/evl/observable-abi.h
 similarity index 86%
 rename from include/uapi/evl/observable.h
 rename to include/uapi/evl/observable-abi.h
-index 5e610bde4..3da0a47ae 100644
+index 5e610bde4b56..3da0a47aef36 100644
 --- a/include/uapi/evl/observable.h
 +++ b/include/uapi/evl/observable-abi.h
 @@ -4,10 +4,10 @@
@@ -473,7 +473,7 @@ diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll-abi.h
 similarity index 86%
 rename from include/uapi/evl/poll.h
 rename to include/uapi/evl/poll-abi.h
-index d9475b8d3..ba2816e62 100644
+index d9475b8d3104..ba2816e62a3b 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll-abi.h
 @@ -4,10 +4,10 @@
@@ -500,7 +500,7 @@ diff --git a/include/uapi/evl/proxy.h b/include/uapi/evl/proxy-abi.h
 similarity index 72%
 rename from include/uapi/evl/proxy.h
 rename to include/uapi/evl/proxy-abi.h
-index 4b01a3b72..6425e282b 100644
+index 4b01a3b72ee2..6425e282ba4d 100644
 --- a/include/uapi/evl/proxy.h
 +++ b/include/uapi/evl/proxy-abi.h
 @@ -4,8 +4,8 @@
@@ -524,7 +524,7 @@ diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched-abi.h
 similarity index 95%
 rename from include/uapi/evl/sched.h
 rename to include/uapi/evl/sched-abi.h
-index f66081a56..8c453c86c 100644
+index f66081a56ab7..8c453c86c788 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched-abi.h
 @@ -5,10 +5,10 @@
@@ -551,7 +551,7 @@ diff --git a/include/uapi/evl/syscall.h b/include/uapi/evl/syscall-abi.h
 similarity index 73%
 rename from include/uapi/evl/syscall.h
 rename to include/uapi/evl/syscall-abi.h
-index 1378aeb6d..ecc2412f3 100644
+index 1378aeb6d7dc..ecc2412f31b7 100644
 --- a/include/uapi/evl/syscall.h
 +++ b/include/uapi/evl/syscall-abi.h
 @@ -4,8 +4,8 @@
@@ -575,7 +575,7 @@ diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread-abi.h
 similarity index 97%
 rename from include/uapi/evl/thread.h
 rename to include/uapi/evl/thread-abi.h
-index c8aed1631..8b3c76aa2 100644
+index c8aed1631946..8b3c76aa2176 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread-abi.h
 @@ -5,11 +5,10 @@
@@ -603,7 +603,7 @@ diff --git a/include/uapi/evl/xbuf.h b/include/uapi/evl/xbuf-abi.h
 similarity index 72%
 rename from include/uapi/evl/xbuf.h
 rename to include/uapi/evl/xbuf-abi.h
-index d24c89616..816496cf2 100644
+index d24c896160d3..816496cf2b93 100644
 --- a/include/uapi/evl/xbuf.h
 +++ b/include/uapi/evl/xbuf-abi.h
 @@ -4,8 +4,8 @@
@@ -624,7 +624,7 @@ index d24c89616..816496cf2 100644
 -#endif /* !_EVL_UAPI_XBUF_H */
 +#endif /* !_EVL_UAPI_XBUF_ABI_H */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index e72db15cc..3e8dd473f 100644
+index e72db15cc6ca..3e8dd473f66b 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -34,8 +34,6 @@
@@ -637,7 +637,7 @@ index e72db15cc..3e8dd473f 100644
  
  static const struct file_operations clock_fops;
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index f58dc8139..6c27dabe1 100644
+index f58dc8139edb..6c27dabe132c 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -9,17 +9,13 @@
@@ -659,7 +659,7 @@ index f58dc8139..6c27dabe1 100644
  static BLOCKING_NOTIFIER_HEAD(state_notifier_list);
  
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 17ea7567d..ffffa3a6a 100644
+index 17ea7567d1f9..ffffa3a6a5a8 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -27,10 +27,9 @@
@@ -675,7 +675,7 @@ index 17ea7567d..ffffa3a6a 100644
  static struct class *evl_class;
  
 diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
-index 7d60bc7ae..232b8900c 100644
+index 7d60bc7ae068..232b8900cb9a 100644
 --- a/kernel/evl/memory.c
 +++ b/kernel/evl/memory.c
 @@ -18,11 +18,9 @@
@@ -692,7 +692,7 @@ index 7d60bc7ae..232b8900c 100644
  static unsigned long sysheap_size_arg;
  module_param_named(sysheap_size, sysheap_size_arg, ulong, 0444);
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index aac19df39..8c78f5383 100644
+index aac19df39f7a..8c78f53831ea 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -8,20 +8,20 @@
@@ -890,7 +890,7 @@ index aac19df39..8c78f5383 100644
  			owner = evl_get_factory_element_by_fundle(&evl_thread_factory,
  						evl_get_index(fun),
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index bb57f3d8d..aa3205905 100644
+index bb57f3d8d93d..aa32059054a6 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -2,17 +2,14 @@
@@ -914,7 +914,7 @@ index bb57f3d8d..aa3205905 100644
  #include <uapi/evl/signal.h>
  #include <trace/events/evl.h>
 diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
-index a1d8e97da..0d4d2448d 100644
+index a1d8e97da889..0d4d2448d39a 100644
 --- a/kernel/evl/net/qdisc/fifo.c
 +++ b/kernel/evl/net/qdisc/fifo.c
 @@ -9,7 +9,6 @@
@@ -926,7 +926,7 @@ index a1d8e97da..0d4d2448d 100644
  struct qdisc_fifo_priv {
  	struct evl_net_skb_queue q;
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index d48833551..b38edd829 100644
+index d48833551404..b38edd82984e 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -9,7 +9,6 @@
@@ -938,7 +938,7 @@ index d48833551..b38edd829 100644
  #include <evl/thread.h>
  #include <evl/clock.h>
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index e18fcedf2..35f07a2ad 100644
+index e18fcedf284e..35f07a2adb6d 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -19,7 +19,7 @@
@@ -951,7 +951,7 @@ index e18fcedf2..35f07a2ad 100644
  #define EVL_PROXY_CLONE_FLAGS	\
  	(EVL_CLONE_PUBLIC|EVL_CLONE_OUTPUT|EVL_CLONE_INPUT)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 3bfbe37b1..be5c9923e 100644
+index 3bfbe37b1eb7..be5c9923e781 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -19,7 +19,6 @@
@@ -963,7 +963,7 @@ index 3bfbe37b1..be5c9923e 100644
  #include <evl/monitor.h>
  #include <evl/mutex.h>
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index 158bb2e24..70b64cb4e 100644
+index 158bb2e2423e..70b64cb4e05a 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -9,7 +9,7 @@
@@ -976,7 +976,7 @@ index 158bb2e24..70b64cb4e 100644
  /*
   * With this policy, each per-CPU runqueue maintains a list of active
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index d55b214f8..a4054266e 100644
+index d55b214f81e6..a4054266ef2c 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -8,7 +8,7 @@
@@ -989,7 +989,7 @@ index d55b214f8..a4054266e 100644
  static void tp_schedule_next(struct evl_sched_tp *tp)
  {
 diff --git a/kernel/evl/sched/weak.c b/kernel/evl/sched/weak.c
-index 5dfd47000..b3d25186c 100644
+index 5dfd470009a6..b3d25186cbc4 100644
 --- a/kernel/evl/sched/weak.c
 +++ b/kernel/evl/sched/weak.c
 @@ -6,7 +6,7 @@
@@ -1002,7 +1002,7 @@ index 5dfd47000..b3d25186c 100644
  static void weak_init(struct evl_rq *rq)
  {
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index f3e1e4676..7609e35d4 100644
+index f3e1e4676815..7609e35d4a4a 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -4,9 +4,6 @@
@@ -1016,7 +1016,7 @@ index f3e1e4676..7609e35d4 100644
  #include <evl/sem.h>
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 216c8108b..c2a3f13eb 100644
+index 216c8108b021..c2a3f13ebe37 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -17,17 +17,12 @@
@@ -1040,7 +1040,7 @@ index 216c8108b..c2a3f13eb 100644
  #define EVL_SYSCALL(__name, __args)		\
  	long EVL_ ## __name __args
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 5cd1539cd..1c5bfe12d 100644
+index 5cd1539cd3a3..1c5bfe12d231 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -23,16 +23,9 @@
@@ -1069,7 +1069,7 @@ index 5cd1539cd..1c5bfe12d 100644
  
  #define EVL_THREAD_CLONE_FLAGS	\
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 8a3a02c66..3d9c43363 100644
+index 8a3a02c665fd..3d9c433631ce 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -8,17 +8,11 @@
@@ -1091,7 +1091,7 @@ index 8a3a02c66..3d9c43363 100644
  
  static DEFINE_PER_CPU(struct clock_proxy_device *, proxy_device);
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index a53a53eb3..ec372f9cd 100644
+index a53a53eb3e6f..ec372f9cda21 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -6,13 +6,8 @@
@@ -1109,7 +1109,7 @@ index a53a53eb3..ec372f9cd 100644
  #include <asm/div64.h>
  #include <trace/events/evl.h>
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 26d48cee3..69f24e735 100644
+index 26d48cee3b55..69f24e735887 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -6,10 +6,8 @@
@@ -1124,7 +1124,7 @@ index 26d48cee3..69f24e735 100644
  #include <trace/events/evl.h>
  
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index 1c3774482..4a7f4a0ac 100644
+index 1c3774482a9b..4a7f4a0acc02 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -4,7 +4,6 @@
@@ -1136,7 +1136,7 @@ index 1c3774482..4a7f4a0ac 100644
  
  static void do_wq_work(struct work_struct *wq_work)
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 05423fe87..fca6d2a83 100644
+index 05423fe876da..fca6d2a83401 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -12,16 +12,13 @@

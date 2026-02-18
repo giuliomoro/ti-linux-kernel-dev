@@ -1,7 +1,7 @@
 From 6ad079b8771b787d38e79023424dcc081dc310cf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Jan 2019 11:15:14 +0100
-Subject: [PATCH 219/985] evl/thread: simplify inband request submission
+Subject: [PATCH 0219/1013] evl/thread: simplify inband request submission
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 61 insertions(+), 117 deletions(-)
 
 diff --git a/include/evenless/memory.h b/include/evenless/memory.h
-index 558904f72..8a005e344 100644
+index 558904f7251c..8a005e344a7a 100644
 --- a/include/evenless/memory.h
 +++ b/include/evenless/memory.h
 @@ -116,10 +116,6 @@ static inline void *evl_zalloc_chunk(struct evl_heap *heap, u32 size)
@@ -28,7 +28,7 @@ index 558904f72..8a005e344 100644
  int evl_shared_offset(void *p)
  {
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 34a32fc62..a1863a169 100644
+index 34a32fc629e0..a1863a1690a4 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -64,10 +64,8 @@ struct evl_thread {
@@ -84,7 +84,7 @@ index 34a32fc62..a1863a169 100644
  
  struct evl_kthread {
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index c071e5854..3d7f960c0 100644
+index c071e5854ad2..3d7f960c0f32 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -521,26 +521,6 @@ DEFINE_EVENT(curr_thread_event, evl_thread_unmap,
@@ -115,7 +115,7 @@ index c071e5854..3d7f960c0 100644
  	TP_PROTO(struct task_struct *task),
  	TP_ARGS(task),
 diff --git a/kernel/evenless/memory.c b/kernel/evenless/memory.c
-index 96b48e5ad..35073bd8f 100644
+index 96b48e5ad7ac..35073bd8fee3 100644
 --- a/kernel/evenless/memory.c
 +++ b/kernel/evenless/memory.c
 @@ -711,13 +711,3 @@ void evl_cleanup_memory(void)
@@ -133,7 +133,7 @@ index 96b48e5ad..35073bd8f 100644
 -	evl_free(p);
 -}
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 53f00f922..5cc32555b 100644
+index 53f00f922071..5cc32555ba6e 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -40,6 +40,8 @@

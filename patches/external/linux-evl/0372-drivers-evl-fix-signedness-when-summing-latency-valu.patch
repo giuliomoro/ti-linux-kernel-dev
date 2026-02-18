@@ -1,7 +1,7 @@
 From f61c0b4560183ab318e8961cc910d7527c76d9b8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 13 May 2019 14:14:57 +0200
-Subject: [PATCH 372/985] drivers/evl: fix signedness when summing latency
+Subject: [PATCH 0372/1013] drivers/evl: fix signedness when summing latency
  values
 
 We may collect negative delta values when sampling latency on fast
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 2c27bb767..cc2a79d5f 100644
+index 2c27bb767da4..cc2a79d5f94e 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -49,7 +49,7 @@ struct runner_state {
@@ -37,7 +37,7 @@ index 2c27bb767..cc2a79d5f 100644
  		       runner->scores[n].pmean,
  		       runner->scores[n].stddev,
 diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
-index de47ffd04..3c5bd201a 100644
+index de47ffd0429a..3c5bd201a7d1 100644
 --- a/include/uapi/evl/devices/latmus.h
 +++ b/include/uapi/evl/devices/latmus.h
 @@ -39,7 +39,7 @@ struct latmus_result {

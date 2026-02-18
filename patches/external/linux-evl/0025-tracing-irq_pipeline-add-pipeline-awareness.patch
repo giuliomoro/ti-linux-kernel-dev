@@ -1,7 +1,7 @@
 From c78e4e4e112f785b79e30840a56e425cf2e02035 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 4 Mar 2017 14:59:48 +0100
-Subject: [PATCH 025/985] tracing: irq_pipeline: add pipeline awareness
+Subject: [PATCH 0025/1013] tracing: irq_pipeline: add pipeline awareness
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  15 files changed, 122 insertions(+), 34 deletions(-)
 
 diff --git a/include/linux/irqflags.h b/include/linux/irqflags.h
-index 051883186..d1577b401 100644
+index 0518831868f3..d1577b401734 100644
 --- a/include/linux/irqflags.h
 +++ b/include/linux/irqflags.h
 @@ -42,7 +42,9 @@ DECLARE_PER_CPU(int, hardirq_context);
@@ -47,7 +47,7 @@ index 051883186..d1577b401 100644
  # define lockdep_softirq_context(p)		0
  # define lockdep_hardirqs_enabled()		0
 diff --git a/include/linux/trace_events.h b/include/linux/trace_events.h
-index fcf5a64d5..b96d01ca2 100644
+index fcf5a64d5cfe..b96d01ca2cc3 100644
 --- a/include/linux/trace_events.h
 +++ b/include/linux/trace_events.h
 @@ -7,6 +7,7 @@
@@ -79,7 +79,7 @@ index fcf5a64d5..b96d01ca2 100644
  }
  #else
 diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index 93a9f3070..419790f36 100644
+index 93a9f3070b48..419790f368c5 100644
 --- a/include/linux/tracepoint.h
 +++ b/include/linux/tracepoint.h
 @@ -199,12 +199,16 @@ static inline struct tracepoint *tracepoint_ptr_deref(tracepoint_ptr_t *p)
@@ -112,7 +112,7 @@ index 93a9f3070..419790f36 100644
  				  "RCU not watching for tracepoint");	\
  		}							\
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 370cde32c..ce4fe2ddd 100644
+index 370cde32c696..ce4fe2ddd0a2 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
 @@ -7111,10 +7111,10 @@ static int ftrace_process_locs(struct module *mod,
@@ -141,7 +141,7 @@ index 370cde32c..ce4fe2ddd 100644
  		goto failed;
  
 diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 95641a46d..6588f67e9 100644
+index 95641a46db4c..6588f67e9471 100644
 --- a/kernel/trace/ring_buffer.c
 +++ b/kernel/trace/ring_buffer.c
 @@ -3957,9 +3957,14 @@ trace_recursive_lock(struct ring_buffer_per_cpu *cpu_buffer)
@@ -189,7 +189,7 @@ index 95641a46d..6588f67e9 100644
  
  /* The recursive locking above uses 5 bits */
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 91e6bf1b1..d2dd01779 100644
+index 91e6bf1b101a..d2dd01779943 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
 @@ -1228,9 +1228,9 @@ static void tracing_snapshot_instance_cond(struct trace_array *tr,
@@ -267,7 +267,7 @@ index 91e6bf1b1..d2dd01779 100644
  		tracing_disarm_snapshot(tr);
  		break;
 diff --git a/kernel/trace/trace_branch.c b/kernel/trace/trace_branch.c
-index e47fdb4c9..9cbf973c1 100644
+index e47fdb4c92fb..9cbf973c1222 100644
 --- a/kernel/trace/trace_branch.c
 +++ b/kernel/trace/trace_branch.c
 @@ -53,7 +53,7 @@ probe_likely_condition(struct ftrace_likely_data *f, int val, int expect)
@@ -289,7 +289,7 @@ index e47fdb4c9..9cbf973c1 100644
  
  static inline
 diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 4cb2ebc43..c39f60fa8 100644
+index 4cb2ebc439be..c39f60fa8a52 100644
 --- a/kernel/trace/trace_clock.c
 +++ b/kernel/trace/trace_clock.c
 @@ -97,7 +97,7 @@ u64 notrace trace_clock_global(void)
@@ -311,7 +311,7 @@ index 4cb2ebc43..c39f60fa8 100644
  	return now;
  }
 diff --git a/kernel/trace/trace_functions.c b/kernel/trace/trace_functions.c
-index fbb6cf8dc..5250f168c 100644
+index fbb6cf8dc047..5250f168c5bd 100644
 --- a/kernel/trace/trace_functions.c
 +++ b/kernel/trace/trace_functions.c
 @@ -240,7 +240,7 @@ function_stack_trace_call(unsigned long ip, unsigned long parent_ip,
@@ -333,7 +333,7 @@ index fbb6cf8dc..5250f168c 100644
  
  static inline bool is_repeat_check(struct trace_array *tr,
 diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 655246a9b..3a6568402 100644
+index 655246a9bec3..3a6568402fa8 100644
 --- a/kernel/trace/trace_functions_graph.c
 +++ b/kernel/trace/trace_functions_graph.c
 @@ -174,7 +174,7 @@ int trace_graph_entry(struct ftrace_graph_ent *trace,
@@ -373,7 +373,7 @@ index 655246a9b..3a6568402 100644
  
  static void trace_graph_thresh_return(struct ftrace_graph_ret *trace,
 diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 10ea6d0a3..f74aafb16 100644
+index 10ea6d0a35e8..f74aafb169ee 100644
 --- a/kernel/trace/trace_irqsoff.c
 +++ b/kernel/trace/trace_irqsoff.c
 @@ -14,6 +14,7 @@
@@ -412,7 +412,7 @@ index 10ea6d0a3..f74aafb16 100644
  #else
  # define irq_trace() (0)
 diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 1ecc28a39..84902b911 100644
+index 1ecc28a3946a..84902b911a0a 100644
 --- a/kernel/trace/trace_output.c
 +++ b/kernel/trace/trace_output.c
 @@ -454,18 +454,22 @@ int trace_print_lat_fmt(struct trace_seq *s, struct trace_entry *entry)
@@ -449,7 +449,7 @@ index 1ecc28a39..84902b911 100644
  		nmi                  ? 'z' :
  		(hardirq && softirq) ? 'H' :
 diff --git a/kernel/trace/trace_preemptirq.c b/kernel/trace/trace_preemptirq.c
-index e37446f79..bfb4baa74 100644
+index e37446f7916e..bfb4baa74dc2 100644
 --- a/kernel/trace/trace_preemptirq.c
 +++ b/kernel/trace/trace_preemptirq.c
 @@ -10,6 +10,7 @@
@@ -519,7 +519,7 @@ index e37446f79..bfb4baa74 100644
  
  #ifdef CONFIG_TRACE_PREEMPT_TOGGLE
 diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index 039382576..69e7b18f8 100644
+index 039382576bc1..69e7b18f8fb3 100644
 --- a/kernel/trace/trace_sched_wakeup.c
 +++ b/kernel/trace/trace_sched_wakeup.c
 @@ -486,7 +486,9 @@ probe_wakeup_sched_switch(void *ignore, bool preempt,
@@ -533,7 +533,7 @@ index 039382576..69e7b18f8 100644
  
  out_unlock:
 diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 7f9572a37..92def72c1 100644
+index 7f9572a37333..92def72c1dfa 100644
 --- a/kernel/trace/trace_stack.c
 +++ b/kernel/trace/trace_stack.c
 @@ -171,8 +171,9 @@ static void check_stack(unsigned long ip, unsigned long *stack)

@@ -1,7 +1,7 @@
 From 8f0e3141701b918285bbe39c1ca0832c5e1385b0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 9 Aug 2020 12:20:47 +0200
-Subject: [PATCH 637/985] arm64/evl: move Kconfig switch to kernel features
+Subject: [PATCH 0637/1013] arm64/evl: move Kconfig switch to kernel features
  section
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index f17f2e3b6..397bb4351 100644
+index f17f2e3b61d0..397bb43519fe 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
 @@ -1550,6 +1550,7 @@ config CC_HAVE_SHADOW_CALL_STACK

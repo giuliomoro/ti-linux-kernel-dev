@@ -1,7 +1,7 @@
 From 92263db4ce9c4832f51aeda70fd5361873e8095a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Jun 2023 16:14:46 +0200
-Subject: [PATCH 817/985] evl/timer: fix SMP race in overrun handling
+Subject: [PATCH 0817/1013] evl/timer: fix SMP race in overrun handling
 
 evl_get_timer_overruns() might attempt to dequeue an unqueued timer
 when handling an overrun, if the caller and the timer run on distinct
@@ -49,7 +49,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 48 insertions(+), 10 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 0f5616b26..c5ce4a0ff 100644
+index 0f5616b26e38..c5ce4a0fff40 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -179,7 +179,7 @@ struct evl_timer {
@@ -71,7 +71,7 @@ index 0f5616b26..c5ce4a0ff 100644
  
  void __evl_init_timer(struct evl_timer *timer,
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index ca5422f2d..e72db15cc 100644
+index ca5422f2de3f..e72db15cc6ca 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -85,7 +85,7 @@ static void adjust_timer(struct evl_clock *clock,
@@ -84,7 +84,7 @@ index ca5422f2d..e72db15cc 100644
  	}
  
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index c609676ea..a53a53eb3 100644
+index c609676eae5b..a53a53eb3e6f 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -160,7 +160,7 @@ void evl_start_timer(struct evl_timer *timer,

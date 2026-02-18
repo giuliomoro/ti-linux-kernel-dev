@@ -1,7 +1,7 @@
 From bb6f0cafc968f4fb86ba535e8432103d98cff186 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Nov 2023 11:05:57 +0100
-Subject: [PATCH 836/985] evl/poll: wake up a single waiter per event type
+Subject: [PATCH 0836/1013] evl/poll: wake up a single waiter per event type
 
 To prevent a thundering herd effect, a single waiter should be
 unblocked for each distinct incoming event type.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 0dfc7aca0..b7c4d0caa 100644
+index 0dfc7aca096c..b7c4d0caa445 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -98,6 +98,15 @@ void evl_poll_watch(struct evl_poll_head *head,

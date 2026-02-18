@@ -1,7 +1,7 @@
 From b3894b4eef3c853319e942a09d854d74447531e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 12 Oct 2019 12:10:06 +0200
-Subject: [PATCH 517/985] evl/thread: ensure all blocking bits are lifted on
+Subject: [PATCH 0517/1013] evl/thread: ensure all blocking bits are lifted on
  kick
 
 We must unblock _and_ release a thread which is being kicked out the
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 7 insertions(+), 17 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 7188856d8..55e8a7f5c 100644
+index 7188856d8ecc..55e8a7f5c9c8 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -231,7 +231,7 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -43,7 +43,7 @@ index 7188856d8..55e8a7f5c 100644
  
  ktime_t evl_delay_thread(ktime_t timeout,
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index e87fb0e66..80ac6f7d7 100644
+index e87fb0e660bc..80ac6f7d7f28 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -541,14 +541,13 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,

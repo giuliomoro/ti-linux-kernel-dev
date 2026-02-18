@@ -1,7 +1,7 @@
 From 6a6f09c0fa858d1e7a2acf77ac73cddace3cd601 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 14:55:54 +0200
-Subject: [PATCH 487/985] evl/wait: fold wait list into wchan
+Subject: [PATCH 0487/1013] evl/wait: fold wait list into wchan
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 17 insertions(+), 17 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 78560af8b..89cd86910 100644
+index 78560af8b2ad..89cd86910cf6 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -24,31 +24,31 @@
@@ -79,7 +79,7 @@ index 78560af8b..89cd86910 100644
  }
  
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 3665a4edb..be49026b2 100644
+index 3665a4edbb46..be49026b27bf 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -17,9 +17,9 @@ void evl_init_wait(struct evl_wait_queue *wq,

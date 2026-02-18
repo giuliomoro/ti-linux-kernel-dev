@@ -1,7 +1,7 @@
 From 24fa79df7d4dbab749742b382df65c22878b9990 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 30 Jan 2022 16:19:00 +0100
-Subject: [PATCH 722/985] evl: use <linux/stdarg.h> as appropriate
+Subject: [PATCH 0722/1013] evl: use <linux/stdarg.h> as appropriate
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/file.c b/kernel/evl/file.c
-index 2a3f45ad0..93aa8aa3c 100644
+index 2a3f45ad0a68..93aa8aa3c2c6 100644
 --- a/kernel/evl/file.c
 +++ b/kernel/evl/file.c
 @@ -4,7 +4,7 @@
@@ -23,7 +23,7 @@ index 2a3f45ad0..93aa8aa3c 100644
  #include <linux/kernel.h>
  #include <linux/fs.h>
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index a9ac34dfc..57b65ae51 100644
+index a9ac34dfc675..57b65ae516b2 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -6,7 +6,7 @@

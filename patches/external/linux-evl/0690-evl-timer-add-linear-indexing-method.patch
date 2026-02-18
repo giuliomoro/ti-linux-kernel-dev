@@ -1,7 +1,7 @@
 From c8eb732c8cbc97add7dbffcb63af6aeb5a2d53e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 6 Feb 2021 12:54:04 +0100
-Subject: [PATCH 690/985] evl/timer: add linear indexing method
+Subject: [PATCH 0690/1013] evl/timer: add linear indexing method
 
 Add (back) the ability to index timers either in a rb-tree or linked
 to a basic linked list.
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 98 insertions(+)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index f66613565..7feec6c44 100644
+index f666135655cb..7feec6c44f41 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -31,6 +31,76 @@
@@ -109,7 +109,7 @@ index f66613565..7feec6c44 100644
  
  struct evl_timerbase {
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index e549e25c6..bbac32c39 100644
+index e549e25c6ea2..bbac32c3944a 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -38,6 +38,28 @@ config EVL_SCHED_TP_NR_PART
@@ -142,7 +142,7 @@ index e549e25c6..bbac32c39 100644
  	bool "Collect runtime statistics"
  	default y
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 1d6e32087..4e4a24d8e 100644
+index 1d6e32087129..4e4a24d8e658 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -455,6 +455,8 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)

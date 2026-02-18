@@ -1,7 +1,7 @@
 From 92c064add5e1357577c1886bcde0a5fb388e8b2a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Jul 2019 21:39:15 +0200
-Subject: [PATCH 447/985] evl/thread: drop obsolete comment
+Subject: [PATCH 0447/1013] evl/thread: drop obsolete comment
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 956d7bda8..10b98d13c 100644
+index 956d7bda8eb6..10b98d13c1be 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1736,11 +1736,6 @@ void resume_oob_task(struct task_struct *p) /* hw IRQs off */

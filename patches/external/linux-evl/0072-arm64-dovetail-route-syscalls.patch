@@ -1,7 +1,7 @@
 From 8df2bfcd3ed55dc38a1e7e949306211e50b659e2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 7 Jul 2020 18:39:36 +0200
-Subject: [PATCH 072/985] arm64: dovetail: route syscalls
+Subject: [PATCH 0072/1013] arm64: dovetail: route syscalls
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
@@ -36,7 +36,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  2 files changed, 20 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm64/include/asm/syscall.h b/arch/arm64/include/asm/syscall.h
-index ab8e14b96..3cf564634 100644
+index ab8e14b96f68..3cf5646340c3 100644
 --- a/arch/arm64/include/asm/syscall.h
 +++ b/arch/arm64/include/asm/syscall.h
 @@ -73,6 +73,12 @@ static inline void syscall_get_arguments(struct task_struct *task,
@@ -53,7 +53,7 @@ index ab8e14b96..3cf564634 100644
   * We don't care about endianness (__AUDIT_ARCH_LE bit) here because
   * AArch64 has the same system calls both on little- and big- endian.
 diff --git a/arch/arm64/kernel/syscall.c b/arch/arm64/kernel/syscall.c
-index 8da4a08c1..0e8b45440 100644
+index 8da4a08c1fee..0e8b45440fce 100644
 --- a/arch/arm64/kernel/syscall.c
 +++ b/arch/arm64/kernel/syscall.c
 @@ -75,16 +75,11 @@ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,

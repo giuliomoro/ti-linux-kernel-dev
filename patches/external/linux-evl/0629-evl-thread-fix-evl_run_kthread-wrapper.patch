@@ -1,7 +1,7 @@
 From 1cf0c87b762319bdd10477d2d8cbbbb7812b45f7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 10 Jun 2020 11:41:15 +0200
-Subject: [PATCH 629/985] evl/thread: fix evl_run_kthread() wrapper
+Subject: [PATCH 0629/1013] evl/thread: fix evl_run_kthread() wrapper
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 05f41a474..1d300a7e6 100644
+index 05f41a474ebb..1d300a7e64f9 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -19,6 +19,7 @@

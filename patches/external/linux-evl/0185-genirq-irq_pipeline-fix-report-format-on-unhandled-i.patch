@@ -1,8 +1,8 @@
 From 035ddf5ec5c264a81fc8918fc90185db4f6b6408 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 13:05:22 +0200
-Subject: [PATCH 185/985] genirq: irq_pipeline: fix report format on unhandled
- irq
+Subject: [PATCH 0185/1013] genirq: irq_pipeline: fix report format on
+ unhandled irq
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
-index 64fcf4b39..cc352bb07 100644
+index 64fcf4b399c0..cc352bb07494 100644
 --- a/kernel/irq/pipeline.c
 +++ b/kernel/irq/pipeline.c
 @@ -879,10 +879,10 @@ static void handle_unexpected_irq(struct irq_desc *desc, irqreturn_t ret)

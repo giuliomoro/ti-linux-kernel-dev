@@ -1,7 +1,7 @@
 From d3a221bf6156052827920fd60869b6f8c3cabc64 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Dec 2022 11:11:26 +0100
-Subject: [PATCH 806/985] evl/wait: keep wchan owner locked on entry to chain
+Subject: [PATCH 0806/1013] evl/wait: keep wchan owner locked on entry to chain
  walk
 
 This change establishes an additional invariant regarding the presence
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 33 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index f5abc467b..5981c91a2 100644
+index f5abc467b4ad..5981c91a27fc 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -485,9 +485,9 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,
@@ -48,7 +48,7 @@ index f5abc467b..5981c91a2 100644
  	assert_hard_lock(&mutex->wchan.lock);
  	assert_hard_lock(&curr->lock);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 02aec0a3d..a6465882b 100644
+index 02aec0a3d314..a6465882b3cb 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -254,7 +254,6 @@ void evl_adjust_wait_priority(struct evl_thread *thread)

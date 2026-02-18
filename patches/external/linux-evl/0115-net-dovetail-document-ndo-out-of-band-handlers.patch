@@ -1,7 +1,7 @@
 From bccb7fe0e3c6374464b300d624c37b66ded3e785 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 1 Mar 2024 10:49:27 +0100
-Subject: [PATCH 115/985] net: dovetail: document ndo out-of-band handlers
+Subject: [PATCH 0115/1013] net: dovetail: document ndo out-of-band handlers
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 19 insertions(+)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 8568958d5..2572745bf 100644
+index 8568958d5440..2572745bf5a0 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -1360,6 +1360,18 @@ struct netdev_net_notifier {

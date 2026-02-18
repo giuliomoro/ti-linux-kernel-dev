@@ -1,7 +1,7 @@
 From 9fb8a0389d9ec06aa2590fb59b2941a0a90f212b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 15:59:01 +0200
-Subject: [PATCH 499/985] evl/wait: check for nklock state inconsistency
+Subject: [PATCH 0499/1013] evl/wait: check for nklock state inconsistency
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 09fc14f2d..d97de7d52 100644
+index 09fc14f2d037..d97de7d522d7 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -54,6 +54,7 @@ struct evl_wait_queue {

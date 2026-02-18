@@ -1,0 +1,55 @@
+From f89b8f25418167989bfd6f9426dd205a3b68fd47 Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Thu, 25 Sep 2025 15:05:47 +0200
+Subject: [PATCH 0989/1013] kernel/entry: irq_pipeline: Do not leave
+ .noinstr.text section
+
+Fixing the following warning by moving the call to irqentry_syncstage()
+into a instrumentation_begin() section.
+
+vmlinux.o: warning: objtool: irqentry_exit+0xab: call to synchronize_pipeline() leaves .noinstr.text section
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ kernel/entry/common.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/entry/common.c b/kernel/entry/common.c
+index 12ddde6acaa0..c72f6fb22da6 100644
+--- a/kernel/entry/common.c
++++ b/kernel/entry/common.c
+@@ -457,6 +457,7 @@ noinstr void irqentry_exit(struct pt_regs *regs, irqentry_state_t state)
+ 		return;
+ 	}
+ 
++	instrumentation_begin();
+ 	synchronized = irqentry_syncstage(state);
+ 
+ 	if (irqexit_may_preempt_schedule(state, regs)) {
+@@ -466,7 +467,6 @@ noinstr void irqentry_exit(struct pt_regs *regs, irqentry_state_t state)
+ 		 * and RCU as the return to user mode path.
+ 		 */
+ 		if (state.exit_rcu) {
+-			instrumentation_begin();
+ 			/* Tell the tracer that IRET will enable interrupts */
+ 			trace_hardirqs_on_prepare();
+ 			lockdep_hardirqs_on_prepare();
+@@ -476,7 +476,6 @@ noinstr void irqentry_exit(struct pt_regs *regs, irqentry_state_t state)
+ 			goto out;
+ 		}
+ 
+-		instrumentation_begin();
+ 		if (IS_ENABLED(CONFIG_PREEMPTION))
+ 			irqentry_exit_cond_resched();
+ 
+@@ -484,6 +483,7 @@ noinstr void irqentry_exit(struct pt_regs *regs, irqentry_state_t state)
+ 		trace_hardirqs_on();
+ 		instrumentation_end();
+ 	} else {
++		instrumentation_end();
+ 		/*
+ 		 * IRQ flags state is correct already. Just tell RCU if it
+ 		 * was not watching on entry.
+-- 
+2.30.2
+

@@ -1,7 +1,8 @@
 From 6d873283f58e93c597f237d47614bba810a28d44 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 5 Feb 2019 19:02:13 +0100
-Subject: [PATCH 266/985] evl/mutex: check consistency of lock/unlock requests
+Subject: [PATCH 0266/1013] evl/mutex: check consistency of lock/unlock
+ requests
 
 Detect invalid requests such as recursive locking and unlocking of
 free mutex early.
@@ -18,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+)
 
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 9481e981c..989d8c2cf 100644
+index 9481e981c55d..989d8c2cf4a4 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -408,6 +408,9 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,

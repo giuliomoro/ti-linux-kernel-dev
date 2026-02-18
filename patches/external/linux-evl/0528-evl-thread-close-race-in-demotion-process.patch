@@ -1,7 +1,7 @@
 From ce45cd2aef7547f57f0e094460c20c27f00d159b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Oct 2019 17:47:39 +0100
-Subject: [PATCH 528/985] evl/thread: close race in demotion process
+Subject: [PATCH 0528/1013] evl/thread: close race in demotion process
 
 Prevent a rescheduling upon IRQ from keeping a demoted thread alive on
 a CPU in oob mode. i.e.
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index d4de8196f..48f8562ac 100644
+index d4de8196f529..48f8562ac76c 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1437,23 +1437,15 @@ void evl_demote_thread(struct evl_thread *thread)

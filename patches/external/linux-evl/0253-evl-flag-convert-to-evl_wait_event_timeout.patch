@@ -1,7 +1,7 @@
 From 6f71f4ba558296600f1b5546a0c75249654a0179 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 12:35:28 +0100
-Subject: [PATCH 253/985] evl/flag: convert to evl_wait_event_timeout()
+Subject: [PATCH 0253/1013] evl/flag: convert to evl_wait_event_timeout()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 23 deletions(-)
 
 diff --git a/include/evenless/flag.h b/include/evenless/flag.h
-index 350ea50e2..31e11a476 100644
+index 350ea50e2e2a..31e11a47641e 100644
 --- a/include/evenless/flag.h
 +++ b/include/evenless/flag.h
 @@ -32,33 +32,22 @@ static inline void evl_destroy_flag(struct evl_flag *wf)

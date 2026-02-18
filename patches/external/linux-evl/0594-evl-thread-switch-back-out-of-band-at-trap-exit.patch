@@ -1,7 +1,7 @@
 From 32ab4ad6c594e4c963225a7b288d468225e6cfbb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 31 Mar 2020 17:50:23 +0200
-Subject: [PATCH 594/985] evl/thread: switch back out-of-band at trap exit
+Subject: [PATCH 0594/1013] evl/thread: switch back out-of-band at trap exit
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index f5d81701b..1c8f6d236 100644
+index f5d81701b478..1c8f6d236211 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1502,7 +1502,7 @@ static inline void note_trap(struct evl_thread *curr,

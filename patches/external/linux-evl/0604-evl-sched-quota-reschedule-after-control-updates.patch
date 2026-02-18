@@ -1,7 +1,7 @@
 From 36bcc920a4ecb7aa800be0e39f53712b6f692b3d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 15:49:54 +0200
-Subject: [PATCH 604/985] evl/sched: quota: reschedule after control updates
+Subject: [PATCH 0604/1013] evl/sched: quota: reschedule after control updates
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index ad7a9b342..8daa51fbd 100644
+index ad7a9b342433..8daa51fbdcc2 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -695,7 +695,7 @@ static int quota_control(int cpu, union evl_sched_ctlparam *ctlp,

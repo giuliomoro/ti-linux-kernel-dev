@@ -1,7 +1,7 @@
 From 015ad5822845d3ef4a218de3f54184f245b34315 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Mar 2019 16:40:37 +0100
-Subject: [PATCH 340/985] evl/sem: rename to evl_ksem for consistency with
+Subject: [PATCH 0340/1013] evl/sem: rename to evl_ksem for consistency with
  evl_kmutex
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 28 insertions(+), 28 deletions(-)
 
 diff --git a/include/evl/sem.h b/include/evl/sem.h
-index a7c5ea119..11b82e9f8 100644
+index a7c5ea119656..11b82e9f809e 100644
 --- a/include/evl/sem.h
 +++ b/include/evl/sem.h
 @@ -10,23 +10,23 @@
@@ -46,7 +46,7 @@ index a7c5ea119..11b82e9f8 100644
  
  #endif /* !_EVL_SEM_H */
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index 7f15ea4e3..10f316575 100644
+index 7f15ea4e38e0..10f316575d14 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -10,64 +10,64 @@

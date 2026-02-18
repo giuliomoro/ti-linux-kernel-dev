@@ -1,7 +1,7 @@
 From dd4aef0bc1bac6fa51bac03d862bb02d6603a0fd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Apr 2020 11:21:32 +0200
-Subject: [PATCH 088/985] dmaengine: virt-dma: dovetail: enable out-of-band
+Subject: [PATCH 0088/1013] dmaengine: virt-dma: dovetail: enable out-of-band
  operations
 
 If CONFIG_DMA_VIRTUAL_CHANNELS_OOB is selected by any DMA engine,
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 243 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index d9ec1e69e..86e32af2d 100644
+index d9ec1e69e428..86e32af2dea4 100644
 --- a/drivers/dma/Kconfig
 +++ b/drivers/dma/Kconfig
 @@ -47,6 +47,10 @@ config DMA_ENGINE
@@ -30,7 +30,7 @@ index d9ec1e69e..86e32af2d 100644
  	def_bool y
  	depends on ACPI
 diff --git a/drivers/dma/virt-dma.c b/drivers/dma/virt-dma.c
-index 7961172a7..bf972e4d0 100644
+index 7961172a780d..bf972e4d097d 100644
 --- a/drivers/dma/virt-dma.c
 +++ b/drivers/dma/virt-dma.c
 @@ -23,11 +23,11 @@ dma_cookie_t vchan_tx_submit(struct dma_async_tx_descriptor *tx)
@@ -199,7 +199,7 @@ index 7961172a7..bf972e4d0 100644
  	INIT_LIST_HEAD(&vc->desc_submitted);
  	INIT_LIST_HEAD(&vc->desc_issued);
 diff --git a/drivers/dma/virt-dma.h b/drivers/dma/virt-dma.h
-index 59d9eabc8..c6bc27127 100644
+index 59d9eabc8b67..c6bc271272c5 100644
 --- a/drivers/dma/virt-dma.h
 +++ b/drivers/dma/virt-dma.h
 @@ -19,12 +19,22 @@ struct virt_dma_desc {

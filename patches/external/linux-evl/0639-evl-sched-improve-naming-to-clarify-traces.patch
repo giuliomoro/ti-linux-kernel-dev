@@ -1,7 +1,7 @@
 From e11da24319da32ddaa6764e131cfc63bdb517381 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 11 Aug 2020 18:24:35 +0200
-Subject: [PATCH 639/985] evl/sched: improve naming to clarify traces
+Subject: [PATCH 0639/1013] evl/sched: improve naming to clarify traces
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 25b214cc8..f56585d3a 100644
+index 25b214cc88c5..f56585d3a9a6 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -706,7 +706,7 @@ static inline void leave_inband(struct evl_thread *root)

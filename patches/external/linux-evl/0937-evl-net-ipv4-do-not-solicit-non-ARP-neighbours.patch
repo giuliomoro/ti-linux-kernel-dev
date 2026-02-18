@@ -1,7 +1,7 @@
 From c3fe941470a293de6d6696f0b1d9bd9e8a7b2001 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 5 Jun 2025 09:26:18 +0200
-Subject: [PATCH 937/985] evl/net: ipv4: do not solicit non-ARP neighbours
+Subject: [PATCH 0937/1013] evl/net: ipv4: do not solicit non-ARP neighbours
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 16 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 42e8bbb16..0289e01ec 100644
+index 42e8bbb16ecf..0289e01ecab1 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -242,7 +242,7 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,

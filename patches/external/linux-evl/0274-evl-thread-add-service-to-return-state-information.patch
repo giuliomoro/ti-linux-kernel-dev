@@ -1,7 +1,7 @@
 From 99a12a1152d619fffc8554d2f5026094e72c1079 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 7 Feb 2019 19:29:39 +0100
-Subject: [PATCH 274/985] evl/thread: add service to return state information
+Subject: [PATCH 0274/1013] evl/thread: add service to return state information
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 47 insertions(+), 16 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 62a016ff1..29510cac7 100644
+index 62a016ff19ec..29510cac7a73 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -251,6 +251,9 @@ void evl_cancel_thread(struct evl_thread *thread);
@@ -25,7 +25,7 @@ index 62a016ff1..29510cac7 100644
  
  void evl_switch_inband(int cause);
 diff --git a/include/uapi/evenless/thread.h b/include/uapi/evenless/thread.h
-index 503819008..9184321d1 100644
+index 5038190083ed..9184321d197d 100644
 --- a/include/uapi/evenless/thread.h
 +++ b/include/uapi/evenless/thread.h
 @@ -74,11 +74,17 @@ struct evl_user_window {
@@ -47,7 +47,7 @@ index 503819008..9184321d1 100644
  
  #endif /* !_EVENLESS_UAPI_THREAD_H */
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index e181a029b..bc07ac969 100644
+index e181a029bacd..bc07ac9696ba 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -2041,21 +2041,15 @@ static int set_sched_attrs(struct evl_thread *thread,

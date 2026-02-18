@@ -1,8 +1,8 @@
 From 57548392669dcc58d32dec9d70a85d111c148918 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Feb 2020 11:18:13 +0100
-Subject: [PATCH 575/985] evl/sched: caller of evl_force_thread() should raise
- T_KICKED
+Subject: [PATCH 0575/1013] evl/sched: caller of evl_force_thread() should
+ raise T_KICKED
 
 Not a bug fix so far but a clarification of the interface.
 
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 8 insertions(+), 10 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 1ab407119..fe1909511 100644
+index 1ab40711965d..fe1909511beb 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -599,12 +599,8 @@ static inline void evl_force_thread(struct evl_thread *thread)
@@ -30,7 +30,7 @@ index 1ab407119..fe1909511 100644
  
  struct evl_sched_group {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4faa44f74..e0913291d 100644
+index 4faa44f747eb..e0913291d4b8 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1228,14 +1228,16 @@ void evl_kick_thread(struct evl_thread *thread, int info)

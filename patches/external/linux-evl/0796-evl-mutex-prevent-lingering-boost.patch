@@ -1,7 +1,7 @@
 From 9c0117b19ed0ccd335d920c7008cef2e32751192 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 22 Nov 2022 18:39:37 +0100
-Subject: [PATCH 796/985] evl/mutex: prevent lingering boost
+Subject: [PATCH 0796/1013] evl/mutex: prevent lingering boost
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 23 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index f2a0e209e..9d85516c2 100644
+index f2a0e209e727..9d85516c29df 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -242,15 +242,19 @@ static int fast_grab_mutex(struct evl_mutex *mutex, fundle_t *oldh)

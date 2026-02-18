@@ -1,7 +1,8 @@
 From e2568dafcc84ebff235f9812b911e784693960d1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 09:51:04 +0100
-Subject: [PATCH 314/985] evl/logger: downgrade from element to utility device
+Subject: [PATCH 0314/1013] evl/logger: downgrade from element to utility
+ device
 
 There is no upside in sharing loggers between application processes,
 since they do not (and will not) deal with file locking. Therefore
@@ -19,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 109 insertions(+), 89 deletions(-)
 
 diff --git a/include/uapi/evenless/logger.h b/include/uapi/evenless/logger.h
-index 3f23cebc2..aa3f93f7d 100644
+index 3f23cebc27bf..aa3f93f7d45b 100644
 --- a/include/uapi/evenless/logger.h
 +++ b/include/uapi/evenless/logger.h
 @@ -12,4 +12,8 @@ struct evl_logger_attrs {
@@ -32,7 +33,7 @@ index 3f23cebc2..aa3f93f7d 100644
 +
  #endif /* !_EVENLESS_UAPI_LOGGER_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 1b04cfea1..349162f2d 100644
+index 1b04cfea1186..349162f2da68 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -135,15 +135,6 @@ config EVENLESS_NR_XBUFS
@@ -52,7 +53,7 @@ index 1b04cfea1..349162f2d 100644
  	int "Maximum number of mappers"
  	range 1 16384
 diff --git a/kernel/evenless/logger.c b/kernel/evenless/logger.c
-index 873c4cb22..33994af0f 100644
+index 873c4cb2238f..33994af0fb0a 100644
 --- a/kernel/evenless/logger.c
 +++ b/kernel/evenless/logger.c
 @@ -17,6 +17,7 @@

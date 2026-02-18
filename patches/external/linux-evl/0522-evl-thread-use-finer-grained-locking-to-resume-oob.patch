@@ -1,7 +1,7 @@
 From b796bfc0f00eecf7889e1af914aaa71ce943e8cd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Oct 2019 18:14:50 +0200
-Subject: [PATCH 522/985] evl/thread: use finer-grained locking to resume oob
+Subject: [PATCH 0522/1013] evl/thread: use finer-grained locking to resume oob
 
 There is no point in holding the ugly lock around the call to release
 a thread from the T_INBAND blocking condition: affinity_ok() updates
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 17 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4c683cfcd..ef146eacb 100644
+index 4c683cfcdfbc..ef146eacbeff 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -51,14 +51,14 @@ static DECLARE_WAIT_QUEUE_HEAD(join_all);

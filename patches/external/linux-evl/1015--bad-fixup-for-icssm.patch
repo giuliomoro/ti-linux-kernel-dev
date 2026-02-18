@@ -1,0 +1,446 @@
+From 1c9323d08d103a8906a0a6671d4f385e48901480 Mon Sep 17 00:00:00 2001
+From: Giulio Moro <giuliomoro@yahoo.it>
+Date: Wed, 18 Feb 2026 17:37:50 +0000
+Subject: [PATCH] bad fixup for icssm
+
+---
+ drivers/net/ethernet/ti/icssm/icssm_prueth.c  | 29 +-------------
+ drivers/net/ethernet/ti/icssm/icssm_prueth.h  |  6 ---
+ .../net/ethernet/ti/icssm/icssm_prueth_lre.c  | 39 ++-----------------
+ .../ethernet/ti/icssm/icssm_prueth_switch.c   | 23 -----------
+ 4 files changed, 5 insertions(+), 92 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/icssm/icssm_prueth.c b/drivers/net/ethernet/ti/icssm/icssm_prueth.c
+index 42a9a063ab2a..5be582c77968 100644
+--- a/drivers/net/ethernet/ti/icssm/icssm_prueth.c
++++ b/drivers/net/ethernet/ti/icssm/icssm_prueth.c
+@@ -556,7 +556,6 @@ static void icssm_emac_adjust_link(struct net_device *ndev)
+ 	u32 txcfg, mask;
+ 	u32 delay;
+ 
+-	spin_lock_irqsave(&emac->lock, flags);
+ 
+ 	if (phydev->link) {
+ 		/* check the mode of operation */
+@@ -613,7 +612,6 @@ static void icssm_emac_adjust_link(struct net_device *ndev)
+ 			netif_stop_queue(ndev);
+ 	}
+ 
+-	spin_unlock_irqrestore(&emac->lock, flags);
+ }
+ 
+ static unsigned int
+@@ -721,7 +719,6 @@ static int icssm_prueth_ptp_tx_ts_enqueue(struct prueth_emac *emac,
+ 		return -EINVAL;
+ 	}
+ 
+-	spin_lock_irqsave(&emac->ptp_skb_lock, flags);
+ 	if (emac->ptp_skb[event]) {
+ 		dev_consume_skb_any(emac->ptp_skb[event]);
+ 		icssm_prueth_ptp_tx_ts_reset(emac, event);
+@@ -730,7 +727,6 @@ static int icssm_prueth_ptp_tx_ts_enqueue(struct prueth_emac *emac,
+ 
+ 	skb_get(skb);
+ 	emac->ptp_skb[event] = skb;
+-	spin_unlock_irqrestore(&emac->ptp_skb_lock, flags);
+ 
+ 	return 0;
+ }
+@@ -810,7 +806,6 @@ static void icssm_prueth_ptp_tx_ts_get(struct prueth_emac *emac, u8 event)
+ 	u64 ns;
+ 
+ 	/* get the msg from list */
+-	spin_lock_irqsave(&emac->ptp_skb_lock, flags);
+ 	skb = emac->ptp_skb[event];
+ 	emac->ptp_skb[event] = NULL;
+ 	if (!skb) {
+@@ -822,7 +817,6 @@ static void icssm_prueth_ptp_tx_ts_get(struct prueth_emac *emac, u8 event)
+ 		emac->ptp_ct_skb[event] = NULL;
+ 		ct_ts = true;
+ 	}
+-	spin_unlock_irqrestore(&emac->ptp_skb_lock, flags);
+ 	if (!skb) {
+ 		/* TS for cut throguh packet might have already
+ 		 * be read by emac_rx_packet()
+@@ -1280,7 +1274,6 @@ static int icssm_prueth_hsr_ptp_ct_tx_ts_enqueue(struct prueth_emac *emac,
+ 	}
+ 
+ 	/* Store the skb so that tx irq handler will populate the ts */
+-	spin_lock_irqsave(&other_emac->ptp_skb_lock, flags);
+ 	if (other_emac->ptp_ct_skb[event]) {
+ 		netdev_warn(other_emac->ndev,
+ 			    "Dropped cut through event waiting for tx ts.\n");
+@@ -1289,7 +1282,6 @@ static int icssm_prueth_hsr_ptp_ct_tx_ts_enqueue(struct prueth_emac *emac,
+ 	}
+ 
+ 	other_emac->ptp_ct_skb[event] = skb;
+-	spin_unlock_irqrestore(&other_emac->ptp_skb_lock, flags);
+ 
+ 	return -EAGAIN;
+ }
+@@ -2177,18 +2169,11 @@ static enum netdev_tx icssm_emac_ndo_start_xmit(struct sk_buff *skb,
+ 	struct prueth_emac *emac = netdev_priv(ndev);
+ 	int ret;
+ 	u16 qid;
+-	void *lock_queue;
+ 
+ 	qid = icssm_prueth_get_tx_queue_id(emac->prueth, skb);
+ 	/* Initialization of spin locks for locking and unlocking Tx Queues */
+-	if (PRUETH_IS_LRE(emac->prueth))
+-		lock_queue = &emac->prueth->lre_host_queue_lock[qid - 2];
+-	else
+-		lock_queue = &emac->host_queue_lock[qid];
+ 
+-	raw_spin_lock(lock_queue);
+ 	ret = icssm_prueth_tx_enqueue(emac, skb, qid);
+-	raw_spin_unlock(lock_queue);
+ 	if (ret) {
+ 		if (ret != -ENOBUFS && netif_msg_tx_err(emac) &&
+ 		    net_ratelimit())
+@@ -2511,7 +2496,6 @@ static void icssm_emac_ndo_set_rx_mode(struct net_device *ndev)
+ 	}
+ 
+ 	/* for LRE, it is a shared table. So lock the access */
+-	spin_lock_irqsave(&emac->addr_lock, flags);
+ 
+ 	/* Disable and reset multicast filter, allows allmulti */
+ 	icssm_emac_mc_filter_ctrl(emac, false);
+@@ -2567,7 +2551,7 @@ static void icssm_emac_ndo_set_rx_mode(struct net_device *ndev)
+ 	}
+ 
+ unlock:
+-	spin_unlock_irqrestore(&emac->addr_lock, flags);
++	;
+ }
+ 
+ static int icssm_emac_hwtstamp_config_set(struct net_device *ndev,
+@@ -2654,7 +2638,6 @@ int icssm_emac_add_del_vid(struct prueth_emac *emac,
+ 		return 0;
+ 
+ 	/* for LRE, it is a shared table. So lock the access */
+-	spin_lock_irqsave(&emac->addr_lock, flags);
+ 
+ 	/* VLAN filter table is 512 bytes (4096 bit) bitmap.
+ 	 * Each bit controls enabling or disabling corresponding
+@@ -2672,7 +2655,6 @@ int icssm_emac_add_del_vid(struct prueth_emac *emac,
+ 		val &= ~BIT(bit_index);
+ 	writeb(val, ram + vlan_filter_tbl + byte_index);
+ 
+-	spin_unlock_irqrestore(&emac->addr_lock, flags);
+ 
+ 	netdev_dbg(emac->ndev, "%s VID bit at byte index %d and bit %d\n",
+ 		   add ? "Setting" : "Clearing", byte_index, bit_index);
+@@ -2929,15 +2911,8 @@ static int icssm_prueth_netdev_init(struct prueth *prueth,
+ 		dev_err(prueth->dev, "could not get ptp tx irq. Skipping PTP support\n");
+ 	}
+ 
+-	spin_lock_init(&emac->lock);
+-	spin_lock_init(&emac->ptp_skb_lock);
+-	spin_lock_init(&emac->addr_lock);
+ 
+ 	/* Added for HSR PRP Tx optimization */
+-	raw_spin_lock_init(&emac->host_queue_lock[0]);
+-	raw_spin_lock_init(&emac->host_queue_lock[1]);
+-	raw_spin_lock_init(&emac->host_queue_lock[2]);
+-	raw_spin_lock_init(&emac->host_queue_lock[3]);
+ 
+ 	/* get mac address from DT and set private and netdev addr */
+ 	ret = of_get_ethdev_address(eth_node, ndev);
+@@ -3443,8 +3418,6 @@ static int icssm_prueth_probe(struct platform_device *pdev)
+ 	}
+ 	prueth->support_lre = has_lre;
+ 	/* Added for HSR PRP Tx optimization */
+-	raw_spin_lock_init(&prueth->lre_host_queue_lock[0]);
+-	raw_spin_lock_init(&prueth->lre_host_queue_lock[1]);
+ 	/* setup netdev interfaces */
+ 	if (eth0_node) {
+ 		ret = icssm_prueth_netdev_init(prueth, eth0_node);
+diff --git a/drivers/net/ethernet/ti/icssm/icssm_prueth.h b/drivers/net/ethernet/ti/icssm/icssm_prueth.h
+index 849f655051c4..a7e42fd40019 100644
+--- a/drivers/net/ethernet/ti/icssm/icssm_prueth.h
++++ b/drivers/net/ethernet/ti/icssm/icssm_prueth.h
+@@ -438,8 +438,6 @@ struct prueth_emac {
+ 	/* spin lock used to protect
+ 	 * during link configuration
+ 	 */
+-	spinlock_t lock;
+-	spinlock_t addr_lock;	/* serialize access to VLAN/MC filter table */
+ 
+ 	struct nsp_counter nsp_bc;
+ 	struct nsp_counter nsp_mc;
+@@ -448,7 +446,6 @@ struct prueth_emac {
+ 
+ 	struct sk_buff *ptp_skb[PRUETH_PTP_TS_EVENTS];
+ 	struct sk_buff *ptp_ct_skb[PRUETH_PTP_TS_EVENTS];
+-	spinlock_t ptp_skb_lock; /* spin lock used to protect PTP */
+ 	int emac_ptp_tx_irq;
+ 	int hsr_ptp_tx_irq;
+ 	bool ptp_tx_enable;
+@@ -457,7 +454,6 @@ struct prueth_emac {
+ 	 * raw spin lock for locking and unlocking
+ 	 * Host Tx Queues for EMAC and RSTP Protocols
+ 	 */
+-	raw_spinlock_t host_queue_lock[NUM_QUEUES];
+ 
+ 	struct hrtimer tx_hrtimer;
+ 	int offload_fwd_mark;
+@@ -506,7 +502,6 @@ struct prueth {
+ 	struct kthread_work nt_work;
+ 	u32 rem_cnt;
+ 	/* lock between kthread worker and rx packet processing code */
+-	spinlock_t nt_lock;
+ 	struct lre_statistics *lre_stats;
+ 
+ 	struct net_device *hw_bridge_dev;
+@@ -527,7 +522,6 @@ struct prueth {
+ 	 * raw spin lock for locking and unlocking
+ 	 * Host Tx Queues for HSR and PRP Protocols
+ 	 */
+-	raw_spinlock_t lre_host_queue_lock[NUM_QUEUES / 2];
+ };
+ 
+ extern const struct prueth_queue_desc queue_descs[][NUM_QUEUES];
+diff --git a/drivers/net/ethernet/ti/icssm/icssm_prueth_lre.c b/drivers/net/ethernet/ti/icssm/icssm_prueth_lre.c
+index 03cd0c5cf93a..34b573791b77 100644
+--- a/drivers/net/ethernet/ti/icssm/icssm_prueth_lre.c
++++ b/drivers/net/ethernet/ti/icssm/icssm_prueth_lre.c
+@@ -117,21 +117,6 @@ static u16 get_hash(u8 *mac, u16 hash_mask)
+ 	return hash;
+ }
+ 
+-static void pru_spin_lock(struct node_tbl *nt)
+-{
+-	while (1) {
+-		nt->nt_info->arm_lock = 1;
+-		if (!nt->nt_info->fw_lock)
+-			break;
+-		nt->nt_info->arm_lock = 0;
+-	}
+-}
+-
+-static inline void pru_spin_unlock(struct node_tbl *nt)
+-{
+-	nt->nt_info->arm_lock = 0;
+-}
+-
+ int icssm_prueth_lre_nt_insert(struct prueth *prueth,
+ 			       u8 *mac, int port, int sv_frame, int proto)
+ {
+@@ -146,7 +131,6 @@ int icssm_prueth_lre_nt_insert(struct prueth *prueth,
+ 	if (!q)
+ 		return ret;
+ 
+-	spin_lock_irqsave(&prueth->nt_lock, flags);
+ 	if (q->full) {
+ 		ret = LRE_ERR;
+ 	} else {
+@@ -160,7 +144,6 @@ int icssm_prueth_lre_nt_insert(struct prueth *prueth,
+ 		if (q->wr_ind == q->rd_ind)
+ 			q->full = true;
+ 	}
+-	spin_unlock_irqrestore(&prueth->nt_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -350,7 +333,6 @@ static void move_up(u16 start, u16 end, struct node_tbl *nt,
+ {
+ 	u16 j = end;
+ 
+-	pru_spin_lock(nt);
+ 
+ 	for (; j < start; j++)
+ 		memcpy(&nt->bin_array->bin_tbl[j],
+@@ -369,7 +351,6 @@ static void move_up(u16 start, u16 end, struct node_tbl *nt,
+ 	if (update)
+ 		update_indexes(end, start, nt);
+ 
+-	pru_spin_unlock(nt);
+ }
+ 
+ /* start < end */
+@@ -378,7 +359,6 @@ static void move_down(u16 start, u16 end, struct node_tbl *nt,
+ {
+ 	u16 j = end;
+ 
+-	pru_spin_lock(nt);
+ 
+ 	for (; j > start; j--)
+ 		memcpy(&nt->bin_array->bin_tbl[j],
+@@ -391,7 +371,6 @@ static void move_down(u16 start, u16 end, struct node_tbl *nt,
+ 	if (update)
+ 		update_indexes(start + 1, end, nt);
+ 
+-	pru_spin_unlock(nt);
+ }
+ 
+ static int node_table_insert_from_queue(struct node_tbl *nt,
+@@ -547,7 +526,7 @@ static void node_table_check_and_remove(struct node_tbl *nt, u16 forget_time)
+ 	}
+ }
+ 
+-static int pop_queue(struct prueth *prueth, spinlock_t *lock)
++static int pop_queue(struct prueth *prueth)
+ {
+ 	unsigned long flags;
+ 	struct node_tbl *nt = prueth->nt;
+@@ -555,27 +534,23 @@ static int pop_queue(struct prueth *prueth, spinlock_t *lock)
+ 	struct nt_queue_entry one_mac;
+ 	int ret = 0;
+ 
+-	spin_lock_irqsave(lock, flags);
+ 	if (!q->full && q->wr_ind == q->rd_ind) { /* queue empty */
+ 		ret = 1;
+ 	} else {
+ 		memcpy(&one_mac, &q->nt_queue[q->rd_ind],
+ 		       sizeof(struct nt_queue_entry));
+-		spin_unlock_irqrestore(lock, flags);
+ 		node_table_insert_from_queue(nt, &one_mac);
+-		spin_lock_irqsave(lock, flags);
+ 		q->rd_ind++;
+ 		q->rd_ind &= (PRUETH_MAC_QUEUE_MAX - 1);
+ 		q->full = false;
+ 	}
+-	spin_unlock_irqrestore(lock, flags);
+ 
+ 	return ret;
+ }
+ 
+-static void pop_queue_process(struct prueth *prueth, spinlock_t *lock)
++static void pop_queue_process(struct prueth *prueth)
+ {
+-	while (pop_queue(prueth, lock) == 0)
++	while (pop_queue(prueth) == 0)
+ 		;
+ }
+ 
+@@ -650,10 +625,7 @@ static void icssm_prueth_lre_process_check_flags_event(struct prueth *prueth)
+ 	unsigned long flags;
+ 
+ 	if (prueth->node_table_clear) {
+-		pru_spin_lock(prueth->nt);
+-		spin_lock_irqsave(&prueth->nt_lock, flags);
+ 		_icssm_prueth_lre_init_node_table(prueth);
+-		spin_unlock_irqrestore(&prueth->nt_lock, flags);
+ 		/* we don't have to release the prueth lock
+ 		 * the note_table_init() clears it anyway
+ 		 */
+@@ -731,7 +703,7 @@ static void nt_updater(struct kthread_work *work)
+ {
+ 	struct prueth *prueth = container_of(work, struct prueth, nt_work);
+ 
+-	pop_queue_process(prueth, &prueth->nt_lock);
++	pop_queue_process(prueth);
+ 
+ 	node_table_update_time(prueth->nt);
+ 	if (++prueth->rem_cnt >= 100) {
+@@ -1089,7 +1061,6 @@ static int icssm_prueth_lre_get_node_table(struct net_device *ndev,
+ 			    "actual table size %d is < required size %d\n",
+ 			    size,  nt->nt_lre_cnt->lre_cnt);
+ 
+-	spin_lock_irqsave(&prueth->nt_lock, flags);
+ 	for (i = 0; i < nt->bin_array_max_entries; i++) {
+ 		if (nt->bin_array->bin_tbl[i].node_tbl_offset <
+ 		    nt->nt_array_max_entries) {
+@@ -1116,7 +1087,6 @@ static int icssm_prueth_lre_get_node_table(struct net_device *ndev,
+ 			}
+ 		}
+ 	}
+-	spin_unlock_irqrestore(&prueth->nt_lock, flags);
+ 
+ 	return j;
+ }
+@@ -1170,7 +1140,6 @@ int icssm_prueth_lre_init_node_table(struct prueth *prueth)
+ 	}
+ 
+ 	_icssm_prueth_lre_init_node_table(prueth);
+-	spin_lock_init(&prueth->nt_lock);
+ 	kthread_init_work(&prueth->nt_work, nt_updater);
+ 	prueth->nt_kworker = kthread_create_worker(0, "prueth_nt");
+ 
+diff --git a/drivers/net/ethernet/ti/icssm/icssm_prueth_switch.c b/drivers/net/ethernet/ti/icssm/icssm_prueth_switch.c
+index 59cbdd006a2c..04886df11ba7 100644
+--- a/drivers/net/ethernet/ti/icssm/icssm_prueth_switch.c
++++ b/drivers/net/ethernet/ti/icssm/icssm_prueth_switch.c
+@@ -420,21 +420,6 @@ void icssm_prueth_sw_fdb_tbl_init(struct prueth *prueth)
+ 	t->total_entries                          = 0;
+ }
+ 
+-static void icssm_prueth_sw_fdb_spin_lock(struct fdb_tbl *fdb_tbl)
+-{
+-	/* Take the host lock */
+-	writeb(1, (u8 __iomem *)&fdb_tbl->locks->host_lock);
+-
+-	/* Wait for the PRUs to release their locks */
+-	while (readb((u8 __iomem *)&fdb_tbl->locks->pru_locks))
+-		;
+-}
+-
+-static inline void icssm_prueth_sw_fdb_spin_unlock(struct fdb_tbl *fdb_tbl)
+-{
+-	writeb(0, (u8 __iomem *)&fdb_tbl->locks->host_lock);
+-}
+-
+ static void icssm_mac_copy(u8 *dst, const u8 *src)
+ {
+ 	u8 i;
+@@ -526,9 +511,7 @@ icssm_prueth_sw_fdb_find_bucket_insert_point(struct fdb_tbl *fdb,
+ 				 * Note: total_entries and bucket_entries
+ 				 * remain the same.
+ 				 */
+-				icssm_prueth_sw_fdb_spin_lock(fdb);
+ 				e->port = port;
+-				icssm_prueth_sw_fdb_spin_unlock(fdb);
+ 			}
+ 
+ 			/* mac and port are the same, touch the fdb */
+@@ -762,7 +745,6 @@ static int icssm_prueth_sw_insert_fdb_entry(struct prueth_emac *emac,
+ 
+ 	mac_tbl_idx = ret;
+ 
+-	icssm_prueth_sw_fdb_spin_lock(fdb);
+ 
+ 	mac_info = icssm_prueth_sw_get_empty_mac_tbl_entry(prueth, bucket_info,
+ 							   mac_tbl_idx, NULL,
+@@ -782,7 +764,6 @@ static int icssm_prueth_sw_insert_fdb_entry(struct prueth_emac *emac,
+ 	bucket_info->bucket_entries++;
+ 	fdb->total_entries++;
+ 
+-	icssm_prueth_sw_fdb_spin_unlock(fdb);
+ 
+ 	dev_dbg(prueth->dev, "added fdb: %pM port=%d total_entries=%u\n",
+ 		mac, emac->port_id, fdb->total_entries);
+@@ -819,7 +800,6 @@ static int icssm_prueth_sw_delete_fdb_entry(struct prueth_emac *emac,
+ 	mac_tbl_idx = ret;
+ 	mac_info = FDB_MAC_TBL_ENTRY(mac_tbl_idx);
+ 
+-	icssm_prueth_sw_fdb_spin_lock(fdb);
+ 
+ 	/* Shift all elements in bucket to the left. No need to
+ 	 * update index table since only shifting within bucket.
+@@ -834,7 +814,6 @@ static int icssm_prueth_sw_delete_fdb_entry(struct prueth_emac *emac,
+ 	bucket_info->bucket_entries--;
+ 	fdb->total_entries--;
+ 
+-	icssm_prueth_sw_fdb_spin_unlock(fdb);
+ 
+ 	dev_dbg(prueth->dev, "del fdb: %pM total_entries=%u\n",
+ 		mac, fdb->total_entries);
+@@ -854,7 +833,6 @@ int icssm_prueth_sw_do_purge_fdb(struct prueth_emac *emac)
+ 	if (fdb->total_entries == 0)
+ 		return 0;
+ 
+-	icssm_prueth_sw_fdb_spin_lock(fdb);
+ 
+ 	for (i = 0; i < FDB_MAC_TBL_MAX_ENTRIES; i++) {
+ 		if (fdb->mac_tbl_a->mac_tbl_entry[i].active) {
+@@ -870,7 +848,6 @@ int icssm_prueth_sw_do_purge_fdb(struct prueth_emac *emac)
+ 		}
+ 	}
+ 
+-	icssm_prueth_sw_fdb_spin_unlock(fdb);
+ 	return 0;
+ }
+ 
+-- 
+2.30.2
+

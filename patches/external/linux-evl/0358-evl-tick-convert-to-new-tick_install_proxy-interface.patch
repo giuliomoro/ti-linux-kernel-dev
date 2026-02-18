@@ -1,7 +1,7 @@
 From a7415d07ce729a82c5c826fd0d3357dcad434e9e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 May 2019 21:23:51 +0200
-Subject: [PATCH 358/985] evl/tick: convert to new tick_install_proxy()
+Subject: [PATCH 0358/1013] evl/tick: convert to new tick_install_proxy()
  interface
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 40 insertions(+), 61 deletions(-)
 
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 2c38d244b..05747c202 100644
+index 2c38d244b615..05747c2028ac 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -21,19 +21,10 @@

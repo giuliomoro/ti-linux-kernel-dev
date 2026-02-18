@@ -1,7 +1,7 @@
 From 52ddbb1620f3c16786877849a0250094527c5b63 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 10:46:22 +0100
-Subject: [PATCH 226/985] evl/thread: move T_INBAND setting from mapping to
+Subject: [PATCH 0226/1013] evl/thread: move T_INBAND setting from mapping to
  init time
 
 All threads leave the init phase in inband state by design, until the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 1d494d15f..286a04b1f 100644
+index 1d494d15fa6b..286a04b1f71c 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -124,7 +124,7 @@ int evl_init_thread(struct evl_thread *thread,

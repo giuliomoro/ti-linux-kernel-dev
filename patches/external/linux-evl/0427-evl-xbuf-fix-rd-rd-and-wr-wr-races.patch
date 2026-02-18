@@ -1,7 +1,7 @@
 From ae91e809f56abdac14cbe1300c6070f3dce0d706 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 29 Jun 2019 14:44:27 +0200
-Subject: [PATCH 427/985] evl/xbuf: fix rd/rd and wr/wr races
+Subject: [PATCH 0427/1013] evl/xbuf: fix rd/rd and wr/wr races
 
 Concurrent reads or writes to an xbuf causing nested buffer space
 reservations could end up in a miscalculation of the number of bytes
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 29 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 0a8ea816d..cebaa21c6 100644
+index 0a8ea816d942..cebaa21c6c74 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -30,8 +30,10 @@ struct xbuf_ring {

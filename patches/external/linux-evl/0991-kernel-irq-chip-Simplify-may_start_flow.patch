@@ -1,0 +1,30 @@
+From 8cbe976ed7bb387ff65c82d7c573ba71ae4a11c4 Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Thu, 25 Sep 2025 15:05:49 +0200
+Subject: [PATCH 0991/1013] kernel/irq/chip: Simplify may_start_flow()
+
+There was something like IRQ_FLOW_PILEUP in the past which does no
+longer exist. We can now clean up and simplify may_start_flow().
+No functional change.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ kernel/irq/chip.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index 66a09d61969d..a8a5654827a6 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -516,7 +516,7 @@ enum {
+ 
+ static inline bool may_start_flow(int flow)
+ {
+-	return flow != IRQ_FLOW_REPLAY && flow != IRQ_FLOW_FORWARD;
++	return flow == IRQ_FLOW_START;
+ }
+ 
+ void irq_clear_deferral(struct irq_desc *desc)
+-- 
+2.30.2
+

@@ -1,7 +1,7 @@
 From 8b935473edf3d71875532fb9efbb48e391b5b0b6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Feb 2019 15:31:58 +0100
-Subject: [PATCH 312/985] evl/poller: always base timeouts on the monotonic
+Subject: [PATCH 0312/1013] evl/poller: always base timeouts on the monotonic
  clock
 
 No upside in measuring timeout delays differently than referring to
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 23 deletions(-)
 
 diff --git a/include/uapi/evenless/poller.h b/include/uapi/evenless/poller.h
-index be14e7199..3217a8ad6 100644
+index be14e71993db..3217a8ad6c3c 100644
 --- a/include/uapi/evenless/poller.h
 +++ b/include/uapi/evenless/poller.h
 @@ -7,10 +7,6 @@
@@ -29,7 +29,7 @@ index be14e7199..3217a8ad6 100644
  
  #define EVL_POLLER_CTLADD   0
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 85b5bd64d..5a1b8b329 100644
+index 85b5bd64d24c..5a1b8b329b66 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -24,7 +24,6 @@

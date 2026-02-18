@@ -1,7 +1,7 @@
 From a62b6244263026159df73b77b4320d041fe88a30 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 5 Oct 2023 14:59:49 +0200
-Subject: [PATCH 823/985] evl/net: socket: align with signature change of
+Subject: [PATCH 0823/1013] evl/net: socket: align with signature change of
  sock_oob_detach()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 9 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index a905a6ed0..e79e9c736 100644
+index a905a6ed0e29..e79e9c7361bd 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -66,9 +66,9 @@ static inline struct evl_socket *evl_sk_from_file(struct file *filp)

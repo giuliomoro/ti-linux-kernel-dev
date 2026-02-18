@@ -1,7 +1,7 @@
 From ae3bb6cdc629de327310709abeba55ac46cafb44 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 May 2020 18:08:44 +0200
-Subject: [PATCH 068/985] ARM: dovetail: route syscalls
+Subject: [PATCH 0068/1013] ARM: dovetail: route syscalls
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
@@ -38,7 +38,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  4 files changed, 98 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/include/asm/syscall.h b/arch/arm/include/asm/syscall.h
-index fe4326d93..5407d2de9 100644
+index fe4326d938c1..5407d2de9e73 100644
 --- a/arch/arm/include/asm/syscall.h
 +++ b/arch/arm/include/asm/syscall.h
 @@ -80,6 +80,12 @@ static inline void syscall_get_arguments(struct task_struct *task,
@@ -55,7 +55,7 @@ index fe4326d93..5407d2de9 100644
  {
  	/* ARM tasks don't change audit architectures on the fly. */
 diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index 819d8f313..e399af40a 100644
+index 819d8f3130ea..e399af40aa62 100644
 --- a/arch/arm/include/asm/thread_info.h
 +++ b/arch/arm/include/asm/thread_info.h
 @@ -150,6 +150,7 @@ extern int vfp_restore_user_hwstate(struct user_vfp *,
@@ -92,7 +92,7 @@ index 819d8f313..e399af40a 100644
  /*
   * Local (synchronous) thread flags.
 diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index 2fcf5d01b..9b703c4f9 100644
+index 2fcf5d01bfdc..9b703c4f94e4 100644
 --- a/arch/arm/kernel/entry-common.S
 +++ b/arch/arm/kernel/entry-common.S
 @@ -3,6 +3,7 @@
@@ -192,7 +192,7 @@ index 2fcf5d01b..9b703c4f9 100644
  	stmdb	sp!, {r4, r5}			@ push fifth and sixth args
  
 diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
-index a0833136c..263163209 100644
+index a0833136ce2c..2631632090c0 100644
 --- a/arch/arm/kernel/signal.c
 +++ b/arch/arm/kernel/signal.c
 @@ -599,6 +599,17 @@ static int do_signal(struct pt_regs *regs, int syscall)

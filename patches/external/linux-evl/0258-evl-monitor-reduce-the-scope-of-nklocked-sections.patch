@@ -1,7 +1,7 @@
 From 4404b87f261f0aa6b630656412e66a400aeb7b19 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 16:54:58 +0100
-Subject: [PATCH 258/985] evl/monitor: reduce the scope of nklocked sections
+Subject: [PATCH 0258/1013] evl/monitor: reduce the scope of nklocked sections
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 30 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 83ef0b2c8..2000f4e09 100644
+index 83ef0b2c892c..2000f4e099db 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -178,10 +178,11 @@ static int __enter_monitor(struct evl_monitor *gate)

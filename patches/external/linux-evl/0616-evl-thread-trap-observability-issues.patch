@@ -1,7 +1,7 @@
 From cfb19cef1f4b4a27b5e072f661b9dcaa1e4dc6e5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 May 2020 11:27:30 +0200
-Subject: [PATCH 616/985] evl/thread: trap observability issues
+Subject: [PATCH 0616/1013] evl/thread: trap observability issues
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 18 insertions(+)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 7b4d64d7c..836f0ded4 100644
+index 7b4d64d7c25d..836f0ded4bfa 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2223,6 +2223,9 @@ static ssize_t thread_oob_read(struct file *filp,

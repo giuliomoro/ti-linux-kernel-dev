@@ -1,7 +1,7 @@
 From d16c490a8837493c1dcac283bd9b3ea6bfa0e8c8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 14 Apr 2025 11:43:28 +0200
-Subject: [PATCH 158/985] net: dovetail: fold napi_complete_oob() into
+Subject: [PATCH 0158/1013] net: dovetail: fold napi_complete_oob() into
  napi_schedule_oob()
 
 So far, napi_schedule_oob() was invoked from the oob stage
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 1 insertion(+), 8 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 5d5806292..510fc80bf 100644
+index 5d58062928bb..510fc80bf822 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4421,7 +4421,6 @@ static inline void netif_disable_oob_port(struct net_device *dev)
@@ -37,7 +37,7 @@ index 5d5806292..510fc80bf 100644
  void netif_tx_lock_oob(struct netdev_queue *txq);
  void netif_tx_unlock_oob(struct netdev_queue *txq);
 diff --git a/net/core/dev.c b/net/core/dev.c
-index b52a4ac43..4b8c01a20 100644
+index b52a4ac43606..4b8c01a208d1 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5341,9 +5341,6 @@ static void process_inband_rx_backlog(struct softnet_data *sd)

@@ -1,7 +1,7 @@
 From 7b5b6d3623081a5307e6982771306d622cb4ff64 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 21 Dec 2020 17:30:02 +0100
-Subject: [PATCH 709/985] evl: add net core (EXPERIMENTAL)
+Subject: [PATCH 0709/1013] evl: add net core (EXPERIMENTAL)
 
 This code lays the groundwork for an out-of-band network stack.  It
 currently provides basic AF_PACKET support (SOCK_RAW only) from the
@@ -97,7 +97,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/arch/arm/include/dovetail/netdevice.h b/arch/arm/include/dovetail/netdevice.h
 new file mode 100644
-index 000000000..bc7ac6769
+index 000000000000..bc7ac6769530
 --- /dev/null
 +++ b/arch/arm/include/dovetail/netdevice.h
 @@ -0,0 +1,7 @@
@@ -110,7 +110,7 @@ index 000000000..bc7ac6769
 +#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
 diff --git a/arch/arm64/include/dovetail/netdevice.h b/arch/arm64/include/dovetail/netdevice.h
 new file mode 100644
-index 000000000..bc7ac6769
+index 000000000000..bc7ac6769530
 --- /dev/null
 +++ b/arch/arm64/include/dovetail/netdevice.h
 @@ -0,0 +1,7 @@
@@ -123,7 +123,7 @@ index 000000000..bc7ac6769
 +#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
 diff --git a/arch/x86/include/dovetail/netdevice.h b/arch/x86/include/dovetail/netdevice.h
 new file mode 100644
-index 000000000..bc7ac6769
+index 000000000000..bc7ac6769530
 --- /dev/null
 +++ b/arch/x86/include/dovetail/netdevice.h
 @@ -0,0 +1,7 @@
@@ -136,7 +136,7 @@ index 000000000..bc7ac6769
 +#endif /* !_EVL_DOVETAIL_NETDEVICE_H */
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
 new file mode 100644
-index 000000000..b83bd9a8d
+index 000000000000..b83bd9a8d347
 --- /dev/null
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -0,0 +1,54 @@
@@ -195,7 +195,7 @@ index 000000000..b83bd9a8d
 +
 +#endif /* !_ASM_GENERIC_EVL_NETDEVICE_H */
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 847250a80..2698d378b 100644
+index 847250a80a3c..2698d378b827 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -200,7 +200,7 @@ void evl_early_cleanup_factories(void);
@@ -209,7 +209,7 @@ index 847250a80..2698d378b 100644
  extern struct evl_factory evl_control_factory;
 diff --git a/include/evl/net.h b/include/evl/net.h
 new file mode 100644
-index 000000000..e283a9dca
+index 000000000000..e283a9dcacf4
 --- /dev/null
 +++ b/include/evl/net.h
 @@ -0,0 +1,37 @@
@@ -252,7 +252,7 @@ index 000000000..e283a9dca
 +#endif /* !_EVL_NET_H */
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
 new file mode 100644
-index 000000000..752bfea1d
+index 000000000000..752bfea1dd04
 --- /dev/null
 +++ b/include/evl/net/device.h
 @@ -0,0 +1,31 @@
@@ -289,7 +289,7 @@ index 000000000..752bfea1d
 +#endif /* !_EVL_NET_DEVICE_H */
 diff --git a/include/evl/net/input.h b/include/evl/net/input.h
 new file mode 100644
-index 000000000..f0f2b99c6
+index 000000000000..f0f2b99c6dab
 --- /dev/null
 +++ b/include/evl/net/input.h
 @@ -0,0 +1,47 @@
@@ -342,7 +342,7 @@ index 000000000..f0f2b99c6
 +#endif /* !_EVL_NET_INPUT_H */
 diff --git a/include/evl/net/neighbour.h b/include/evl/net/neighbour.h
 new file mode 100644
-index 000000000..b4c334d08
+index 000000000000..b4c334d08293
 --- /dev/null
 +++ b/include/evl/net/neighbour.h
 @@ -0,0 +1,44 @@
@@ -392,7 +392,7 @@ index 000000000..b4c334d08
 +#endif /* !_EVL_NET_NEIGHBOUR_H */
 diff --git a/include/evl/net/output.h b/include/evl/net/output.h
 new file mode 100644
-index 000000000..bd5ac1dae
+index 000000000000..bd5ac1dae46c
 --- /dev/null
 +++ b/include/evl/net/output.h
 @@ -0,0 +1,23 @@
@@ -421,7 +421,7 @@ index 000000000..bd5ac1dae
 +#endif /* !_EVL_NET_OUTPUT_H */
 diff --git a/include/evl/net/packet.h b/include/evl/net/packet.h
 new file mode 100644
-index 000000000..bea66141f
+index 000000000000..bea66141faa5
 --- /dev/null
 +++ b/include/evl/net/packet.h
 @@ -0,0 +1,16 @@
@@ -443,7 +443,7 @@ index 000000000..bea66141f
 +#endif /* !_EVL_NET_PACKET_H */
 diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
 new file mode 100644
-index 000000000..be07e0c77
+index 000000000000..be07e0c77995
 --- /dev/null
 +++ b/include/evl/net/qdisc.h
 @@ -0,0 +1,55 @@
@@ -504,7 +504,7 @@ index 000000000..be07e0c77
 +#endif /* !_EVL_NET_QDISC_H */
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
 new file mode 100644
-index 000000000..8c92fff03
+index 000000000000..8c92fff0377d
 --- /dev/null
 +++ b/include/evl/net/skb.h
 @@ -0,0 +1,63 @@
@@ -573,7 +573,7 @@ index 000000000..8c92fff03
 +#endif /* !_EVL_NET_SKB_H */
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
 new file mode 100644
-index 000000000..94bafd0ca
+index 000000000000..94bafd0cad7a
 --- /dev/null
 +++ b/include/evl/net/socket.h
 @@ -0,0 +1,123 @@
@@ -701,7 +701,7 @@ index 000000000..94bafd0ca
 +
 +#endif /* !_EVL_NET_SOCKET_H */
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 2e6562c46..f70bfb335 100644
+index 2e6562c466f9..f70bfb335562 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -715,7 +715,7 @@ index 2e6562c46..f70bfb335 100644
  
 diff --git a/include/uapi/evl/fcntl.h b/include/uapi/evl/fcntl.h
 new file mode 100644
-index 000000000..8f0b92570
+index 000000000000..8f0b9257068d
 --- /dev/null
 +++ b/include/uapi/evl/fcntl.h
 @@ -0,0 +1,16 @@
@@ -737,7 +737,7 @@ index 000000000..8f0b92570
 +#endif /* !_EVL_UAPI_FCNTL_H */
 diff --git a/include/uapi/evl/net/sched.h b/include/uapi/evl/net/sched.h
 new file mode 100644
-index 000000000..583103d5a
+index 000000000000..583103d5a405
 --- /dev/null
 +++ b/include/uapi/evl/net/sched.h
 @@ -0,0 +1,10 @@
@@ -753,7 +753,7 @@ index 000000000..583103d5a
 +#endif /* !_EVL_UAPI_NET_SCHED_H */
 diff --git a/include/uapi/evl/net/socket.h b/include/uapi/evl/net/socket.h
 new file mode 100644
-index 000000000..1117aa016
+index 000000000000..1117aa0167f8
 --- /dev/null
 +++ b/include/uapi/evl/net/socket.h
 @@ -0,0 +1,45 @@
@@ -803,7 +803,7 @@ index 000000000..1117aa016
 +
 +#endif /* !_EVL_UAPI_NET_SOCKET_H */
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index fff08f1a8..811deba7d 100644
+index fff08f1a8001..811deba7dc0d 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -88,6 +88,21 @@ config EVL_RUNSTATS
@@ -842,7 +842,7 @@ index fff08f1a8..811deba7d 100644
  	bool "Watchdog support"
  	default y
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index 474c80401..1e3bcf7e1 100644
+index 474c804014fb..1e3bcf7e15c4 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -1,4 +1,4 @@
@@ -852,7 +852,7 @@ index 474c80401..1e3bcf7e1 100644
  evl-y :=		\
  	clock.o		\
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index bdac208d7..2aea3fb57 100644
+index bdac208d72c5..2aea3fb57ec8 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -7,6 +7,7 @@
@@ -918,7 +918,7 @@ index bdac208d7..2aea3fb57 100644
  	NULL,
  };
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 2f3a8bfbd..68f3d98bf 100644
+index 2f3a8bfbda96..68f3d98bf6c6 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -971,8 +971,7 @@ int __init evl_late_init_factories(void)
@@ -932,7 +932,7 @@ index 2f3a8bfbd..68f3d98bf 100644
 -	evl_early_cleanup_factories();
  }
 diff --git a/kernel/evl/init.c b/kernel/evl/init.c
-index 442e3d1f3..247e79568 100644
+index 442e3d1f3d10..247e79568f2d 100644
 --- a/kernel/evl/init.c
 +++ b/kernel/evl/init.c
 @@ -15,6 +15,7 @@
@@ -971,7 +971,7 @@ index 442e3d1f3..247e79568 100644
  cleanup_tick:
 diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
 new file mode 100644
-index 000000000..6a8d74c8d
+index 000000000000..6a8d74c8d004
 --- /dev/null
 +++ b/kernel/evl/net/Makefile
 @@ -0,0 +1,5 @@
@@ -982,7 +982,7 @@ index 000000000..6a8d74c8d
 +net-y := init.o socket.o dev.o input.o output.o skb.o neighbour.o
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
 new file mode 100644
-index 000000000..c2472936d
+index 000000000000..c2472936d7eb
 --- /dev/null
 +++ b/kernel/evl/net/dev.c
 @@ -0,0 +1,435 @@
@@ -1423,7 +1423,7 @@ index 000000000..c2472936d
 +}
 diff --git a/kernel/evl/net/ethernet/Makefile b/kernel/evl/net/ethernet/Makefile
 new file mode 100644
-index 000000000..08017431e
+index 000000000000..08017431e883
 --- /dev/null
 +++ b/kernel/evl/net/ethernet/Makefile
 @@ -0,0 +1,3 @@
@@ -1432,7 +1432,7 @@ index 000000000..08017431e
 +ethernet-y := input.o output.o arp.o
 diff --git a/kernel/evl/net/ethernet/arp.c b/kernel/evl/net/ethernet/arp.c
 new file mode 100644
-index 000000000..9ec013bac
+index 000000000000..9ec013bacba9
 --- /dev/null
 +++ b/kernel/evl/net/ethernet/arp.c
 @@ -0,0 +1,76 @@
@@ -1514,7 +1514,7 @@ index 000000000..9ec013bac
 +};
 diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
 new file mode 100644
-index 000000000..4fb7e832e
+index 000000000000..4fb7e832ed0a
 --- /dev/null
 +++ b/kernel/evl/net/ethernet/input.c
 @@ -0,0 +1,149 @@
@@ -1669,7 +1669,7 @@ index 000000000..4fb7e832e
 +}
 diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
 new file mode 100644
-index 000000000..1c96ac9cd
+index 000000000000..1c96ac9cd2f0
 --- /dev/null
 +++ b/kernel/evl/net/ethernet/output.c
 @@ -0,0 +1,37 @@
@@ -1712,7 +1712,7 @@ index 000000000..1c96ac9cd
 +}
 diff --git a/kernel/evl/net/init.c b/kernel/evl/net/init.c
 new file mode 100644
-index 000000000..81bec5ba5
+index 000000000000..81bec5ba5093
 --- /dev/null
 +++ b/kernel/evl/net/init.c
 @@ -0,0 +1,77 @@
@@ -1795,7 +1795,7 @@ index 000000000..81bec5ba5
 +}
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
 new file mode 100644
-index 000000000..21d176a81
+index 000000000000..21d176a81878
 --- /dev/null
 +++ b/kernel/evl/net/input.c
 @@ -0,0 +1,167 @@
@@ -1968,7 +1968,7 @@ index 000000000..21d176a81
 +}
 diff --git a/kernel/evl/net/neighbour.c b/kernel/evl/net/neighbour.c
 new file mode 100644
-index 000000000..5b807d880
+index 000000000000..5b807d880099
 --- /dev/null
 +++ b/kernel/evl/net/neighbour.c
 @@ -0,0 +1,80 @@
@@ -2054,7 +2054,7 @@ index 000000000..5b807d880
 +}
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
 new file mode 100644
-index 000000000..70e928efc
+index 000000000000..70e928efc379
 --- /dev/null
 +++ b/kernel/evl/net/output.c
 @@ -0,0 +1,247 @@
@@ -2307,7 +2307,7 @@ index 000000000..70e928efc
 +}
 diff --git a/kernel/evl/net/packet/Makefile b/kernel/evl/net/packet/Makefile
 new file mode 100644
-index 000000000..582beb792
+index 000000000000..582beb792736
 --- /dev/null
 +++ b/kernel/evl/net/packet/Makefile
 @@ -0,0 +1,3 @@
@@ -2316,7 +2316,7 @@ index 000000000..582beb792
 +af_packet-y := packet.o
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
 new file mode 100644
-index 000000000..ca1a1f71c
+index 000000000000..ca1a1f71cb3e
 --- /dev/null
 +++ b/kernel/evl/net/packet/packet.c
 @@ -0,0 +1,704 @@
@@ -3026,7 +3026,7 @@ index 000000000..ca1a1f71c
 +};
 diff --git a/kernel/evl/net/qdisc/Makefile b/kernel/evl/net/qdisc/Makefile
 new file mode 100644
-index 000000000..ad48ae703
+index 000000000000..ad48ae703397
 --- /dev/null
 +++ b/kernel/evl/net/qdisc/Makefile
 @@ -0,0 +1,3 @@
@@ -3035,7 +3035,7 @@ index 000000000..ad48ae703
 +qdisc-y := core.o fifo.o
 diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
 new file mode 100644
-index 000000000..16b3db48e
+index 000000000000..16b3db48e8bb
 --- /dev/null
 +++ b/kernel/evl/net/qdisc/core.c
 @@ -0,0 +1,102 @@
@@ -3143,7 +3143,7 @@ index 000000000..16b3db48e
 +}
 diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
 new file mode 100644
-index 000000000..a1d8e97da
+index 000000000000..a1d8e97da889
 --- /dev/null
 +++ b/kernel/evl/net/qdisc/fifo.c
 @@ -0,0 +1,58 @@
@@ -3207,7 +3207,7 @@ index 000000000..a1d8e97da
 +};
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
 new file mode 100644
-index 000000000..26999b1c1
+index 000000000000..26999b1c1b01
 --- /dev/null
 +++ b/kernel/evl/net/skb.c
 @@ -0,0 +1,487 @@
@@ -3700,7 +3700,7 @@ index 000000000..26999b1c1
 +}
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
 new file mode 100644
-index 000000000..5402e157b
+index 000000000000..5402e157bbc5
 --- /dev/null
 +++ b/kernel/evl/net/socket.c
 @@ -0,0 +1,805 @@

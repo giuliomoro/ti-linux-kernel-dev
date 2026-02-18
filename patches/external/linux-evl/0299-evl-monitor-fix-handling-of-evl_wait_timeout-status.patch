@@ -1,7 +1,7 @@
 From 36ec9ca3d40d319433fd5785905737fe14e7fea5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 14 Feb 2019 10:44:13 +0100
-Subject: [PATCH 299/985] evl/monitor: fix handling of evl_wait_timeout()
+Subject: [PATCH 0299/1013] evl/monitor: fix handling of evl_wait_timeout()
  status
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index df16b7420..caaf2b77c 100644
+index df16b74206d0..caaf2b77c701 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -291,8 +291,8 @@ static int wait_monitor(struct evl_monitor *event,

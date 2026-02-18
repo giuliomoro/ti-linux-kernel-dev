@@ -1,0 +1,60 @@
+From 7c20085fd15e924c8d0fc35ea2d13a8548514ad7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 26 Oct 2025 18:00:03 +0100
+Subject: [PATCH 0997/1013] evl/net: ipv4: record flow information in route
+ cache
+
+Some of the flow information received by evl_net_learn_ipv4_route()
+along with a newly established route may be useful to protocols, such
+as the source address used in the resolution process. Save it to the
+cached route entry.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/net/route.h     | 10 ++++++++++
+ kernel/evl/net/ipv4/route.c |  2 ++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/include/evl/net/route.h b/include/evl/net/route.h
+index d977e03b3113..707c5936dd11 100644
+--- a/include/evl/net/route.h
++++ b/include/evl/net/route.h
+@@ -13,12 +13,22 @@
+ struct net;
+ struct evl_work;
+ 
++/* Excerpt from struct flowi4. */
++struct evl_net_flowi4 {
++	/* Source address. */
++	u32 saddr;
++	/* Destination address. */
++	u32 daddr;
++};
++
+ /* Cached route for IP datagrams. */
+ struct evl_net_route {
+ 	/* Generic cache entry. */
+ 	struct evl_cache_entry entry;
+ 	/* Destination as resolved in-band (in-band refcounted). */
+ 	struct rtable *rt;
++	/* Flow information to record from resolution. */
++	struct evl_net_flowi4 flowi4;
+ 	/* Index key (destination IP). */
+ 	u8 key[0] __aligned(4);
+ };
+diff --git a/kernel/evl/net/ipv4/route.c b/kernel/evl/net/ipv4/route.c
+index 2c48d6254a50..2423fd3edc25 100644
+--- a/kernel/evl/net/ipv4/route.c
++++ b/kernel/evl/net/ipv4/route.c
+@@ -114,6 +114,8 @@ void evl_net_learn_ipv4_route(struct net *net,
+ 		goto warn;
+ 
+ 	e->rt = rt_dst_clone(dev, rt);
++	e->flowi4.saddr = fl4->saddr;
++	e->flowi4.daddr = fl4->daddr;
+ 	*(__be32 *)e->key = fl4->daddr;
+ 	netdev_dbg(dev, "caching route to %pI4\n", &fl4->daddr);
+ 	ret = evl_add_cache_entry(&nets->ipv4.routes, &e->entry);
+-- 
+2.30.2
+

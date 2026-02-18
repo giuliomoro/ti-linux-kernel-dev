@@ -1,7 +1,7 @@
 From 48a3b294b43068746270d1022f1489e2b08b9892 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 31 Dec 2019 12:26:20 +0100
-Subject: [PATCH 550/985] arm64/build: evl: drop pointless include directives
+Subject: [PATCH 0550/1013] arm64/build: evl: drop pointless include directives
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 deletions(-)
 
 diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 370de5ec5..ffe2a3ad4 100644
+index 370de5ec568a..ffe2a3ad42ef 100644
 --- a/arch/arm64/Makefile
 +++ b/arch/arm64/Makefile
 @@ -152,10 +152,6 @@ else ifeq ($(CONFIG_DYNAMIC_FTRACE_WITH_ARGS),y)

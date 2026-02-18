@@ -1,7 +1,7 @@
 From 27117fbd86d0e22d7a34e130e339271ac98adbed Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 30 Oct 2022 16:11:17 +0100
-Subject: [PATCH 772/985] evl/wait: drop legacy reordering interface
+Subject: [PATCH 0772/1013] evl/wait: drop legacy reordering interface
 
 This patch completes the series fixing the ABBA issue which plagued
 the mutex support code, by removing the last bits of the (broken)
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 20 insertions(+), 259 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 045db8db3..b8c421561 100644
+index 045db8db328b..b8c421561497 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -82,9 +82,6 @@ void evl_commit_mutex_ceiling(struct evl_mutex *mutex);
@@ -39,7 +39,7 @@ index 045db8db3..b8c421561 100644
  				.wait_list = LIST_HEAD_INIT((__name).mutex.wchan.wait_list), \
  				.name = #__name,			\
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index d1c1f9296..6d56ba9ea 100644
+index d1c1f92966e5..6d56ba9ea919 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -23,8 +23,6 @@ struct evl_wait_channel {
@@ -70,7 +70,7 @@ index d1c1f9296..6d56ba9ea 100644
  		struct evl_thread *waiter);
  
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 5e84f33d9..0d601c4ef 100644
+index 5e84f33d9837..0d601c4efffd 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -83,7 +83,7 @@ index 5e84f33d9..0d601c4ef 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 02ab80c38..befaca547 100644
+index 02ab80c38010..befaca54702a 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -57,177 +57,6 @@ void enable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
@@ -381,7 +381,7 @@ index 02ab80c38..befaca547 100644
  void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,
  			    struct evl_thread *waiter)
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 309b22bb9..e60fc5557 100644
+index 309b22bb958c..e60fc5557de8 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -23,7 +23,6 @@ void __evl_init_wait(struct evl_wait_queue *wq,

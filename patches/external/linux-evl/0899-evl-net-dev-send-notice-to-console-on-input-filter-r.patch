@@ -1,8 +1,8 @@
 From 12eb1347a3479f7e7e01bb398cdb4517e268b7b0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 16 Oct 2024 11:27:46 +0200
-Subject: [PATCH 899/985] evl/net: dev: send notice to console on input filter
- removal
+Subject: [PATCH 0899/1013] evl/net: dev: send notice to console on input
+ filter removal
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index e57147cb5..079520b7f 100644
+index e57147cb59c0..079520b7f5d1 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -68,8 +68,9 @@ static LIST_HEAD(oob_port_list);

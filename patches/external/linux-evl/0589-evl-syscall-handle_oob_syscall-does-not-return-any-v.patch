@@ -1,8 +1,8 @@
 From 849c058c15b216b224d64e327925ae9f1d5882c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 10 Mar 2020 15:53:51 +0100
-Subject: [PATCH 589/985] evl/syscall: handle_oob_syscall() does not return any
- value
+Subject: [PATCH 0589/1013] evl/syscall: handle_oob_syscall() does not return
+ any value
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 08dad2491..bfd59bbf4 100644
+index 08dad2491c6a..bfd59bbf4ad5 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -310,15 +310,12 @@ int handle_pipelined_syscall(struct irq_stage *stage, struct pt_regs *regs)

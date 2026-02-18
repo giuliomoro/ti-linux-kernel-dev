@@ -1,7 +1,7 @@
 From cd381686fbe41b947c604058275174b602051b2f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 22 Jun 2025 13:23:24 +0200
-Subject: [PATCH 201/985] net: dovetail: fix release of in-band skb with oob
+Subject: [PATCH 0201/1013] net: dovetail: fix release of in-band skb with oob
  storage
 
 __kfree_skb() may receive in-band buffers (!skb_is_oob()) conveying
@@ -30,7 +30,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 30 insertions(+), 30 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 245e35782..d0ee34964 100644
+index 245e3578256f..d0ee34964484 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -949,6 +949,10 @@ struct sk_buff {
@@ -119,7 +119,7 @@ index 245e35782..d0ee34964 100644
  	return false;
  }
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 0e238ab83..abd435945 100644
+index 0e238ab83d3f..abd435945fb1 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -3265,7 +3265,7 @@ void dev_kfree_skb_irq_reason(struct sk_buff *skb, enum skb_drop_reason reason)
@@ -132,7 +132,7 @@ index 0e238ab83..abd435945 100644
  
  	local_irq_save(flags);
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 0a96c36f2..9cbeb8696 100644
+index 0a96c36f2561..9cbeb86968d9 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -483,7 +483,7 @@ struct sk_buff *__build_skb(void *data, unsigned int frag_size)

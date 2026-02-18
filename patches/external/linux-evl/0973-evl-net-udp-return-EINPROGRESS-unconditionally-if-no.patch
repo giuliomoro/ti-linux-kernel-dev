@@ -1,7 +1,7 @@
 From 7a25c30b15dbbb3db027d6e2fdb63d42caa6ff21 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 26 Jun 2025 09:22:55 +0200
-Subject: [PATCH 973/985] evl/net: udp: return EINPROGRESS unconditionally if
+Subject: [PATCH 0973/1013] evl/net: udp: return EINPROGRESS unconditionally if
  no cached route
 
 In absence of cached route on transmit, we used to return EINPROGRESS
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index c795a2ab2..a78e86ba1 100644
+index c795a2ab2059..a78e86ba1e54 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -400,13 +400,12 @@ static ssize_t send_udp(struct evl_socket *esk,

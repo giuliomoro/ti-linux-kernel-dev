@@ -1,7 +1,7 @@
 From 5ba90ab76755d4c910533d67666a38b522a69348 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 1 Mar 2024 11:27:11 +0100
-Subject: [PATCH 117/985] net: dovetail: drop useless indirection via
+Subject: [PATCH 0117/1013] net: dovetail: drop useless indirection via
  oob_netdev_state
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  delete mode 100644 include/net/netoob.h
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 5e778a36b..d615293ac 100644
+index 5e778a36b987..d615293ac3eb 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -40,7 +40,6 @@
@@ -51,7 +51,7 @@ index 5e778a36b..d615293ac 100644
  	unsigned char		link_mode;
  
 diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 4a12b2bb6..bfd76ba1a 100644
+index 4a12b2bb68d2..bfd76ba1a9bf 100644
 --- a/include/net/net_namespace.h
 +++ b/include/net/net_namespace.h
 @@ -38,7 +38,7 @@
@@ -65,7 +65,7 @@ index 4a12b2bb6..bfd76ba1a 100644
  #include <linux/skbuff.h>
 diff --git a/include/net/netoob.h b/include/net/netoob.h
 deleted file mode 100644
-index 02ec893d7..000000000
+index 02ec893d7d7c..000000000000
 --- a/include/net/netoob.h
 +++ /dev/null
 @@ -1,13 +0,0 @@

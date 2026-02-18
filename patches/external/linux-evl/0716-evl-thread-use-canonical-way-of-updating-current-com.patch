@@ -1,7 +1,7 @@
 From 7ba09092aa16bb30d7de5aa3c0ce8002e63659a9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 5 Sep 2021 10:10:13 +0200
-Subject: [PATCH 716/985] evl/thread: use canonical way of updating
+Subject: [PATCH 0716/1013] evl/thread: use canonical way of updating
  current->comm
 
 Updating tsk->comm requires holding the task lock, along with
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4d176c157..a9ac34dfc 100644
+index 4d176c157743..a9ac34dfc675 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -22,6 +22,7 @@

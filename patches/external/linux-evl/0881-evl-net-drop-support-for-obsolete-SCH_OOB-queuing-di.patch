@@ -1,7 +1,7 @@
 From 7b98c4e017528c6b694aeee9c3123dd4e36826b9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 20 Mar 2024 12:41:11 +0100
-Subject: [PATCH 881/985] evl/net: drop support for obsolete SCH_OOB queuing
+Subject: [PATCH 0881/1013] evl/net: drop support for obsolete SCH_OOB queuing
  discipline
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 4 insertions(+), 53 deletions(-)
 
 diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
-index be07e0c77..ebcc9061d 100644
+index be07e0c77995..ebcc9061d8fa 100644
 --- a/include/evl/net/qdisc.h
 +++ b/include/evl/net/qdisc.h
 @@ -25,7 +25,6 @@ struct evl_net_qdisc_ops {
@@ -25,7 +25,7 @@ index be07e0c77..ebcc9061d 100644
  };
  
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index b4cc2fd13..83e5c97c2 100644
+index b4cc2fd1356e..83e5c97c21f2 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -93,7 +93,6 @@ config EVL_NET
@@ -37,7 +37,7 @@ index b4cc2fd13..83e5c97c2 100644
  	select INET
  	select VLAN_8021Q
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 849445e57..cd3a95edc 100644
+index 849445e57bee..cd3a95edc14b 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -58,7 +58,7 @@ void evl_net_do_tx(void *arg)
@@ -98,7 +98,7 @@ index 849445e57..cd3a95edc 100644
  {
  	struct evl_net_skb_queue *txq;
 diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
-index ce8f2e8a9..0cb5cfdbf 100644
+index ce8f2e8a9c7b..0cb5cfdbfba8 100644
 --- a/kernel/evl/net/qdisc/core.c
 +++ b/kernel/evl/net/qdisc/core.c
 @@ -41,7 +41,6 @@ struct evl_net_qdisc *evl_net_alloc_qdisc(struct evl_net_qdisc_ops *ops) /* in-b

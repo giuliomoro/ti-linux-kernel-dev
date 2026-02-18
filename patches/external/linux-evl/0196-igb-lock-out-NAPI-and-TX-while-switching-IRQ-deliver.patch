@@ -1,7 +1,7 @@
 From 933869d997de6cc2344d852383bb79487b1d00c2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 17 Jun 2025 11:08:02 +0200
-Subject: [PATCH 196/985] igb: lock out NAPI and TX while switching IRQ
+Subject: [PATCH 0196/1013] igb: lock out NAPI and TX while switching IRQ
  delivery mode
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 27 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index 85b81520e..dac0a2541 100644
+index 85b81520ea98..dac0a2541f0d 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -758,13 +758,20 @@ static int igb_enable_oob(struct net_device *netdev)

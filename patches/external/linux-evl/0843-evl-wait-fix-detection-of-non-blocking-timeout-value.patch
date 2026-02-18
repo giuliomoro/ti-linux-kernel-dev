@@ -1,7 +1,7 @@
 From f3213d6e8519a1dce0e23dba9b3da7430769921b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 4 Mar 2024 10:52:21 +0100
-Subject: [PATCH 843/985] evl: wait: fix detection of non-blocking timeout
+Subject: [PATCH 0843/1013] evl: wait: fix detection of non-blocking timeout
  value
 
 KTIME_MAX is a positive integer, so checking for negative values in
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/timeout.h b/include/evl/timeout.h
-index 75557acf0..f41ff1045 100644
+index 75557acf0ca8..f41ff1045b62 100644
 --- a/include/evl/timeout.h
 +++ b/include/evl/timeout.h
 @@ -23,17 +23,12 @@

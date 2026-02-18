@@ -1,7 +1,7 @@
 From affa20aa2e4fcc4e8b11583ce29f80bcf21cbcd1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 4 Oct 2022 17:15:29 +0200
-Subject: [PATCH 746/985] evl/wait: allow for optional follow_depend handler
+Subject: [PATCH 0746/1013] evl/wait: allow for optional follow_depend handler
 
 There is no point in trashing the I-cache with useless jumps to nop
 handlers. Typically, .follow_depend is not provided by the common wait
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 5 insertions(+), 16 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 3ff58f525..6a0e4f5e2 100644
+index 3ff58f5256e2..6a0e4f5e2ce1 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -38,7 +38,7 @@ struct evl_wait_queue {
@@ -36,7 +36,7 @@ index 3ff58f525..6a0e4f5e2 100644
 -
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 7f8721d08..861426e36 100644
+index 7f8721d08728..861426e36b75 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -137,7 +137,7 @@ static int adjust_boost(struct evl_thread *owner,
@@ -67,7 +67,7 @@ index 7f8721d08..861426e36 100644
  		raw_spin_unlock(&waiter->lock);
  		if (ret)
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index da297a148..f7fc2c733 100644
+index da297a1481b6..f7fc2c733f55 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -20,7 +20,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,

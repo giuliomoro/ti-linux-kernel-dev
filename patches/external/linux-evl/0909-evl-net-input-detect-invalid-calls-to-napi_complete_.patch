@@ -1,7 +1,7 @@
 From f4b0e530b4880bac057e8f67eb1f61b9faf828c2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 27 Mar 2025 15:57:51 +0100
-Subject: [PATCH 909/985] evl/net: input: detect invalid calls to
+Subject: [PATCH 0909/1013] evl/net: input: detect invalid calls to
  napi_complete_oob()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 9ea9469f0..3c6c8c116 100644
+index 9ea9469f0561..3c6c8c116689 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -221,15 +221,18 @@ void napi_schedule_oob(struct napi_struct *n) /* oob */

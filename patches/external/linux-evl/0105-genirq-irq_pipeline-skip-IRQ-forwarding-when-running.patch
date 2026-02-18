@@ -1,7 +1,7 @@
 From 2b1d269e105b1ea7671a85884463afde04bbd979 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 12 Mar 2024 14:12:49 +0100
-Subject: [PATCH 105/985] genirq: irq_pipeline: skip IRQ forwarding when
+Subject: [PATCH 0105/1013] genirq: irq_pipeline: skip IRQ forwarding when
  running oob
 
 A subsequent oob event might arrive before its handler had a chance to
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 5ac74fc60..90d02b982 100644
+index 5ac74fc60f54..90d02b9822f0 100644
 --- a/kernel/irq/chip.c
 +++ b/kernel/irq/chip.c
 @@ -532,11 +532,13 @@ void irq_clear_forward(struct irq_desc *desc)

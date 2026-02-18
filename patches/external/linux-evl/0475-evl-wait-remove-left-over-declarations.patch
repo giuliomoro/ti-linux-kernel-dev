@@ -1,7 +1,7 @@
 From cb7bc49f0f837bd2bb1156921515dfea92086964 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 20 Aug 2019 10:45:16 +0200
-Subject: [PATCH 475/985] evl/wait: remove left over declarations
+Subject: [PATCH 0475/1013] evl/wait: remove left over declarations
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index f4be7b302..78560af8b 100644
+index f4be7b302921..78560af8b2ad 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -165,11 +165,6 @@ void evl_abort_wait(struct evl_thread *thread,

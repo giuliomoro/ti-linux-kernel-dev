@@ -1,7 +1,7 @@
 From 8e8a90ee2edc3775de519d2e572e837296b186b6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 29 Oct 2019 20:49:56 +0100
-Subject: [PATCH 529/985] evl/sched: tp: fix locking for tp_schedule_next()
+Subject: [PATCH 0529/1013] evl/sched: tp: fix locking for tp_schedule_next()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+)
 
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 37bf47ac5..b9a178e1f 100644
+index 37bf47ac5a4a..b9a178e1f12a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -16,6 +16,8 @@ static void tp_schedule_next(struct evl_sched_tp *tp)

@@ -1,7 +1,7 @@
 From 4dcdc2eca84d36e61f939232c703fd08684b45b3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 11 Oct 2019 17:26:25 +0200
-Subject: [PATCH 515/985] evl/thread: privatize evl_sleep_on(),
+Subject: [PATCH 0515/1013] evl/thread: privatize evl_sleep_on(),
  evl_wakeup_thread()
 
 These are internal calls which are going to depend on additional
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 40 insertions(+), 33 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 1a94d4718..8408d559a 100644
+index 1a94d47183fd..8408d559a644 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -126,6 +126,12 @@ void evl_init_wait(struct evl_wait_queue *wq,
@@ -73,7 +73,7 @@ index 1a94d4718..8408d559a 100644
  void evl_reorder_wait(struct evl_thread *thread);
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 0a422d597..0d3caeecd 100644
+index 0a422d597d78..0d3caeecd0ba 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -540,7 +540,6 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -93,7 +93,7 @@ index 0a422d597..0d3caeecd 100644
  void evl_hold_thread(struct evl_thread *thread, int mask)
  {
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 5b16b7946..914e857b0 100644
+index 5b16b7946a5a..914e857b08c4 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -77,12 +77,45 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

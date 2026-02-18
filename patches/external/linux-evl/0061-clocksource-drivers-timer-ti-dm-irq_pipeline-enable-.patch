@@ -1,8 +1,8 @@
 From cbc59dc879f46fe724e8c50cb058231b785c9de1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 11 Aug 2020 19:42:36 +0200
-Subject: [PATCH 061/985] clocksource/drivers/timer-ti-dm: irq_pipeline: enable
- pipelined clock events
+Subject: [PATCH 0061/1013] clocksource/drivers/timer-ti-dm: irq_pipeline:
+ enable pipelined clock events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clocksource/timer-ti-dm-systimer.c b/drivers/clocksource/timer-ti-dm-systimer.c
-index 19267f62f..875c5038f 100644
+index 19267f62ff93..875c5038ff68 100644
 --- a/drivers/clocksource/timer-ti-dm-systimer.c
 +++ b/drivers/clocksource/timer-ti-dm-systimer.c
 @@ -437,7 +437,7 @@ static irqreturn_t dmtimer_clockevent_interrupt(int irq, void *data)

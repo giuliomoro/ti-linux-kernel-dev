@@ -1,7 +1,7 @@
 From 93a89093fd11c966cddfe08f221015452b3d86ab Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 24 Sep 2024 10:48:26 +0200
-Subject: [PATCH 889/985] evl/net: skb: disable BH when recycling buffers
+Subject: [PATCH 0889/1013] evl/net: skb: disable BH when recycling buffers
 
 We need to serialize against softirqs when running the NAPI buffer
 management code.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 32c571de8..cfb1cbd95 100644
+index 32c571de8d56..cfb1cbd9515c 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -76,10 +76,14 @@ static void skb_recycler(struct evl_work *work)

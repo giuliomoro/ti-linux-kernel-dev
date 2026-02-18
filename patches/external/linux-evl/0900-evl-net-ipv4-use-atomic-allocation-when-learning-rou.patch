@@ -1,7 +1,7 @@
 From 72a4dd446d11ef2d501bded59a09a06140034cb5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 17 Oct 2024 11:06:21 +0200
-Subject: [PATCH 900/985] evl/net: ipv4: use atomic allocation when learning
+Subject: [PATCH 0900/1013] evl/net: ipv4: use atomic allocation when learning
  routes
 
 evl_net_learn_ipv4_route() may be called from a softirq context. Make
@@ -90,7 +90,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/route.c b/kernel/evl/net/ipv4/route.c
-index a607fa7d4..8d0e8839a 100644
+index a607fa7d4055..8d0e8839a0f2 100644
 --- a/kernel/evl/net/ipv4/route.c
 +++ b/kernel/evl/net/ipv4/route.c
 @@ -89,7 +89,8 @@ void evl_net_cleanup_ipv4_routing(struct net *net)

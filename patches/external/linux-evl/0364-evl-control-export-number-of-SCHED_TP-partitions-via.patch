@@ -1,8 +1,8 @@
 From 86cb5a37a1b1f93d7a5c00dc0dc46cdd18895de4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 May 2019 10:30:04 +0200
-Subject: [PATCH 364/985] evl/control: export number of SCHED_TP partitions via
- sysfs
+Subject: [PATCH 0364/1013] evl/control: export number of SCHED_TP partitions
+ via sysfs
 
 Visible from class/evl/control/tp.
 
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+)
 
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 45ea6f76e..c0eb05ca1 100644
+index 45ea6f76e2c9..c0eb05ca1f07 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -346,11 +346,26 @@ static DEVICE_ATTR_RW(quota);

@@ -1,7 +1,7 @@
 From ca2f525e2d2a5830f615505142d18bf4b75aaefc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 1 Aug 2024 09:52:41 +0200
-Subject: [PATCH 852/985] evl/syscall: align on new prctl() call form
+Subject: [PATCH 0852/1013] evl/syscall: align on new prctl() call form
 
 Handle the new oob syscall signature, i.e. prctl(PR_OOB_SYSCALL,
 <scno>, ...). Drop support for the legacy OOB_SYSCALL_BIT marker.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 52 insertions(+), 55 deletions(-)
 
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index f9b933803..a06a837d6 100644
+index f9b933803542..a06a837d616e 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -10,14 +10,14 @@
@@ -34,7 +34,7 @@ index f9b933803..a06a837d6 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index c2a3f13eb..63c4d8625 100644
+index c2a3f13ebe37..63c4d8625ef9 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -15,6 +15,7 @@

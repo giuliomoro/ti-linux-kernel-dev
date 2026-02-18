@@ -1,7 +1,7 @@
 From d0af5493f49cbf864f8d76523bb126e3e9ae57b7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 16:00:21 +0200
-Subject: [PATCH 181/985] net: fec: defer DMA unmapping to the inband stage
+Subject: [PATCH 0181/1013] net: fec: defer DMA unmapping to the inband stage
 
 Calling dma_unmap_page_attrs() from the out-of-band stage is now
 considered potentially harmful by Dovetail. Defer such release to the
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 85 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
-index 27a3702cb..e86fe20d8 100644
+index 27a3702cbdcf..e86fe20d89b8 100644
 --- a/drivers/net/ethernet/freescale/fec.h
 +++ b/drivers/net/ethernet/freescale/fec.h
 @@ -556,10 +556,26 @@ struct fec_tx_buffer {
@@ -45,7 +45,7 @@ index 27a3702cb..e86fe20d8 100644
  	unsigned short tx_stop_threshold;
  	unsigned short tx_wake_threshold;
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 59aec903c..28dd484a2 100644
+index 59aec903c8f0..28dd484a29e5 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -575,12 +575,36 @@ static dma_addr_t get_dma_mapping(struct sk_buff *skb,

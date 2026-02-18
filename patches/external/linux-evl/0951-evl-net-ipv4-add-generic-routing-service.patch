@@ -1,7 +1,7 @@
 From 3ba251cd14e33b00e8f935d2b30fab8c8f6c68f2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Jun 2025 06:12:15 +0200
-Subject: [PATCH 951/985] evl/net: ipv4: add generic routing service
+Subject: [PATCH 0951/1013] evl/net: ipv4: add generic routing service
 
 Given an IPv4 address, evl_net_route_ipv4_output() performs a look up
 into the oob route cache in order to find an egress path via an oob
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 33 insertions(+), 15 deletions(-)
 
 diff --git a/include/evl/net/ipv4/route.h b/include/evl/net/ipv4/route.h
-index cf40ef21d..76c16ca0d 100644
+index cf40ef21d24d..76c16ca0d9a1 100644
 --- a/include/evl/net/ipv4/route.h
 +++ b/include/evl/net/ipv4/route.h
 @@ -26,4 +26,6 @@ void evl_net_flush_ipv4_routes(struct net *net, struct net_device *dev);
@@ -26,7 +26,7 @@ index cf40ef21d..76c16ca0d 100644
 +
  #endif /* !_EVL_NET_IPV4_ROUTE_H */
 diff --git a/kernel/evl/net/ipv4/route.c b/kernel/evl/net/ipv4/route.c
-index 8d0e8839a..2c48d6254 100644
+index 8d0e8839a0f2..2c48d6254a50 100644
 --- a/kernel/evl/net/ipv4/route.c
 +++ b/kernel/evl/net/ipv4/route.c
 @@ -151,3 +151,23 @@ void evl_net_flush_ipv4_routes(struct net *net, struct net_device *dev)
@@ -54,7 +54,7 @@ index 8d0e8839a..2c48d6254 100644
 +}
 +EXPORT_SYMBOL_GPL(evl_net_route_ipv4_output);
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index c97f4505b..320d32a30 100644
+index c97f4505bd85..320d32a30aec 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -198,22 +198,18 @@ static ssize_t offload_send_udp(struct evl_socket *esk,

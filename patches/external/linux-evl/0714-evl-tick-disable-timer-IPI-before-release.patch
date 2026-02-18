@@ -1,7 +1,7 @@
 From 37db092915f73ef3566c67d6206e891cc6061810 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 19 Sep 2021 12:25:57 +0200
-Subject: [PATCH 714/985] evl/tick: disable timer IPI before release
+Subject: [PATCH 0714/1013] evl/tick: disable timer IPI before release
 
 Make sure the percpu timer IPI is disabled on all CPUs before release.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 47 insertions(+), 12 deletions(-)
 
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 46ac430ef..181251c48 100644
+index 46ac430ef20e..181251c48755 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -104,9 +104,10 @@ static void setup_proxy(struct clock_proxy_device *dev)

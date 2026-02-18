@@ -1,7 +1,7 @@
 From 52b93e9d68a9799f65e6b0fea7b3593e985c36a8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Dec 2020 18:55:40 +0100
-Subject: [PATCH 661/985] evl/clock: fix discrepancies in set_time() handler
+Subject: [PATCH 0661/1013] evl/clock: fix discrepancies in set_time() handler
 
 This is an internal interface which should deal with ktime directly,
 not timespec64. In addition, rename to set() in order to match the
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 5 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index fb7f7174d..8822ea7af 100644
+index fb7f7174d432..8822ea7afb4c 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -37,8 +37,7 @@ struct evl_clock {
@@ -43,7 +43,7 @@ index fb7f7174d..8822ea7af 100644
  	return -EOPNOTSUPP;
  }
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 9bb72511a..dc7119d35 100644
+index 9bb72511a406..dc7119d352ee 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -527,7 +527,7 @@ static int set_clock_time(struct evl_clock *clock,

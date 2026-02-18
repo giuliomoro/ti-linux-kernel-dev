@@ -1,7 +1,7 @@
 From 3545b7cdd6844cac381d55a8ece5c4f70e6da8a7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 25 Jun 2025 19:38:00 +0200
-Subject: [PATCH 972/985] evl/net: socket: drop get_netif handler
+Subject: [PATCH 0972/1013] evl/net: socket: drop get_netif handler
 
 We have no more users of this handler, which never made much sense
 anyway, since we use the binding information locally in the protocol
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 4 insertions(+), 19 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 1fcc9895c..e715c5586 100644
+index 1fcc9895cf67..e715c55869d8 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -54,7 +54,6 @@ struct evl_net_proto {
@@ -31,7 +31,7 @@ index 1fcc9895c..e715c5586 100644
  };
  
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index ad1758b67..c795a2ab2 100644
+index ad1758b67d03..c795a2ab2059 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -648,18 +648,6 @@ static __poll_t poll_udp(struct evl_socket *esk,
@@ -61,7 +61,7 @@ index ad1758b67..c795a2ab2 100644
  	.handle_offload = handle_udp_inband,
  };
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index f42585069..7504bd042 100644
+index f42585069ac0..7504bd042dbe 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -356,7 +356,7 @@ static int bind_packet_socket(struct evl_socket *esk,

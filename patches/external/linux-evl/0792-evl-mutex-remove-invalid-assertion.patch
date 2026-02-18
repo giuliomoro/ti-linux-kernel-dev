@@ -1,7 +1,7 @@
 From a66a78696abe934cf9bf67118d70a8861a400207 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 21 Nov 2022 09:03:03 +0100
-Subject: [PATCH 792/985] evl/mutex: remove invalid assertion
+Subject: [PATCH 0792/1013] evl/mutex: remove invalid assertion
 
 We may enter adjust_owner_boost() with no boosters because we did not
 hold owner->lock on entry, therefore this owner might have dropped all
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 9cc0f141a..3217d841d 100644
+index 9cc0f141a7de..3217d841dee7 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -253,7 +253,8 @@ static void adjust_owner_boost(struct evl_thread *owner)

@@ -1,8 +1,8 @@
 From 48a5438b6c5a3bd6862eb280b80c23d7fec991a7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Nov 2019 18:57:19 +0100
-Subject: [PATCH 539/985] evl: remove obsolete nklock - aka "Xenomai's ugly big
- lock"
+Subject: [PATCH 0539/1013] evl: remove obsolete nklock - aka "Xenomai's ugly
+ big lock"
 
 With the new fine-grained locking model fully in place, there are no
 more users of the ugly big (nk)lock originally inherited from
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  delete mode 100644 kernel/evl/lock.c
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index 2fff3c558..842c8e430 100644
+index 2fff3c558112..842c8e430ae4 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -49,14 +49,4 @@
@@ -46,7 +46,7 @@ index 2fff3c558..842c8e430 100644
 -
  #endif /* !_EVL_ASSERT_H */
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 119c61125..4a9ebed05 100644
+index 119c61125c04..4a9ebed05174 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -80,7 +80,6 @@ static inline void evl_raise_flag_nosched(struct evl_flag *wf)
@@ -74,7 +74,7 @@ index 119c61125..4a9ebed05 100644
  	evl_flush_flag_locked(wf, reason);
  	evl_unlock_flag(wf, flags);
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 60cc99c21..177ce71ac 100644
+index 60cc99c21860..177ce71acbf8 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -1,151 +1,16 @@
@@ -233,7 +233,7 @@ index 60cc99c21..177ce71ac 100644
  
  typedef struct evl_spinlock {
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 49547ad5b..59891d777 100644
+index 49547ad5be3c..59891d777174 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -56,7 +56,6 @@ struct evl_wait_queue {
@@ -245,7 +245,7 @@ index 49547ad5b..59891d777 100644
  	if (!(__cond)) {						\
  		if (timeout_nonblock(__timeout))			\
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index 35a2b38a1..05cf3e58c 100644
+index 35a2b38a186c..05cf3e58cf26 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -8,7 +8,6 @@ evl-y :=		\
@@ -258,7 +258,7 @@ index 35a2b38a1..05cf3e58c 100644
  	mutex.o		\
 diff --git a/kernel/evl/lock.c b/kernel/evl/lock.c
 deleted file mode 100644
-index bbc9ff28d..000000000
+index bbc9ff28d00f..000000000000
 --- a/kernel/evl/lock.c
 +++ /dev/null
 @@ -1,19 +0,0 @@
@@ -282,7 +282,7 @@ index bbc9ff28d..000000000
 -EXPORT_SYMBOL_GPL(nklock);
 -#endif /* CONFIG_SMP */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index d9108063a..a98e49fb4 100644
+index d9108063a5c2..a98e49fb4224 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -101,8 +101,6 @@ void __evl_commit_monitor_ceiling(void)
@@ -331,7 +331,7 @@ index d9108063a..a98e49fb4 100644
  	 * If we are about to release the lock which is still pending
  	 * PP (i.e. we never got scheduled out while holding it),
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 8cec883d4..59d0ed658 100644
+index 8cec883d4bf5..59d0ed658504 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -42,8 +42,6 @@ static inline void disable_inband_switch(struct evl_thread *curr)
@@ -537,7 +537,7 @@ index 8cec883d4..59d0ed658 100644
  
  	/*
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 01c5eda0e..58329572a 100644
+index 01c5eda0e029..58329572a17a 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -538,7 +538,6 @@ void evl_track_thread_policy(struct evl_thread *thread,
@@ -566,7 +566,7 @@ index 01c5eda0e..58329572a 100644
  		return;
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index e3ddd505a..d4f0cf23e 100644
+index e3ddd505ae27..d4f0cf23ee51 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -252,8 +252,6 @@ static void uninit_thread(struct evl_thread *thread)
@@ -668,7 +668,7 @@ index e3ddd505a..d4f0cf23e 100644
  
  	/*
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index fbbae5017..d3a3e0a7f 100644
+index fbbae501738a..d3a3e0a7fdaa 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -16,7 +16,6 @@ void __evl_init_wait(struct evl_wait_queue *wq,

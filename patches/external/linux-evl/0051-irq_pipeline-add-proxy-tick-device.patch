@@ -1,7 +1,7 @@
 From 7999949b576e9a97f923e617261b364d0c51726a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 6 Apr 2017 17:52:17 +0200
-Subject: [PATCH 051/985] irq_pipeline: add proxy tick device
+Subject: [PATCH 0051/1013] irq_pipeline: add proxy tick device
 
 The proxy tick device is a synthetic clock event device interposing on
 the real clock event device which honors the clock_event_device
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/time/tick-proxy.c
 
 diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index b0df28ddd..b093af19b 100644
+index b0df28ddd394..b093af19bfac 100644
 --- a/include/linux/clockchips.h
 +++ b/include/linux/clockchips.h
 @@ -15,6 +15,7 @@
@@ -164,7 +164,7 @@ index b0df28ddd..b093af19b 100644
  
  static inline void clockevents_suspend(void) { }
 diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 99c9c5a72..95387f1d5 100644
+index 99c9c5a7252a..95387f1d570f 100644
 --- a/include/linux/tick.h
 +++ b/include/linux/tick.h
 @@ -21,6 +21,14 @@ extern void tick_suspend_local(void);
@@ -183,7 +183,7 @@ index 99c9c5a72..95387f1d5 100644
  static inline void tick_init(void) { }
  static inline void tick_suspend_local(void) { }
 diff --git a/kernel/time/Makefile b/kernel/time/Makefile
-index 4af2a264a..3868b862b 100644
+index 4af2a264a160..3868b862b9ad 100644
 --- a/kernel/time/Makefile
 +++ b/kernel/time/Makefile
 @@ -16,6 +16,7 @@ ifeq ($(CONFIG_GENERIC_CLOCKEVENTS_BROADCAST),y)
@@ -195,7 +195,7 @@ index 4af2a264a..3868b862b 100644
  ifeq ($(CONFIG_SMP),y)
   obj-$(CONFIG_NO_HZ_COMMON)			+= timer_migration.o
 diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 78c7bd64d..7a42a75e1 100644
+index 78c7bd64d0dd..7a42a75e1698 100644
 --- a/kernel/time/clockevents.c
 +++ b/kernel/time/clockevents.c
 @@ -97,6 +97,7 @@ static int __clockevents_switch_state(struct clock_event_device *dev,
@@ -298,7 +298,7 @@ index 78c7bd64d..7a42a75e1 100644
  
  	if (new) {
 diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index ed58eebb4..1d6bc4c73 100644
+index ed58eebb4e8f..1d6bc4c73513 100644
 --- a/kernel/time/tick-broadcast.c
 +++ b/kernel/time/tick-broadcast.c
 @@ -801,6 +801,14 @@ static int ___tick_broadcast_oneshot_control(enum tick_broadcast_state state,
@@ -317,7 +317,7 @@ index ed58eebb4..1d6bc4c73 100644
  	bc = tick_broadcast_device.evtdev;
  
 diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 9a3859443..45572da2a 100644
+index 9a3859443c04..45572da2a900 100644
 --- a/kernel/time/tick-common.c
 +++ b/kernel/time/tick-common.c
 @@ -230,7 +230,8 @@ static void tick_setup_device(struct tick_device *td,
@@ -368,7 +368,7 @@ index 9a3859443..45572da2a 100644
  	}
  	clockevents_exchange_device(curdev, newdev);
 diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
-index 5f2105e63..bd907e591 100644
+index 5f2105e637bd..bd907e591a17 100644
 --- a/kernel/time/tick-internal.h
 +++ b/kernel/time/tick-internal.h
 @@ -52,15 +52,26 @@ static inline void clockevent_set_state(struct clock_event_device *dev,
@@ -402,7 +402,7 @@ index 5f2105e63..bd907e591 100644
  # ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 diff --git a/kernel/time/tick-proxy.c b/kernel/time/tick-proxy.c
 new file mode 100644
-index 000000000..5a877987a
+index 000000000000..5a877987a84e
 --- /dev/null
 +++ b/kernel/time/tick-proxy.c
 @@ -0,0 +1,466 @@

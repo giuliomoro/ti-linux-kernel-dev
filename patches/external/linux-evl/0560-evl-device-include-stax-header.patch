@@ -1,7 +1,7 @@
 From f7511e33eb0b3bfab56845252e186b0762adcb25 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 23 Jan 2020 14:51:38 +0100
-Subject: [PATCH 560/985] evl/device: include stax header
+Subject: [PATCH 0560/1013] evl/device: include stax header
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/evl/device.h b/include/evl/device.h
-index 59a2b0e54..1f5467202 100644
+index 59a2b0e5487b..1f54672020df 100644
 --- a/include/evl/device.h
 +++ b/include/evl/device.h
 @@ -14,6 +14,7 @@

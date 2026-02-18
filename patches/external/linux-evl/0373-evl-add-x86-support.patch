@@ -1,7 +1,7 @@
 From 493a432e50aaedfb00c072da8cfaacec2aa7ddcb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 7 May 2019 12:29:30 +0200
-Subject: [PATCH 373/985] evl: add x86 support
+Subject: [PATCH 0373/1013] evl: add x86 support
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 arch/x86/include/uapi/asm/evl/syscall.h
 
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 5c62ee01b..57f4b5c3a 100644
+index 5c62ee01b551..57f4b5c3a832 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
 @@ -32,6 +32,7 @@ config X86_64
@@ -42,7 +42,7 @@ index 5c62ee01b..57f4b5c3a 100644
  source "arch/x86/Kconfig.cpu"
  
 diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 5b773b347..44eb7a9db 100644
+index 5b773b34768d..44eb7a9db817 100644
 --- a/arch/x86/Makefile
 +++ b/arch/x86/Makefile
 @@ -220,6 +220,10 @@ KBUILD_CFLAGS += -Wno-sign-compare
@@ -58,7 +58,7 @@ index 5b773b347..44eb7a9db 100644
    KBUILD_CFLAGS += $(RETPOLINE_CFLAGS)
 diff --git a/arch/x86/include/asm/evl/fptest.h b/arch/x86/include/asm/evl/fptest.h
 new file mode 100644
-index 000000000..ba9504980
+index 000000000000..ba9504980dd3
 --- /dev/null
 +++ b/arch/x86/include/asm/evl/fptest.h
 @@ -0,0 +1,42 @@
@@ -106,7 +106,7 @@ index 000000000..ba9504980
 +#endif /* _EVL_X86_ASM_FPTEST_H */
 diff --git a/arch/x86/include/asm/evl/syscall.h b/arch/x86/include/asm/evl/syscall.h
 new file mode 100644
-index 000000000..e0b6652c7
+index 000000000000..e0b6652c7452
 --- /dev/null
 +++ b/arch/x86/include/asm/evl/syscall.h
 @@ -0,0 +1,45 @@
@@ -157,7 +157,7 @@ index 000000000..e0b6652c7
 +#endif /* !_EVL_X86_ASM_SYSCALL_H */
 diff --git a/arch/x86/include/asm/evl/thread.h b/arch/x86/include/asm/evl/thread.h
 new file mode 100644
-index 000000000..956801d24
+index 000000000000..956801d241cc
 --- /dev/null
 +++ b/arch/x86/include/asm/evl/thread.h
 @@ -0,0 +1,14 @@
@@ -177,7 +177,7 @@ index 000000000..956801d24
 +#endif /* !_EVL_X86_ASM_THREAD_H */
 diff --git a/arch/x86/include/dovetail/thread_info.h b/arch/x86/include/dovetail/thread_info.h
 new file mode 100644
-index 000000000..4253b13fe
+index 000000000000..4253b13fe47f
 --- /dev/null
 +++ b/arch/x86/include/dovetail/thread_info.h
 @@ -0,0 +1,7 @@
@@ -190,7 +190,7 @@ index 000000000..4253b13fe
 +#endif /* !_EVL_DOVETAIL_THREAD_INFO_H */
 diff --git a/arch/x86/include/uapi/asm/evl/fptest.h b/arch/x86/include/uapi/asm/evl/fptest.h
 new file mode 100644
-index 000000000..a2d87d560
+index 000000000000..a2d87d560b06
 --- /dev/null
 +++ b/arch/x86/include/uapi/asm/evl/fptest.h
 @@ -0,0 +1,120 @@
@@ -316,7 +316,7 @@ index 000000000..a2d87d560
 +#endif /* !_EVL_X86_ASM_UAPI_FPTEST_H */
 diff --git a/arch/x86/include/uapi/asm/evl/syscall.h b/arch/x86/include/uapi/asm/evl/syscall.h
 new file mode 100644
-index 000000000..f3464ae53
+index 000000000000..f3464ae53572
 --- /dev/null
 +++ b/arch/x86/include/uapi/asm/evl/syscall.h
 @@ -0,0 +1,7 @@

@@ -1,7 +1,7 @@
 From 292f19d4aac3ad0199790c5d0f9be28ced6ff8fa Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 17:43:20 +0200
-Subject: [PATCH 189/985] net: dovetail: propagate .ndo_enable_oob handler
+Subject: [PATCH 0189/1013] net: dovetail: propagate .ndo_enable_oob handler
  status
 
 A device driver may fail turning on the oob mode when requested,
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 6e6732fa5..8523ef46e 100644
+index 6e6732fa5aec..8523ef46e8a8 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4374,14 +4374,21 @@ static inline bool netif_oob_diversion(const struct net_device *dev)

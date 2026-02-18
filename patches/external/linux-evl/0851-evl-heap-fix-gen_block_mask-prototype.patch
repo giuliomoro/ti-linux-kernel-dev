@@ -1,7 +1,7 @@
 From 0d3afda93d96289abdfe6b205cf2db57c38c9c59 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 18 Jul 2024 18:46:02 +0200
-Subject: [PATCH 851/985] evl/heap: fix gen_block_mask() prototype
+Subject: [PATCH 0851/1013] evl/heap: fix gen_block_mask() prototype
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/kernel/evl/memory.c b/kernel/evl/memory.c
-index 232b8900c..1da5be623 100644
+index 232b8900cb9a..1da5be623d69 100644
 --- a/kernel/evl/memory.c
 +++ b/kernel/evl/memory.c
 @@ -38,8 +38,7 @@ enum evl_heap_pgtype {

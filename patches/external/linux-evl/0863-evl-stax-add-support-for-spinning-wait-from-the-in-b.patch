@@ -1,7 +1,7 @@
 From a414205e39168ea407c7f5db05e2ca4ca047b6d7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 17:26:53 +0100
-Subject: [PATCH 863/985] evl/stax: add support for spinning wait from the
+Subject: [PATCH 0863/1013] evl/stax: add support for spinning wait from the
  in-band stage
 
 Some use cases may require the stax to be acquired from a
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 31 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index dbc3b9dc5..4cff66cb1 100644
+index dbc3b9dc56f2..4cff66cb1e0c 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -612,7 +612,7 @@ static int hectic_open(struct inode *inode, struct file *filp)
@@ -40,7 +40,7 @@ index dbc3b9dc5..4cff66cb1 100644
  	filp->private_data = ctx;
  	stream_open(inode, filp);
 diff --git a/include/evl/stax.h b/include/evl/stax.h
-index c8695a87a..e82f3628d 100644
+index c8695a87a546..e82f3628dabc 100644
 --- a/include/evl/stax.h
 +++ b/include/evl/stax.h
 @@ -12,14 +12,17 @@
@@ -63,7 +63,7 @@ index c8695a87a..e82f3628d 100644
  void evl_destroy_stax(struct evl_stax *stax);
  
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index 6cc44f439..fdba95bd5 100644
+index 6cc44f439248..fdba95bd5318 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -13,7 +13,10 @@

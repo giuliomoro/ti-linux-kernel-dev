@@ -1,7 +1,7 @@
 From 7f982b05922673cfff4b8068c9d4cec306a9b1b6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 5 Dec 2015 18:36:25 +0100
-Subject: [PATCH 001/985] printk: introduce raw console channel
+Subject: [PATCH 0001/1013] printk: introduce raw console channel
 
 A raw output handler (.write_raw) is added to the console descriptor
 for writing (short) text output unmodified, without any logging,
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 89 insertions(+)
 
 diff --git a/include/linux/console.h b/include/linux/console.h
-index eba367bf6..7a86f9589 100644
+index eba367bf605d..7a86f9589991 100644
 --- a/include/linux/console.h
 +++ b/include/linux/console.h
 @@ -334,6 +334,7 @@ struct nbcon_write_context {
@@ -37,7 +37,7 @@ index eba367bf6..7a86f9589 100644
  	struct tty_driver	*(*device)(struct console *co, int *index);
  	void			(*unblank)(void);
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 0cb647ecd..8918fc41e 100644
+index 0cb647ecd77f..8918fc41ec02 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
 @@ -146,6 +146,17 @@ void early_printk(const char *s, ...) { }
@@ -59,7 +59,7 @@ index 0cb647ecd..8918fc41e 100644
  asmlinkage __printf(4, 0)
  int vprintk_emit(int facility, int level,
 diff --git a/init/Kconfig b/init/Kconfig
-index 45990792c..5750ee951 100644
+index 45990792cb4a..5750ee951b70 100644
 --- a/init/Kconfig
 +++ b/init/Kconfig
 @@ -1628,6 +1628,18 @@ config PRINTK
@@ -82,7 +82,7 @@ index 45990792c..5750ee951 100644
  	bool "BUG() support" if EXPERT
  	default y
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 3a91b739e..48ba013ba 100644
+index 3a91b739e8f3..48ba013ba088 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -2486,6 +2486,66 @@ static void set_user_specified(struct console_cmdline *c, bool user_specified)

@@ -1,7 +1,7 @@
 From dbe50ce2f58b79dd3e4784759315df81e8ed1cdd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Oct 2019 16:05:16 +0200
-Subject: [PATCH 525/985] evl/sched: fix CPU migration race with
+Subject: [PATCH 0525/1013] evl/sched: fix CPU migration race with
  __evl_schedule()
 
 We cannot use the rq determined by evl_schedule() in its inner helper,
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 16 insertions(+), 15 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index ce2fd0280..b34fcaaca 100644
+index ce2fd02803cc..b34fcaaca410 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -256,9 +256,9 @@ static inline bool is_threading_cpu(int cpu)
@@ -52,7 +52,7 @@ index ce2fd0280..b34fcaaca 100644
  
  static inline int evl_preempt_count(void)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 3b406d9af..b5aae82d8 100644
+index 3b406d9afa78..b5aae82d812e 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -627,14 +627,18 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)
@@ -100,7 +100,7 @@ index 3b406d9af..b5aae82d8 100644
  EXPORT_SYMBOL_GPL(__evl_schedule);
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index b45de72b4..d260c0227 100644
+index b45de72b45fe..d260c022780e 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -725,7 +725,7 @@ void evl_switch_inband(int cause)

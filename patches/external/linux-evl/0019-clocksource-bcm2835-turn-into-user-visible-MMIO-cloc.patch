@@ -1,7 +1,7 @@
 From 6e344c4802004d8dfd3c027eaaeaba91d7a13263 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 27 May 2020 09:40:00 +0200
-Subject: [PATCH 019/985] clocksource/bcm2835: turn into user-visible MMIO
+Subject: [PATCH 0019/1013] clocksource/bcm2835: turn into user-visible MMIO
  clocksource
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clocksource/bcm2835_timer.c b/drivers/clocksource/bcm2835_timer.c
-index 319c0c780..3d41c0e91 100644
+index 319c0c780a15..3d41c0e91387 100644
 --- a/drivers/clocksource/bcm2835_timer.c
 +++ b/drivers/clocksource/bcm2835_timer.c
 @@ -66,12 +66,22 @@ static irqreturn_t bcm2835_time_interrupt(int irq, void *dev_id)

@@ -1,7 +1,7 @@
 From f3ad3e3b8bd0e36f8df239d1c4077bf8eb8b7003 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 18:14:29 +0200
-Subject: [PATCH 195/985] net: fec: prevent IRQ threading if oob support is
+Subject: [PATCH 0195/1013] net: fec: prevent IRQ threading if oob support is
  built in
 
 We won't cope with threaded irqs if oob I/O might be enabled for a
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 28dd484a2..ac5a173df 100644
+index 28dd484a29e5..ac5a173dfbd0 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -312,6 +312,14 @@ static int mii_cnt;

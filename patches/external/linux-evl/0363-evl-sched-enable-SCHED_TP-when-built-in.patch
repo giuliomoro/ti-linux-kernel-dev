@@ -1,7 +1,7 @@
 From a5de30ac6e0f514b0ff8c4b5ae7137a2c4b60366 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 May 2019 10:15:01 +0200
-Subject: [PATCH 363/985] evl/sched: enable SCHED_TP when built in
+Subject: [PATCH 0363/1013] evl/sched: enable SCHED_TP when built in
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f19ad6dfd..451c84c23 100644
+index f19ad6dfd65b..451c84c23d7d 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -59,6 +59,9 @@ static void register_classes(void)
@@ -25,7 +25,7 @@ index f19ad6dfd..451c84c23 100644
  	register_one_class(&evl_sched_rt);
  }
 diff --git a/kernel/evl/sched/rt.c b/kernel/evl/sched/rt.c
-index bcac27923..ff83e77f6 100644
+index bcac2792369b..ff83e77f6bbc 100644
 --- a/kernel/evl/sched/rt.c
 +++ b/kernel/evl/sched/rt.c
 @@ -128,7 +128,7 @@ struct evl_sched_class evl_sched_rt = {
@@ -38,7 +38,7 @@ index bcac27923..ff83e77f6 100644
  	.name			=	"rt"
  };
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index c84943416..54cc49001 100644
+index c84943416f6f..54cc4900155a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -429,7 +429,7 @@ struct evl_sched_class evl_sched_tp = {

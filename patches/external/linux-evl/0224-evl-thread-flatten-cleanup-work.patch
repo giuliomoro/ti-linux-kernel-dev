@@ -1,7 +1,7 @@
 From e94ed4d949117219ddcd276916fb3d455423613e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Jan 2019 11:48:24 +0100
-Subject: [PATCH 224/985] evl/thread: flatten cleanup work
+Subject: [PATCH 0224/1013] evl/thread: flatten cleanup work
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 6d9c13559..1d494d15f 100644
+index 6d9c135597d6..1d494d15fa6b 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -226,21 +226,9 @@ static void uninit_thread(struct evl_thread *thread)

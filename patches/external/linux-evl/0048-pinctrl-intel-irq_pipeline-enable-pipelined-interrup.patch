@@ -1,7 +1,7 @@
 From 930905ce3b63a013309390025ddf531c814f61f1 Mon Sep 17 00:00:00 2001
 From: hongzha1 via Xenomai <xenomai@xenomai.org>
 Date: Wed, 14 Apr 2021 06:33:09 +0200
-Subject: [PATCH 048/985] pinctrl/intel: irq_pipeline: enable pipelined
+Subject: [PATCH 0048/1013] pinctrl/intel: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: hongzha1 <hongzhan.chen@intel.com>
@@ -17,7 +17,7 @@ Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
  1 file changed, 21 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/pinctrl/intel/pinctrl-cherryview.c b/drivers/pinctrl/intel/pinctrl-cherryview.c
-index 067b0d344..0f3d99fd2 100644
+index 067b0d344f0e..0f3d99fd2914 100644
 --- a/drivers/pinctrl/intel/pinctrl-cherryview.c
 +++ b/drivers/pinctrl/intel/pinctrl-cherryview.c
 @@ -567,7 +567,7 @@ static const struct intel_pinctrl_soc_data *chv_soc_data[] = {

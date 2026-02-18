@@ -1,7 +1,7 @@
 From 1929f1718e35992dbfb30e9c2720ddf877b345c9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 4 Jun 2025 09:17:48 +0200
-Subject: [PATCH 178/985] net: dovetail: enable oob handling in netif_rx()
+Subject: [PATCH 0178/1013] net: dovetail: enable oob handling in netif_rx()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 723ba54cd..ac72995f8 100644
+index 723ba54cd5c7..ac72995f8f5b 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5381,6 +5381,9 @@ static int netif_rx_internal(struct sk_buff *skb)

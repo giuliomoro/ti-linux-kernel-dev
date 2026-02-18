@@ -1,7 +1,7 @@
 From 67b8dfdde594c0e8bf67644f00426665fea4a19b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 27 Jun 2019 17:05:03 +0200
-Subject: [PATCH 424/985] drivers/evl: latmus: send (incomplete) last result
+Subject: [PATCH 0424/1013] drivers/evl: latmus: send (incomplete) last result
  bulk
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 48 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index cc2a79d5f..d3ec6acfc 100644
+index cc2a79d5f94e..d3ec6acfcf28 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -5,6 +5,7 @@
@@ -122,7 +122,7 @@ index cc2a79d5f..d3ec6acfc 100644
  	}
  
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 93037c111..424d2119e 100644
+index 93037c111794..424d2119ea43 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -135,7 +135,7 @@ index 93037c111..424d2119e 100644
  struct evl_core_info {
  	__u32 abi_level;
 diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
-index 6960b9aac..50bb814a8 100644
+index 6960b9aac65c..50bb814a814d 100644
 --- a/include/uapi/evl/devices/latmus.h
 +++ b/include/uapi/evl/devices/latmus.h
 @@ -31,11 +31,6 @@ struct latmus_setup {

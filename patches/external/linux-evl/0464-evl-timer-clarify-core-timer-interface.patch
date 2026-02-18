@@ -1,7 +1,7 @@
 From 425e1bdaf4cb5384ab42605ceaf426dd43a10bdf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Aug 2019 17:18:44 +0200
-Subject: [PATCH 464/985] evl/timer: clarify core timer interface
+Subject: [PATCH 0464/1013] evl/timer: clarify core timer interface
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 40 insertions(+), 40 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 81c858375..f7449faac 100644
+index 81c85837506c..f7449faac495 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -598,7 +598,7 @@ static int hectic_open(struct inode *inode, struct file *filp)
@@ -29,7 +29,7 @@ index 81c858375..f7449faac 100644
  	filp->private_data = ctx;
  
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index b835a78c4..b25c66613 100644
+index b835a78c446e..b25c6661368f 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -221,8 +221,8 @@ static inline unsigned long evl_get_timer_gravity(struct evl_timer *timer)
@@ -93,7 +93,7 @@ index b835a78c4..b25c66613 100644
  
  /* timer base locked. */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 8795f353e..4cdb76617 100644
+index 8795f353e2fd..4cdb76617923 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -777,8 +777,8 @@ static int new_timerfd(struct evl_clock *clock)
@@ -108,7 +108,7 @@ index 8795f353e..4cdb76617 100644
  	evl_init_poll_head(&timerfd->poll_head);
  
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index af49d2d6c..e314f961f 100644
+index af49d2d6c674..e314f961f2d1 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -156,17 +156,17 @@ static void init_rq(struct evl_rq *rq, int cpu)
@@ -136,7 +136,7 @@ index af49d2d6c..e314f961f 100644
  	evl_set_timer_priority(&rq->wdtimer, EVL_TIMER_LOPRIO);
  #endif /* CONFIG_EVL_WATCHDOG */
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index a00f6a3f2..fe422a871 100644
+index a00f6a3f2229..fe422a8711da 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -219,14 +219,14 @@ static void quota_init(struct evl_rq *rq)
@@ -161,7 +161,7 @@ index a00f6a3f2..fe422a871 100644
  }
  
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index f200522b5..2ae572398 100644
+index f200522b59aa..2ae572398c73 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -81,8 +81,8 @@ static void tp_init(struct evl_rq *rq)
@@ -176,7 +176,7 @@ index f200522b5..2ae572398 100644
  }
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index dacde886c..e528065e3 100644
+index dacde886c0e5..e528065e3fdb 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -191,12 +191,12 @@ int evl_init_thread(struct evl_thread *thread,
@@ -197,7 +197,7 @@ index dacde886c..e528065e3 100644
  	evl_set_timer_priority(&thread->ptimer, EVL_TIMER_HIPRIO);
  
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 461968fa6..0e7afa891 100644
+index 461968fa66f6..0e7afa891961 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -290,14 +290,15 @@ void __evl_init_timer(struct evl_timer *timer,

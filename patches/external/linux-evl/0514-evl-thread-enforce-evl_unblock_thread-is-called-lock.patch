@@ -1,7 +1,7 @@
 From d74d6de782d9de2b1c6f8ceb5c5f2ae52b5a0559 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 11 Oct 2019 19:34:26 +0200
-Subject: [PATCH 514/985] evl/thread: enforce evl_unblock_thread() is called
+Subject: [PATCH 0514/1013] evl/thread: enforce evl_unblock_thread() is called
  locklessly
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 30 insertions(+), 46 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 959ec45e2..7188856d8 100644
+index 959ec45e2ff4..7188856d8ecc 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -271,12 +271,8 @@ void evl_switch_inband(int cause);
@@ -28,7 +28,7 @@ index 959ec45e2..7188856d8 100644
  
  void evl_signal_thread(struct evl_thread *thread,
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index b19a0a004..0a422d597 100644
+index b19a0a0042b1..0a422d597d78 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1271,6 +1271,8 @@ void __evl_propagate_schedparam_change(struct evl_thread *curr)

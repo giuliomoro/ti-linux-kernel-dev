@@ -1,7 +1,7 @@
 From 3d114cd66dbf17a9435b6befe8242631634d8c5d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 29 Jun 2019 19:35:56 +0200
-Subject: [PATCH 429/985] evl/clock: drop meaningless parameter from
+Subject: [PATCH 0429/1013] evl/clock: drop meaningless parameter from
  clock_sleep()
 
 clock_sleep() only accepts absolute timespecs, so we have no use of a
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 7 insertions(+), 14 deletions(-)
 
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index 3882fa548..fa5caa353 100644
+index 3882fa548d22..fa5caa35395b 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -18,7 +18,6 @@
@@ -27,7 +27,7 @@ index 3882fa548..fa5caa353 100644
  
  #define EVL_CLKIOC_SLEEP	_IOWR(EVL_CLOCK_IOCBASE, 0, struct evl_clock_sleepreq)
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 3b0770b8c..5d9a0a4ae 100644
+index 3b0770b8c74e..5d9a0a4ae3d3 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -40,7 +40,7 @@ index 3b0770b8c..5d9a0a4ae 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 1a470e6fa..c8ab6a688 100644
+index 1a470e6fa9c9..c8ab6a68888d 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -429,10 +429,13 @@ static long restart_clock_sleep(struct restart_block *param)

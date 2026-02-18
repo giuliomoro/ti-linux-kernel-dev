@@ -1,7 +1,7 @@
 From ead09e2bfae9c6a1c8a6c1bfb42c83125802eff5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 7 Feb 2021 11:03:55 +0100
-Subject: [PATCH 694/985] evl/wait: display waitqueue name in trace
+Subject: [PATCH 0694/1013] evl/wait: display waitqueue name in trace
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 177518623..c0fc27003 100644
+index 1775186230ca..c0fc270032ae 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -22,6 +22,7 @@ struct evl_wait_channel {
@@ -31,7 +31,7 @@ index 177518623..c0fc27003 100644
  	}
  
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 49f5adb7d..f8054428e 100644
+index 49f5adb7daf3..f8054428e811 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -18,13 +18,12 @@
@@ -80,7 +80,7 @@ index 49f5adb7d..f8054428e 100644
  	TP_PROTO(struct evl_mutex *mutex),
  	TP_ARGS(mutex)
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index b47b14ae4..f6a4682e0 100644
+index b47b14ae45fa..f6a4682e0090 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -21,6 +21,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,

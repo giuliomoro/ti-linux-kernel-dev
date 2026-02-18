@@ -1,8 +1,8 @@
 From b39f8ce8b42f9ccb16b7c32e89fd6c32201d8c51 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 13 Jun 2025 16:33:32 +0200
-Subject: [PATCH 188/985] igb: postpone oob mode message to until after actual
- switch
+Subject: [PATCH 0188/1013] igb: postpone oob mode message to until after
+ actual switch
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index a05825bc2..0d3c40735 100644
+index a05825bc25f8..0d3c40735a12 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -752,20 +752,21 @@ static int igb_enable_oob(struct net_device *netdev)

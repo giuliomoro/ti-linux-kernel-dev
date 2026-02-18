@@ -1,7 +1,7 @@
 From adbea35192463b7de8fed17f9e33879b87258a22 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 7 Apr 2020 10:43:35 +0200
-Subject: [PATCH 086/985] KVM: x86: dovetail: enable coexistence with
+Subject: [PATCH 0086/1013] KVM: x86: dovetail: enable coexistence with
  out-of-band scheduling
 
 Make the KVM/x86 virtualization support coexist with out-of-band
@@ -66,7 +66,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  8 files changed, 182 insertions(+), 54 deletions(-)
 
 diff --git a/arch/x86/include/asm/idtentry.h b/arch/x86/include/asm/idtentry.h
-index c7d26d145..91d442089 100644
+index c7d26d145937..91d4420896f2 100644
 --- a/arch/x86/include/asm/idtentry.h
 +++ b/arch/x86/include/asm/idtentry.h
 @@ -835,7 +835,7 @@ DECLARE_IDTENTRY_SYSVEC_PIPELINED(HYPERVISOR_CALLBACK_VECTOR,	sysvec_xen_hvm_cal
@@ -79,7 +79,7 @@ index c7d26d145..91d442089 100644
  
  #undef X86_TRAP_OTHER
 diff --git a/arch/x86/kernel/irq_pipeline.c b/arch/x86/kernel/irq_pipeline.c
-index 15b6cbdb8..73e97fba5 100644
+index 15b6cbdb8f13..73e97fba55e7 100644
 --- a/arch/x86/kernel/irq_pipeline.c
 +++ b/arch/x86/kernel/irq_pipeline.c
 @@ -155,6 +155,12 @@ static void do_sysvec_inband(struct irq_desc *desc, struct pt_regs *regs)
@@ -96,7 +96,7 @@ index 15b6cbdb8..73e97fba5 100644
  	case LOCAL_TIMER_VECTOR:
  		run_sysvec_on_irqstack_cond(__sysvec_apic_timer_interrupt,
 diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index c490eec3a..5df1061fc 100644
+index c490eec3abb7..5df1061fc6ee 100644
 --- a/arch/x86/kernel/kvm.c
 +++ b/arch/x86/kernel/kvm.c
 @@ -259,6 +259,7 @@ noinstr bool __kvm_handle_async_pf(struct pt_regs *regs, u32 token)
@@ -194,7 +194,7 @@ index c490eec3a..5df1061fc 100644
  
  /*
 diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 8be876cec..02760ba53 100644
+index 8be876cec354..02760ba53aa6 100644
 --- a/arch/x86/kvm/emulate.c
 +++ b/arch/x86/kvm/emulate.c
 @@ -1094,25 +1094,28 @@ static void fetch_register_operand(struct operand *op)
@@ -304,7 +304,7 @@ index 8be876cec..02760ba53 100644
  	if (unlikely(rc != X86EMUL_CONTINUE))
  		return emulate_exception(ctxt, MF_VECTOR, 0, false);
 diff --git a/arch/x86/kvm/fpu.h b/arch/x86/kvm/fpu.h
-index 3ba12888b..19c831336 100644
+index 3ba12888bf66..19c831336df5 100644
 --- a/arch/x86/kvm/fpu.h
 +++ b/arch/x86/kvm/fpu.h
 @@ -95,46 +95,48 @@ static inline void _kvm_write_mmx_reg(int reg, const u64 *data)
@@ -369,7 +369,7 @@ index 3ba12888b..19c831336 100644
  
  #endif
 diff --git a/arch/x86/kvm/hyperv.c b/arch/x86/kvm/hyperv.c
-index 79d06a8a5..e9dda83f7 100644
+index 79d06a8a5b7d..e9dda83f7136 100644
 --- a/arch/x86/kvm/hyperv.c
 +++ b/arch/x86/kvm/hyperv.c
 @@ -2465,12 +2465,13 @@ static bool is_xmm_fast_hypercall(struct kvm_hv_hcall *hc)
@@ -389,7 +389,7 @@ index 79d06a8a5..e9dda83f7 100644
  
  static bool hv_check_hypercall_access(struct kvm_vcpu_hv *hv_vcpu, u16 code)
 diff --git a/arch/x86/kvm/vmx/vmx.c b/arch/x86/kvm/vmx/vmx.c
-index 6c185a260..4b42b31ee 100644
+index 6c185a260c5b..4b42b31eef02 100644
 --- a/arch/x86/kvm/vmx/vmx.c
 +++ b/arch/x86/kvm/vmx/vmx.c
 @@ -718,12 +718,13 @@ static int vmx_set_guest_uret_msr(struct vcpu_vmx *vmx,
@@ -487,7 +487,7 @@ index 6c185a260..4b42b31ee 100644
  
  	/* FB_CLEAR may have changed, also update the FB_CLEAR_DIS behavior */
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 13ab13d2e..a5249bb44 100644
+index 13ab13d2e9d6..a5249bb44466 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
 @@ -207,6 +207,7 @@ module_param(mitigate_smt_rsb, bool, 0444);

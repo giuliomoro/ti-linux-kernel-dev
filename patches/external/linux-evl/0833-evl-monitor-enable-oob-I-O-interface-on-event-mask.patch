@@ -1,7 +1,7 @@
 From 0f5200b706aa2245d641b2bb08768e7063d7f9f5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 14 Nov 2023 19:19:25 +0100
-Subject: [PATCH 833/985] evl/monitor: enable oob I/O interface on event mask
+Subject: [PATCH 0833/1013] evl/monitor: enable oob I/O interface on event mask
 
 In the wake of enabling the in-band I/O interface for event mask
 monitors, let's enable the oob I/O interface as well.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 47 insertions(+), 1 deletion(-)
 
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 8787dd979..801e6e7dd 100644
+index 8787dd979d1a..801e6e7ddfc0 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -29,7 +29,7 @@ index 8787dd979..801e6e7dd 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 3a241604c..6cdcda893 100644
+index 3a241604c7c7..6cdcda893ac9 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -1018,6 +1018,7 @@ static ssize_t monitor_read(struct file *filp, char __user *u_buf,

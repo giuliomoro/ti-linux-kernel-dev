@@ -1,7 +1,7 @@
 From b6561626fa9295689c6ca611fd7c6db3a76b8228 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 14 Feb 2024 17:12:13 +0100
-Subject: [PATCH 874/985] evl/net: packet: copy back namelen on receipt if
+Subject: [PATCH 0874/1013] evl/net: packet: copy back namelen on receipt if
  expected
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 19 insertions(+), 18 deletions(-)
 
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 3f04aedd7..1834da6b0 100644
+index 3f04aedd7d85..1834da6b09b1 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -527,28 +527,29 @@ static ssize_t copy_packet_to_user(struct user_oob_msghdr __user *u_msghdr,

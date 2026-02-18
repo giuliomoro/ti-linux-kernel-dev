@@ -1,7 +1,7 @@
 From 6e3c5aa52969b16f7a749469c10e1b43587b4a76 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 11 Jan 2020 17:31:08 +0100
-Subject: [PATCH 552/985] evl: rename main header for device drivers
+Subject: [PATCH 0552/1013] evl: rename main header for device drivers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ diff --git a/include/evl/devices.h b/include/evl/device.h
 similarity index 86%
 rename from include/evl/devices.h
 rename to include/evl/device.h
-index 29b168dd0..59a2b0e54 100644
+index 29b168dd0f58..59a2b0e5487b 100644
 --- a/include/evl/devices.h
 +++ b/include/evl/device.h
 @@ -4,8 +4,8 @@

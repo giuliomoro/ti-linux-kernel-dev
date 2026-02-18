@@ -1,7 +1,7 @@
 From 3ea81aff15dc70eba4ff654e74716e2fdd4f4401 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Nov 2023 11:14:28 +0100
-Subject: [PATCH 841/985] evl/proxy: use split read/write in-band wait queues
+Subject: [PATCH 0841/1013] evl/proxy: use split read/write in-band wait queues
 
 Sharing the wait queue between r/w directions is wrong, causing
 spurious wake ups when e.g. threads waiting for POLLOUT are unblocked
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index d8d70fd78..bc30a840f 100644
+index d8d70fd78d63..bc30a840f844 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -35,7 +35,8 @@ struct proxy_ring {

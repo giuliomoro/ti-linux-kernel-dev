@@ -1,7 +1,7 @@
 From f5db87ba794b57675f3940093392caa7ff987bc8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 May 2020 19:13:43 +0200
-Subject: [PATCH 617/985] evl: fix handling of NULL element names
+Subject: [PATCH 0617/1013] evl: fix handling of NULL element names
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 89 insertions(+), 65 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 7238acf00..a2d2d5c06 100644
+index 7238acf00021..a2d2d5c062eb 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -49,7 +49,7 @@ struct evl_factory {
@@ -41,7 +41,7 @@ index 7238acf00..a2d2d5c06 100644
  
  void evl_get_element(struct evl_element *e);
 diff --git a/include/evl/observable.h b/include/evl/observable.h
-index f0766a445..9846f2e3a 100644
+index f0766a445578..9846f2e3a610 100644
 --- a/include/evl/observable.h
 +++ b/include/evl/observable.h
 @@ -34,7 +34,8 @@ struct evl_observable {
@@ -55,7 +55,7 @@ index f0766a445..9846f2e3a 100644
  void evl_flush_observable(struct evl_observable *observable);
  
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 53212c521..037d43b13 100644
+index 53212c521b49..037d43b13e27 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -83,6 +83,37 @@ int evl_init_element(struct evl_element *e,
@@ -169,7 +169,7 @@ index 53212c521..037d43b13 100644
  	/* This must be set before the device appears. */
  	filp->private_data = e;
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index ad04d304c..fb6145d09 100644
+index ad04d304c031..fb6145d099d9 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -761,7 +761,7 @@ static const struct file_operations monitor_fops = {
@@ -193,7 +193,7 @@ index ad04d304c..fb6145d09 100644
  		goto fail_element;
  
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index 78e8ab9a6..e79041e5a 100644
+index 78e8ab9a6650..e79041e5a749 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -1078,7 +1078,8 @@ static const struct file_operations observable_fops = {
@@ -238,7 +238,7 @@ index 78e8ab9a6..e79041e5a 100644
  		return ERR_PTR(PTR_ERR(observable));
  
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 05dd4849e..b3f7250e5 100644
+index 05dd4849e2a3..b3f7250e53ca 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -303,7 +303,7 @@ static const struct file_operations proxy_fops = {
@@ -302,7 +302,7 @@ index 05dd4849e..b3f7250e5 100644
  fail_proxy:
  	fput(filp);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 836f0ded4..c35b03f6c 100644
+index 836f0ded4bfa..c35b03f6c711 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2385,7 +2385,7 @@ static void discard_unmapped_uthread(struct evl_thread *thread)
@@ -369,7 +369,7 @@ index 836f0ded4..c35b03f6c 100644
  
  	return &curr->element;
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 8e8d42753..8bfcca355 100644
+index 8e8d427538ab..8bfcca3553ac 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -627,7 +627,7 @@ ssize_t evl_write_xbuf(struct evl_xbuf *xbuf, const void *buf,

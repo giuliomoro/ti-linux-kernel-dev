@@ -1,7 +1,8 @@
 From d03b3faa5732cf9b4a57f04ec0ebbc6ebdebe0eb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 31 Oct 2019 18:09:46 +0100
-Subject: [PATCH 535/985] evl/lock: do not disable preemption with evl_spinlock
+Subject: [PATCH 0535/1013] evl/lock: do not disable preemption with
+ evl_spinlock
 
 There is no point in expecting the EVL spinlock API to be usable
 across calls to rescheduling points, so disabling preemption when
@@ -21,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+), 49 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 972f73817..60cc99c21 100644
+index 972f738171ce..60cc99c21860 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -127,9 +127,9 @@ static inline int xnlock_is_owner(struct xnlock *lock)
@@ -141,7 +142,7 @@ index 972f73817..60cc99c21 100644
  
  #endif /* !_EVL_LOCK_H */
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 53bde2502..d83a6443c 100644
+index 53bde250285b..d83a6443c8f9 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -634,7 +634,7 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)

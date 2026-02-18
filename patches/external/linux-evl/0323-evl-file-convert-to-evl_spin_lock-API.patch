@@ -1,7 +1,7 @@
 From 0a6919fc4d0dde35c0286652db14c45b53765378 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 25 Feb 2019 17:54:57 +0100
-Subject: [PATCH 323/985] evl/file: convert to evl_spin_lock API
+Subject: [PATCH 0323/1013] evl/file: convert to evl_spin_lock API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 14 deletions(-)
 
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
-index 2054c570e..78755321c 100644
+index 2054c570e8ca..78755321cff4 100644
 --- a/kernel/evenless/file.c
 +++ b/kernel/evenless/file.c
 @@ -21,7 +21,7 @@

@@ -1,7 +1,7 @@
 From d0575632b7f40f3f38c51a249ccbf5407b9033f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 1 Feb 2025 12:55:59 +0100
-Subject: [PATCH 906/985] drivers/evl: hectic: release cdev region on unload
+Subject: [PATCH 0906/1013] drivers/evl: hectic: release cdev region on unload
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 4cff66cb1..0112f6360 100644
+index 4cff66cb1e0c..0112f636008d 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -710,6 +710,7 @@ static void __exit hectic_exit(void)

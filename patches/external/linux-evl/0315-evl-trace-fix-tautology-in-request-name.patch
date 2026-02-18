@@ -1,7 +1,7 @@
 From 8c05a4e1ab15e210e4ff2306d677e9bf391142ac Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 11:06:43 +0100
-Subject: [PATCH 315/985] evl/trace: fix tautology in request name
+Subject: [PATCH 0315/1013] evl/trace: fix tautology in request name
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/uapi/evenless/trace.h b/include/uapi/evenless/trace.h
-index 24fd0a1d3..2be3998f3 100644
+index 24fd0a1d3d2f..2be3998f3330 100644
 --- a/include/uapi/evenless/trace.h
 +++ b/include/uapi/evenless/trace.h
 @@ -9,6 +9,6 @@
@@ -22,7 +22,7 @@ index 24fd0a1d3..2be3998f3 100644
  
  #endif /* !_EVENLESS_UAPI_TRACE_H */
 diff --git a/kernel/evenless/trace.c b/kernel/evenless/trace.c
-index c0142aee2..d81156fd0 100644
+index c0142aee2a82..d81156fd0977 100644
 --- a/kernel/evenless/trace.c
 +++ b/kernel/evenless/trace.c
 @@ -17,7 +17,7 @@ static long trace_common_ioctl(struct file *filp, unsigned int cmd,

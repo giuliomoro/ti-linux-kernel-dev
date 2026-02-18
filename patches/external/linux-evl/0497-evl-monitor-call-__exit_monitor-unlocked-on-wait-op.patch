@@ -1,7 +1,7 @@
 From 91ed7bf178deaa627920af4edf595cbb8600280c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 11:18:14 +0200
-Subject: [PATCH 497/985] evl/monitor: call __exit_monitor() unlocked on wait
+Subject: [PATCH 0497/1013] evl/monitor: call __exit_monitor() unlocked on wait
  op
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 36 insertions(+), 24 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index df9b42af4..09fc14f2d 100644
+index df9b42af4364..09fc14f2d037 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -50,14 +50,10 @@ struct evl_wait_queue {
@@ -49,7 +49,7 @@ index df9b42af4..09fc14f2d 100644
  
  #define evl_wait_event_timeout(__wq, __timeout, __timeout_mode, __cond)	\
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 0083a0aa0..616beda83 100644
+index 0083a0aa0d93..616beda838c7 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -239,10 +239,11 @@ static int tryenter_monitor(struct evl_monitor *gate)
@@ -135,7 +135,7 @@ index 0083a0aa0..616beda83 100644
  	evl_put_file(efilp);
  out:
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 903a6dd76..de7b378be 100644
+index 903a6dd765f5..de7b378becc4 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -861,6 +861,8 @@ void evl_commit_mutex_ceiling(struct evl_mutex *mutex)

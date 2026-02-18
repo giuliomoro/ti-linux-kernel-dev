@@ -1,8 +1,8 @@
 From 2758479b9990987fe6d9d38dcef537f27933482d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 677/985] evl/observable: convert observable, subscriber locks
- to hard locks
+Subject: [PATCH 0677/1013] evl/observable: convert observable, subscriber
+ locks to hard locks
 
 The subscriber lock is shared between both execution stages, but
 accessed from the in-band stage for the most part, which implies
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/include/evl/observable.h b/include/evl/observable.h
-index 9846f2e3a..aff0364e4 100644
+index 9846f2e3a610..aff0364e439e 100644
 --- a/include/evl/observable.h
 +++ b/include/evl/observable.h
 @@ -27,7 +27,7 @@ struct evl_observable {
@@ -33,7 +33,7 @@ index 9846f2e3a..aff0364e4 100644
  	int writable_observers;
  };
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index 6f7c7365d..65cfa4ba9 100644
+index 6f7c7365d9e9..65cfa4ba9e5c 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -30,7 +30,7 @@

@@ -1,7 +1,7 @@
 From 8fda2f9431fbae63c33173146a928d03b71b07fe Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 23 Jan 2020 16:55:07 +0100
-Subject: [PATCH 561/985] evl/work: add oob mechanism for submitting in-band
+Subject: [PATCH 0561/1013] evl/work: add oob mechanism for submitting in-band
  work
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evl/work.c
 
 diff --git a/include/evl/device.h b/include/evl/device.h
-index 1f5467202..3bb85b0c8 100644
+index 1f54672020df..3bb85b0c8111 100644
 --- a/include/evl/device.h
 +++ b/include/evl/device.h
 @@ -15,6 +15,7 @@
@@ -28,7 +28,7 @@ index 1f5467202..3bb85b0c8 100644
  
 diff --git a/include/evl/work.h b/include/evl/work.h
 new file mode 100644
-index 000000000..8494b596f
+index 000000000000..8494b596feab
 --- /dev/null
 +++ b/include/evl/work.h
 @@ -0,0 +1,62 @@
@@ -95,7 +95,7 @@ index 000000000..8494b596f
 +
 +#endif /* !_EVL_WORK_H */
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index dbd29b21f..9bdee544b 100644
+index dbd29b21f2e0..9bdee544b42d 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -18,6 +18,7 @@ evl-y :=		\
@@ -108,7 +108,7 @@ index dbd29b21f..9bdee544b 100644
  evl-$(CONFIG_FTRACE) +=	trace.o
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
 new file mode 100644
-index 000000000..07e7c577e
+index 000000000000..07e7c577eb42
 --- /dev/null
 +++ b/kernel/evl/work.c
 @@ -0,0 +1,76 @@

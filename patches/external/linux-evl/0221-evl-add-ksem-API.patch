@@ -1,7 +1,7 @@
 From e24d602ec7d7cfdd3464c1e4d61860bf48394f78 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Jan 2019 19:03:11 +0100
-Subject: [PATCH 221/985] evl: add ksem API
+Subject: [PATCH 0221/1013] evl: add ksem API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evenless/ksem.h b/include/evenless/ksem.h
 new file mode 100644
-index 000000000..726c263be
+index 000000000000..726c263be9e2
 --- /dev/null
 +++ b/include/evenless/ksem.h
 @@ -0,0 +1,30 @@
@@ -50,7 +50,7 @@ index 000000000..726c263be
 +
 +#endif /* !_EVENLESS_KSEM_H */
 diff --git a/include/evenless/xbuf.h b/include/evenless/xbuf.h
-index 0489594e2..776f917ea 100644
+index 0489594e237c..776f917eadaf 100644
 --- a/include/evenless/xbuf.h
 +++ b/include/evenless/xbuf.h
 @@ -7,7 +7,7 @@
@@ -63,7 +63,7 @@ index 0489594e2..776f917ea 100644
  struct evl_file;
  struct evl_xbuf;
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 4037a825c..528cd3cfa 100644
+index 4037a825cb3e..528cd3cfaf0c 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -9,6 +9,7 @@ evenless-y :=		\
@@ -76,7 +76,7 @@ index 4037a825c..528cd3cfa 100644
  	mapper.o	\
 diff --git a/kernel/evenless/ksem.c b/kernel/evenless/ksem.c
 new file mode 100644
-index 000000000..d48fbf42e
+index 000000000000..d48fbf42ea89
 --- /dev/null
 +++ b/kernel/evenless/ksem.c
 @@ -0,0 +1,78 @@

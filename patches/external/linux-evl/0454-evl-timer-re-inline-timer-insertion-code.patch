@@ -1,7 +1,7 @@
 From 3d55215ef84b47e731a8398e71150f9d52c2ed83 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 25 Jul 2019 21:09:39 +0200
-Subject: [PATCH 454/985] evl/timer: re-inline timer insertion code
+Subject: [PATCH 0454/1013] evl/timer: re-inline timer insertion code
 
 Measurements showed no performance gain in full inlining there, only
 more code over multiple callers.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 34 insertions(+), 34 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index ae9ce2332..ad6ef7968 100644
+index ae9ce2332ab9..ad6ef79684e2 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -369,40 +369,7 @@ void evl_dequeue_timer(struct evl_timer *timer,
@@ -59,7 +59,7 @@ index ae9ce2332..ad6ef7968 100644
  /* timer base locked. */
  static __always_inline
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 7ff0b513f..c5ed85314 100644
+index 7ff0b513f1e8..c5ed85314333 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -484,3 +484,36 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)

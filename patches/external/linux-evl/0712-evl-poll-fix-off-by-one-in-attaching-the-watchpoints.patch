@@ -1,7 +1,8 @@
 From 62364851437277c265e8300543e0d8852cc0e292 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 11 Sep 2021 17:54:32 +0200
-Subject: [PATCH 712/985] evl/poll: fix off-by-one in attaching the watchpoints
+Subject: [PATCH 0712/1013] evl/poll: fix off-by-one in attaching the
+ watchpoints
 
 This bug would cause the last watchpoint from the poll table to be
 left unexpectedly detached, which in turn would break clear_wait().
@@ -14,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index abdb37d09..b3255ac8f 100644
+index abdb37d09821..b3255ac8f307 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -121,11 +121,11 @@ void __evl_signal_poll_events(struct evl_poll_head *head,

@@ -1,7 +1,8 @@
 From 2fa54164ede7aa1bd1d33c0609b05b1a78509273 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 1 Feb 2024 11:17:47 +0100
-Subject: [PATCH 856/985] evl/net: socket: make bind, connect handlers optional
+Subject: [PATCH 0856/1013] evl/net: socket: make bind, connect handlers
+ optional
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -11,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 5 insertions(+), 19 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 9123209d3..8b4b5a273 100644
+index 9123209d334e..8b4b5a2739b7 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -124,8 +124,4 @@ int evl_charge_socket_wmem(struct evl_socket *esk,
@@ -24,7 +25,7 @@ index 9123209d3..8b4b5a273 100644
 -
  #endif /* !_EVL_NET_SOCKET_H */
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 6f8bf5f15..cd765ea29 100644
+index 6f8bf5f151ad..cd765ea29846 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -661,7 +661,6 @@ static struct evl_net_proto ether_packet_proto = {
@@ -36,7 +37,7 @@ index 6f8bf5f15..cd765ea29 100644
  	.oob_poll = poll_packet,
  	.oob_receive = receive_packet,
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 445b9dde4..8dd1a2ef1 100644
+index 445b9dde4e5f..8dd1a2ef1b8b 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -499,10 +499,9 @@ void sock_oob_detach(struct sock *sk)

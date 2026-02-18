@@ -1,7 +1,7 @@
 From 4d06781ecad774b9b6aa139e154e5c02bafd846b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 2 Sep 2020 11:19:04 +0200
-Subject: [PATCH 641/985] evl/syscall: rename conflicting tracer class
+Subject: [PATCH 0641/1013] evl/syscall: rename conflicting tracer class
 
 The syscall_exit tracer appeared in v5.9, so prefix our tracer
 definitions with evl_ to avoid naming conflicts.
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index c1cde0faa..1c3a10d9d 100644
+index c1cde0faa58e..1c3a10d9d170 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -118,7 +118,7 @@ DECLARE_EVENT_CLASS(timer_event,

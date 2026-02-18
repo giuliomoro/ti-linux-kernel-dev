@@ -1,7 +1,7 @@
 From 22e509889fe94d909f549a7a35e00d38f8a4ea2e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Jan 2019 17:46:59 +0100
-Subject: [PATCH 220/985] evl: add mapper element
+Subject: [PATCH 0220/1013] evl: add mapper element
 
 A file supporting the memory mapping operation can be bound to a
 mapper element, so that mmap() on such element's device is
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evenless/mapper.c
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index 3a68a6c2e..3aa7c56eb 100644
+index 3a68a6c2e076..3aa7c56eb4e0 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -147,5 +147,6 @@ extern struct evl_factory evl_thread_factory;
@@ -37,7 +37,7 @@ index 3a68a6c2e..3aa7c56eb 100644
  #endif /* !_EVENLESS_FACTORY_H */
 diff --git a/include/uapi/evenless/mapper.h b/include/uapi/evenless/mapper.h
 new file mode 100644
-index 000000000..008e5df9c
+index 000000000000..008e5df9cf0a
 --- /dev/null
 +++ b/include/uapi/evenless/mapper.h
 @@ -0,0 +1,14 @@
@@ -56,7 +56,7 @@ index 000000000..008e5df9c
 +
 +#endif /* !_EVENLESS_UAPI_MAPPER_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index b751624ce..c950d6945 100644
+index b751624ce192..c950d6945d3d 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -144,6 +144,15 @@ config EVENLESS_NR_LOGGERS
@@ -76,7 +76,7 @@ index b751624ce..c950d6945 100644
  
  menu "Latency settings"
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index aeb57b959..4037a825c 100644
+index aeb57b9599db..4037a825cb3e 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -11,6 +11,7 @@ evenless-y :=		\
@@ -88,7 +88,7 @@ index aeb57b959..4037a825c 100644
  	monitor.o	\
  	poller.o	\
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 2512f2bc8..90b869114 100644
+index 2512f2bc896d..90b869114e23 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -38,6 +38,7 @@ static struct evl_factory *factories[] = {
@@ -101,7 +101,7 @@ index 2512f2bc8..90b869114 100644
  #endif
 diff --git a/kernel/evenless/mapper.c b/kernel/evenless/mapper.c
 new file mode 100644
-index 000000000..0a3b91c98
+index 000000000000..0a3b91c98b15
 --- /dev/null
 +++ b/kernel/evenless/mapper.c
 @@ -0,0 +1,107 @@

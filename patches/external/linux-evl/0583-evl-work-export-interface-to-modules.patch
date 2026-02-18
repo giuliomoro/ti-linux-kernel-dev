@@ -1,7 +1,7 @@
 From a11f760c0771d85aa49b0b2024be67d633bfa191 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 24 Feb 2020 13:06:15 +0100
-Subject: [PATCH 583/985] evl/work: export interface to modules
+Subject: [PATCH 0583/1013] evl/work: export interface to modules
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index b4f3cd2fd..cb14c6840 100644
+index b4f3cd2fdd28..cb14c6840316 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -38,6 +38,7 @@ void evl_init_work(struct evl_work *work,

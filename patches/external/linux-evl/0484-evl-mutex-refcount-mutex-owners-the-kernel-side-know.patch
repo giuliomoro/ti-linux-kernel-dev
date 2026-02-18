@@ -1,7 +1,7 @@
 From ae08399c84ab61e4ce4ba3d9f219c09bf16b5bc3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 21 Oct 2019 12:57:18 +0200
-Subject: [PATCH 484/985] evl/mutex: refcount mutex owners the kernel-side
+Subject: [PATCH 0484/1013] evl/mutex: refcount mutex owners the kernel-side
  knows about
 
 Since we keep a live pointer to the current mutex owner we may know
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 157 insertions(+), 55 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 8d89f7dd8..14438f6ec 100644
+index 8d89f7dd82a1..14438f6ec429 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -33,7 +33,8 @@ struct evl_mutex {
@@ -54,7 +54,7 @@ index 8d89f7dd8..14438f6ec 100644
  
  #define DEFINE_EVL_KMUTEX(__name)					\
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 5ad467cd7..dbb5ce165 100644
+index 5ad467cd72bd..dbb5ce165995 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -16,6 +16,7 @@
@@ -97,7 +97,7 @@ index 5ad467cd7..dbb5ce165 100644
  static inline void evl_sync_uwindow(struct evl_thread *curr)
  {
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index d54715e68..3a4d99f49 100644
+index d54715e68706..3a4d99f496f5 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -222,14 +222,17 @@ void evl_put_element(struct evl_element *e) /* in-band or OOB */
@@ -122,7 +122,7 @@ index d54715e68..3a4d99f49 100644
  
  int evl_release_element(struct inode *inode, struct file *filp)
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 354302b96..386083326 100644
+index 354302b966b0..386083326ac6 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -109,7 +109,7 @@ static void adjust_boost(struct evl_thread *owner, struct evl_thread *target)
@@ -462,7 +462,7 @@ index 354302b96..386083326 100644
  		h = atomic_read(lockp);
  		oldh = atomic_cmpxchg(lockp, h, mutex_fast_ceil(h));
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index acde088e9..8d69b5dbe 100644
+index acde088e96dc..8d69b5dbeb15 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -189,6 +189,8 @@ int evl_init_thread(struct evl_thread *thread,

@@ -1,7 +1,7 @@
 From fc84aa6b97f234800d70ded1defc096e2b478263 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 3 Oct 2025 11:30:53 +0200
-Subject: [PATCH 985/985] evl/net: arp: fix broadcast and multicast address
+Subject: [PATCH 0985/1013] evl/net: arp: fix broadcast and multicast address
  resolution
 
 Multicast IPv4 addresses should be associated to the pseudo-entry.  In
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 30 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index 8efc0b084..b9ad6a871 100644
+index 8efc0b084b69..b9ad6a871efe 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -15,6 +15,7 @@

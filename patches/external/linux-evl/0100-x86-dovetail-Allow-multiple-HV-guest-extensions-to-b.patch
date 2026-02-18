@@ -1,8 +1,8 @@
 From 67c88d241d0f0f8cd047822f10bdb77a84cf6cef Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Fri, 23 Aug 2024 11:18:54 +0200
-Subject: [PATCH 100/985] x86: dovetail: Allow multiple HV guest extensions to
- be enabled
+Subject: [PATCH 0100/1013] x86: dovetail: Allow multiple HV guest extensions
+ to be enabled
 
 do_sysvec_inband() assumed that only one of CONFIG_ACRN_GUEST and
 CONFIG_KVM_GUEST is active at the same time. If both were enabled we
@@ -37,7 +37,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  2 files changed, 18 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/include/asm/idtentry.h b/arch/x86/include/asm/idtentry.h
-index 91d442089..3ae14d188 100644
+index 91d4420896f2..3ae14d18866f 100644
 --- a/arch/x86/include/asm/idtentry.h
 +++ b/arch/x86/include/asm/idtentry.h
 @@ -235,6 +235,13 @@ __visible __noreturn void __##func(struct pt_regs *regs)
@@ -72,7 +72,7 @@ index 91d442089..3ae14d188 100644
  		fred_install_sysvec(vector, function);			\
  	else								\
 diff --git a/arch/x86/kernel/irq_pipeline.c b/arch/x86/kernel/irq_pipeline.c
-index 73e97fba5..7a64af5da 100644
+index 73e97fba55e7..7a64af5dab73 100644
 --- a/arch/x86/kernel/irq_pipeline.c
 +++ b/arch/x86/kernel/irq_pipeline.c
 @@ -14,6 +14,8 @@

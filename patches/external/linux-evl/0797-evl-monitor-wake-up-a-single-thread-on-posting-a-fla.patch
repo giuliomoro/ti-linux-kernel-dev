@@ -1,7 +1,7 @@
 From b21393f8de5f2b3eefb687496973714412224913 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Nov 2022 17:51:13 +0100
-Subject: [PATCH 797/985] evl/monitor: wake up a single thread on posting a
+Subject: [PATCH 0797/1013] evl/monitor: wake up a single thread on posting a
  flag
 
 Posting a flag should wake up the thread leading the wait queue, not
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 057a9c662..c1abc2029 100644
+index 057a9c662d67..c1abc2029637 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -418,7 +418,7 @@ static int signal_monitor_ungated(struct evl_monitor *event, s32 sigval)

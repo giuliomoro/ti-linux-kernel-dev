@@ -1,7 +1,7 @@
 From a048e9830cca55c9058bb42eefd670c8b082b409 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 27 Dec 2023 09:09:50 +0100
-Subject: [PATCH 870/985] evl/net: packet: fix size overflow detection
+Subject: [PATCH 0870/1013] evl/net: packet: fix size overflow detection
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index be1422e46..e314ede1a 100644
+index be1422e467e5..e314ede1a000 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -467,7 +467,7 @@ static ssize_t send_packet(struct evl_socket *esk,

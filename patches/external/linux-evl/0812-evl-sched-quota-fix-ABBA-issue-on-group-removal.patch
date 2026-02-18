@@ -1,7 +1,7 @@
 From 687d887bed296c379232404273cf283bddf217bb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 8 Jan 2023 16:57:34 +0100
-Subject: [PATCH 812/985] evl/sched: quota: fix ABBA issue on group removal
+Subject: [PATCH 0812/1013] evl/sched: quota: fix ABBA issue on group removal
 
 The correct locking order is thread->lock => rq->lock, fix the loop
 moving the group members to the fifo class accordingly. At this
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 49 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index f955d9fa5..a8e78f579 100644
+index f955d9fa5e5e..a8e78f57979a 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -279,8 +279,9 @@ static void quota_trackprio(struct evl_thread *thread,

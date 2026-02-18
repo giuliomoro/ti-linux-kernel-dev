@@ -1,7 +1,7 @@
 From dd72c90bb4c433fe06c9389c6d009dc4a4509e52 Mon Sep 17 00:00:00 2001
 From: leo <vtk-powerlab@yandex.ru>
 Date: Tue, 24 Dec 2019 19:12:40 +0100
-Subject: [PATCH 058/985] clocksource/sun4i: irq_pipeline: enable pipelined
+Subject: [PATCH 0058/1013] clocksource/sun4i: irq_pipeline: enable pipelined
  clock events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clocksource/timer-sun4i.c b/drivers/clocksource/timer-sun4i.c
-index 7bdcc60ad..5aaa25161 100644
+index 7bdcc60ad43c..5aaa251617ae 100644
 --- a/drivers/clocksource/timer-sun4i.c
 +++ b/drivers/clocksource/timer-sun4i.c
 @@ -16,6 +16,7 @@

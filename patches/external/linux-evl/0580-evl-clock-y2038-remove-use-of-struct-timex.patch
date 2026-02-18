@@ -1,7 +1,7 @@
 From 529721b185387c122e5b28dcce31390d4c770a09 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 18 Feb 2020 18:37:58 +0100
-Subject: [PATCH 580/985] evl/clock: y2038: remove use of struct timex
+Subject: [PATCH 0580/1013] evl/clock: y2038: remove use of struct timex
 
 Conforming to upstream changes, struct __kernel_timex should be used
 instead. struct timex remains defined on the user-space side of the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 17 insertions(+), 8 deletions(-)
 
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index 8c55b371b..742d571b0 100644
+index 8c55b371bea2..742d571b0cda 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -21,6 +21,7 @@
@@ -47,7 +47,7 @@ index 8c55b371b..742d571b0 100644
  	if (clock->ops.adjust_time)
  		return clock->ops.adjust_time(clock, tx);
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index c502e0b0a..3ce0f2102 100644
+index c502e0b0af4e..3ce0f2102fe0 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -808,11 +808,11 @@ DEFINE_EVENT(evl_clock_timespec, evl_clock_settime,
@@ -65,7 +65,7 @@ index c502e0b0a..3ce0f2102 100644
  	),
  
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index fa5caa353..5ee3218f5 100644
+index fa5caa35395b..5ee3218f5451 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -16,6 +16,12 @@
@@ -91,7 +91,7 @@ index fa5caa353..5ee3218f5 100644
  
  /* Set operation flag for timers. */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index e6b88439c..f8f50e1bf 100644
+index e6b88439c158..f8f50e1bf5b7 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -12,6 +12,7 @@

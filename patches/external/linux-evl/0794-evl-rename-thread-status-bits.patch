@@ -1,7 +1,7 @@
 From 369cbb56783efad96d2cdf0283f59cb6bd0b77da Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 21 Nov 2022 13:42:03 +0100
-Subject: [PATCH 794/985] evl: rename thread status bits
+Subject: [PATCH 0794/1013] evl: rename thread status bits
 
 Rename all state and information bits for EVL threads to prevent
 conflict with mainline symbols. Since these definitions are visible
@@ -44,7 +44,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  32 files changed, 383 insertions(+), 379 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 92fec7c86..55dc1acdb 100644
+index 92fec7c86c3e..55dc1acdb4c2 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -97,7 +97,7 @@ static void handle_fpu_error(struct rtswitch_context *ctx,
@@ -57,7 +57,7 @@ index 92fec7c86..55dc1acdb 100644
  }
  
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 08c223731..a652b4681 100644
+index 08c2237316f0..a652b46817d2 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -127,17 +127,17 @@ static inline void evl_flush_flag(struct evl_flag *wf, int reason)
@@ -82,7 +82,7 @@ index 08c223731..a652b4681 100644
  
  static inline void evl_clear_flag(struct evl_flag *wf)
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 7bba6903c..7cb5cdfdc 100644
+index 7bba6903c6ed..7cb5cdfdcd87 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -363,7 +363,7 @@ static inline bool evl_in_irq(void)
@@ -116,7 +116,7 @@ index 7bba6903c..7cb5cdfdc 100644
  		sched_class->sched_tick(rq);
  }
 diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
-index 69dbb995b..daa90c097 100644
+index 69dbb995b31a..daa90c097231 100644
 --- a/include/evl/sched/fifo.h
 +++ b/include/evl/sched/fifo.h
 @@ -43,7 +43,7 @@ int __evl_chk_fifo_schedparam(struct evl_thread *thread,
@@ -149,7 +149,7 @@ index 69dbb995b..daa90c097 100644
  }
  
 diff --git a/include/evl/sched/idle.h b/include/evl/sched/idle.h
-index 3f8aae3bf..3f3c55a1a 100644
+index 3f8aae3bfd32..3f3c55a1ab33 100644
 --- a/include/evl/sched/idle.h
 +++ b/include/evl/sched/idle.h
 @@ -20,7 +20,7 @@ extern struct evl_sched_class evl_sched_idle;
@@ -162,7 +162,7 @@ index 3f8aae3bf..3f3c55a1a 100644
  }
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 77ce49e6f..a0f34ca97 100644
+index 77ce49e6fe5b..a0f34ca97c1e 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -28,11 +28,15 @@
@@ -221,7 +221,7 @@ index 77ce49e6f..a0f34ca97 100644
  }
  
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 2c29c2102..94cd5fb9a 100644
+index 2c29c2102923..94cd5fb9a143 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -93,7 +93,7 @@ struct evl_wait_queue {
@@ -234,7 +234,7 @@ index 2c29c2102..94cd5fb9a 100644
  			} while (!__ret && !__bcast && !(__cond));	\
  		}							\
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 8eb7dd714..5a2a5bde3 100644
+index 8eb7dd714704..5a2a5bde3185 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -329,7 +329,7 @@ TRACE_EVENT(evl_init_thread,
@@ -266,7 +266,7 @@ index 8eb7dd714..5a2a5bde3 100644
  TRACE_EVENT(evl_thread_update_mode,
  	TP_PROTO(struct evl_thread *thread, int mode, bool set),
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 950b9e248..8b55f380a 100644
+index 950b9e248649..8b55f380a7b9 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -279,7 +279,7 @@ index 950b9e248..8b55f380a 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index e039b6f21..c8aed1631 100644
+index e039b6f21621..c8aed1631946 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -15,55 +15,55 @@
@@ -390,7 +390,7 @@ index e039b6f21..c8aed1631 100644
   * 'o' -> Observable
   */
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index ccf23585b..a5ce944e9 100644
+index ccf23585bc28..a5ce944e9d29 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -252,7 +252,7 @@ config EVL_DEBUG_WOLI
@@ -403,7 +403,7 @@ index ccf23585b..a5ce944e9 100644
  	  option is off. This feature may induce overhead in some
  	  cases, so you should enable it for debugging purposes only.
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index f09aaff24..ca5422f2d 100644
+index f09aaff2440b..ca5422f2de3f 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -367,7 +367,7 @@ void evl_core_tick(struct clock_event_device *dummy) /* hard irqs off */
@@ -436,7 +436,7 @@ index f09aaff24..ca5422f2d 100644
  	}
  
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 9c50a507a..f58dc8139 100644
+index 9c50a507ab10..f58dc8139edb 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -83,7 +83,7 @@ static int stop_services(void)
@@ -449,7 +449,7 @@ index 9c50a507a..f58dc8139 100644
  			set_evl_state(state);
  			return ret;
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 7ce9f3d69..057a9c662 100644
+index 7ce9f3d69ac0..057a9c662d67 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -85,7 +85,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -519,7 +519,7 @@ index 7ce9f3d69..057a9c662 100644
  	return evl_release_element(inode, filp);
  }
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 3eac51cbb..b7ae28c8d 100644
+index 3eac51cbb6f4..b7ae28c8d47b 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -39,7 +39,7 @@ void disable_inband_switch(struct evl_thread *curr, struct evl_mutex *mutex)
@@ -611,7 +611,7 @@ index 3eac51cbb..b7ae28c8d 100644
  		} else {
  			EVL_WARN_ON(CORE, 1);
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index c2472936d..8eb30072b 100644
+index c2472936d7eb..8eb30072be0e 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -258,7 +258,7 @@ static void disable_oob_port(struct net_device *dev)
@@ -624,7 +624,7 @@ index c2472936d..8eb30072b 100644
  
  	netif_disable_oob_diversion(real_dev);
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 16f7cb005..68cf81031 100644
+index 16f7cb005acc..68cf81031c06 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -103,7 +103,7 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,
@@ -637,7 +637,7 @@ index 16f7cb005..68cf81031 100644
  				break;
  			}
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 0328c7759..0dfc7aca0 100644
+index 0328c7759d1d..0dfc7aca096c 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -646,7 +646,7 @@ static int poll_release(struct inode *inode, struct file *filp)
@@ -650,7 +650,7 @@ index 0328c7759..0dfc7aca0 100644
  	evl_schedule();
  
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 6626f4fbe..e18fcedf2 100644
+index 6626f4fbe3b7..e18fcedf284e 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -598,10 +598,10 @@ static int proxy_release(struct inode *inode, struct file *filp)
@@ -667,7 +667,7 @@ index 6626f4fbe..e18fcedf2 100644
  	return evl_release_element(inode, filp);
  }
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 360a424be..95e711c4c 100644
+index 360a424be596..95e711c4cf6b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -97,13 +97,13 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
@@ -1154,7 +1154,7 @@ index 360a424be..95e711c4c 100644
  	}
  
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index 1d8eb1662..2ff1b6fd9 100644
+index 1d8eb1662121..2ff1b6fd920e 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -56,7 +56,7 @@ static void evl_fifo_ceilprio(struct evl_thread *thread, int prio)
@@ -1167,7 +1167,7 @@ index 1d8eb1662..2ff1b6fd9 100644
  				ktime_to_ns(thread->rrperiod));
  	return 0;
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index bdbd85c09..f955d9fa5 100644
+index bdbd85c096da..f955d9fa5e5e 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -69,7 +69,7 @@ static inline bool thread_on_quota(struct evl_thread *thread,
@@ -1216,7 +1216,7 @@ index bdbd85c09..f955d9fa5 100644
  		goto out;
  	}
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index fa68347be..534729e2a 100644
+index fa68347bec2a..534729e2a2b1 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -68,7 +68,7 @@ static void tp_tick_handler(struct evl_timer *timer)
@@ -1238,7 +1238,7 @@ index fa68347be..534729e2a 100644
  	return evl_set_effective_thread_priority(thread, p->tp.prio);
  }
 diff --git a/kernel/evl/sched/weak.c b/kernel/evl/sched/weak.c
-index c94d7215a..933b91e29 100644
+index c94d7215a05c..933b91e29fc1 100644
 --- a/kernel/evl/sched/weak.c
 +++ b/kernel/evl/sched/weak.c
 @@ -46,8 +46,8 @@ static int weak_chkparam(struct evl_thread *thread,
@@ -1253,7 +1253,7 @@ index c94d7215a..933b91e29 100644
  	return evl_set_effective_thread_priority(thread, p->weak.prio);
  }
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index e5fb14441..f3e1e4676 100644
+index e5fb14441bbb..f3e1e4676815 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -64,7 +64,7 @@ void evl_broadcast(struct evl_ksem *ksem)
@@ -1266,7 +1266,7 @@ index e5fb14441..f3e1e4676 100644
  	evl_schedule();
  }
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index 882dd9833..6cc44f439 100644
+index 882dd98339b1..6cc44f439248 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -72,7 +72,7 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
@@ -1279,7 +1279,7 @@ index 882dd9833..6cc44f439 100644
  
  	do {
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index f303bc4f8..216c8108b 100644
+index f303bc4f822f..216c8108b021 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -173,22 +173,22 @@ static void prepare_for_signal(struct task_struct *p,
@@ -1354,7 +1354,7 @@ index f303bc4f8..216c8108b 100644
  	evl_inc_counter(&curr->stat.sc);
  	evl_sync_uwindow(curr);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index e01554fd9..dfc612314 100644
+index e01554fd96fe..dfc61231489b 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -64,7 +64,7 @@ static void timeout_handler(struct evl_timer *timer) /* oob stage stalled */
@@ -2346,7 +2346,7 @@ index e01554fd9..dfc612314 100644
  }
  
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 181251c48..8a3a02c66 100644
+index 181251c48755..8a3a02c665fd 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -248,7 +248,7 @@ void evl_program_proxy_tick(struct evl_clock *clock)
@@ -2359,7 +2359,7 @@ index 181251c48..8a3a02c66 100644
  			if (tn) {
  				this_rq->local_flags |= RQ_TDEFER;
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 705641343..5faba9762 100644
+index 705641343397..5faba9762884 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -448,7 +448,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)
@@ -2372,7 +2372,7 @@ index 705641343..5faba9762 100644
  
  	return overruns;
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 1da92a360..335c75b57 100644
+index 1da92a360e6d..335c75b5795e 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -43,7 +43,7 @@ EXPORT_SYMBOL_GPL(__evl_init_wait);
@@ -2469,7 +2469,7 @@ index 1da92a360..335c75b57 100644
  			do_reorder = true;
  		}
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index baec8ec90..2dc86667e 100644
+index baec8ec90f8e..2dc86667ecc0 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -553,8 +553,8 @@ static int xbuf_release(struct inode *inode, struct file *filp)

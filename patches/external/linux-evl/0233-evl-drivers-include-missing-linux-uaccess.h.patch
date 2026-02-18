@@ -1,7 +1,7 @@
 From c95bdba67b6646f99808b9915912d31d6ead16fd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 28 Jan 2019 15:35:50 +0100
-Subject: [PATCH 233/985] evl/drivers: include missing linux/uaccess.h
+Subject: [PATCH 0233/1013] evl/drivers: include missing linux/uaccess.h
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+)
 
 diff --git a/drivers/evenless/hectic.c b/drivers/evenless/hectic.c
-index 1bb352b8f..11cf34c28 100644
+index 1bb352b8fc74..11cf34c28c27 100644
 --- a/drivers/evenless/hectic.c
 +++ b/drivers/evenless/hectic.c
 @@ -11,6 +11,7 @@
@@ -22,7 +22,7 @@ index 1bb352b8f..11cf34c28 100644
  #include <linux/irq_work.h>
  #include <evenless/synch.h>
 diff --git a/drivers/evenless/latmus.c b/drivers/evenless/latmus.c
-index de6e1dea8..35cf283fc 100644
+index de6e1dea8b4b..35cf283fcd7f 100644
 --- a/drivers/evenless/latmus.c
 +++ b/drivers/evenless/latmus.c
 @@ -14,6 +14,7 @@

@@ -1,7 +1,7 @@
 From d55c3dbbf725645a4c714345b9d19c8f94adca3c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 14 Apr 2025 12:09:47 +0200
-Subject: [PATCH 913/985] evl/net: dev: rename status flags for consistency
+Subject: [PATCH 0913/1013] evl/net: dev: rename status flags for consistency
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 13 insertions(+), 10 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index 45f32cf90..213a23930 100644
+index 45f32cf90c60..213a23930f74 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -27,8 +27,8 @@ struct evl_net_ebpf_filter {
@@ -27,7 +27,7 @@ index 45f32cf90..213a23930 100644
  struct evl_netdev_state {
  	/* TX page pool (premapped if device is oob-capable). */
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index b4abecd32..22d4f4df3 100644
+index b4abecd32a6a..22d4f4df307d 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -46,7 +46,7 @@ evl_net_filter_rx(struct net_device *dev, struct sk_buff *skb)
@@ -40,7 +40,7 @@ index b4abecd32..22d4f4df3 100644
  
  	return EVL_RX_VLAN;
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 079520b7f..13252f1e4 100644
+index 079520b7f5d1..13252f1e4a8f 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -510,13 +510,16 @@ __set_rx_filter(struct evl_netdev_state *est,
@@ -63,7 +63,7 @@ index 079520b7f..13252f1e4 100644
  
  	if (old)
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index b72d09177..181b3db0f 100644
+index b72d091774ba..181b3db0fbf4 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -38,7 +38,7 @@ static void napi_poll_oob(struct evl_netdev_state *est) /* oob */

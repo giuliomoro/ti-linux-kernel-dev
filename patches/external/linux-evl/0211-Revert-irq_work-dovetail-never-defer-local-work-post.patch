@@ -1,7 +1,7 @@
 From efe3b11b42110d40b85ab0c7b885d97546681173 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Jul 2025 15:26:01 +0200
-Subject: [PATCH 211/985] Revert "irq_work: dovetail: never defer local work
+Subject: [PATCH 0211/1013] Revert "irq_work: dovetail: never defer local work
  posted from oob"
 
 This reverts commit f6db3d17bd591757873e2c59999c3867756916c8 which was
@@ -56,7 +56,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 502ab2576..360a23d0e 100644
+index 502ab2576e30..360a23d0e8e9 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
 @@ -81,11 +81,7 @@ void __weak irq_local_work_raise(void)

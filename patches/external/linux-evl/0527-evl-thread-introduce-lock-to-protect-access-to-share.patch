@@ -1,7 +1,7 @@
 From 2499b1303275f12a63cb231690f1c4e41b0d5455 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Oct 2019 19:31:36 +0200
-Subject: [PATCH 527/985] evl/thread: introduce lock to protect access to
+Subject: [PATCH 0527/1013] evl/thread: introduce lock to protect access to
  shared data
 
 This new lock will gradually substitute to the ugly one in the
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 395 insertions(+), 240 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index b34fcaaca..884c8433c 100644
+index b34fcaaca410..884c8433c4c7 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -119,8 +119,8 @@ struct evl_sched_class {
@@ -170,7 +170,7 @@ index b34fcaaca..884c8433c 100644
  
  	if (sched_class->sched_kick)
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2f32c4853..23f0ede20 100644
+index 2f32c48537b2..23f0ede20a12 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -47,44 +47,18 @@ struct evl_wait_channel {
@@ -327,7 +327,7 @@ index 2f32c4853..23f0ede20 100644
  				const union evl_sched_param *sched_param);
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 9f2f7866e..d751c6062 100644
+index 9f2f7866ed8d..d751c606273f 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -80,12 +80,14 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -362,7 +362,7 @@ index 9f2f7866e..d751c6062 100644
  	__exit_monitor(gate, curr);
  	evl_spin_unlock_irqrestore(&gate->lock, flags);
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index b5aae82d8..87f760c94 100644
+index b5aae82d812e..87f760c94de2 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -72,7 +72,7 @@ static inline ktime_t get_watchdog_timeout(void)
@@ -643,7 +643,7 @@ index b5aae82d8..87f760c94 100644
  }
  EXPORT_SYMBOL_GPL(__evl_schedule);
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index fe422a871..1b0a1a4e3 100644
+index fe422a8711da..1b0a1a4e348f 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -144,7 +144,7 @@ static inline void replenish_budget(struct evl_sched_quota *qs,
@@ -723,7 +723,7 @@ index fe422a871..1b0a1a4e3 100644
  		if (tg == NULL)
  			goto bad_tgid;
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 607e8b09d..37bf47ac5 100644
+index 607e8b09d65b..37bf47ac5a4a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -207,12 +207,12 @@ static void tp_migrate(struct evl_thread *thread, struct evl_rq *rq)
@@ -772,7 +772,7 @@ index 607e8b09d..37bf47ac5 100644
  	case evl_install_tp:
  		if (pt->nr_windows > 0)
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 38f84b607..d4de8196f 100644
+index 38f84b607a2d..d4de8196f529 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -116,6 +116,38 @@ static inline void drop_u_cap(struct evl_thread *thread,

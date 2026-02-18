@@ -1,7 +1,7 @@
 From 682f1edd29c9567e157b2020961c7533ba646e33 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 26 May 2019 11:02:00 +0200
-Subject: [PATCH 384/985] evl/timer: always display timer name when tracing
+Subject: [PATCH 0384/1013] evl/timer: always display timer name when tracing
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 33 insertions(+), 24 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 83910b668..3f1e9d845 100644
+index 83910b6688cd..3f1e9d845d57 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -297,6 +297,12 @@ void evl_set_timer_name(struct evl_timer *timer, const char *name)
@@ -41,7 +41,7 @@ index 83910b668..3f1e9d845 100644
  
  #define evl_init_core_timer(__timer, __handler)				\
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 5668667ac..9d245c6f7 100644
+index 5668667accb6..9d245c6f7415 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -109,7 +109,7 @@ DECLARE_EVENT_CLASS(timer_event,
@@ -129,7 +129,7 @@ index 5668667ac..9d245c6f7 100644
  		__entry->cycles)
  );
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 6d1c35eb2..a80fc924f 100644
+index 6d1c35eb2cd3..a80fc924fe7f 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -271,7 +271,7 @@ void evl_program_proxy_tick(struct evl_clock *clock)

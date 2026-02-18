@@ -1,7 +1,7 @@
 From abc84d98c1f9c00b9a70ac1c2caf0b2ef2aedc57 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 20 Nov 2022 12:09:04 +0100
-Subject: [PATCH 789/985] evl/mutex: alert only once on boost drop detection
+Subject: [PATCH 0789/1013] evl/mutex: alert only once on boost drop detection
 
 At this chance, privatize some helper macro, dropping an unused one.
 
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index dee22479a..77ce49e6f 100644
+index dee22479aa8a..77ce49e6fe5b 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -157,12 +157,6 @@ struct evl_thread {
@@ -29,7 +29,7 @@ index dee22479a..77ce49e6f 100644
  {
  	if (curr->u_window) {
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 202657f57..8217fad46 100644
+index 202657f5768b..8217fad468eb 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -20,6 +20,9 @@

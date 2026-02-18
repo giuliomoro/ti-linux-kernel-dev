@@ -1,7 +1,7 @@
 From 1651bfbccb0546b1e59014d225e4cf85277fcc78 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 28 Oct 2023 17:34:07 +0200
-Subject: [PATCH 827/985] evl/mutex: remove useless dynamic lock key
+Subject: [PATCH 0827/1013] evl/mutex: remove useless dynamic lock key
 
 Using a static key for the lock serializing accesses to the shared
 mutex data is enough and non-ambiguous.
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 43 insertions(+), 48 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 426a47bb1..8b3287b69 100644
+index 426a47bb1f83..8b3287b6953c 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -34,7 +34,7 @@ struct evl_thread;
@@ -76,7 +76,7 @@ index 426a47bb1..8b3287b69 100644
  
  #endif /* !_EVL_MUTEX_H */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 77b2e851b..b5ab70d10 100644
+index 77b2e851bf8f..b5ab70d106e3 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -1045,20 +1045,17 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,
@@ -106,7 +106,7 @@ index 77b2e851b..b5ab70d10 100644
  	case EVL_MONITOR_EVENT:
  		evl_init_named_wait(&mon->wait_queue, clock, EVL_WAIT_PRIO,
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index f0e6faac3..bb57f3d8d 100644
+index f0e6faac3bb7..bb57f3d8d93d 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -20,6 +20,31 @@

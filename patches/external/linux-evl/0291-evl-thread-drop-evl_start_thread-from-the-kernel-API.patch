@@ -1,7 +1,7 @@
 From a27d76fff606f314b588aa8fcc827cbf9328ef39 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 13:54:15 +0100
-Subject: [PATCH 291/985] evl/thread: drop evl_start_thread() from the kernel
+Subject: [PATCH 0291/1013] evl/thread: drop evl_start_thread() from the kernel
  API
 
 EVL threads start running immediately after creation, there is no need
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 14 insertions(+), 38 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 29510cac7..d1005ad3e 100644
+index 29510cac7a73..d1005ad3efab 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -214,8 +214,6 @@ int evl_init_thread(struct evl_thread *thread,
@@ -32,7 +32,7 @@ index 29510cac7..d1005ad3e 100644
  		struct evl_clock *clock,
  		struct evl_wait_channel *wchan);
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index 9cc9adcd3..369a7113f 100644
+index 9cc9adcd32a0..369a7113f87a 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -439,11 +439,6 @@ TRACE_EVENT(evl_thread_set_current_prio,
@@ -48,7 +48,7 @@ index 9cc9adcd3..369a7113f 100644
  	TP_PROTO(struct evl_thread *thread),
  	TP_ARGS(thread)
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index e38e68c81..03a321ba0 100644
+index e38e68c81f08..03a321ba0f3d 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -64,8 +64,12 @@ static void periodic_handler(struct evl_timer *timer) /* hard irqs off */

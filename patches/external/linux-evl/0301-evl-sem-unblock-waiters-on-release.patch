@@ -1,7 +1,7 @@
 From ddbed21f6d0b81910e4f9647a7c284d12672319d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 15:42:16 +0100
-Subject: [PATCH 301/985] evl/sem: unblock waiters on release
+Subject: [PATCH 0301/1013] evl/sem: unblock waiters on release
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 7afeacaff..e39ec0dc3 100644
+index 7afeacafffe7..e39ec0dc3bb0 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -26,7 +26,7 @@ struct evl_sem {

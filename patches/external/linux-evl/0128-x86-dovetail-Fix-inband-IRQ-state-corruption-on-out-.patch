@@ -1,7 +1,7 @@
 From 3bc4b45dad998013e71f9117a72b84d95ea8788b Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Thu, 10 Oct 2024 17:44:21 +0200
-Subject: [PATCH 128/985] x86: dovetail: Fix inband IRQ state corruption on
+Subject: [PATCH 0128/1013] x86: dovetail: Fix inband IRQ state corruption on
  out-of-band compat syscall
 
 The following kernel splat was found when running the Xenomai 3
@@ -38,7 +38,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/entry/common.c b/arch/x86/entry/common.c
-index 9190c805b..c83302724 100644
+index 9190c805b24f..c83302724dd0 100644
 --- a/arch/x86/entry/common.c
 +++ b/arch/x86/entry/common.c
 @@ -259,7 +259,7 @@ __visible noinstr void do_int80_emulation(struct pt_regs *regs)

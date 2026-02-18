@@ -1,7 +1,8 @@
 From e65dec80d9f4e68be0ce6b827db0d4f0f4e0b31c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 6 Oct 2023 10:52:26 +0200
-Subject: [PATCH 857/985] evl/net: input: drop useless early rescheduling in RX
+Subject: [PATCH 0857/1013] evl/net: input: drop useless early rescheduling in
+ RX
 
 Unlike what the comment suggests, there is no reason to call
 evl_schedule() prior to pulling more data from the RX queue. We are
@@ -14,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 3 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 21d176a81..8fd9d8599 100644
+index 21d176a81878..8fd9d85992bd 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -39,9 +39,6 @@ void evl_net_do_rx(void *arg)

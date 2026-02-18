@@ -1,7 +1,7 @@
 From 790feeb9890374f03f63338ccfc49f31209daa49 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 5 Apr 2019 11:05:10 +0200
-Subject: [PATCH 355/985] evl/timer: nop timer base locking in uniprocessor
+Subject: [PATCH 0355/1013] evl/timer: nop timer base locking in uniprocessor
  case
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 20 insertions(+)
 
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index e26cd8247..70cf1b827 100644
+index e26cd8247ead..70cf1b827506 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -17,6 +17,8 @@

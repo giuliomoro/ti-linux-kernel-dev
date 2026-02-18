@@ -1,7 +1,7 @@
 From f20c605c9fbb0493b90031c9bef4095f8568e8dd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Dec 2022 12:16:51 +0100
-Subject: [PATCH 801/985] evl/trace: fix evl_sleep_on() tracepoint
+Subject: [PATCH 0801/1013] evl/trace: fix evl_sleep_on() tracepoint
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 5a2a5bde3..1fb2ba92b 100644
+index 5a2a5bde3185..1fb2ba92b623 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -351,7 +351,7 @@ TRACE_EVENT(evl_sleep_on,

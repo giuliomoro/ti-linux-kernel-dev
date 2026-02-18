@@ -1,7 +1,7 @@
 From 2d2c5602bca8a077e0a7364903e033a656ca2060 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 8 Feb 2019 19:27:43 +0100
-Subject: [PATCH 276/985] evl: rename sfilp to efilp
+Subject: [PATCH 0276/1013] evl: rename sfilp to efilp
 
 For consistency with the base type being referred to (struct
 evl_file).
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 85 insertions(+), 85 deletions(-)
 
 diff --git a/include/evenless/file.h b/include/evenless/file.h
-index 265a67e83..674bcddf2 100644
+index 265a67e83023..674bcddf24c3 100644
 --- a/include/evenless/file.h
 +++ b/include/evenless/file.h
 @@ -26,7 +26,7 @@ struct evl_file {
@@ -67,7 +67,7 @@ index 265a67e83..674bcddf2 100644
  
  int evl_init_files(void);
 diff --git a/include/evenless/xbuf.h b/include/evenless/xbuf.h
-index 2097508ff..6006addc0 100644
+index 2097508ff281..6006addc081e 100644
 --- a/include/evenless/xbuf.h
 +++ b/include/evenless/xbuf.h
 @@ -13,9 +13,9 @@ struct evl_file;
@@ -83,7 +83,7 @@ index 2097508ff..6006addc0 100644
  ssize_t evl_read_xbuf(struct evl_xbuf *xbuf,
  		void *buf, size_t count,
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index e7d5e19cd..7d33811fd 100644
+index e7d5e19cdcce..7d33811fd5b1 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -395,7 +395,7 @@ EXPORT_SYMBOL_GPL(evl_unregister_clock);
@@ -112,7 +112,7 @@ index e7d5e19cd..7d33811fd 100644
  	}
  
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
-index 9627287f2..0f916f537 100644
+index 9627287f2a2d..0f916f537b20 100644
 --- a/kernel/evenless/file.c
 +++ b/kernel/evenless/file.c
 @@ -117,7 +117,7 @@ void install_inband_fd(unsigned int fd, struct file *filp,
@@ -233,7 +233,7 @@ index 9627287f2..0f916f537 100644
  
  void evl_cleanup_files(void)
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 01a4760bc..b53aba0f4 100644
+index 01a4760bcaf0..b53aba0f4fef 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -41,13 +41,13 @@ struct evl_monitor {
@@ -333,7 +333,7 @@ index 01a4760bc..b53aba0f4 100644
  	return ret;
  }
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 5130b93c3..3c0ededca 100644
+index 5130b93c306b..3c0ededcafd7 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -32,7 +32,7 @@ struct event_poller {
@@ -412,7 +412,7 @@ index 5130b93c3..3c0ededca 100644
  }
  
 diff --git a/kernel/evenless/syscall.c b/kernel/evenless/syscall.c
-index 2b6b786eb..865eeb381 100644
+index 2b6b786ebe46..865eeb381b6e 100644
 --- a/kernel/evenless/syscall.c
 +++ b/kernel/evenless/syscall.c
 @@ -242,14 +242,14 @@ int handle_oob_syscall(struct pt_regs *regs)
@@ -496,7 +496,7 @@ index 2b6b786eb..865eeb381 100644
  	return ret;
  }
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index ae0cf9ee9..c9442ee21 100644
+index ae0cf9ee9ca3..c9442ee2107e 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -584,22 +584,22 @@ static const struct file_operations xbuf_fops = {

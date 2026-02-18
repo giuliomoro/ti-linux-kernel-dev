@@ -1,7 +1,7 @@
 From de1c692611590a0ea5561c5e0a1b53a52d9f7a9e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 29 Apr 2025 11:52:07 +0200
-Subject: [PATCH 921/985] evl/net: output: accurately hint at more traffic
+Subject: [PATCH 0921/1013] evl/net: output: accurately hint at more traffic
  coming
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  5 files changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
-index ebcc9061d..8e2427f38 100644
+index ebcc9061d8fa..8e2427f38530 100644
 --- a/include/evl/net/qdisc.h
 +++ b/include/evl/net/qdisc.h
 @@ -19,7 +19,7 @@ struct evl_net_qdisc_ops {
@@ -27,7 +27,7 @@ index ebcc9061d..8e2427f38 100644
  };
  
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index ae6f091db..9103292f2 100644
+index ae6f091db1b1..9103292f242c 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -37,7 +37,8 @@ void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
@@ -41,7 +41,7 @@ index ae6f091db..9103292f2 100644
  bool evl_net_move_skb_queue(struct evl_net_skb_queue *skbq,
  			struct list_head *list);
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 28abe93ae..dfc231be0 100644
+index 28abe93aea6e..dfc231be0b58 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -97,10 +97,11 @@ void evl_net_do_tx(void *arg)
@@ -59,7 +59,7 @@ index 28abe93ae..dfc231be0 100644
  	}
  }
 diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
-index 0d4d2448d..c525fdf9d 100644
+index 0d4d2448d39a..c525fdf9d3b9 100644
 --- a/kernel/evl/net/qdisc/fifo.c
 +++ b/kernel/evl/net/qdisc/fifo.c
 @@ -40,11 +40,12 @@ static int enqueue_qdisc_fifo(struct evl_net_qdisc *qdisc,
@@ -78,7 +78,7 @@ index 0d4d2448d..c525fdf9d 100644
  
  struct evl_net_qdisc_ops evl_net_qdisc_fifo = {
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index b9c796506..27e99d40a 100644
+index b9c79650662f..27e99d40a0a3 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -418,15 +418,17 @@ void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,

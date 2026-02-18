@@ -1,7 +1,7 @@
 From 1e8d84679794c1a0a47dd2dbf712c43b6f298ee5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 16:07:47 +0200
-Subject: [PATCH 489/985] evl/mutex: grab nklock down into PP commit code
+Subject: [PATCH 0489/1013] evl/mutex: grab nklock down into PP commit code
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 8dbccda5f..903a6dd76 100644
+index 8dbccda5f5e0..903a6dd765f5 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -858,9 +858,10 @@ void evl_commit_mutex_ceiling(struct evl_mutex *mutex)

@@ -1,7 +1,7 @@
 From 1da4a872535ac7f1025356918fa8b21279f5e5ff Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 676/985] evl/xbuf: convert inbound buffer lock to hard lock
+Subject: [PATCH 0676/1013] evl/xbuf: convert inbound buffer lock to hard lock
 
 The data protected by the inbound (oob -> in-band traffic) buffer lock
 is frequently accessed from the in-band stage by design, where hard
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 135c81720..d28d3d805 100644
+index 135c81720e38..d28d3d8057e3 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -17,7 +17,6 @@

@@ -1,7 +1,7 @@
 From 185033f71be8fb8e34166a124f9a52c74f7395a7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 30 Nov 2022 11:12:16 +0100
-Subject: [PATCH 799/985] evl/mutex: fix concurrent lock chain walks
+Subject: [PATCH 0799/1013] evl/mutex: fix concurrent lock chain walks
 
 Multiple CPUs may walk the same lock chain concurrently, leading to
 inconsistencies with respect to the priority boost of some wait
@@ -47,7 +47,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 292 insertions(+), 547 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 9c5604f56..426a47bb1 100644
+index 9c5604f5606b..426a47bb1f83 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -14,6 +14,7 @@
@@ -113,7 +113,7 @@ index 9c5604f56..426a47bb1 100644
 +
  #endif /* !_EVL_MUTEX_H */
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 7cb5cdfdc..3b256e404 100644
+index 7cb5cdfdcd87..3b256e404167 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -420,10 +420,10 @@ static inline bool evl_cannot_block(void)
@@ -143,7 +143,7 @@ index 7cb5cdfdc..3b256e404 100644
  static inline int evl_init_rq_thread(struct evl_thread *thread)
  {
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 94cd5fb9a..74312448c 100644
+index 94cd5fb9a143..74312448c839 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -21,21 +21,13 @@ struct evl_thread;
@@ -191,7 +191,7 @@ index 94cd5fb9a..74312448c 100644
  
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index d1bad9f21..16750fd19 100644
+index d1bad9f210bc..16750fd19337 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -20,16 +20,6 @@
@@ -781,7 +781,7 @@ index d1bad9f21..16750fd19 100644
  	 * Raise FLCEIL, which indicates a kernel entry will be
  	 * required for releasing this resource.
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 95e711c4c..3bfbe37b1 100644
+index 95e711c4cf6b..3bfbe37b1eb7 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -399,7 +399,7 @@ static void check_cpu_affinity(struct task_struct *p) /* inband, hard irqs off *
@@ -981,7 +981,7 @@ index 95e711c4c..3bfbe37b1 100644
  
  #ifdef CONFIG_EVL_SCHED_SCALABLE
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 534729e2a..d0f610e1b 100644
+index 534729e2a2b1..d0f610e1bfe4 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -133,17 +133,17 @@ static void tp_trackprio(struct evl_thread *thread,
@@ -1014,7 +1014,7 @@ index 534729e2a..d0f610e1b 100644
  	 * NOTE: we do allow threads from lower scheduling classes to
  	 * consume CPU time from the current window as a result of a
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index dfc612314..423c9b7e8 100644
+index dfc61231489b..423c9b7e870d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1065,8 +1065,8 @@ EXPORT_SYMBOL_GPL(evl_set_thread_schedparam);
@@ -1029,7 +1029,7 @@ index dfc612314..423c9b7e8 100644
   * On entry: thread->lock + thread->rq->lock held, irqs off.
   */
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 335c75b57..02aec0a3d 100644
+index 335c75b5795e..02aec0a3d314 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -20,7 +20,6 @@ void __evl_init_wait(struct evl_wait_queue *wq,

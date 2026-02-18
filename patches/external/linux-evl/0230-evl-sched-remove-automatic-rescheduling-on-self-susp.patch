@@ -1,7 +1,7 @@
 From 9cc9f69fec957f96a0e08f559f1196ac1f748e05 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 16:48:42 +0100
-Subject: [PATCH 230/985] evl/sched: remove automatic rescheduling on
+Subject: [PATCH 0230/1013] evl/sched: remove automatic rescheduling on
  self-suspension
 
 All callers of evl_suspend_thread() now reschedule explicitly; we
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 7 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 83e6e985c..73f71c0bd 100644
+index 83e6e985cd7c..73f71c0bd4d3 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -744,7 +744,8 @@ bool ___evl_schedule(struct evl_rq *this_rq)
@@ -28,7 +28,7 @@ index 83e6e985c..73f71c0bd 100644
  	if (curr->state & T_USER)
  		evl_commit_monitor_ceiling(curr);
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index e237c4072..14b830094 100644
+index e237c40724d7..14b8300943f7 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -531,9 +531,9 @@ void evl_suspend_thread(struct evl_thread *thread, int mask,

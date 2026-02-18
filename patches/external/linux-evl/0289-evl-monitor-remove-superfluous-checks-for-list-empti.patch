@@ -1,7 +1,7 @@
 From 10423769a18b122ea0322c9c26fb17ec1b2d7d65 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 09:36:55 +0100
-Subject: [PATCH 289/985] evl/monitor: remove superfluous checks for list
+Subject: [PATCH 0289/1013] evl/monitor: remove superfluous checks for list
  emptiness
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 1565f0eb0..df16b7420 100644
+index 1565f0eb0cbb..df16b74206d0 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -258,12 +258,10 @@ static int exit_monitor(struct evl_monitor *gate)

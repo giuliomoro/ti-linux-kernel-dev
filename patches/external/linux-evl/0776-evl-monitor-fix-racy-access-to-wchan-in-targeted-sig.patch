@@ -1,7 +1,7 @@
 From fe864d947b0151433865110efe71d145ede1be6b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 4 Nov 2022 19:18:17 +0100
-Subject: [PATCH 776/985] evl/monitor: fix racy access to wchan in targeted
+Subject: [PATCH 0776/1013] evl/monitor: fix racy access to wchan in targeted
  signaling
 
 We may not retrieve the wait channel a thread pends on then base a
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index b43340b5c..66671a8bd 100644
+index b43340b5c2dc..66671a8bd68a 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -58,10 +58,10 @@ struct evl_monitor *get_monitor_by_fd(int efd, struct evl_file **efilpp)

@@ -1,7 +1,7 @@
 From 681b48dcbc69f02e65483fb2644dbf45393ab0f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Dec 2022 17:22:49 +0100
-Subject: [PATCH 804/985] evl/timer: be careful about load tearing on reading
+Subject: [PATCH 0804/1013] evl/timer: be careful about load tearing on reading
  the base
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 5faba9762..c609676ea 100644
+index 5faba9762884..c609676eae5b 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -25,11 +25,11 @@ lock_timer_base(struct evl_timer *timer, unsigned long *flags)

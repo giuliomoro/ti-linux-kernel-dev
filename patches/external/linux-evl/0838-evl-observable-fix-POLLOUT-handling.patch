@@ -1,7 +1,7 @@
 From 294c3df84b8a7c8bd552bda19ef4da6b5389519d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Nov 2023 12:22:45 +0100
-Subject: [PATCH 838/985] evl/observable: fix POLLOUT handling
+Subject: [PATCH 0838/1013] evl/observable: fix POLLOUT handling
 
 The oob and in-band poll support for observable needs several
 fixes. First, sharing the wait queue between r/w directions is wrong,
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 68 insertions(+), 41 deletions(-)
 
 diff --git a/include/evl/observable.h b/include/evl/observable.h
-index 21f57ab9a..8a53cd9d8 100644
+index 21f57ab9aa4b..8a53cd9d8410 100644
 --- a/include/evl/observable.h
 +++ b/include/evl/observable.h
 @@ -24,9 +24,11 @@ struct evl_observable {
@@ -41,7 +41,7 @@ index 21f57ab9a..8a53cd9d8 100644
  	hard_spinlock_t lock;		/* guards observers and flush_list */
  	u32 serial_counter;
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index b38edd829..3f65c8a68 100644
+index b38edd82984e..3f65c8a68de3 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -193,6 +193,10 @@ static int add_subscription(struct evl_observable *observable,

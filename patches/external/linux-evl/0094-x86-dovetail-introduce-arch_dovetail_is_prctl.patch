@@ -1,7 +1,7 @@
 From a331f9adcfe8bdddd34fb737fd18e35e50ff3c16 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 1 Aug 2024 10:56:36 +0200
-Subject: [PATCH 094/985] x86: dovetail: introduce arch_dovetail_is_prctl()
+Subject: [PATCH 0094/1013] x86: dovetail: introduce arch_dovetail_is_prctl()
 
 Drop arch_dovetail_is_syscall() which moved to the generic support,
 and uses arch_dovetail_is_prctl().
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 8 deletions(-)
 
 diff --git a/arch/x86/include/asm/dovetail.h b/arch/x86/include/asm/dovetail.h
-index 001520262..a78959af6 100644
+index 001520262ce6..a78959af687a 100644
 --- a/arch/x86/include/asm/dovetail.h
 +++ b/arch/x86/include/asm/dovetail.h
 @@ -41,14 +41,9 @@ void arch_dovetail_switch_finish(bool enter_inband)

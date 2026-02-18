@@ -1,7 +1,7 @@
 From 44e499f3ad78abec99d13db6200e957e10ebca43 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 11 Jun 2020 09:56:08 +0200
-Subject: [PATCH 630/985] evl/work: assert in-band is unstalled on sync call
+Subject: [PATCH 0630/1013] evl/work: assert in-band is unstalled on sync call
 
 We need to wait for the synthetic irq fired by irq_work_queue() to be
 delivered on the current CPU, so we'd better not stall the in-band
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index eb7eef177..3e0a074de 100644
+index eb7eef177ada..3e0a074de3f1 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -98,6 +98,7 @@ int evl_call_inband_sync_from(struct evl_sync_work *sync_work,

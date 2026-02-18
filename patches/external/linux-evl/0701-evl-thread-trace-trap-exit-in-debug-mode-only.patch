@@ -1,7 +1,7 @@
 From 753d1aeb6a4802c10d32bc63954b7873593c8355 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Jun 2021 12:55:56 +0200
-Subject: [PATCH 701/985] evl/thread: trace trap exit in debug mode only
+Subject: [PATCH 0701/1013] evl/thread: trace trap exit in debug mode only
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 75278b056..4313ed83f 100644
+index 75278b056786..4313ed83f478 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1528,6 +1528,7 @@ void handle_oob_trap_entry(unsigned int trapnr, struct pt_regs *regs)

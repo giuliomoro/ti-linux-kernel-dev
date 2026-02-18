@@ -1,7 +1,7 @@
 From fffaa31b6d31a19cb9e618cf2d802bb3f4a93e4a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 May 2020 11:46:28 +0200
-Subject: [PATCH 042/985] gpio: xilinx: irq_pipeline: enable pipelined
+Subject: [PATCH 0042/1013] gpio: xilinx: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/gpio/gpio-xilinx.c b/drivers/gpio/gpio-xilinx.c
-index 2ea8ccfbd..abacf8a33 100644
+index 2ea8ccfbdccd..abacf8a3390a 100644
 --- a/drivers/gpio/gpio-xilinx.c
 +++ b/drivers/gpio/gpio-xilinx.c
 @@ -65,7 +65,7 @@ struct xgpio_instance {

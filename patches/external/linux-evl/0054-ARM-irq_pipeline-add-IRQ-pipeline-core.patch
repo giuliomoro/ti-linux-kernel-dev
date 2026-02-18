@@ -1,7 +1,7 @@
 From bd86955b55ed5a7ac4c04ec2651551f0848c45d5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 24 Oct 2016 12:48:34 +0200
-Subject: [PATCH 054/985] ARM: irq_pipeline: add IRQ pipeline core
+Subject: [PATCH 0054/1013] ARM: irq_pipeline: add IRQ pipeline core
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -36,7 +36,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 arch/arm/kernel/irq_pipeline.c
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index d5bf16462..4755f1dcf 100644
+index d5bf16462bdb..4755f1dcf345 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
 @@ -258,6 +258,11 @@ config FIQ
@@ -52,7 +52,7 @@ index d5bf16462..4755f1dcf 100644
  	bool "Patch physical to virtual translations at runtime" if !ARCH_MULTIPLATFORM
  	default y
 diff --git a/arch/arm/Kconfig.platforms b/arch/arm/Kconfig.platforms
-index 845ab08e2..1d3589846 100644
+index 845ab08e20a4..1d3589846d91 100644
 --- a/arch/arm/Kconfig.platforms
 +++ b/arch/arm/Kconfig.platforms
 @@ -49,6 +49,7 @@ config ARCH_MULTI_V7
@@ -64,7 +64,7 @@ index 845ab08e2..1d3589846 100644
  config ARCH_MULTI_CPU_AUTO
  	def_bool !(ARCH_MULTI_V4 || ARCH_MULTI_V4T || ARCH_MULTI_V6_V7)
 diff --git a/arch/arm/common/mcpm_entry.c b/arch/arm/common/mcpm_entry.c
-index e013ff116..ae289af41 100644
+index e013ff1168d3..ae289af41903 100644
 --- a/arch/arm/common/mcpm_entry.c
 +++ b/arch/arm/common/mcpm_entry.c
 @@ -206,7 +206,7 @@ int mcpm_cpu_power_up(unsigned int cpu, unsigned int cluster)
@@ -122,7 +122,7 @@ index e013ff116..ae289af41 100644
  		pr_err("%s returned %d\n", __func__, ret);
  	return ret;
 diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
-index d33c1e24e..6d063d1ea 100644
+index d33c1e24e00b..6d063d1ea90f 100644
 --- a/arch/arm/include/asm/assembler.h
 +++ b/arch/arm/include/asm/assembler.h
 @@ -127,7 +127,7 @@ THUMB(	fpreg	.req	r7	)
@@ -162,7 +162,7 @@ index d33c1e24e..6d063d1ea 100644
  	disable_irq_notrace
  	asm_trace_hardirqs_off \save
 diff --git a/arch/arm/include/asm/atomic.h b/arch/arm/include/asm/atomic.h
-index f0e3b01af..7749a7e7e 100644
+index f0e3b01afa74..7749a7e7e88d 100644
 --- a/arch/arm/include/asm/atomic.h
 +++ b/arch/arm/include/asm/atomic.h
 @@ -164,9 +164,9 @@ static inline void arch_atomic_##op(int i, atomic_t *v)			\
@@ -218,7 +218,7 @@ index f0e3b01af..7749a7e7e 100644
  	return ret;
  }
 diff --git a/arch/arm/include/asm/bitops.h b/arch/arm/include/asm/bitops.h
-index 714440fa2..5e83e1e21 100644
+index 714440fa2fc6..5e83e1e215f4 100644
 --- a/arch/arm/include/asm/bitops.h
 +++ b/arch/arm/include/asm/bitops.h
 @@ -40,9 +40,9 @@ static inline void ____atomic_set_bit(unsigned int bit, volatile unsigned long *
@@ -297,7 +297,7 @@ index 714440fa2..5e83e1e21 100644
  	return (res & mask) != 0;
  }
 diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
-index 9beb64d30..30e173a2b 100644
+index 9beb64d30586..30e173a2b992 100644
 --- a/arch/arm/include/asm/cmpxchg.h
 +++ b/arch/arm/include/asm/cmpxchg.h
 @@ -79,17 +79,17 @@ __arch_xchg(unsigned long x, volatile void *ptr, int size)
@@ -324,7 +324,7 @@ index 9beb64d30..30e173a2b 100644
  	case 1:
 diff --git a/arch/arm/include/asm/irq_pipeline.h b/arch/arm/include/asm/irq_pipeline.h
 new file mode 100644
-index 000000000..f53e4f7a0
+index 000000000000..f53e4f7a0e81
 --- /dev/null
 +++ b/arch/arm/include/asm/irq_pipeline.h
 @@ -0,0 +1,147 @@
@@ -476,7 +476,7 @@ index 000000000..f53e4f7a0
 +
 +#endif /* _ASM_ARM_IRQ_PIPELINE_H */
 diff --git a/arch/arm/include/asm/irqflags.h b/arch/arm/include/asm/irqflags.h
-index aeec7f24e..3c67ce236 100644
+index aeec7f24eb75..3c67ce236fd9 100644
 --- a/arch/arm/include/asm/irqflags.h
 +++ b/arch/arm/include/asm/irqflags.h
 @@ -5,6 +5,7 @@
@@ -639,7 +639,7 @@ index aeec7f24e..3c67ce236 100644
  
  #endif /* ifdef __KERNEL__ */
 diff --git a/arch/arm/include/asm/outercache.h b/arch/arm/include/asm/outercache.h
-index 336463775..811978d36 100644
+index 3364637755e8..811978d36e4a 100644
 --- a/arch/arm/include/asm/outercache.h
 +++ b/arch/arm/include/asm/outercache.h
 @@ -78,8 +78,13 @@ static inline void outer_flush_range(phys_addr_t start, phys_addr_t end)
@@ -658,7 +658,7 @@ index 336463775..811978d36 100644
  
  /**
 diff --git a/arch/arm/include/asm/ptrace.h b/arch/arm/include/asm/ptrace.h
-index 6eb311fb2..df25c88b2 100644
+index 6eb311fb2da0..df25c88b2c78 100644
 --- a/arch/arm/include/asm/ptrace.h
 +++ b/arch/arm/include/asm/ptrace.h
 @@ -21,6 +21,9 @@ struct svc_pt_regs {
@@ -672,7 +672,7 @@ index 6eb311fb2..df25c88b2 100644
  
  #define to_svc_pt_regs(r) container_of(r, struct svc_pt_regs, regs)
 diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index 5868cb3c0..8cee313bb 100644
+index 5868cb3c0eb3..8cee313bbb33 100644
 --- a/arch/arm/include/asm/thread_info.h
 +++ b/arch/arm/include/asm/thread_info.h
 @@ -180,5 +180,10 @@ extern int vfp_restore_user_hwstate(struct user_vfp *,
@@ -687,7 +687,7 @@ index 5868cb3c0..8cee313bb 100644
  #endif /* __KERNEL__ */
  #endif /* __ASM_ARM_THREAD_INFO_H */
 diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
-index 88d32044a..6e8ef0280 100644
+index 88d32044aadd..6e8ef028015c 100644
 --- a/arch/arm/kernel/Makefile
 +++ b/arch/arm/kernel/Makefile
 @@ -92,6 +92,8 @@ ifeq ($(CONFIG_DEBUG_LL),y)
@@ -700,7 +700,7 @@ index 88d32044a..6e8ef0280 100644
  # nor global data is available. Everything has to be allocated on the stack.
  CFLAGS_head-inflate-data.o := $(call cc-option,-Wframe-larger-than=10240)
 diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
-index 0bca14fa0..7e7f01fc7 100644
+index 0bca14fa0c40..7e7f01fc75f0 100644
 --- a/arch/arm/kernel/asm-offsets.c
 +++ b/arch/arm/kernel/asm-offsets.c
 @@ -52,6 +52,7 @@ int main(void)
@@ -712,7 +712,7 @@ index 0bca14fa0..7e7f01fc7 100644
    DEFINE(TI_VFPSTATE,		offsetof(struct thread_info, vfpstate));
  #ifdef CONFIG_SMP
 diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index ef6a657c8..4756e56d6 100644
+index ef6a657c8d13..4756e56d609f 100644
 --- a/arch/arm/kernel/entry-armv.S
 +++ b/arch/arm/kernel/entry-armv.S
 @@ -5,6 +5,7 @@
@@ -822,7 +822,7 @@ index ef6a657c8..4756e56d6 100644
  ENDPROC(__pabt_usr)
  ENDPROC(ret_from_exception)
 diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index f379c852d..2fcf5d01b 100644
+index f379c852dcb7..2fcf5d01bfdc 100644
 --- a/arch/arm/kernel/entry-common.S
 +++ b/arch/arm/kernel/entry-common.S
 @@ -125,6 +125,10 @@ no_work_pending:
@@ -837,7 +837,7 @@ index f379c852d..2fcf5d01b 100644
  /*
   * This is how we return from a fork.
 diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index 99411fa91..55004682c 100644
+index 99411fa91350..55004682c718 100644
 --- a/arch/arm/kernel/entry-header.S
 +++ b/arch/arm/kernel/entry-header.S
 @@ -202,15 +202,21 @@
@@ -885,7 +885,7 @@ index 99411fa91..55004682c 100644
   * These are the registers used in the syscall handler, and allow us to
   * have in theory up to 7 arguments to a function - r0 to r6.
 diff --git a/arch/arm/kernel/irq.c b/arch/arm/kernel/irq.c
-index dab42d066..5068703e2 100644
+index dab42d066d06..5068703e2286 100644
 --- a/arch/arm/kernel/irq.c
 +++ b/arch/arm/kernel/irq.c
 @@ -23,6 +23,7 @@
@@ -913,7 +913,7 @@ index dab42d066..5068703e2 100644
  {
 diff --git a/arch/arm/kernel/irq_pipeline.c b/arch/arm/kernel/irq_pipeline.c
 new file mode 100644
-index 000000000..7d366c959
+index 000000000000..7d366c959248
 --- /dev/null
 +++ b/arch/arm/kernel/irq_pipeline.c
 @@ -0,0 +1,24 @@
@@ -942,7 +942,7 @@ index 000000000..7d366c959
 +	/* no per-arch init. */
 +}
 diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index e9e828b6b..35c7285bf 100644
+index e9e828b6bb30..35c7285bfd04 100644
 --- a/arch/arm/kernel/patch.c
 +++ b/arch/arm/kernel/patch.c
 @@ -17,7 +17,7 @@ struct patch {
@@ -955,7 +955,7 @@ index e9e828b6b..35c7285bf 100644
  static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
  {
 diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index e16ed1029..45b2a9ca0 100644
+index e16ed102960c..45b2a9ca012d 100644
 --- a/arch/arm/kernel/process.c
 +++ b/arch/arm/kernel/process.c
 @@ -440,3 +440,18 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
@@ -978,7 +978,7 @@ index e16ed1029..45b2a9ca0 100644
 +	unstall_inband_nocheck();
 +}
 diff --git a/arch/arm/kernel/signal.c b/arch/arm/kernel/signal.c
-index 79a6730fa..a0833136c 100644
+index 79a6730fa0eb..a0833136ce2c 100644
 --- a/arch/arm/kernel/signal.c
 +++ b/arch/arm/kernel/signal.c
 @@ -8,6 +8,7 @@
@@ -1026,7 +1026,7 @@ index 79a6730fa..a0833136c 100644
  }
  
 diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 3431c0553..1ebb9a540 100644
+index 3431c0553f45..1ebb9a54037e 100644
 --- a/arch/arm/kernel/smp.c
 +++ b/arch/arm/kernel/smp.c
 @@ -79,7 +79,7 @@ enum ipi_msg_type {
@@ -1236,7 +1236,7 @@ index 3431c0553..1ebb9a540 100644
  		irq_set_status_flags(ipi_base + i, IRQ_HIDDEN);
  	}
 diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
-index 6ea645939..9838b1f3e 100644
+index 6ea645939573..9838b1f3e797 100644
 --- a/arch/arm/kernel/traps.c
 +++ b/arch/arm/kernel/traps.c
 @@ -412,7 +412,7 @@ int is_valid_bugaddr(unsigned long pc)
@@ -1249,7 +1249,7 @@ index 6ea645939..9838b1f3e 100644
  void register_undef_hook(struct undef_hook *hook)
  {
 diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 3c6ddb1af..348eeb4c6 100644
+index 3c6ddb1afdc4..348eeb4c6986 100644
 --- a/arch/arm/mm/alignment.c
 +++ b/arch/arm/mm/alignment.c
 @@ -810,7 +810,7 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
@@ -1271,7 +1271,7 @@ index 3c6ddb1af..348eeb4c6 100644
  			set_cr(cr_no_alignment);
  	}
 diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index ab01b51de..687af34b3 100644
+index ab01b51de559..687af34b36af 100644
 --- a/arch/arm/mm/fault.c
 +++ b/arch/arm/mm/fault.c
 @@ -9,6 +9,7 @@

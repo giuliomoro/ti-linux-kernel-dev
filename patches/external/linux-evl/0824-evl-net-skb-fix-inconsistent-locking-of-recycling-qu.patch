@@ -1,7 +1,7 @@
 From 9688a2ec7e0d957049bb5db402b3040b6f2e54e2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 5 Oct 2023 18:07:18 +0200
-Subject: [PATCH 824/985] evl/net: skb: fix inconsistent locking of recycling
+Subject: [PATCH 0824/1013] evl/net: skb: fix inconsistent locking of recycling
  queue
 
 Interrupts on/off mismatch when locking the recycling queue.  At this
@@ -47,7 +47,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 10 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
-index 16b3db48e..e10f3b8ab 100644
+index 16b3db48e8bb..e10f3b8abfa1 100644
 --- a/kernel/evl/net/qdisc/core.c
 +++ b/kernel/evl/net/qdisc/core.c
 @@ -15,7 +15,7 @@ static LIST_HEAD(all_net_qdisc);
@@ -96,7 +96,7 @@ index 16b3db48e..e10f3b8ab 100644
  	struct evl_net_qdisc *qdisc = dev->oob_context.dev_state.estate->qdisc;
  
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 3f5456b1e..391c0dd19 100644
+index 3f5456b1e01b..391c0dd1940c 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -167,10 +167,12 @@ static inline void maybe_kick_recycler(void)

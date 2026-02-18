@@ -1,7 +1,7 @@
 From bdd69c3db742b6a657162a7d845300d3c782989c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 5 Jun 2025 17:31:49 +0200
-Subject: [PATCH 938/985] evl/net: enable oob traffic via loopback devices
+Subject: [PATCH 0938/1013] evl/net: enable oob traffic via loopback devices
 
 This patch allows for enabling 'lo' as an oob networking port. When
 enabled, the loopback device accepts back any oob traffic which it
@@ -28,7 +28,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  9 files changed, 130 insertions(+), 32 deletions(-)
 
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index 22d4f4df3..2d45ae898 100644
+index 22d4f4df307d..2d45ae89804f 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -46,6 +46,16 @@ evl_net_filter_rx(struct net_device *dev, struct sk_buff *skb)
@@ -49,7 +49,7 @@ index 22d4f4df3..2d45ae898 100644
  		return __evl_net_filter_rx(est, skb);
  
 diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
-index ce58cb236..d255aed1a 100644
+index ce58cb2363b1..d255aed1a086 100644
 --- a/include/evl/net/ipv4/arp.h
 +++ b/include/evl/net/ipv4/arp.h
 @@ -34,6 +34,10 @@ void evl_net_cleanup_arp(struct net *net);
@@ -64,7 +64,7 @@ index ce58cb236..d255aed1a 100644
  evl_net_get_arp_entry(struct net_device *dev, __be32 addr);
  
 diff --git a/include/evl/net/route.h b/include/evl/net/route.h
-index 27a4955f3..4ee23115d 100644
+index 27a4955f3ddd..4ee23115d318 100644
 --- a/include/evl/net/route.h
 +++ b/include/evl/net/route.h
 @@ -35,6 +35,10 @@ static inline void evl_net_put_route(struct evl_net_route *ert)
@@ -79,7 +79,7 @@ index 27a4955f3..4ee23115d 100644
  
  static inline struct dst_entry *evl_net_route_dst(const struct evl_net_route *ert)
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 44ac47a96..6bcdced6b 100644
+index 44ac47a969ff..6bcdced6b66e 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -461,17 +461,21 @@ ssize_t netif_oob_query_pool(struct net_device *dev, char *buf)
@@ -113,7 +113,7 @@ index 44ac47a96..6bcdced6b 100644
  
  	return NOTIFY_DONE;
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 36f036595..892098df7 100644
+index 36f036595842..892098df7704 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -128,19 +128,17 @@ EXPORT_SYMBOL_GPL(evl_net_wake_rx);
@@ -170,7 +170,7 @@ index 36f036595..892098df7 100644
 +	evl_net_wake_rx(dev);
 +}
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index 7c47a113f..f690a5c0a 100644
+index 7c47a113fd07..f690a5c0a6c3 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -75,9 +75,9 @@ static struct evl_cache_ops arp_cache_ops = {
@@ -247,7 +247,7 @@ index 7c47a113f..f690a5c0a 100644
 +	evl_del_cache_entry(cache, &key);
 +}
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 0289e01ec..7219f297d 100644
+index 0289e01ecab1..7219f297d05b 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -273,10 +273,23 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,
@@ -288,7 +288,7 @@ index 0289e01ec..7219f297d 100644
  
  	neigh_release(neigh);
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 0e4709e73..6f59a46a5 100644
+index 0e4709e7384c..6f59a46a53aa 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -222,6 +222,8 @@ int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
@@ -301,7 +301,7 @@ index 0e4709e73..6f59a46a5 100644
  		return xmit_oob(dev, skb);
  
 diff --git a/kernel/evl/net/route.c b/kernel/evl/net/route.c
-index 46ad54b9b..25f5ba1fc 100644
+index 46ad54b9b9b5..25f5ba1fc7b6 100644
 --- a/kernel/evl/net/route.c
 +++ b/kernel/evl/net/route.c
 @@ -8,6 +8,7 @@

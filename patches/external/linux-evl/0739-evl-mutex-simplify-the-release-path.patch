@@ -1,7 +1,7 @@
 From 58c5ed23de3e27f988a8be7670b5f392bd24404b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 27 Aug 2022 11:10:41 +0200
-Subject: [PATCH 739/985] evl/mutex: simplify the release path
+Subject: [PATCH 0739/1013] evl/mutex: simplify the release path
 
 There is no point in duplicating the logic which transfer_ownership()
 already provides.  We may unconditionally rely on this routine for
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 30 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index d96f8c9f0..1a02b2f07 100644
+index d96f8c9f04df..1a02b2f07b72 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -465,9 +465,9 @@ static void flush_mutex_locked(struct evl_mutex *mutex, int reason)

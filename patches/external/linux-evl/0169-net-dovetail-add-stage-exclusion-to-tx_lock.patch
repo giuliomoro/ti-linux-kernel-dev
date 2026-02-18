@@ -1,7 +1,7 @@
 From fa5d2aaace0e180411beb3044675905dfd233a03 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 27 Apr 2025 15:43:24 +0200
-Subject: [PATCH 169/985] net: dovetail: add stage exclusion to tx_lock
+Subject: [PATCH 0169/1013] net: dovetail: add stage exclusion to tx_lock
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 772890cfc..7dec86b43 100644
+index 772890cfc94e..7dec86b4374e 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4576,6 +4576,7 @@ static inline void __netif_tx_lock(struct netdev_queue *txq, int cpu)

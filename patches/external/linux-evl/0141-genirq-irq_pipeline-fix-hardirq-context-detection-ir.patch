@@ -1,7 +1,7 @@
 From db9c38dbf7ddeb973b357c7ef1fa10a08963939a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 4 Mar 2025 09:19:04 +0100
-Subject: [PATCH 141/985] genirq: irq_pipeline: fix hardirq context detection
+Subject: [PATCH 0141/1013] genirq: irq_pipeline: fix hardirq context detection
  (irqctx)
 
 Each incoming IRQ passed to handle_irq_desc() is checked for calling
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index fe195606b..b1044ed9e 100644
+index fe195606b192..b1044ed9e3ce 100644
 --- a/kernel/irq/irqdesc.c
 +++ b/kernel/irq/irqdesc.c
 @@ -684,7 +684,7 @@ static inline bool is_hardirq(struct irq_desc *desc)

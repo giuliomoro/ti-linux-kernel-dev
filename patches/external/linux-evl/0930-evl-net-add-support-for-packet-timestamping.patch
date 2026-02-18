@@ -1,7 +1,7 @@
 From 7cc9c1a055d01729905b9f151f2cdf0c76eaad75 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 1 May 2025 12:28:07 +0200
-Subject: [PATCH 930/985] evl/net: add support for packet timestamping
+Subject: [PATCH 0930/1013] evl/net: add support for packet timestamping
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -33,7 +33,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 
 diff --git a/arch/arm/include/dovetail/skbuff.h b/arch/arm/include/dovetail/skbuff.h
 new file mode 100644
-index 000000000..c0d9f54a1
+index 000000000000..c0d9f54a1abb
 --- /dev/null
 +++ b/arch/arm/include/dovetail/skbuff.h
 @@ -0,0 +1,7 @@
@@ -46,7 +46,7 @@ index 000000000..c0d9f54a1
 +#endif /* !_EVL_DOVETAIL_SKBUFF_H */
 diff --git a/arch/arm64/include/dovetail/skbuff.h b/arch/arm64/include/dovetail/skbuff.h
 new file mode 100644
-index 000000000..c0d9f54a1
+index 000000000000..c0d9f54a1abb
 --- /dev/null
 +++ b/arch/arm64/include/dovetail/skbuff.h
 @@ -0,0 +1,7 @@
@@ -59,7 +59,7 @@ index 000000000..c0d9f54a1
 +#endif /* !_EVL_DOVETAIL_SKBUFF_H */
 diff --git a/arch/x86/include/dovetail/skbuff.h b/arch/x86/include/dovetail/skbuff.h
 new file mode 100644
-index 000000000..c0d9f54a1
+index 000000000000..c0d9f54a1abb
 --- /dev/null
 +++ b/arch/x86/include/dovetail/skbuff.h
 @@ -0,0 +1,7 @@
@@ -72,7 +72,7 @@ index 000000000..c0d9f54a1
 +#endif /* !_EVL_DOVETAIL_SKBUFF_H */
 diff --git a/include/asm-generic/evl/skbuff.h b/include/asm-generic/evl/skbuff.h
 new file mode 100644
-index 000000000..c9515f135
+index 000000000000..c9515f135350
 --- /dev/null
 +++ b/include/asm-generic/evl/skbuff.h
 @@ -0,0 +1,25 @@
@@ -102,7 +102,7 @@ index 000000000..c9515f135
 +
 +#endif /* !_ASM_GENERIC_EVL_SKBUFF_H */
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index 593ac7594..c1a980b3f 100644
+index 593ac759485b..c1a980b3f037 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -20,13 +20,16 @@ struct evl_socket;
@@ -124,7 +124,7 @@ index 593ac7594..c1a980b3f 100644
  };
  #define EVL_NET_CB(__skb)  ((struct evl_net_cb *)&((__skb)->cb[0]))
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 6dacc0e6c..6952aafb7 100644
+index 6dacc0e6c21a..6952aafb730f 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -17,6 +17,7 @@
@@ -166,7 +166,7 @@ index 6dacc0e6c..6952aafb7 100644
  	union {
 diff --git a/include/evl/net/timestamping.h b/include/evl/net/timestamping.h
 new file mode 100644
-index 000000000..4cc3200d4
+index 000000000000..4cc3200d4c17
 --- /dev/null
 +++ b/include/evl/net/timestamping.h
 @@ -0,0 +1,71 @@
@@ -242,7 +242,7 @@ index 000000000..4cc3200d4
 +
 +#endif /* !_EVL_NET_TIMESTAMPING_H */
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index 8a8f2060c..1b641d85d 100644
+index 8a8f2060c20d..1b641d85dc96 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -13,6 +13,17 @@
@@ -290,7 +290,7 @@ index 8a8f2060c..1b641d85d 100644
  	int level;
  	int option;
 diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
-index b5fd52780..26d2ea3ee 100644
+index b5fd52780e1d..26d2ea3eee00 100644
 --- a/kernel/evl/net/Makefile
 +++ b/kernel/evl/net/Makefile
 @@ -2,4 +2,5 @@ obj-$(CONFIG_EVL_NET) += ethernet/ packet/ ipv4/ qdisc/
@@ -301,7 +301,7 @@ index b5fd52780..26d2ea3ee 100644
 +networking-y := net.o socket.o dev.o input.o output.o \
 +		skb.o route.o timestamping.o
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index dc7d43657..44ac47a96 100644
+index dc7d43657261..44ac47a969ff 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -291,6 +291,7 @@ static void disable_oob_port(struct net_device *dev) /* inband, rtnl_lock held *
@@ -313,7 +313,7 @@ index dc7d43657..44ac47a96 100644
  	kfree(est);
  	rnds->estate = NULL;
 diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
-index de470dafa..922907708 100644
+index de470dafac98..922907708930 100644
 --- a/kernel/evl/net/ethernet/input.c
 +++ b/kernel/evl/net/ethernet/input.c
 @@ -11,6 +11,7 @@
@@ -325,7 +325,7 @@ index de470dafa..922907708 100644
  static DECLARE_BITMAP(vlan_map, VLAN_N_VID);
  
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index be52d4e49..67ee062aa 100644
+index be52d4e49e0b..67ee062aa127 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -18,6 +18,7 @@
@@ -358,7 +358,7 @@ index be52d4e49..67ee062aa 100644
  		skb_list_del_init(skb);
  
 diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
-index 0fb5a8810..8b65b929c 100644
+index 0fb5a8810e93..8b65b929c146 100644
 --- a/kernel/evl/net/ipv4/output.c
 +++ b/kernel/evl/net/ipv4/output.c
 @@ -136,6 +136,15 @@ struct sk_buff *evl_net_ipv4_build_datagram(struct evl_socket *esk,
@@ -378,7 +378,7 @@ index 0fb5a8810..8b65b929c 100644
  
  		skb->ip_summed = CHECKSUM_NONE;
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index bae36f061..6d60865ba 100644
+index bae36f06190e..6d60865ba7af 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -17,6 +17,7 @@
@@ -496,7 +496,7 @@ index bae36f061..6d60865ba 100644
  }
  
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index dfc231be0..0e4709e73 100644
+index dfc231be0b58..0e4709e7384c 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -21,10 +21,31 @@
@@ -597,7 +597,7 @@ index dfc231be0..0e4709e73 100644
  		return xmit_oob(dev, skb);
  
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 6b447853a..2a0171b97 100644
+index 6b447853a995..2a0171b97cd8 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -26,6 +26,7 @@
@@ -723,7 +723,7 @@ index 6b447853a..2a0171b97 100644
  
  	dev = esk->proto->get_netif(esk);
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 0e18c993c..c0c9d7a5f 100644
+index 0e18c993c602..c0c9d7a5f3cb 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -32,6 +32,7 @@
@@ -849,7 +849,7 @@ index 0e18c993c..c0c9d7a5f 100644
  	return -EINVAL;
 diff --git a/kernel/evl/net/timestamping.c b/kernel/evl/net/timestamping.c
 new file mode 100644
-index 000000000..9b72cbd58
+index 000000000000..9b72cbd584e4
 --- /dev/null
 +++ b/kernel/evl/net/timestamping.c
 @@ -0,0 +1,293 @@

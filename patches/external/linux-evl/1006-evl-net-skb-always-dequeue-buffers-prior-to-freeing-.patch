@@ -1,0 +1,30 @@
+From 4b480036dc31a372231c58c71e786c2f114d7270 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 10:24:47 +0100
+Subject: [PATCH 1006/1013] evl/net: skb: always dequeue buffers prior to
+ freeing them
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/skb.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 50090c181327..2ceda1d9608f 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -369,8 +369,10 @@ void evl_net_free_skb_list(struct list_head *list)
+ 	if (list_empty(list))
+ 		return;
+ 
+-	list_for_each_entry_safe(skb, n, list, list)
++	list_for_each_entry_safe(skb, n, list, list) {
++		list_del(&skb->list);
+ 		free_skb(skb);
++	}
+ 
+ 	evl_schedule();
+ 	maybe_kick_recycler();
+-- 
+2.30.2
+

@@ -1,7 +1,7 @@
 From 101e5880eff77f4d0aa50f5b98d3f85d5b2e01cb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 18 Mar 2019 16:11:35 +0100
-Subject: [PATCH 351/985] evl/init: fix SMP build
+Subject: [PATCH 0351/1013] evl/init: fix SMP build
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 deletions(-)
 
 diff --git a/include/evl/init.h b/include/evl/init.h
-index f668d709a..b588c58b8 100644
+index f668d709a40c..b588c58b81f4 100644
 --- a/include/evl/init.h
 +++ b/include/evl/init.h
 @@ -14,9 +14,7 @@ struct evl_machine_cpudata {

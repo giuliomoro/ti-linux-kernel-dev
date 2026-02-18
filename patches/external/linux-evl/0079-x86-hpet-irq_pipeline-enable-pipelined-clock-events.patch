@@ -1,7 +1,8 @@
 From caf6d61756e8f612f9b9d2a8ce3656422fe5b63f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 28 Apr 2019 16:23:29 +0200
-Subject: [PATCH 079/985] x86/hpet: irq_pipeline: enable pipelined clock events
+Subject: [PATCH 0079/1013] x86/hpet: irq_pipeline: enable pipelined clock
+ events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 13ed53da8..af7ca2c73 100644
+index 13ed53da845d..af7ca2c73770 100644
 --- a/arch/x86/kernel/hpet.c
 +++ b/arch/x86/kernel/hpet.c
 @@ -407,7 +407,7 @@ static void hpet_init_clockevent(struct hpet_channel *hc, unsigned int rating)
@@ -32,7 +33,7 @@ index 13ed53da8..af7ca2c73 100644
  }
  
 diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index 52e1f3f0b..f9355478f 100644
+index 52e1f3f0b361..f9355478f333 100644
 --- a/arch/x86/kernel/time.c
 +++ b/arch/x86/kernel/time.c
 @@ -36,7 +36,7 @@ EXPORT_SYMBOL(profile_pc);

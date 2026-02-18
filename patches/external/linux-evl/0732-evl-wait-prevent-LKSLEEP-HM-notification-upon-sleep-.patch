@@ -1,8 +1,8 @@
 From 90a6f5c8ebd4f0f9278224ef11a3737d11554fc9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Jul 2022 20:12:51 +0200
-Subject: [PATCH 732/985] evl/wait: prevent LKSLEEP HM notification upon sleep
- on a gated event
+Subject: [PATCH 0732/1013] evl/wait: prevent LKSLEEP HM notification upon
+ sleep on a gated event
 
 Consistency in manipulating a gated monitor construct is guaranteed by
 the core, although we do enqueue the waiter prior to releasing the
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 34 insertions(+), 9 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index b833880a2..3ff58f525 100644
+index b833880a25d7..3ff58f5256e2 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -86,6 +86,10 @@ void evl_add_wait_queue(struct evl_wait_queue *wq,
@@ -34,7 +34,7 @@ index b833880a2..3ff58f525 100644
  
  static inline bool evl_wait_active(struct evl_wait_queue *wq)
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index e0b31ecda..9b2aafb96 100644
+index e0b31ecda4fc..9b2aafb9627b 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -503,7 +503,12 @@ static int wait_monitor(struct file *filp,
@@ -52,7 +52,7 @@ index e0b31ecda..9b2aafb96 100644
  	raw_spin_lock(&curr->lock);
  	raw_spin_lock(&curr->rq->lock);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 83144c9e0..da297a148 100644
+index 83144c9e06ee..da297a1481b6 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -35,19 +35,14 @@ void evl_destroy_wait(struct evl_wait_queue *wq)

@@ -1,7 +1,7 @@
 From 10185def094f4be8398f81cca5a80dec60062077 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Dec 2020 10:51:34 +0100
-Subject: [PATCH 665/985] evl/crossing: add oob vs in-band synchronization
+Subject: [PATCH 0665/1013] evl/crossing: add oob vs in-band synchronization
  barrier
 
 This is a simple synchronization mechanism allowing an in-band caller
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evl/crossing.h b/include/evl/crossing.h
 new file mode 100644
-index 000000000..12dce869c
+index 000000000000..12dce869c112
 --- /dev/null
 +++ b/include/evl/crossing.h
 @@ -0,0 +1,74 @@

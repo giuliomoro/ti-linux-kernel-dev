@@ -1,7 +1,7 @@
 From 68bbf7762bd94f455441311c0f233f9e5d423af0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 31 May 2019 14:18:31 +0200
-Subject: [PATCH 389/985] evl/wait: inline wake up helpers
+Subject: [PATCH 0389/1013] evl/wait: inline wake up helpers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 29 insertions(+), 31 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index ab701701f..3fa5f98c0 100644
+index ab701701f1ec..3fa5f98c068d 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -16,6 +16,7 @@
@@ -58,7 +58,7 @@ index ab701701f..3fa5f98c0 100644
  void evl_flush_wait(struct evl_wait_queue *wq, int reason);
  
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 056a8dfc2..c7661fefc 100644
+index 056a8dfc2a82..c7661fefc40c 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -72,36 +72,6 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

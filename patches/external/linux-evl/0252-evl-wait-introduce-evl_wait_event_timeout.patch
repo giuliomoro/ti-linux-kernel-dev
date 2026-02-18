@@ -1,7 +1,7 @@
 From 5f46daef3efe0a85032b4d76680b32e890533a14 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 12:35:00 +0100
-Subject: [PATCH 252/985] evl/wait: introduce evl_wait_event_timeout()
+Subject: [PATCH 0252/1013] evl/wait: introduce evl_wait_event_timeout()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 66 insertions(+), 23 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 0a4b32db0..39a8c3a49 100644
+index 0a4b32db01ab..39a8c3a49daf 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -27,6 +27,7 @@
@@ -23,7 +23,7 @@ index 0a4b32db0..39a8c3a49 100644
  struct evl_thread;
  struct evl_rq;
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
-index b942f47b5..d46f1cf6e 100644
+index b942f47b5bde..d46f1cf6e5e1 100644
 --- a/include/evenless/wait.h
 +++ b/include/evenless/wait.h
 @@ -9,6 +9,7 @@
@@ -117,7 +117,7 @@ index b942f47b5..d46f1cf6e 100644
  			struct evl_thread *waiter);
  
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 56e71dfe7..6fd843473 100644
+index 56e71dfe7341..6fd8434732a6 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -35,35 +35,26 @@ void evl_destroy_wait(struct evl_wait_queue *wq)

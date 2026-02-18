@@ -1,8 +1,8 @@
 From 597ce253c541cb3e6b3cc5997dfafa5755155699 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 24 Jul 2018 21:42:33 +0200
-Subject: [PATCH 018/985] clocksource/dw_apb_timer: turn into user-visible MMIO
- clocksource
+Subject: [PATCH 0018/1013] clocksource/dw_apb_timer: turn into user-visible
+ MMIO clocksource
 
 Enable generic clocksource vDSO support for ARM only since no other
 architecture features it at the moment. Some arm64, x86 platforms may
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 21 insertions(+), 23 deletions(-)
 
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 53b3cf0b3..c4a3373da 100644
+index 53b3cf0b32d7..c4a3373dacc4 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
 @@ -66,6 +66,8 @@ config OMAP_DM_TIMER
@@ -36,7 +36,7 @@ index 53b3cf0b3..c4a3373da 100644
  	  Enables the support for the dw_apb timer.
  
 diff --git a/drivers/clocksource/dw_apb_timer.c b/drivers/clocksource/dw_apb_timer.c
-index f5f24a95e..a974b9df4 100644
+index f5f24a95ee82..a974b9df4406 100644
 --- a/drivers/clocksource/dw_apb_timer.c
 +++ b/drivers/clocksource/dw_apb_timer.c
 @@ -43,7 +43,7 @@ ced_to_dw_apb_ced(struct clock_event_device *evt)
@@ -116,7 +116,7 @@ index f5f24a95e..a974b9df4 100644
  
  /**
 diff --git a/include/linux/dw_apb_timer.h b/include/linux/dw_apb_timer.h
-index 82ebf9223..d69dbd096 100644
+index 82ebf9223948..d69dbd096123 100644
 --- a/include/linux/dw_apb_timer.h
 +++ b/include/linux/dw_apb_timer.h
 @@ -30,7 +30,7 @@ struct dw_apb_clock_event_device {

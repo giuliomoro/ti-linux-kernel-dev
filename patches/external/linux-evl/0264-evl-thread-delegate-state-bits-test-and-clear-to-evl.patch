@@ -1,7 +1,7 @@
 From 62ebe6bba994560da706c449937bb85d4c209539 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 5 Feb 2019 18:10:50 +0100
-Subject: [PATCH 264/985] evl/thread: delegate state bits test-and-clear to
+Subject: [PATCH 0264/1013] evl/thread: delegate state bits test-and-clear to
  evl_wakeup_thread()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 14 insertions(+), 29 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index e73fade65..fa00ac0a9 100644
+index e73fade656cc..fa00ac0a9587 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -220,7 +220,7 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -24,7 +24,7 @@ index e73fade65..fa00ac0a9 100644
  
  void evl_hold_thread(struct evl_thread *thread,
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 42637d070..8f383427e 100644
+index 42637d070658..8f383427e7b4 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -520,13 +520,14 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,

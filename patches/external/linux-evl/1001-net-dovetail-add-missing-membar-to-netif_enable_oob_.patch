@@ -1,0 +1,26 @@
+From 0b68abaab97533c3846ffa61ad7755b9c4f5422c Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 15:55:58 +0100
+Subject: [PATCH 1001/1013] net: dovetail: add missing membar to
+ netif_enable_oob_port()
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/linux/netdevice.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 7561c79eaffa..665399edc7c5 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -4419,6 +4419,7 @@ static inline bool netif_oob_port(struct net_device *dev)
+ 
+ static inline void netif_enable_oob_port(struct net_device *dev)
+ {
++	smp_mb__before_atomic();
+ 	set_bit(__LINK_STATE_OOB_PORT, &dev->state);
+ }
+ 
+-- 
+2.30.2
+

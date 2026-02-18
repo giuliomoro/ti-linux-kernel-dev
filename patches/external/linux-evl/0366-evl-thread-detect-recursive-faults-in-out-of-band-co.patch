@@ -1,7 +1,7 @@
 From 03292d666fce539fea0cee2ec4afa90067488ac4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 8 May 2019 11:25:43 +0200
-Subject: [PATCH 366/985] evl/thread: detect recursive faults in out-of-band
+Subject: [PATCH 0366/1013] evl/thread: detect recursive faults in out-of-band
  context
 
 Make sure breakage and/or WARN_ON() in the in-band transition code we
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 25 insertions(+), 7 deletions(-)
 
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 4acd323e7..520e41826 100644
+index 4acd323e75f9..520e41826645 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -51,6 +51,7 @@
@@ -28,7 +28,7 @@ index 4acd323e7..520e41826 100644
  /*
   * Must follow strictly the declaration order of the state flags
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 1db0e312b..cf0031b8a 100644
+index 1db0e312b93f..cf0031b8aa75 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1635,6 +1635,20 @@ void arch_inband_task_init(struct task_struct *tsk)

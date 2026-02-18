@@ -1,7 +1,7 @@
 From e46d395c08b08ae9d1669de906e5c0e716a3c0e9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 20 Sep 2020 11:40:02 +0200
-Subject: [PATCH 649/985] evl/sched: perform early lookup into FIFO class to
+Subject: [PATCH 0649/1013] evl/sched: perform early lookup into FIFO class to
  pick threads
 
 This change first asserts that the FIFO class is the topmost
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 55 insertions(+), 41 deletions(-)
 
 diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
-index 6eecd7b6e..89a6b8995 100644
+index 6eecd7b6ec9a..89a6b8995eae 100644
 --- a/include/evl/sched/fifo.h
 +++ b/include/evl/sched/fifo.h
 @@ -109,6 +109,4 @@ int evl_init_fifo_thread(struct evl_thread *thread)
@@ -37,7 +37,7 @@ index 6eecd7b6e..89a6b8995 100644
 -
  #endif /* !_EVL_SCHED_FIFO_H */
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f56585d3a..116e426f7 100644
+index f56585d3a9a6..116e426f7fe6 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -33,19 +33,26 @@ EXPORT_PER_CPU_SYMBOL_GPL(evl_runqueues);
@@ -178,7 +178,7 @@ index f56585d3a..116e426f7 100644
  	}
  
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index 2b97777f5..1d8eb1662 100644
+index 2b97777f544d..1d8eb1662121 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -64,7 +64,7 @@ static ssize_t evl_fifo_show(struct evl_thread *thread,

@@ -1,7 +1,7 @@
 From 48baf2ac8fe78e07cca8f421df2123788d8adc86 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Jan 2019 19:25:00 +0100
-Subject: [PATCH 222/985] evl: add mutex API
+Subject: [PATCH 0222/1013] evl: add mutex API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evenless/mutex.h b/include/evenless/mutex.h
 new file mode 100644
-index 000000000..08438468d
+index 000000000000..08438468dcfb
 --- /dev/null
 +++ b/include/evenless/mutex.h
 @@ -0,0 +1,19 @@
@@ -38,7 +38,7 @@ index 000000000..08438468d
 +
 +#endif /* !_EVENLESS_MUTEX_H */
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 528cd3cfa..b98e338fb 100644
+index 528cd3cfaf0c..b98e338fb639 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -15,6 +15,7 @@ evenless-y :=		\
@@ -51,7 +51,7 @@ index 528cd3cfa..b98e338fb 100644
  	synch.o		\
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
 new file mode 100644
-index 000000000..9e489c7be
+index 000000000000..9e489c7be498
 --- /dev/null
 +++ b/kernel/evenless/mutex.c
 @@ -0,0 +1,71 @@

@@ -1,7 +1,7 @@
 From b5353e27551a85f78ccf382158c9afbb4ea5e5a3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 16:00:27 +0200
-Subject: [PATCH 500/985] evl/assert: make ugly lock checks conditional
+Subject: [PATCH 0500/1013] evl/assert: make ugly lock checks conditional
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index 261942a59..ad5faf866 100644
+index 261942a59b5b..ad5faf8667f9 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -31,11 +31,24 @@

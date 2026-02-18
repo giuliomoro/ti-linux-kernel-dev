@@ -1,7 +1,7 @@
 From f5c6a026eeab113b27e9abef94c4f8607ee54678 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 29 Feb 2020 18:32:58 +0100
-Subject: [PATCH 586/985] evl: y2038: sanitize timespec handling at kernel
+Subject: [PATCH 0586/1013] evl: y2038: sanitize timespec handling at kernel
  boundary
 
 All timespec passed from/to user-space are now y2038-compliant
@@ -47,7 +47,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  16 files changed, 285 insertions(+), 220 deletions(-)
 
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index 742d571b0..01132cc56 100644
+index 742d571b0cda..01132cc56fe8 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -40,7 +40,7 @@ struct evl_clock {
@@ -158,7 +158,7 @@ index 742d571b0..01132cc56 100644
 +
  #endif /* !_EVL_CLOCK_H */
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 3ce0f2102..e0e21481f 100644
+index 3ce0f2102fe0..e0e21481fb46 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -186,7 +186,7 @@ DECLARE_EVENT_CLASS(evl_sched_attrs,
@@ -212,7 +212,7 @@ index 3ce0f2102..e0e21481f 100644
  );
  
 diff --git a/include/uapi/evl/clock.h b/include/uapi/evl/clock.h
-index 5ee3218f5..ca5570c49 100644
+index 5ee3218f5451..ca5570c49ad2 100644
 --- a/include/uapi/evl/clock.h
 +++ b/include/uapi/evl/clock.h
 @@ -7,6 +7,8 @@
@@ -272,7 +272,7 @@ index 5ee3218f5..ca5570c49 100644
  
  #endif /* !_EVL_UAPI_CLOCK_H */
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 1bc76f45e..89ee3c491 100644
+index 1bc76f45e34a..89ee3c4912a8 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -11,14 +11,14 @@
@@ -293,7 +293,7 @@ index 1bc76f45e..89ee3c491 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 1e27c2458..6bfd8829a 100644
+index 1e27c2458c8f..6bfd8829acda 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -52,12 +52,8 @@ struct evl_monitor_state {
@@ -320,7 +320,7 @@ index 1e27c2458..6bfd8829a 100644
  #define EVL_MONIOC_EXIT		_IO(EVL_MONITOR_IOCBASE, 2)
  #define EVL_MONIOC_WAIT		_IOWR(EVL_MONITOR_IOCBASE, 3, struct evl_monitor_waitreq)
 diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
-index 4d28316f3..095270f3b 100644
+index 4d28316f3c95..095270f3bee9 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll.h
 @@ -7,7 +7,7 @@
@@ -342,7 +342,7 @@ index 4d28316f3..095270f3b 100644
  	int nrset;
  };
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index ef7af38b8..4710e71ed 100644
+index ef7af38b8e77..4710e71edb2e 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -8,7 +8,7 @@
@@ -375,7 +375,7 @@ index ef7af38b8..4710e71ed 100644
  	} windows[0];
  };
 diff --git a/include/uapi/evl/types.h b/include/uapi/evl/types.h
-index 356b42d7d..fbc3170a9 100644
+index 356b42d7d204..fbc3170a95b6 100644
 --- a/include/uapi/evl/types.h
 +++ b/include/uapi/evl/types.h
 @@ -28,4 +28,20 @@ static inline fundle_t evl_get_index(fundle_t handle)
@@ -400,7 +400,7 @@ index 356b42d7d..fbc3170a9 100644
 +
  #endif /* !_EVL_UAPI_TYPES_H */
 diff --git a/include/uapi/evl/xbuf.h b/include/uapi/evl/xbuf.h
-index ff0afc5b3..d24c89616 100644
+index ff0afc5b3a60..d24c896160d3 100644
 --- a/include/uapi/evl/xbuf.h
 +++ b/include/uapi/evl/xbuf.h
 @@ -16,6 +16,4 @@ struct evl_xbuf_attrs {
@@ -411,7 +411,7 @@ index ff0afc5b3..d24c89616 100644
 -
  #endif /* !_EVL_UAPI_XBUF_H */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index f8f50e1bf..b4b8d97a6 100644
+index f8f50e1bf5b7..b4b8d97a6bff 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -474,27 +474,11 @@ static long restart_clock_sleep(struct restart_block *param)
@@ -702,7 +702,7 @@ index f8f50e1bf..b4b8d97a6 100644
  	default:
  		ret = clock_common_ioctl(clock, cmd, arg);
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 5fc977233..7180e2bc4 100644
+index 5fc9772336fb..7180e2bc474f 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -189,16 +189,13 @@ static void wakeup_waiters(struct evl_monitor *event)
@@ -836,7 +836,7 @@ index 5fc977233..7180e2bc4 100644
  	case EVL_MONIOC_TRYENTER:
  		ret = tryenter_monitor(mon);
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 5e2b785e1..614995819 100644
+index 5e2b785e100d..61499581992e 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -490,7 +490,8 @@ static inline void clear_wait(void)
@@ -898,7 +898,7 @@ index 5e2b785e1..614995819 100644
  			return ret;
  		if (raw_put_user(ret, &u_wreq->nrset))
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 80987f0bc..f2fbe3807 100644
+index 80987f0bceac..f2fbe3807b64 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1212,7 +1212,7 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -911,7 +911,7 @@ index 80987f0bc..f2fbe3807 100644
  			tslice = *tslice_r;
  		/* fall-through */
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index e2338518d..ef0f330ef 100644
+index e2338518d6be..ef0f330efd64 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -369,12 +369,14 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,
@@ -947,7 +947,7 @@ index e2338518d..ef0f330ef 100644
  			goto fail;
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 4bfc46172..08dad2491 100644
+index 4bfc461726dc..08dad2491c6a 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -9,6 +9,7 @@
@@ -1052,7 +1052,7 @@ index 4bfc46172..08dad2491 100644
  }
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index a7242d558..722a6d8b2 100644
+index a7242d558ebd..722a6d8b2b5f 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1955,7 +1955,7 @@ static void __get_sched_attrs(struct evl_sched_class *sched_class,

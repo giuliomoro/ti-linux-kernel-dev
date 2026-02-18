@@ -1,7 +1,7 @@
 From 7381ee65ec023f0c6396bb71da4a33f6a6c5880c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 10 Jul 2024 09:56:24 +0200
-Subject: [PATCH 847/985] evl/sched: introduce generic handler for manual
+Subject: [PATCH 0847/1013] evl/sched: introduce generic handler for manual
  round-robin
 
 We need a way to force any arbitrary thread to relinquish the
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 19 insertions(+), 23 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index b774eeb3b..f915da411 100644
+index b774eeb3bc3b..f915da411fce 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -120,7 +120,7 @@ struct evl_sched_class {
@@ -66,7 +66,7 @@ index b774eeb3b..f915da411 100644
  
  static inline
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index a74186d95..7154481b7 100644
+index a74186d950d8..7154481b75cf 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -132,11 +132,13 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
@@ -87,7 +87,7 @@ index a74186d95..7154481b7 100644
  }
  
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index c8d0456e7..57e0a0797 100644
+index c8d0456e7f64..57e0a0797de8 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -12,16 +12,9 @@ static void evl_fifo_init(struct evl_rq *rq)
@@ -119,7 +119,7 @@ index c8d0456e7..57e0a0797 100644
  	.sched_setparam		=	evl_fifo_setparam,
  	.sched_trackprio	=	evl_fifo_trackprio,
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 0bc447017..0191394bc 100644
+index 0bc447017343..0191394bc835 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2000,7 +2000,7 @@ static int set_time_slice(struct evl_thread *thread, ktime_t quantum)

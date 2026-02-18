@@ -1,7 +1,7 @@
 From 657fa81dfc0e6f3e0b30a210188ab4e22f7b5a21 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 8 Oct 2019 15:24:23 +0200
-Subject: [PATCH 488/985] evl/{wait, mutex}: check for nklock state
+Subject: [PATCH 0488/1013] evl/{wait, mutex}: check for nklock state
  inconsistency
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 66 insertions(+), 8 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 89cd86910..df9b42af4 100644
+index 89cd86910cf6..df9b42af4364 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -111,12 +111,14 @@ void evl_add_wait_queue(struct evl_wait_queue *wq,
@@ -48,7 +48,7 @@ index 89cd86910..df9b42af4 100644
  }
  
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 9074fab6a..8dbccda5f 100644
+index 9074fab6a65b..8dbccda5f5e0 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -38,6 +38,8 @@ static inline void disable_inband_switch(struct evl_thread *curr)
@@ -315,7 +315,7 @@ index 9074fab6a..8dbccda5f 100644
  	 * This would stem from the fact that userland has to update
  	 * ->pp_pending prior to trying to grab the lock atomically,
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index be49026b2..6f8bfa10c 100644
+index be49026b27bf..6f8bfa10c644 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -15,6 +15,7 @@

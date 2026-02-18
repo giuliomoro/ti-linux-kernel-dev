@@ -1,7 +1,7 @@
 From 466849f955fcaa0f2c12b4524f00ecd8189991ff Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 29 Jun 2021 17:55:43 +0200
-Subject: [PATCH 044/985] irqchip/omap-intc: irq_pipeline: enable pipelined
+Subject: [PATCH 0044/1013] irqchip/omap-intc: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-intc.c
-index ad84a2f03..8f65a89b3 100644
+index ad84a2f03368..8f65a89b3c5c 100644
 --- a/drivers/irqchip/irq-omap-intc.c
 +++ b/drivers/irqchip/irq-omap-intc.c
 @@ -211,7 +211,7 @@ static int __init omap_alloc_gc_of(struct irq_domain *d, void __iomem *base)

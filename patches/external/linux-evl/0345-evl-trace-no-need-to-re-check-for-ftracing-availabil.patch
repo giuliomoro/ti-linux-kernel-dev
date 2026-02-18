@@ -1,7 +1,7 @@
 From e26bb6c3060aa8bc6903e547a7312d5f3991d245 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 17 Mar 2019 15:44:33 +0100
-Subject: [PATCH 345/985] evl/trace: no need to re-check for ftracing
+Subject: [PATCH 0345/1013] evl/trace: no need to re-check for ftracing
  availability
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 deletions(-)
 
 diff --git a/kernel/evl/trace.c b/kernel/evl/trace.c
-index 9a47dafec..2bab7a201 100644
+index 9a47dafece68..2bab7a201968 100644
 --- a/kernel/evl/trace.c
 +++ b/kernel/evl/trace.c
 @@ -42,9 +42,6 @@ trace_oob_write(struct file *filp,

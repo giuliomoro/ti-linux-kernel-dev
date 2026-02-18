@@ -1,7 +1,7 @@
 From d4f561199cf05d162de784e6700795e6f5919255 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 29 May 2019 12:18:46 +0200
-Subject: [PATCH 386/985] evl/timer: always inline timer insertion code
+Subject: [PATCH 0386/1013] evl/timer: always inline timer insertion code
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 39 insertions(+), 41 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 3f1e9d845..63e55fa6c 100644
+index 3f1e9d845d57..63e55fa6ce13 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -119,9 +119,6 @@ void evl_remove_tnode(struct evl_tqueue *tq, struct evl_tnode *node)
@@ -89,7 +89,7 @@ index 3f1e9d845..63e55fa6c 100644
  
  void evl_bolt_timer(struct evl_timer *timer,
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 6fba4243a..d6ac666d5 100644
+index 6fba4243a517..d6ac666d5b11 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -487,35 +487,3 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)

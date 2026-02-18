@@ -1,7 +1,7 @@
 From dbfd78e72a2b0fcad978bf8122152e94257b9fb3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Jan 2019 10:52:28 +0100
-Subject: [PATCH 227/985] evl/poller: fix initializers
+Subject: [PATCH 0227/1013] evl/poller: fix initializers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/include/evenless/poller.h b/include/evenless/poller.h
-index 5ca68e920..b78910dae 100644
+index 5ca68e9200c3..b78910daee02 100644
 --- a/include/evenless/poller.h
 +++ b/include/evenless/poller.h
 @@ -16,11 +16,9 @@

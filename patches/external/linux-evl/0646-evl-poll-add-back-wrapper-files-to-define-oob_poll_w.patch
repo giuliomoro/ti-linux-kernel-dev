@@ -1,7 +1,7 @@
 From d5c81cb4125d2ffbfb957ec7cd1543b33d81ee75 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 12 Sep 2020 18:54:37 +0200
-Subject: [PATCH 646/985] evl/poll: add (back) wrapper files to define
+Subject: [PATCH 0646/1013] evl/poll: add (back) wrapper files to define
  oob_poll_wait
 
 This reverts commit 7c81fc4feda7f114ae6721a56860ebe136a715f8.
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/arch/arm/include/dovetail/poll.h b/arch/arm/include/dovetail/poll.h
 new file mode 100644
-index 000000000..76e51be38
+index 000000000000..76e51be38a40
 --- /dev/null
 +++ b/arch/arm/include/dovetail/poll.h
 @@ -0,0 +1,7 @@
@@ -34,7 +34,7 @@ index 000000000..76e51be38
 +#endif /* !_EVL_DOVETAIL_POLL_H */
 diff --git a/arch/arm64/include/dovetail/poll.h b/arch/arm64/include/dovetail/poll.h
 new file mode 100644
-index 000000000..76e51be38
+index 000000000000..76e51be38a40
 --- /dev/null
 +++ b/arch/arm64/include/dovetail/poll.h
 @@ -0,0 +1,7 @@
@@ -47,7 +47,7 @@ index 000000000..76e51be38
 +#endif /* !_EVL_DOVETAIL_POLL_H */
 diff --git a/arch/x86/include/dovetail/poll.h b/arch/x86/include/dovetail/poll.h
 new file mode 100644
-index 000000000..76e51be38
+index 000000000000..76e51be38a40
 --- /dev/null
 +++ b/arch/x86/include/dovetail/poll.h
 @@ -0,0 +1,7 @@

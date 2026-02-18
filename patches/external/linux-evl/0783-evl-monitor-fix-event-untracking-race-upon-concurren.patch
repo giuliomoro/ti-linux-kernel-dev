@@ -1,7 +1,7 @@
 From 358a1c0c89d958ddbbf157f06e0d5a0365b0fd7b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Nov 2022 15:25:36 +0100
-Subject: [PATCH 783/985] evl/monitor: fix event untracking race upon
+Subject: [PATCH 0783/1013] evl/monitor: fix event untracking race upon
  concurrent wakeups
 
 In the following scenario, the former implementation would yield a
@@ -46,7 +46,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 25 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 66671a8bd..7ce9f3d69 100644
+index 66671a8bd68a..7ce9f3d69ac0 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -122,34 +122,25 @@ void __evl_commit_monitor_ceiling(void)

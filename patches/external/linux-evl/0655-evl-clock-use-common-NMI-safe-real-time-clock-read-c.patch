@@ -1,7 +1,7 @@
 From faafc6290453357913690216619d9b1047f5bf1f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 10 Nov 2020 14:21:31 +0100
-Subject: [PATCH 655/985] evl/clock: use common NMI-safe real-time clock read
+Subject: [PATCH 0655/1013] evl/clock: use common NMI-safe real-time clock read
  call
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index abfffa52b..9bb72511a 100644
+index abfffa52b749..9bb72511a406 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -1065,7 +1065,7 @@ static u64 read_mono_clock_cycles(struct evl_clock *clock)

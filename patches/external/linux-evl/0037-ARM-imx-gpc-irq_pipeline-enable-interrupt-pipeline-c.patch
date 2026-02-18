@@ -1,8 +1,8 @@
 From a94b0aeec6a7d0d5cd55707a96b793c3911c948b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 18 Feb 2017 14:41:32 +0100
-Subject: [PATCH 037/985] ARM: imx/gpc: irq_pipeline: enable interrupt pipeline
- control
+Subject: [PATCH 0037/1013] ARM: imx/gpc: irq_pipeline: enable interrupt
+ pipeline control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+)
 
 diff --git a/arch/arm/mach-imx/gpc.c b/arch/arm/mach-imx/gpc.c
-index 5909088d5..8255eab95 100644
+index 5909088d5482..8255eab95bbc 100644
 --- a/arch/arm/mach-imx/gpc.c
 +++ b/arch/arm/mach-imx/gpc.c
 @@ -62,28 +62,38 @@ void imx_gpc_set_l2_mem_power_in_lpm(bool power_off)

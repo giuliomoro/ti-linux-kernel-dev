@@ -1,7 +1,8 @@
 From 51af572ebc1da29defff1fba2c690f1519428d73 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 Jan 2020 10:40:42 +0100
-Subject: [PATCH 555/985] evl/proxy: skip wq creation for mapping-only service
+Subject: [PATCH 0555/1013] evl/proxy: skip wq creation for mapping-only
+ service
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index aa7397efc..85eee7827 100644
+index aa7397efc813..85eee78270eb 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -292,8 +292,8 @@ static struct evl_element *

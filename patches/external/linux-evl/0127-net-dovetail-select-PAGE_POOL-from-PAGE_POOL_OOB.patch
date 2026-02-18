@@ -1,7 +1,7 @@
 From c0280d1fd8604856909f7c5e0fc31c27a8145eef Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 28 Sep 2024 18:36:24 +0200
-Subject: [PATCH 127/985] net: dovetail: select PAGE_POOL from PAGE_POOL_OOB
+Subject: [PATCH 0127/1013] net: dovetail: select PAGE_POOL from PAGE_POOL_OOB
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/net/Kconfig b/net/Kconfig
-index 3bbff6974..aa7f4d6d2 100644
+index 3bbff69749ef..aa7f4d6d254b 100644
 --- a/net/Kconfig
 +++ b/net/Kconfig
 @@ -493,6 +493,7 @@ config PAGE_POOL

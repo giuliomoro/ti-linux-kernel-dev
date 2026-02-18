@@ -1,7 +1,7 @@
 From 734f400c47e631ac207f245b7164e60e22f61248 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 29 Jan 2019 19:28:19 +0100
-Subject: [PATCH 234/985] evl/sched: __evl_schedule() may work on the current
+Subject: [PATCH 0234/1013] evl/sched: __evl_schedule() may work on the current
  rq only
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 78fada0ba..783b44985 100644
+index 78fada0ba29c..783b44985727 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -270,8 +270,10 @@ bool ___evl_schedule(struct evl_rq *this_rq);
@@ -45,7 +45,7 @@ index 78fada0ba..783b44985 100644
  
  static inline bool evl_in_irq(void)
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
-index 3cdcc0f82..51e228e90 100644
+index 3cdcc0f829ff..51e228e901e6 100644
 --- a/kernel/evenless/synch.c
 +++ b/kernel/evenless/synch.c
 @@ -106,7 +106,7 @@ int block_thread_timed(ktime_t timeout, enum evl_tmode timeout_mode,

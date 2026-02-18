@@ -1,7 +1,7 @@
 From 4f337f11bbd5f8fc02676b7693276fa20743c42a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Oct 2024 18:48:37 +0100
-Subject: [PATCH 901/985] evl: advertise nickname in uname()
+Subject: [PATCH 0901/1013] evl: advertise nickname in uname()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/scripts/dovetail-guest.sh b/scripts/dovetail-guest.sh
 new file mode 100755
-index 000000000..175d9de69
+index 000000000000..175d9de698d5
 --- /dev/null
 +++ b/scripts/dovetail-guest.sh
 @@ -0,0 +1 @@

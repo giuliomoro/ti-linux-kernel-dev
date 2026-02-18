@@ -1,8 +1,8 @@
 From 2afd53032cb4818d1c2cda5be0ccc763b5d93b74 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 24 Sep 2024 16:47:19 +0200
-Subject: [PATCH 126/985] net/page_pool: dovetail: define internal accessors to
- cache size/refill
+Subject: [PATCH 0126/1013] net/page_pool: dovetail: define internal accessors
+ to cache size/refill
 
 Some drivers (e.g. mellanox/mx5 do refer to PP_ALLOC_CACHE_*
 definitions, we cannot change their definition as we'd like to support
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 20 insertions(+), 15 deletions(-)
 
 diff --git a/include/net/page_pool/types.h b/include/net/page_pool/types.h
-index 83a47de61..ebba4f852 100644
+index 83a47de61044..ebba4f852c2c 100644
 --- a/include/net/page_pool/types.h
 +++ b/include/net/page_pool/types.h
 @@ -53,24 +53,17 @@
@@ -69,7 +69,7 @@ index 83a47de61..ebba4f852 100644
  static inline void page_pool_destroy(struct page_pool *pool)
  {
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index eee176e60..9cab8cc28 100644
+index eee176e6042f..9cab8cc28bf1 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -429,7 +429,7 @@ static noinline netmem_ref page_pool_refill_alloc_cache(struct page_pool *pool)

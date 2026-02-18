@@ -1,7 +1,7 @@
 From ee76dca03d64d9472a788cc02ad75661e8ff284a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 18:52:19 +0100
-Subject: [PATCH 033/985] pinctrl: msm: irq_pipeline: enable pipelined
+Subject: [PATCH 0033/1013] pinctrl: msm: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index 553232809..a1394d0f0 100644
+index 553232809789..a1394d0f03d3 100644
 --- a/drivers/pinctrl/qcom/pinctrl-msm.c
 +++ b/drivers/pinctrl/qcom/pinctrl-msm.c
 @@ -67,7 +67,7 @@ struct msm_pinctrl {

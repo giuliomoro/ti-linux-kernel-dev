@@ -1,7 +1,7 @@
 From d936fdb818903d5022cefc10790a5d7ddf4fdffb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Dec 2022 13:00:54 +0100
-Subject: [PATCH 811/985] evl/sched: tp: deny changing plan on busy runqueues
+Subject: [PATCH 0811/1013] evl/sched: tp: deny changing plan on busy runqueues
 
 Unconditionally switching the remaining TP threads on a runqueue to
 the SCHED_FIFO class before swapping the TP schedule plan is an
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 39 insertions(+), 31 deletions(-)
 
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index d0f610e1b..8aa52e70f 100644
+index d0f610e1bfe4..8aa52e70ff67 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -5,6 +5,7 @@
@@ -179,7 +179,7 @@ index d0f610e1b..8aa52e70f 100644
  
  struct evl_sched_class evl_sched_tp = {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 423c9b7e8..836e769a5 100644
+index 423c9b7e870d..836e769a5716 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1090,9 +1090,9 @@ int evl_set_thread_schedparam_locked(struct evl_thread *thread,

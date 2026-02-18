@@ -1,7 +1,7 @@
 From 170eb023c2018bf2bd72bf4295b730f855e60d91 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 31 Oct 2019 17:38:55 +0100
-Subject: [PATCH 534/985] evl/sched: quota: drop the ugly lock before
+Subject: [PATCH 0534/1013] evl/sched: quota: drop the ugly lock before
  rescheduling
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index 1b0a1a4e3..d184afd79 100644
+index 1b0a1a4e348f..d184afd797a1 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -612,7 +612,6 @@ static void quota_set_limit(struct evl_quota_group *tg,

@@ -1,7 +1,7 @@
 From 05a4a0b5dfce11a61777549f067d20c3b283705a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 24 Apr 2025 10:08:59 +0200
-Subject: [PATCH 164/985] net: dovetail: use lighter serialization to process
+Subject: [PATCH 0164/1013] net: dovetail: use lighter serialization to process
  RX backlog
 
 The in-band backlog is a per-CPU list, we don't need a full-fledged
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 99c1c0280..772890cfc 100644
+index 99c1c0280378..772890cfc94e 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -3279,7 +3279,6 @@ struct softnet_data {
@@ -28,7 +28,7 @@ index 99c1c0280..772890cfc 100644
  #endif
  	struct Qdisc		*output_queue;
 diff --git a/net/core/dev.c b/net/core/dev.c
-index c54a3f95a..8ad135b6e 100644
+index c54a3f95a122..8ad135b6edaa 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5303,10 +5303,10 @@ bool netif_receive_oob(struct sk_buff *skb)

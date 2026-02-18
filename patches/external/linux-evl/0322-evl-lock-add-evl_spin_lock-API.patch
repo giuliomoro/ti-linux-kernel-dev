@@ -1,7 +1,7 @@
 From f71fbc73d380e27dbc4a94b81eb0b6899ad9b081 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 25 Feb 2019 15:36:44 +0100
-Subject: [PATCH 322/985] evl/lock: add evl_spin_lock API
+Subject: [PATCH 0322/1013] evl/lock: add evl_spin_lock API
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 64 insertions(+), 5 deletions(-)
 
 diff --git a/include/evenless/lock.h b/include/evenless/lock.h
-index a5ee56425..94e698957 100644
+index a5ee56425528..94e698957a6f 100644
 --- a/include/evenless/lock.h
 +++ b/include/evenless/lock.h
 @@ -6,16 +6,14 @@

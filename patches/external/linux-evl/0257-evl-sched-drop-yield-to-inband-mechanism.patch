@@ -1,7 +1,7 @@
 From aafcd4a8ec40a4849e4ba66d486e49ba4a1100e2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 16:09:15 +0100
-Subject: [PATCH 257/985] evl/sched: drop yield to inband mechanism
+Subject: [PATCH 0257/1013] evl/sched: drop yield to inband mechanism
 
 Yielding to inband allowed a thread running in OOB context to yield
 the CPU to a thread of same/higher priority stuck in-band. This was
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 3 insertions(+), 72 deletions(-)
 
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 2241652e8..9bf3f2823 100644
+index 2241652e863c..9bf3f2823113 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -103,7 +103,6 @@ struct evl_rq {
@@ -41,7 +41,7 @@ index 2241652e8..9bf3f2823 100644
  int __init evl_init_sched(void);
  
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index ed00601e6..6618613f7 100644
+index ed00601e6d7c..6618613f7e0c 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -194,7 +194,6 @@ static void init_rq(struct evl_rq *rq, int cpu)
@@ -132,7 +132,7 @@ index ed00601e6..6618613f7 100644
  EXPORT_SYMBOL_GPL(evl_sched_yield);
  
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index a64b3eafc..28f7fbe8b 100644
+index a64b3eafc885..28f7fbe8b5dc 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -1838,8 +1838,6 @@ static void handle_schedule_event(struct task_struct *next_task)

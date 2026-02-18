@@ -1,7 +1,7 @@
 From 2f4f96c4b184701503574a6c8462fd07ddb386b8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 13 Aug 2019 15:21:55 +0200
-Subject: [PATCH 471/985] include/evl: add device-related main header
+Subject: [PATCH 0471/1013] include/evl: add device-related main header
 
 As we want to minimize the impact of adding out-of-band support into
 existing in-band driver code, we provide a dedicated header which can
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evl/devices.h b/include/evl/devices.h
 new file mode 100644
-index 000000000..3cd847d57
+index 000000000000..3cd847d57355
 --- /dev/null
 +++ b/include/evl/devices.h
 @@ -0,0 +1,31 @@

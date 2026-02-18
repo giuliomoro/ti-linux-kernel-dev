@@ -1,7 +1,7 @@
 From e4b22f73d864a7c7c47625b1411c0c4415da55e2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 6 Aug 2019 15:24:09 +0200
-Subject: [PATCH 466/985] evl/monitor: clarify/fix oob_poll comments
+Subject: [PATCH 0466/1013] evl/monitor: clarify/fix oob_poll comments
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index f8225c064..737690a0d 100644
+index f8225c064069..737690a0d33f 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -679,12 +679,11 @@ static __poll_t monitor_oob_poll(struct file *filp,

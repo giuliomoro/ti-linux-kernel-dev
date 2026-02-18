@@ -1,7 +1,7 @@
 From 0e89e2bb13dfc9c45951aee8c55fde196201504a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 18:52:17 +0200
-Subject: [PATCH 502/985] evl/wait: EIDRM supersedes other wait status when
+Subject: [PATCH 0502/1013] evl/wait: EIDRM supersedes other wait status when
  present
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index d97de7d52..ff1b8e18b 100644
+index d97de7d522d7..ff1b8e18b08a 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -57,12 +57,12 @@ struct evl_wait_queue {

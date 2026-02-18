@@ -1,7 +1,7 @@
 From 9943736c34030fd8dcdfa97b3a08b00a77bbe383 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 15 Oct 2024 19:05:32 +0200
-Subject: [PATCH 898/985] evl/net: dev: enable real devices as oob ports
+Subject: [PATCH 0898/1013] evl/net: dev: enable real devices as oob ports
 
 Since we may use an eBPF program to discriminate the oob traffic
 inside the input flow in replacement for VLAN-based selection, we
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 42 insertions(+), 34 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 894d4c864..e57147cb5 100644
+index 894d4c864ff6..e57147cb59c0 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -34,7 +34,10 @@

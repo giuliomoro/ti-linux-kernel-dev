@@ -1,7 +1,7 @@
 From c696fc514e9b29615723817826d1707a94334ddf Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 9 May 2019 18:17:02 +0200
-Subject: [PATCH 370/985] evl/tick: advertise the real device min/max delta
+Subject: [PATCH 0370/1013] evl/tick: advertise the real device min/max delta
  values
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 deletions(-)
 
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 05747c202..3a285e614 100644
+index 05747c2028ac..3a285e614688 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -144,10 +144,6 @@ static void setup_proxy(struct clock_proxy_device *dev)

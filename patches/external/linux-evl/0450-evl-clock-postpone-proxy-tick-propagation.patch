@@ -1,7 +1,7 @@
 From dbf39a6a926949d0b0ab4103fa47fab766a4beab Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 21 Jul 2019 22:27:53 +0200
-Subject: [PATCH 450/985] evl/clock: postpone proxy tick propagation
+Subject: [PATCH 0450/1013] evl/clock: postpone proxy tick propagation
 
 Propagating the proxy tick to the inband stage is a low priority task:
 postpone this until the very end of the core tick interrupt, saving
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 23 insertions(+), 26 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 81ad32141..258faa4ab 100644
+index 81ad32141cd0..258faa4abda6 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -307,19 +307,29 @@ static void do_clock_tick(struct evl_clock *clock, struct evl_timerbase *tmb)
@@ -73,7 +73,7 @@ index 81ad32141..258faa4ab 100644
  
  void evl_announce_tick(struct evl_clock *clock) /* hard irqs off */
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f758bdcb9..bc6843af5 100644
+index f758bdcb97db..bc6843af5c98 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -125,20 +125,6 @@ static void roundrobin_handler(struct evl_timer *timer) /* hard irqs off */

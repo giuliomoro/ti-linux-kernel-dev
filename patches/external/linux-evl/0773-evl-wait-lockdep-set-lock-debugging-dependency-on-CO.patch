@@ -1,7 +1,7 @@
 From a1354c45343a96c4a0af1f1cee934f1f643a6e12 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 31 Oct 2022 10:01:22 +0100
-Subject: [PATCH 773/985] evl/wait: lockdep: set lock debugging dependency on
+Subject: [PATCH 0773/1013] evl/wait: lockdep: set lock debugging dependency on
  CONFIG_LOCKDEP
 
 CONFIG_PROVE_LOCKING depends on the lockdep infrastructure, the hard
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 6d56ba9ea..7f18c13d5 100644
+index 6d56ba9ea919..7f18c13d5aa0 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -36,7 +36,7 @@ enum evl_walk_mode {
@@ -29,7 +29,7 @@ index 6d56ba9ea..7f18c13d5 100644
  	struct lock_class_key *addr;
  };
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index befaca547..0a5031830 100644
+index befaca54702a..0a503183078c 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -481,7 +481,7 @@ void __evl_init_mutex(struct evl_mutex *mutex,
@@ -42,7 +42,7 @@ index befaca547..0a5031830 100644
  	lockdep_set_class_and_name(&mutex->wchan.lock, &mutex->wchan.lock_key, name);
  	local_irq_save(flags);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index e60fc5557..486ae38de 100644
+index e60fc5557de8..486ae38de5a1 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -27,7 +27,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,

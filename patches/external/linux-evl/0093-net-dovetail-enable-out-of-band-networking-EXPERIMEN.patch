@@ -1,7 +1,7 @@
 From c120c1ed09c3f03ef8e60c2f9079498135be01bb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Jun 2020 15:30:13 +0200
-Subject: [PATCH 093/985] net: dovetail: enable out-of-band networking
+Subject: [PATCH 0093/1013] net: dovetail: enable out-of-band networking
  (EXPERIMENTAL)
 
 Introduce an interface between the in-band network stack and any
@@ -68,7 +68,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/dovetail/net.h b/include/dovetail/net.h
 new file mode 100644
-index 000000000..163fbccd8
+index 000000000000..163fbccd862d
 --- /dev/null
 +++ b/include/dovetail/net.h
 @@ -0,0 +1,15 @@
@@ -89,7 +89,7 @@ index 000000000..163fbccd8
 +#endif /* !_DOVETAIL_NET_H */
 diff --git a/include/dovetail/netdevice.h b/include/dovetail/netdevice.h
 new file mode 100644
-index 000000000..5bd975ccd
+index 000000000000..5bd975ccd5b3
 --- /dev/null
 +++ b/include/dovetail/netdevice.h
 @@ -0,0 +1,12 @@
@@ -106,7 +106,7 @@ index 000000000..5bd975ccd
 +
 +#endif /* !_DOVETAIL_NETDEVICE_H */
 diff --git a/include/linux/net.h b/include/linux/net.h
-index b75bc534c..7e6bfe21a 100644
+index b75bc534c1b3..7e6bfe21a7cb 100644
 --- a/include/linux/net.h
 +++ b/include/linux/net.h
 @@ -81,6 +81,7 @@ enum sock_type {
@@ -118,7 +118,7 @@ index b75bc534c..7e6bfe21a 100644
  #endif /* ARCH_HAS_SOCKET_TYPES */
  
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 35b886385..8568958d5 100644
+index 35b886385f32..8568958d5440 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -40,6 +40,7 @@
@@ -264,7 +264,7 @@ index 35b886385..8568958d5 100644
   * Network interface message level settings
   */
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 314328ab0..3f4e37221 100644
+index 314328ab0b84..3f4e372217f4 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -943,6 +943,11 @@ struct sk_buff {
@@ -354,7 +354,7 @@ index 314328ab0..3f4e37221 100644
  struct sk_buff *slab_build_skb(void *data);
  
 diff --git a/include/linux/socket.h b/include/linux/socket.h
-index c3322eb3d..ab144aa8a 100644
+index c3322eb3d686..ab144aa8a1ad 100644
 --- a/include/linux/socket.h
 +++ b/include/linux/socket.h
 @@ -240,8 +240,9 @@ struct ucred {
@@ -377,7 +377,7 @@ index c3322eb3d..ab144aa8a 100644
  
  /* Maximum queue length specifiable by listen.  */
 diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
-index 022ee2fc6..4a12b2bb6 100644
+index 022ee2fc627c..4a12b2bb68d2 100644
 --- a/include/net/net_namespace.h
 +++ b/include/net/net_namespace.h
 @@ -38,6 +38,7 @@
@@ -399,7 +399,7 @@ index 022ee2fc6..4a12b2bb6 100644
  #endif
 diff --git a/include/net/netoob.h b/include/net/netoob.h
 new file mode 100644
-index 000000000..55fd2357a
+index 000000000000..55fd2357afb2
 --- /dev/null
 +++ b/include/net/netoob.h
 @@ -0,0 +1,19 @@
@@ -423,7 +423,7 @@ index 000000000..55fd2357a
 +
 +#endif /* !_NET_OOBNET_H */
 diff --git a/include/net/sock.h b/include/net/sock.h
-index 722f409cc..4d563aeec 100644
+index 722f409cccd3..4d563aeec258 100644
 --- a/include/net/sock.h
 +++ b/include/net/sock.h
 @@ -540,6 +540,9 @@ struct sock {
@@ -455,7 +455,7 @@ index 722f409cc..4d563aeec 100644
  		  sockptr_t optval, unsigned int optlen);
  int sock_setsockopt(struct socket *sock, int level, int op,
 diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 5ff5c6ce4..6f0d33c5a 100644
+index 5ff5c6ce4275..6f0d33c5afaa 100644
 --- a/include/uapi/asm-generic/fcntl.h
 +++ b/include/uapi/asm-generic/fcntl.h
 @@ -91,7 +91,8 @@
@@ -469,7 +469,7 @@ index 5ff5c6ce4..6f0d33c5a 100644
  #ifndef O_OOB
  #define O_OOB		010000000000
 diff --git a/net/Kconfig b/net/Kconfig
-index a629f92dc..5142e9067 100644
+index a629f92dc86b..5142e9067284 100644
 --- a/net/Kconfig
 +++ b/net/Kconfig
 @@ -66,6 +66,9 @@ config SKB_DECRYPTED
@@ -483,7 +483,7 @@ index a629f92dc..5142e9067 100644
  	def_bool y
  	depends on DMA_SHARED_BUFFER
 diff --git a/net/core/dev.c b/net/core/dev.c
-index cfd32bd02..f51cf8082 100644
+index cfd32bd02a69..f51cf8082f13 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -3249,6 +3249,10 @@ void dev_kfree_skb_irq_reason(struct sk_buff *skb, enum skb_drop_reason reason)
@@ -623,7 +623,7 @@ index cfd32bd02..f51cf8082 100644
  	 * 1) Don't let napi dequeue from the cpu poll list
  	 *    just in case its running on a different cpu.
 diff --git a/net/core/gro.c b/net/core/gro.c
-index 0ad549b07..e6a95a1a4 100644
+index 0ad549b07e03..e6a95a1a493c 100644
 --- a/net/core/gro.c
 +++ b/net/core/gro.c
 @@ -624,6 +624,9 @@ gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
@@ -637,7 +637,7 @@ index 0ad549b07..e6a95a1a4 100644
  	trace_napi_gro_receive_entry(skb);
  
 diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index 05cf5347f..71e60a7f7 100644
+index 05cf5347f25e..71e60a7f78aa 100644
 --- a/net/core/net-sysfs.c
 +++ b/net/core/net-sysfs.c
 @@ -407,6 +407,54 @@ static ssize_t tx_queue_len_store(struct device *dev,
@@ -707,7 +707,7 @@ index 05cf5347f..71e60a7f7 100644
  };
  ATTRIBUTE_GROUPS(net_class);
 diff --git a/net/core/net_namespace.c b/net/core/net_namespace.c
-index ee3c1b37d..b3a20e847 100644
+index ee3c1b37d06c..b3a20e847140 100644
 --- a/net/core/net_namespace.c
 +++ b/net/core/net_namespace.c
 @@ -351,6 +351,8 @@ static __net_init int setup_net(struct net *net)
@@ -729,7 +729,7 @@ index ee3c1b37d..b3a20e847 100644
  
  	/* Run all of the network namespace pre_exit methods */
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index cf5459314..8503abd49 100644
+index cf54593149cc..8503abd49089 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -570,6 +570,116 @@ struct sk_buff *napi_build_skb(void *data, unsigned int frag_size)
@@ -897,7 +897,7 @@ index cf5459314..8503abd49 100644
  	/* Note : this field could be in the headers group.
  	 * It is not yet because we do not want to have a 16 bit hole
 diff --git a/net/core/sock.c b/net/core/sock.c
-index d392cb37a..7c9e71972 100644
+index d392cb37a864..7c9e71972021 100644
 --- a/net/core/sock.c
 +++ b/net/core/sock.c
 @@ -2271,6 +2271,8 @@ static void __sk_destruct(struct rcu_head *head)
@@ -910,7 +910,7 @@ index d392cb37a..7c9e71972 100644
  		sk->sk_destruct(sk);
  
 diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index e8589fede..841bdc809 100644
+index e8589fede4d4..841bdc809639 100644
 --- a/net/packet/af_packet.c
 +++ b/net/packet/af_packet.c
 @@ -3415,6 +3415,7 @@ static int packet_create(struct net *net, struct socket *sock, int protocol,
@@ -922,7 +922,7 @@ index e8589fede..841bdc809 100644
  
  	packet_cached_dev_reset(po);
 diff --git a/net/sched/Kconfig b/net/sched/Kconfig
-index 8180d0c12..e2438ecb3 100644
+index 8180d0c12fce..e2438ecb30fb 100644
 --- a/net/sched/Kconfig
 +++ b/net/sched/Kconfig
 @@ -86,6 +86,29 @@ config NET_SCH_MULTIQ
@@ -956,7 +956,7 @@ index 8180d0c12..e2438ecb3 100644
  	tristate "Random Early Detection (RED)"
  	help
 diff --git a/net/sched/Makefile b/net/sched/Makefile
-index 82c3f78ca..414152190 100644
+index 82c3f78ca486..414152190f3f 100644
 --- a/net/sched/Makefile
 +++ b/net/sched/Makefile
 @@ -43,6 +43,7 @@ obj-$(CONFIG_NET_SCH_TBF)	+= sch_tbf.o
@@ -969,7 +969,7 @@ index 82c3f78ca..414152190 100644
  obj-$(CONFIG_NET_SCH_PLUG)	+= sch_plug.o
 diff --git a/net/sched/sch_oob.c b/net/sched/sch_oob.c
 new file mode 100644
-index 000000000..7a0f04bfc
+index 000000000000..7a0f04bfca98
 --- /dev/null
 +++ b/net/sched/sch_oob.c
 @@ -0,0 +1,293 @@
@@ -1267,7 +1267,7 @@ index 000000000..7a0f04bfc
 +
 +MODULE_LICENSE("GPL");
 diff --git a/net/socket.c b/net/socket.c
-index 042451f01..102997296 100644
+index 042451f01c65..10299729638a 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -146,6 +146,102 @@ static void sock_show_fdinfo(struct seq_file *m, struct file *f)
@@ -1476,7 +1476,7 @@ index 042451f01..102997296 100644
  				addrlen, sock->file->f_flags | file_flags);
  out:
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index fc926d3ca..56917e4f6 100644
+index fc926d3cac6e..56917e4f67f5 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
 @@ -1302,7 +1302,9 @@ static inline u16 socket_type_to_security_class(int family, int type, int protoc
@@ -1491,7 +1491,7 @@ index fc926d3ca..56917e4f6 100644
  #endif
  		}
 diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
-index 7229c9bf6..23c8e0e25 100644
+index 7229c9bf6c27..23c8e0e25d6f 100644
 --- a/security/selinux/include/classmap.h
 +++ b/security/selinux/include/classmap.h
 @@ -173,6 +173,7 @@ const struct security_class_mapping secclass_map[] = {
@@ -1511,7 +1511,7 @@ index 7229c9bf6..23c8e0e25 100644
  #error New address family defined, please update secclass_map.
  #endif
 diff --git a/tools/perf/trace/beauty/include/linux/socket.h b/tools/perf/trace/beauty/include/linux/socket.h
-index d18cc47e8..97b23a9b8 100644
+index d18cc47e89bd..97b23a9b8868 100644
 --- a/tools/perf/trace/beauty/include/linux/socket.h
 +++ b/tools/perf/trace/beauty/include/linux/socket.h
 @@ -240,8 +240,9 @@ struct ucred {

@@ -1,7 +1,7 @@
 From b702ec309ebfa8f63fd5aea4ccad1850c43644ff Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 7 May 2025 09:20:26 +0200
-Subject: [PATCH 172/985] net: dovetail: plan for oob timestamping of skbuff
+Subject: [PATCH 0172/1013] net: dovetail: plan for oob timestamping of skbuff
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 
 diff --git a/include/dovetail/skbuff.h b/include/dovetail/skbuff.h
 new file mode 100644
-index 000000000..0d653ec2e
+index 000000000000..0d653ec2efaf
 --- /dev/null
 +++ b/include/dovetail/skbuff.h
 @@ -0,0 +1,7 @@
@@ -24,7 +24,7 @@ index 000000000..0d653ec2e
 +
 +#endif /* !_DOVETAIL_SKBUFF_H */
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index a93515e013f1..4a321c1d857f 100644
+index 144fface3e7e..c4f041dd2e9b 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -32,6 +32,7 @@
@@ -75,7 +75,7 @@ index a93515e013f1..4a321c1d857f 100644
  /**
   * skb_is_oob_managed - Whether the skb data is managed by a companion
   * core.
-@@ -5321,6 +5341,11 @@ static inline void skb_mark_oob_managed(struct sk_buff *skb)
+@@ -5293,6 +5313,11 @@ static inline void skb_mark_oob_managed(struct sk_buff *skb)
  	skb_shinfo(skb)->flags |= SKBFL_OOB_MANAGED;
  }
  
@@ -87,7 +87,7 @@ index a93515e013f1..4a321c1d857f 100644
  static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
  {
  	if (!skb->head || !skb_is_oob_managed(skb) || !skb->pp_recycle)
-@@ -5382,11 +5407,21 @@ static inline bool __skb_oob_free_head(struct sk_buff *skb)
+@@ -5354,11 +5379,21 @@ static inline bool __skb_oob_free_head(struct sk_buff *skb)
  	return false;
  }
  
@@ -109,3 +109,6 @@ index a93515e013f1..4a321c1d857f 100644
  static inline dma_addr_t skb_oob_dma_addr(const struct sk_buff *skb)
  {
  	return DMA_MAPPING_ERROR;
+-- 
+2.30.2
+

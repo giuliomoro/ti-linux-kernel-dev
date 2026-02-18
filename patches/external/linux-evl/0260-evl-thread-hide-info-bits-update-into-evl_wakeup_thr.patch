@@ -1,7 +1,7 @@
 From be5b2c98acd3ab68fe52a8a275a329c73d72bec5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 4 Feb 2019 15:47:16 +0100
-Subject: [PATCH 260/985] evl/thread: hide info bits update into
+Subject: [PATCH 0260/1013] evl/thread: hide info bits update into
  evl_wakeup_thread()
 
 Let's benefit from the atomic access to the thread info bits
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 49 insertions(+), 60 deletions(-)
 
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index 39a8c3a49..56e511fab 100644
+index 39a8c3a49daf..56e511fabce9 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -221,7 +221,7 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,
@@ -49,7 +49,7 @@ index 39a8c3a49..56e511fab 100644
  
  #endif /* !_EVENLESS_THREAD_H */
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index f6512e1af..95f56c53a 100644
+index f6512e1af3e3..95f56c53ad22 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -337,13 +337,14 @@ TRACE_EVENT(evl_sleep_on,
@@ -83,7 +83,7 @@ index f6512e1af..95f56c53a 100644
  
  TRACE_EVENT(evl_hold_thread,
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index ab0969d7e..9481e981c 100644
+index ab0969d7e7f2..9481e981c55d 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -349,10 +349,9 @@ bool evl_destroy_mutex(struct evl_mutex *mutex)
@@ -111,7 +111,7 @@ index ab0969d7e..9481e981c 100644
  	if (mutex->flags & EVL_MUTEX_CLAIMED)
  		clear_pi_boost(mutex, lastowner);
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 28f7fbe8b..227594580 100644
+index 28f7fbe8b5dc..227594580d3d 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -47,7 +47,7 @@ static void timeout_handler(struct evl_timer *timer) /* hard irqs off */
@@ -273,7 +273,7 @@ index 28f7fbe8b..227594580 100644
  	/*
  	 * CAUTION: we must NOT raise T_BREAK when clearing a forcible
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 6fd843473..250ad02cd 100644
+index 6fd8434732a6..250ad02cd8c1 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -71,7 +71,7 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

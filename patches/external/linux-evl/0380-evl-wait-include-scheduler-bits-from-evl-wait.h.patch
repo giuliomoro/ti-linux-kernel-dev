@@ -1,7 +1,7 @@
 From acd53ff0d1cf9f1a21a4d43413b0584b696a5203 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 21 May 2019 20:18:08 +0200
-Subject: [PATCH 380/985] evl/wait: include scheduler bits from evl/wait.h
+Subject: [PATCH 0380/1013] evl/wait: include scheduler bits from evl/wait.h
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 009dd5fdb..ab701701f 100644
+index 009dd5fdb5e4..ab701701f1ec 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -15,6 +15,7 @@

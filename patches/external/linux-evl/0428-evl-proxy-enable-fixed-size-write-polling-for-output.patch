@@ -1,7 +1,7 @@
 From e2a888846238c2db9959252863d1a4b3fd211407 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 28 Jun 2019 19:52:42 +0200
-Subject: [PATCH 428/985] evl/proxy: enable fixed-size write, polling for
+Subject: [PATCH 0428/1013] evl/proxy: enable fixed-size write, polling for
  output to drain
 
 Connecting a proxy with some special file may impose fixed-size writes
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 157 insertions(+), 86 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 9bc017e90..3b0770b8c 100644
+index 9bc017e90a84..3b0770b8c74e 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -40,7 +40,7 @@ index 9bc017e90..3b0770b8c 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/proxy.h b/include/uapi/evl/proxy.h
-index 96ed94f06..4b01a3b72 100644
+index 96ed94f0647a..4b01a3b72ee2 100644
 --- a/include/uapi/evl/proxy.h
 +++ b/include/uapi/evl/proxy.h
 @@ -14,6 +14,7 @@
@@ -52,7 +52,7 @@ index 96ed94f06..4b01a3b72 100644
  
  #endif /* !_EVL_UAPI_PROXY_H */
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index ebcac4ec0..3090b0ddc 100644
+index ebcac4ec0458..3090b0ddc339 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -13,138 +13,197 @@

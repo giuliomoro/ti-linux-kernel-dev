@@ -1,0 +1,47 @@
+From 7d2ffe8f1ef9bfa7a63cc678f84e105569f6ba28 Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Wed, 24 Sep 2025 23:23:14 +0200
+Subject: [PATCH 0988/1013] locking: irq_pipeline: Rename MUTABLE_SPINLOCK to
+ HYBRID_SPINLOCK
+
+Preparation for the upcoming user in kernel/irq/manage.c
+No other users yet.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ include/linux/spinlock_types.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/spinlock_types.h b/include/linux/spinlock_types.h
+index 8c77fd34491f..fa79cc084ec5 100644
+--- a/include/linux/spinlock_types.h
++++ b/include/linux/spinlock_types.h
+@@ -172,11 +172,11 @@ typedef struct hard_spinlock {
+ 	struct phony_lockdep_map dep_map;
+ } hard_spinlock_t;
+ 
+-#define DEFINE_MUTABLE_SPINLOCK(x)	hybrid_spinlock_t x = {	\
++#define DEFINE_HYBRID_SPINLOCK(x)	hybrid_spinlock_t x = {	\
+ 		.rlock = __RAW_SPIN_LOCK_UNLOCKED(x),			\
+ 	}
+ 
+-#define DECLARE_MUTABLE_SPINLOCK(x)	hybrid_spinlock_t x
++#define DECLARE_HYBRID_SPINLOCK(x)	hybrid_spinlock_t x
+ 
+ typedef struct hybrid_spinlock {
+ 	/* XXX: offset_of(struct hybrid_spinlock, rlock) == 0 */
+@@ -207,9 +207,9 @@ typedef raw_spinlock_t hybrid_spinlock_t;
+ 
+ #define DECLARE_HARD_SPINLOCK(x)	raw_spinlock_t x
+ 
+-#define DEFINE_MUTABLE_SPINLOCK(x)	DEFINE_RAW_SPINLOCK(x)
++#define DEFINE_HYBRID_SPINLOCK(x)	DEFINE_RAW_SPINLOCK(x)
+ 
+-#define DECLARE_MUTABLE_SPINLOCK(x)	raw_spinlock_t x
++#define DECLARE_HYBRID_SPINLOCK(x)	raw_spinlock_t x
+ 
+ #define __RAWLOCK(x) (x)
+ 
+-- 
+2.30.2
+

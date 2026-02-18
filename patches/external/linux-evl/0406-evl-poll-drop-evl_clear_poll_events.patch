@@ -1,7 +1,7 @@
 From ac043ecd5ab05711a79e57de471217016b72dc68 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Jun 2019 16:55:34 +0200
-Subject: [PATCH 406/985] evl/poll: drop evl_clear_poll_events()
+Subject: [PATCH 0406/1013] evl/poll: drop evl_clear_poll_events()
 
 Callers of the out-of-band polling interface are subject to spurious
 wakeups by design, which means that they have to handle the case where
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 57 deletions(-)
 
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index 70f1c40f9..8de44e236 100644
+index 70f1c40f989e..8de44e236bde 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -44,9 +44,6 @@ void evl_poll_watch(struct evl_poll_head *head,
@@ -56,7 +56,7 @@ index 70f1c40f9..8de44e236 100644
  
  void evl_drop_watchpoints(struct list_head *drop_list);
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 9e154369e..c2b2a2198 100644
+index 9e154369e801..c2b2a21987f7 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -677,8 +677,6 @@ static ssize_t timerfd_oob_read(struct file *filp,
@@ -69,7 +69,7 @@ index 9e154369e..c2b2a2198 100644
  		return -EFAULT;
  
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 422bee35b..1b5009a9b 100644
+index 422bee35b0c7..1b5009a9b266 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -99,21 +99,6 @@ void __evl_signal_poll_events(struct evl_poll_head *head,
@@ -95,7 +95,7 @@ index 422bee35b..1b5009a9b 100644
  {
  	struct evl_poll_watchpoint *table;
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 29f5ff2b6..f950928e5 100644
+index 29f5ff2b6c45..f950928e5a02 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -38,7 +38,6 @@ struct xbuf_ring {

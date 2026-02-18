@@ -1,0 +1,83 @@
+From f75bab4b6e12cfdb23e1e21999197000c0502ce2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 10:21:00 +0100
+Subject: [PATCH 1007/1013] evl/net: qdisc: introduce .flush() operation
+
+We need a way to flush the buffers maintained by a queuing discipline.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/net/qdisc.h     | 1 +
+ include/evl/net/skb.h       | 2 ++
+ kernel/evl/net/qdisc/fifo.c | 8 ++++++++
+ kernel/evl/net/skb.c        | 5 +++++
+ 4 files changed, 16 insertions(+)
+
+diff --git a/include/evl/net/qdisc.h b/include/evl/net/qdisc.h
+index 8e2427f38530..cf525eb23c7b 100644
+--- a/include/evl/net/qdisc.h
++++ b/include/evl/net/qdisc.h
+@@ -19,6 +19,7 @@ struct evl_net_qdisc_ops {
+ 	int (*init)(struct evl_net_qdisc *qdisc);
+ 	void (*destroy)(struct evl_net_qdisc *qdisc);
+ 	int (*enqueue)(struct evl_net_qdisc *qdisc, struct sk_buff *skb);
++	void (*flush)(struct evl_net_qdisc *qdisc);
+ 	struct sk_buff *(*dequeue)(struct evl_net_qdisc *qdisc, bool *more);
+ 	struct list_head next;
+ };
+diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
+index 23744e793881..065b5d2822ae 100644
+--- a/include/evl/net/skb.h
++++ b/include/evl/net/skb.h
+@@ -43,6 +43,8 @@ void evl_net_init_skb_queue(struct evl_net_skb_queue *txq);
+ 
+ void evl_net_destroy_skb_queue(struct evl_net_skb_queue *txq);
+ 
++void evl_net_flush_skb_queue(struct evl_net_skb_queue *skbq);
++
+ void evl_net_add_skb_queue(struct evl_net_skb_queue *skbq,
+ 			struct sk_buff *skb);
+ 
+diff --git a/kernel/evl/net/qdisc/fifo.c b/kernel/evl/net/qdisc/fifo.c
+index c525fdf9d3b9..18a3b94ec461 100644
+--- a/kernel/evl/net/qdisc/fifo.c
++++ b/kernel/evl/net/qdisc/fifo.c
+@@ -48,6 +48,13 @@ static struct sk_buff *dequeue_qdisc_fifo(struct evl_net_qdisc *qdisc,
+ 	return evl_net_get_skb_queue(&p->q, more);
+ }
+ 
++static void flush_qdisc_fifo(struct evl_net_qdisc *qdisc)
++{
++	struct qdisc_fifo_priv *p = evl_qdisc_priv(qdisc);
++
++	evl_net_flush_skb_queue(&p->q);
++}
++
+ struct evl_net_qdisc_ops evl_net_qdisc_fifo = {
+ 	.name	        = "oob_fifo",
+ 	.priv_size      = sizeof(struct qdisc_fifo_priv),
+@@ -55,4 +62,5 @@ struct evl_net_qdisc_ops evl_net_qdisc_fifo = {
+ 	.destroy	= destroy_qdisc_fifo,
+ 	.enqueue	= enqueue_qdisc_fifo,
+ 	.dequeue	= dequeue_qdisc_fifo,
++	.flush		= flush_qdisc_fifo,
+ };
+diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
+index 2ceda1d9608f..3bd9838b1892 100644
+--- a/kernel/evl/net/skb.c
++++ b/kernel/evl/net/skb.c
+@@ -437,6 +437,11 @@ void evl_net_init_skb_queue(struct evl_net_skb_queue *skbq)
+ }
+ 
+ void evl_net_destroy_skb_queue(struct evl_net_skb_queue *skbq)
++{
++	evl_net_flush_skb_queue(skbq);
++}
++
++void evl_net_flush_skb_queue(struct evl_net_skb_queue *skbq)
+ {
+ 	evl_net_free_skb_list(&skbq->queue);
+ }
+-- 
+2.30.2
+

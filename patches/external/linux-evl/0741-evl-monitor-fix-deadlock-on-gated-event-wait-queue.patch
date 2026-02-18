@@ -1,7 +1,7 @@
 From fb14aaa88ec3325cacaf4e07548701713efc3b7e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 25 Sep 2022 12:48:39 +0200
-Subject: [PATCH 741/985] evl/monitor: fix deadlock on gated event wait queue
+Subject: [PATCH 0741/1013] evl/monitor: fix deadlock on gated event wait queue
 
 Safe locking order shared with the mutex implementation is thread lock
 first, wait queue lock last. evl_signal_monitor_targeted() and
@@ -31,7 +31,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 36 insertions(+), 19 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 232be199b..952517370 100644
+index 232be199b713..952517370dfc 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -385,6 +385,21 @@ static inline bool evl_cannot_block(void)
@@ -57,7 +57,7 @@ index 232be199b..952517370 100644
  				       int prio);
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index abfc96dad..bb51ee056 100644
+index abfc96dadcbb..bb51ee056321 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -35,7 +35,7 @@ struct evl_monitor {

@@ -1,7 +1,7 @@
 From 7686e1bb26be7b7a0df4e1fed812cca7e7c2ec81 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 8 Feb 2019 19:41:10 +0100
-Subject: [PATCH 277/985] evl/clock: add missing fops to builtin clocks
+Subject: [PATCH 0277/1013] evl/clock: add missing fops to builtin clocks
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index 7d33811fd..e88d77a0e 100644
+index 7d33811fd5b1..e88d77a0e166 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -587,6 +587,8 @@ static long clock_ioctl(struct file *filp, unsigned int cmd,

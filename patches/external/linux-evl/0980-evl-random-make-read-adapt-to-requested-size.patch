@@ -1,7 +1,7 @@
 From 8a1c564b848bf8abb1223239080ed7494b7459aa Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 14 Sep 2025 19:20:26 +0200
-Subject: [PATCH 980/985] evl/random: make read() adapt to requested size
+Subject: [PATCH 0980/1013] evl/random: make read() adapt to requested size
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 19 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/random.c b/kernel/evl/random.c
-index da2a1edd5..9132bec35 100644
+index da2a1edd52fb..9132bec356e9 100644
 --- a/kernel/evl/random.c
 +++ b/kernel/evl/random.c
 @@ -72,16 +72,28 @@ static ssize_t rng_common_read(struct file *filp,

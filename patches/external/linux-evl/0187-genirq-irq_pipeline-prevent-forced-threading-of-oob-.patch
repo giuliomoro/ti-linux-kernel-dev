@@ -1,8 +1,8 @@
 From d6204fb0b37318f59083f32939f407df654141bb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 16:12:37 +0200
-Subject: [PATCH 187/985] genirq: irq_pipeline: prevent forced threading of oob
- IRQ
+Subject: [PATCH 0187/1013] genirq: irq_pipeline: prevent forced threading of
+ oob IRQ
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 3a65fa887..716057c01 100644
+index 3a65fa887319..716057c01137 100644
 --- a/kernel/irq/manage.c
 +++ b/kernel/irq/manage.c
 @@ -1426,7 +1426,7 @@ static int irq_setup_forced_threading(struct irqaction *new)

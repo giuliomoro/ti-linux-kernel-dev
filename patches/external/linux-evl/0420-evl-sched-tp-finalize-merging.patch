@@ -1,7 +1,7 @@
 From 1ff51a4c2958bfa3b58bc7028f35b2ef95a663ac Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 24 Jun 2019 21:32:18 +0200
-Subject: [PATCH 420/985] evl/sched: tp: finalize merging
+Subject: [PATCH 0420/1013] evl/sched: tp: finalize merging
 
 Add missing policy accessors and init bits.
 
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 33 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 8976abb6a..906a88cbe 100644
+index 8976abb6a353..906a88cbe01b 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -386,7 +386,12 @@ static inline int evl_init_rq_thread(struct evl_thread *thread)
@@ -32,7 +32,7 @@ index 8976abb6a..906a88cbe 100644
  	return ret;
  }
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 6debabaf6..eeff98654 100644
+index 6debabaf6635..eeff98654a6a 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -819,6 +819,13 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -61,7 +61,7 @@ index 6debabaf6..eeff98654 100644
  		break;
  	case SCHED_RR:
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 54cc49001..aa33db9de 100644
+index 54cc4900155a..aa33db9ded3a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -150,8 +150,10 @@ static int tp_chkparam(struct evl_thread *thread,
@@ -78,7 +78,7 @@ index 54cc49001..aa33db9de 100644
  
  	return 0;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index abd418e54..2d1dfae3e 100644
+index abd418e543f4..2d1dfae3e5bf 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1958,8 +1958,12 @@ static void __get_sched_attrs(struct evl_sched_class *sched_class,

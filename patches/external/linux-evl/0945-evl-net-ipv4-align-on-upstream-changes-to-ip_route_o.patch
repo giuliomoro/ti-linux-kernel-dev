@@ -1,7 +1,7 @@
 From 786b46fc419b2a8b09d85181313bac9d18cb8f26 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 09:23:45 +0200
-Subject: [PATCH 945/985] evl/net: ipv4: align on upstream changes to
+Subject: [PATCH 0945/1013] evl/net: ipv4: align on upstream changes to
  ip_route_output()
 
 Since v6.10, the route lookup scope is given explicitly to
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 7219f297d..581353b4e 100644
+index 7219f297d05b..581353b4e48c 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -252,7 +252,7 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,

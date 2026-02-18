@@ -1,7 +1,8 @@
 From 558083b40a09bc0064823824980eec859f95e09e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 2 Dec 2022 18:33:24 +0100
-Subject: [PATCH 800/985] evl/mutex: fix null deref in evl_requeue_mutex_wait()
+Subject: [PATCH 0800/1013] evl/mutex: fix null deref in
+ evl_requeue_mutex_wait()
 
 __evl_unlock_mutex() may run concurrently to a lock chain walk, which
 would drop the ownership of the mutex, setting its owner field to
@@ -13,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 16750fd19..64f0808f0 100644
+index 16750fd19337..64f0808f04d3 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -727,14 +727,6 @@ bool evl_requeue_mutex_wait(struct evl_wait_channel *wchan,

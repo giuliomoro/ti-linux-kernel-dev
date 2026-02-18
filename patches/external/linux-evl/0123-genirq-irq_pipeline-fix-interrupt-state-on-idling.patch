@@ -1,7 +1,7 @@
 From ff88ac973b87e31e845de31c2f4635be98716e22 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 15 Sep 2024 17:40:18 +0200
-Subject: [PATCH 123/985] genirq: irq_pipeline: fix interrupt state on idling
+Subject: [PATCH 0123/1013] genirq: irq_pipeline: fix interrupt state on idling
 
 We need irq_pipeline_can_idle() to leave the hard irqs off and the
 inband stage stalled on return, so that no IRQ can sneak in once the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/include/linux/irq_pipeline.h b/include/linux/irq_pipeline.h
-index f3b552d8f..da9bc59a2 100644
+index f3b552d8fde5..da9bc59a2ba1 100644
 --- a/include/linux/irq_pipeline.h
 +++ b/include/linux/irq_pipeline.h
 @@ -88,6 +88,7 @@ void noinstr kentry_exit_pipelined(struct pt_regs *regs);
@@ -28,7 +28,7 @@ index f3b552d8f..da9bc59a2 100644
  		WARN_ON_ONCE(stage_irqs_pending(this_inband_staged()));
  	}
 diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
-index 452515804..64fcf4b39 100644
+index 452515804579..64fcf4b399c0 100644
 --- a/kernel/irq/pipeline.c
 +++ b/kernel/irq/pipeline.c
 @@ -1638,8 +1638,8 @@ EXPORT_SYMBOL(irq_pipeline_nmi_exit);
@@ -73,7 +73,7 @@ index 452515804..64fcf4b39 100644
  
  static unsigned int inband_work_sirq;
 diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-index 97e2fb55c..398aba432 100644
+index 97e2fb55c968..398aba432783 100644
 --- a/kernel/sched/idle.c
 +++ b/kernel/sched/idle.c
 @@ -190,6 +190,8 @@ static void cpuidle_idle_call(void)

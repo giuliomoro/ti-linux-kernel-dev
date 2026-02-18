@@ -1,7 +1,7 @@
 From 0e7ceffe72d63aa2cb60d8dc9df0ba1fe9aa93fa Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 10:52:55 +0200
-Subject: [PATCH 503/985] evl/mutex: do not hold nklock across evl_schedule()
+Subject: [PATCH 0503/1013] evl/mutex: do not hold nklock across evl_schedule()
 
 We don't need so, provided that managing the mutex state and calling
 evl_sleep_on() appeared as a single atomically operation prior to
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index de7b378be..a06b66eb9 100644
+index de7b378becc4..a06b66eb9cb6 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -587,7 +587,9 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,

@@ -1,7 +1,7 @@
 From a3971bff6084ed1d514dcd281cb2b2cede405fa6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 18:15:35 +0200
-Subject: [PATCH 761/985] evl/mutex: introduce two-phase mutex tracking
+Subject: [PATCH 0761/1013] evl/mutex: introduce two-phase mutex tracking
  operations
 
 Mutexes are tracked by their respective owners in the per-thread
@@ -28,7 +28,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 158 insertions(+), 33 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 7e9fdc90c..9c73f21b1 100644
+index 7e9fdc90ca0b..9c73f21b1a65 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -559,8 +559,7 @@ static void set_current_owner_locked(struct evl_mutex *mutex,

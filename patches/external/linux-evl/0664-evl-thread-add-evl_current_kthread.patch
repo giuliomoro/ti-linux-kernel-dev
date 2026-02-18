@@ -1,7 +1,7 @@
 From 2ffe775a6843adba953f08b3e6d922cc2ed2f155 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 21 Dec 2020 17:30:02 +0100
-Subject: [PATCH 664/985] evl/thread: add evl_current_kthread()
+Subject: [PATCH 0664/1013] evl/thread: add evl_current_kthread()
 
 Returns the current kthread descriptor or NULL if another thread
 context is running. CAUTION: does not account for IRQ context.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 9 insertions(+)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 4cdc0479c..aa34855f0 100644
+index 4cdc0479c538..aa34855f053d 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -397,4 +397,13 @@ int evl_join_kthread(struct evl_kthread *kthread,

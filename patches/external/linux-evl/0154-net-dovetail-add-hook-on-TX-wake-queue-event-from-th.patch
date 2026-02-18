@@ -1,7 +1,7 @@
 From ccf924bf5e30b540b19e7369db810594b38e2d40 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 13 Mar 2025 17:48:30 +0100
-Subject: [PATCH 154/985] net: dovetail: add hook on TX wake queue event from
+Subject: [PATCH 0154/1013] net: dovetail: add hook on TX wake queue event from
  the oob stage
 
 Call the netif_tx_wake_oob() hook to inform the companion core about
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 9 insertions(+)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 9f7bc88b7..5d5806292 100644
+index 9f7bc88b7e8a..5d58062928bb 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4425,6 +4425,7 @@ void napi_complete_oob(struct napi_struct *n);
@@ -37,7 +37,7 @@ index 9f7bc88b7..5d5806292 100644
  
  /*
 diff --git a/net/core/dev.c b/net/core/dev.c
-index e92013b3a..116f98b73 100644
+index e92013b3a420..116f98b73221 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -3242,6 +3242,7 @@ void netif_tx_wake_queue(struct netdev_queue *dev_queue)

@@ -1,7 +1,7 @@
 From d3344fcf6b5aee19d87114b2356706ac3c7a176d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 31 Oct 2022 10:49:51 +0100
-Subject: [PATCH 774/985] evl/mutex: undo PI walk on wait error
+Subject: [PATCH 0774/1013] evl/mutex: undo PI walk on wait error
 
 On timeout/break error waiting for __evl_unlock_mutex() to wake us up,
 we have to undo the effects of the last PI walk, adjusting the
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 0a5031830..4b1212e8c 100644
+index 0a503183078c..4b1212e8c972 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -753,14 +753,8 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,

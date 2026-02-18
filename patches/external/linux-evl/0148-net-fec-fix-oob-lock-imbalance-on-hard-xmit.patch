@@ -1,7 +1,7 @@
 From 5c2188846d5696e7cd2be1e1926ae50df5bb0276 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 1 Apr 2025 15:21:43 +0200
-Subject: [PATCH 148/985] net: fec: fix oob lock imbalance on hard xmit
+Subject: [PATCH 0148/1013] net: fec: fix oob lock imbalance on hard xmit
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 5 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 77f98f294..94ef4db55 100644
+index 77f98f294da5..94ef4db557cd 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -1046,7 +1046,7 @@ fec_enet_start_xmit(struct sk_buff *skb, struct net_device *ndev)

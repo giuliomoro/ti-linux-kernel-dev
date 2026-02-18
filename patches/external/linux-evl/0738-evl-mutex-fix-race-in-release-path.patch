@@ -1,7 +1,7 @@
 From 0e612d3c1b46c16b8bb775fccfd60eb775d54d74 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 26 Aug 2022 19:17:42 +0200
-Subject: [PATCH 738/985] evl/mutex: fix race in release path
+Subject: [PATCH 0738/1013] evl/mutex: fix race in release path
 
 The issue is with the mutex owner handle transitioning to
 EVL_NO_HANDLE before transfer_ownership() may switch it to the handle
@@ -20,7 +20,7 @@ Reported-by: Giulio Moro <giulio@bela.io>
  1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index e0cf1ba21..d96f8c9f0 100644
+index e0cf1ba21d5b..d96f8c9f04df 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -899,14 +899,16 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)

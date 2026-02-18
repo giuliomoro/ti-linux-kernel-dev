@@ -1,7 +1,8 @@
 From de54dfb48bc0a0e8db0bf8b9f96cb3bd2a77b217 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:15:10 +0100
-Subject: [PATCH 668/985] evl/lock: stop using the oob stall bit for protection
+Subject: [PATCH 0668/1013] evl/lock: stop using the oob stall bit for
+ protection
 
 We don't actually need to rely on the oob stall bit, provided hard
 irqs are off in the deemed interrupt-free sections, because the latter
@@ -34,7 +35,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 52 insertions(+), 41 deletions(-)
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index e4cd8a47c..1cedad405 100644
+index e4cd8a47c9d3..1cedad40510d 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -37,11 +37,10 @@
@@ -52,7 +53,7 @@ index e4cd8a47c..1cedad405 100644
  
  #define assert_thread_pinned(__thread)			\
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 13623d5c6..4cf670d69 100644
+index 13623d5c6037..4cf670d69249 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -9,8 +9,7 @@
@@ -100,7 +101,7 @@ index 13623d5c6..4cf670d69 100644
  
  #endif /* !_EVL_LOCK_H */
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 6318a3eb1..942b3f634 100644
+index 6318a3eb1412..942b3f6349bb 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -221,16 +221,16 @@ static inline void evl_set_resched(struct evl_rq *rq)
@@ -125,7 +126,7 @@ index 6318a3eb1..942b3f634 100644
  		 * NOTE: raising RQ_SCHED in the local_flags too
  		 * ensures that the current CPU will pass through
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 8df773ea9..23d039369 100644
+index 8df773ea9bd6..23d0393694d0 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -573,13 +573,13 @@ struct evl_timerfd {
@@ -145,7 +146,7 @@ index 8df773ea9..23d039369 100644
  
  #else
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 95b57005f..241634b8b 100644
+index 95b57005f932..241634b8bea2 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -259,11 +259,14 @@ static void do_put_element(struct evl_element *e)
@@ -168,7 +169,7 @@ index 95b57005f..241634b8b 100644
  		irq_work_queue(&e->irq_work);
  	} else
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index ea2547891..9a36cf543 100644
+index ea254789158d..9a36cf5431e5 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -241,7 +241,7 @@ EXPORT_SYMBOL(evl_enable_preempt);
@@ -318,7 +319,7 @@ index ea2547891..9a36cf543 100644
  
  	/*
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index d6c002bc9..36ce3d6a2 100644
+index d6c002bc9431..36ce3d6a20c8 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -481,7 +481,7 @@ int __evl_run_kthread(struct evl_kthread *kthread, int clone_flags)
@@ -331,7 +332,7 @@ index d6c002bc9..36ce3d6a2 100644
  		struct evl_clock *clock,
  		struct evl_wait_channel *wchan)
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 6baca052b..1d6e32087 100644
+index 6baca052b3d1..1d6e32087129 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -349,7 +349,7 @@ EXPORT_SYMBOL_GPL(evl_destroy_timer);

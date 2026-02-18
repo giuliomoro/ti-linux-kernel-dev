@@ -1,7 +1,7 @@
 From 4553335f0e9cf9792100faa39216f4c0120b6ac7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 15:22:18 +0100
-Subject: [PATCH 317/985] evl/proxy: introduce file proxy element
+Subject: [PATCH 0317/1013] evl/proxy: introduce file proxy element
 
 Combine the mapper and logger facilities into a single file proxy
 element.
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evenless/proxy.c
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index 83782cde1..8bc42eb67 100644
+index 83782cde10f6..8bc42eb67339 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -158,5 +158,6 @@ extern struct evl_factory evl_timerfd_factory;
@@ -31,7 +31,7 @@ index 83782cde1..8bc42eb67 100644
  #endif /* !_EVENLESS_FACTORY_H */
 diff --git a/include/uapi/evenless/proxy.h b/include/uapi/evenless/proxy.h
 new file mode 100644
-index 000000000..740d66b66
+index 000000000000..740d66b663c6
 --- /dev/null
 +++ b/include/uapi/evenless/proxy.h
 @@ -0,0 +1,15 @@
@@ -51,7 +51,7 @@ index 000000000..740d66b66
 +
 +#endif /* !_EVENLESS_UAPI_PROXY_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 9acba6237..88ff76357 100644
+index 9acba62370df..88ff76357449 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -135,6 +135,16 @@ config EVENLESS_NR_MAPPERS
@@ -72,7 +72,7 @@ index 9acba6237..88ff76357 100644
  
  menu "Latency settings"
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index fad5e1720..502d72469 100644
+index fad5e1720658..502d72469165 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -17,6 +17,7 @@ evenless-y :=		\
@@ -84,7 +84,7 @@ index fad5e1720..502d72469 100644
  	syscall.o	\
  	thread.o	\
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 92feb4d97..6060961c2 100644
+index 92feb4d97b15..6060961c2837 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -41,6 +41,7 @@ static struct evl_factory *factories[] = {
@@ -97,7 +97,7 @@ index 92feb4d97..6060961c2 100644
  #endif
 diff --git a/kernel/evenless/proxy.c b/kernel/evenless/proxy.c
 new file mode 100644
-index 000000000..e42dc06e5
+index 000000000000..e42dc06e5ab2
 --- /dev/null
 +++ b/kernel/evenless/proxy.c
 @@ -0,0 +1,271 @@

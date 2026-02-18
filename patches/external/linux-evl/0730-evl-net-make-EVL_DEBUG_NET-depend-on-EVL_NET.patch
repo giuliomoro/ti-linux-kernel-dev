@@ -1,7 +1,7 @@
 From 07d812cea110ba818301a236513f35718c35ce7b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 13 Jul 2022 13:33:16 +0200
-Subject: [PATCH 730/985] evl/net: make EVL_DEBUG_NET depend on EVL_NET
+Subject: [PATCH 0730/1013] evl/net: make EVL_DEBUG_NET depend on EVL_NET
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index be00a495f..ccf23585b 100644
+index be00a495fab9..ccf23585bc28 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -259,6 +259,7 @@ config EVL_DEBUG_WOLI

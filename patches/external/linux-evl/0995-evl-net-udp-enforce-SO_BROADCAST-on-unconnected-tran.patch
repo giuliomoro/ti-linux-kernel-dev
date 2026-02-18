@@ -1,0 +1,84 @@
+From 696df1a30ec8179411df711c1fa1df068eecf473 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 26 Oct 2025 15:15:14 +0100
+Subject: [PATCH 0995/1013] evl/net: udp: enforce SO_BROADCAST on unconnected
+ transmit
+
+Make sure that only sockets bearing the SO_BROADCAST flag may pick
+broadcast routes, including in the unconnected case.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ kernel/evl/net/ipv4/udp.c | 54 ++++++++++++++++++++++++---------------
+ 1 file changed, 34 insertions(+), 20 deletions(-)
+
+diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
+index 568058694b8e..b385c519c3ac 100644
+--- a/kernel/evl/net/ipv4/udp.c
++++ b/kernel/evl/net/ipv4/udp.c
+@@ -222,28 +222,42 @@ static int find_egress_path(struct evl_socket *esk,
+ {
+ 	struct evl_net_arp_entry *earp;
+ 	struct evl_net_route *ert;
+-	int ret = -ENOENT;
++	struct sock *sk = esk->sk;
++	int ret;
+ 
+ 	ert = evl_net_route_ipv4_output(sock_net(esk->sk), daddr);
+-	if (likely(ert)) {
+-		/*
+-		 *  If MSG_DONTROUTE was given, make sure the
+-		 *  destination is no more than one hop away from us.
+-		 */
+-		if  (msg_flags & MSG_DONTROUTE && rt_nexthop(ert->rt, daddr) != daddr) {
+-			ret = -EMULTIHOP;
+-			goto ignore;
+-		}
+-		earp = evl_net_get_arp_entry_or_pseudo(ert->rt->dst.dev, daddr,
+-						pseudo_earp);
+-		if (likely(earp))  {
+-			*ertp = ert;
+-			*earpp = earp;
+-			return 0;
+-		}
+-	ignore:
+-		evl_net_put_route(ert);
+-	}
++	if (!ert)
++		return -ENOENT;
++
++	/*
++	 * Need a broadcast-enabled socket for using a broadcast
++	 * route.
++	 */
++	ret = -EACCES;
++	if ((ert->rt->rt_flags & RTCF_BROADCAST) &&
++		!sock_flag(sk, SOCK_BROADCAST))
++		goto fail;
++
++	/*
++	 *  If MSG_DONTROUTE was given, make sure the destination is
++	 *  no more than one hop away from us.
++	 */
++	ret = -EMULTIHOP;
++	if  (msg_flags & MSG_DONTROUTE && rt_nexthop(ert->rt, daddr) != daddr)
++		goto fail;
++
++	ret = -ENOENT;
++	earp = evl_net_get_arp_entry_or_pseudo(ert->rt->dst.dev, daddr,
++					pseudo_earp);
++	if (!earp)
++		goto fail;
++
++	*ertp = ert;
++	*earpp = earp;
++
++	return 0;
++fail:
++	evl_net_put_route(ert);
+ 
+ 	return ret;
+ }
+-- 
+2.30.2
+

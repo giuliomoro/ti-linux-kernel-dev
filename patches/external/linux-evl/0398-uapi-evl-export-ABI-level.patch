@@ -1,7 +1,7 @@
 From 2e8e77df5531ac8aaac2e0e95195de82378d7505 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 11 Jun 2019 11:19:55 +0200
-Subject: [PATCH 398/985] uapi/evl: export ABI level
+Subject: [PATCH 0398/1013] uapi/evl: export ABI level
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/control.h b/include/evl/control.h
-index 14f22fb17..5a736ab2e 100644
+index 14f22fb1778c..5a736ab2e5ea 100644
 --- a/include/evl/control.h
 +++ b/include/evl/control.h
 @@ -11,8 +11,6 @@
@@ -23,7 +23,7 @@ index 14f22fb17..5a736ab2e 100644
  	EVL_STATE_DISABLED,
  	EVL_STATE_RUNNING,
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 2ed03b07d..55191cfc8 100644
+index 2ed03b07d0d5..55191cfc843a 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,6 +10,8 @@

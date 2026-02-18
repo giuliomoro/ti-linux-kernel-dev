@@ -1,7 +1,7 @@
 From 8f4877ebd1ea58e3d5fa9f5ecbe58c542aa162b9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Nov 2022 10:13:22 +0100
-Subject: [PATCH 788/985] evl/mutex: detect lingering PI/PP boost
+Subject: [PATCH 0788/1013] evl/mutex: detect lingering PI/PP boost
 
 A thread which owns neither PI mutex claimed by others nor
 PP-activated mutex should not be boosted. Add a couple of assertions
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 33 insertions(+)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 0ae4b80d4..202657f57 100644
+index 0ae4b80d4337..202657f5768b 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -833,6 +833,20 @@ void __evl_unlock_mutex(struct evl_mutex *mutex)
@@ -39,7 +39,7 @@ index 0ae4b80d4..202657f57 100644
  
  void evl_unlock_mutex(struct evl_mutex *mutex)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 01387e32b..4de8f786c 100644
+index 01387e32b92d..4de8f786c6e8 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -988,6 +988,11 @@ void __evl_schedule(void) /* oob or/and hard irqs off (CPU migration-safe) */

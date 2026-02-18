@@ -1,7 +1,7 @@
 From ba4af1656fd467f40563388d17c1ec49c033a350 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 31 Oct 2019 16:43:50 +0100
-Subject: [PATCH 533/985] evl/monitor: strip fundle status bits from element
+Subject: [PATCH 0533/1013] evl/monitor: strip fundle status bits from element
  search
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index d751c6062..9ffa6de1c 100644
+index d751c606273f..9ffa6de1cb04 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -925,7 +925,8 @@ static ssize_t state_show(struct device *dev,

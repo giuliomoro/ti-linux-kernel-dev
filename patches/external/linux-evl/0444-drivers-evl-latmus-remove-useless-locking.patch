@@ -1,7 +1,7 @@
 From 6416d3181c0315cc2868d2c6bf61a12099af1a03 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 16 Jul 2019 15:36:58 +0200
-Subject: [PATCH 444/985] drivers/evl: latmus: remove useless locking
+Subject: [PATCH 0444/1013] drivers/evl: latmus: remove useless locking
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index b4b1c795e..97c630108 100644
+index b4b1c795eb7a..97c630108327 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -241,13 +241,8 @@ static void latmus_irq_handler(struct evl_timer *timer) /* hard irqs off */

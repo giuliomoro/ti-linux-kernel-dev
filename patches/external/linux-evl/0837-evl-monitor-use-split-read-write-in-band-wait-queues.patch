@@ -1,7 +1,8 @@
 From eb249447c13684ca6f5143ba84da88530b83c23e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Nov 2023 11:14:28 +0100
-Subject: [PATCH 837/985] evl/monitor: use split read/write in-band wait queues
+Subject: [PATCH 0837/1013] evl/monitor: use split read/write in-band wait
+ queues
 
 Sharing the wait queue between r/w directions is wrong, causing
 spurious wake ups when e.g. threads waiting for POLLOUT are unblocked
@@ -15,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 42 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 19cd6138b..8775bd791 100644
+index 19cd6138b99f..8775bd791a6b 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -38,10 +38,14 @@ struct evl_monitor {

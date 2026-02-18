@@ -1,7 +1,7 @@
 From 60e6ca47eb06971358dca914a527e79c1d6fe88c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 15:27:03 +0100
-Subject: [PATCH 119/985] net: dovetail: drop SCH_OOB queuing discipline
+Subject: [PATCH 0119/1013] net: dovetail: drop SCH_OOB queuing discipline
 
 We could not efficiently provide DMA pre-mapping for the buffers
 flowing through this qdisc in order to handle them out-of-band without
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  delete mode 100644 net/sched/sch_oob.c
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index b5d9eb78d..ef54c1173 100644
+index b5d9eb78d013..ef54c11731f5 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4423,7 +4423,6 @@ static inline void netif_disable_oob_port(struct net_device *dev)
@@ -37,7 +37,7 @@ index b5d9eb78d..ef54c1173 100644
  void netif_tx_unlock_oob(struct netdev_queue *txq);
  void process_inband_tx_backlog(struct softnet_data *sd);
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 175ed7a1a..89c5974bc 100644
+index 175ed7a1a2a3..89c5974bc6d8 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5265,11 +5265,6 @@ __weak bool netif_deliver_oob(struct sk_buff *skb)
@@ -53,7 +53,7 @@ index 175ed7a1a..89c5974bc 100644
  {
  	struct softnet_data *sd = this_cpu_ptr(&softnet_data);
 diff --git a/net/sched/Kconfig b/net/sched/Kconfig
-index e2438ecb3..8180d0c12 100644
+index e2438ecb30fb..8180d0c12fce 100644
 --- a/net/sched/Kconfig
 +++ b/net/sched/Kconfig
 @@ -86,29 +86,6 @@ config NET_SCH_MULTIQ
@@ -87,7 +87,7 @@ index e2438ecb3..8180d0c12 100644
  	tristate "Random Early Detection (RED)"
  	help
 diff --git a/net/sched/Makefile b/net/sched/Makefile
-index 414152190..82c3f78ca 100644
+index 414152190f3f..82c3f78ca486 100644
 --- a/net/sched/Makefile
 +++ b/net/sched/Makefile
 @@ -43,7 +43,6 @@ obj-$(CONFIG_NET_SCH_TBF)	+= sch_tbf.o
@@ -100,7 +100,7 @@ index 414152190..82c3f78ca 100644
  obj-$(CONFIG_NET_SCH_PLUG)	+= sch_plug.o
 diff --git a/net/sched/sch_oob.c b/net/sched/sch_oob.c
 deleted file mode 100644
-index 7a0f04bfc..000000000
+index 7a0f04bfca98..000000000000
 --- a/net/sched/sch_oob.c
 +++ /dev/null
 @@ -1,293 +0,0 @@

@@ -1,7 +1,7 @@
 From 574c2305c9c038a3c14f1f5074e4c074e4c894f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Dec 2020 12:05:58 +0100
-Subject: [PATCH 672/985] evl/wait: reduce header dependency
+Subject: [PATCH 0672/1013] evl/wait: reduce header dependency
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
 diff --git a/include/evl/timeout.h b/include/evl/timeout.h
 new file mode 100644
-index 000000000..a5c9325b7
+index 000000000000..a5c9325b73bb
 --- /dev/null
 +++ b/include/evl/timeout.h
 @@ -0,0 +1,53 @@
@@ -71,7 +71,7 @@ index 000000000..a5c9325b7
 +
 +#endif /* !_EVL_TIMEOUT_H */
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 8471f3392..f66613565 100644
+index 8471f33928a1..f666135655cb 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -16,39 +16,7 @@
@@ -116,7 +116,7 @@ index 8471f3392..f66613565 100644
  /* Timer status */
  #define EVL_TIMER_DEQUEUED  0x00000001
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 36249910b..177518623 100644
+index 36249910b7f6..1775186230ca 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -8,13 +8,10 @@

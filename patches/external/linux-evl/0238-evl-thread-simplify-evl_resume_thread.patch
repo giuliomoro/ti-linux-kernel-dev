@@ -1,7 +1,7 @@
 From 02bf0b499400c8e2190ddff4f2e78a84d1a54bd5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 1 Feb 2019 12:32:00 +0100
-Subject: [PATCH 238/985] evl/thread: simplify evl_resume_thread()
+Subject: [PATCH 0238/1013] evl/thread: simplify evl_resume_thread()
 
 The original code was way too convoluted compared to the use
 cases. Such simplification also nicely prepares for the nklock removal
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 90 insertions(+), 130 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 1a57be962..641078f3b 100644
+index 1a57be962764..641078f3bb4d 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -571,6 +571,96 @@ void evl_block_thread_timeout(struct evl_thread *thread, int mask,

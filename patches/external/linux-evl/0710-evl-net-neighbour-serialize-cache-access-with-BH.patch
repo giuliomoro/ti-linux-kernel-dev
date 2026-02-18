@@ -1,7 +1,7 @@
 From ae0b15d6f020ac1ad6ce5c5eaf4c149663d0290a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 28 Aug 2021 12:37:05 +0200
-Subject: [PATCH 710/985] evl/net: neighbour: serialize cache access with BH
+Subject: [PATCH 0710/1013] evl/net: neighbour: serialize cache access with BH
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/net/neighbour.c b/kernel/evl/net/neighbour.c
-index 5b807d880..327a84a48 100644
+index 5b807d880099..327a84a48458 100644
 --- a/kernel/evl/net/neighbour.c
 +++ b/kernel/evl/net/neighbour.c
 @@ -33,7 +33,7 @@ static int netevent_handler(struct notifier_block *nb,

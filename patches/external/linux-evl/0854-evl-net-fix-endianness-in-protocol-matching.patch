@@ -1,7 +1,7 @@
 From e48af79372f28c605ed46077733d00b552e8d893 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Oct 2023 11:37:16 +0200
-Subject: [PATCH 854/985] evl/net: fix endianness in protocol matching
+Subject: [PATCH 0854/1013] evl/net: fix endianness in protocol matching
 
 The ->attach() handler of a protocol descriptor receives the protocol
 number in the wrong (native) endianness. This illustrates a general
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 23 insertions(+), 27 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 8a62114c0..651c27c64 100644
+index 8a62114c0f4b..651c27c64a4d 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -26,7 +26,7 @@ struct net_device;
@@ -51,7 +51,7 @@ index 8a62114c0..651c27c64 100644
  		int real_ifindex;
  		int vlan_ifindex;
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 68cf81031..cd765ea29 100644
+index 68cf81031c06..cd765ea29846 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -28,8 +28,7 @@
@@ -189,7 +189,7 @@ index 68cf81031..cd765ea29 100644
  	static struct evl_net_proto *proto;
  
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index e79e9c736..a9c6eb82c 100644
+index e79e9c7361bd..a9c6eb82c7d4 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -354,8 +354,7 @@ void evl_uncharge_socket_wmem(struct sk_buff *skb)

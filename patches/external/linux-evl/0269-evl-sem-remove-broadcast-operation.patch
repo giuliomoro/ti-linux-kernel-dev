@@ -1,7 +1,7 @@
 From 93b4420a0462101cc087b062ef7e2a773d521ac6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 6 Feb 2019 15:19:56 +0100
-Subject: [PATCH 269/985] evl/sem: remove broadcast operation
+Subject: [PATCH 0269/1013] evl/sem: remove broadcast operation
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 16 deletions(-)
 
 diff --git a/include/uapi/evenless/sem.h b/include/uapi/evenless/sem.h
-index bcfda6bd2..2e841b29a 100644
+index bcfda6bd2bc9..2e841b29a8b3 100644
 --- a/include/uapi/evenless/sem.h
 +++ b/include/uapi/evenless/sem.h
 @@ -38,7 +38,6 @@ struct evl_sem_waitreq {
@@ -23,7 +23,7 @@ index bcfda6bd2..2e841b29a 100644
  
  #endif /* !_EVENLESS_UAPI_SEM_H */
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 173045571..ede8837b0 100644
+index 1730455719c6..ede8837b0926 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -61,13 +61,11 @@ static int acquire_sem(struct evl_sem *sem,

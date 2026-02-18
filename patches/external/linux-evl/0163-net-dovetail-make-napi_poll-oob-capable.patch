@@ -1,7 +1,7 @@
 From aac5ceece891ceb7742de28d55cf4f738bd0b2ba Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 23 Apr 2025 18:21:36 +0200
-Subject: [PATCH 163/985] net: dovetail: make napi_poll() oob-capable
+Subject: [PATCH 0163/1013] net: dovetail: make napi_poll() oob-capable
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 34 insertions(+), 18 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 510fc80bf..99c1c0280 100644
+index 510fc80bf822..99c1c0280378 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4419,6 +4419,8 @@ static inline void netif_disable_oob_port(struct net_device *dev)
@@ -23,7 +23,7 @@ index 510fc80bf..99c1c0280 100644
  void napi_schedule_oob(struct napi_struct *n);
  bool netif_deliver_oob(struct sk_buff *skb);
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 4ae484f61..c54a3f95a 100644
+index 4ae484f6165d..c54a3f95a122 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5338,6 +5338,13 @@ static void process_inband_rx_backlog(struct softnet_data *sd)

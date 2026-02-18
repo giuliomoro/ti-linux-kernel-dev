@@ -1,7 +1,7 @@
 From eb08964672cd6a451cb899dd8a47e9820c7a4fe0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 26 May 2020 16:13:53 +0200
-Subject: [PATCH 626/985] evl: kconfig: better qualify overhead of DEBUG_CORE
+Subject: [PATCH 0626/1013] evl: kconfig: better qualify overhead of DEBUG_CORE
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index 39dd05b6a..86d1af5b3 100644
+index 39dd05b6a60c..86d1af5b3056 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -180,7 +180,7 @@ config EVL_DEBUG_CORE

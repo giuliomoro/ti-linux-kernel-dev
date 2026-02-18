@@ -1,7 +1,7 @@
 From 4c5df5b2ab67a13b9090a53ffe88ed2772199ad1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 21 Jul 2019 22:50:05 +0200
-Subject: [PATCH 452/985] evl/clock: do not fast-forward on tick overrun
+Subject: [PATCH 0452/1013] evl/clock: do not fast-forward on tick overrun
 
 If a tick is overrunning, assume the best to do is to signal the next
 event immediately instead of advancing to the next release point past
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 258faa4ab..00bb9dd39 100644
+index 258faa4abda6..00bb9dd3932a 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -322,15 +322,12 @@ static void do_clock_tick(struct evl_clock *clock, struct evl_timerbase *tmb)

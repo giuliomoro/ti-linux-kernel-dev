@@ -1,7 +1,7 @@
 From ae6129dcfa216e5e7238d801b5466d245c93489d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 4 Nov 2019 15:38:14 +0100
-Subject: [PATCH 541/985] evl/irq: fix missed rescheduling trigger to remote
+Subject: [PATCH 0541/1013] evl/irq: fix missed rescheduling trigger to remote
  CPU
 
 Maybe counter-intuitively but for a good reason (i.e. lockless
@@ -22,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/include/evl/irq.h b/include/evl/irq.h
-index 8720c8969..babee3738 100644
+index 8720c8969846..babee3738b4c 100644
 --- a/include/evl/irq.h
 +++ b/include/evl/irq.h
 @@ -25,15 +25,10 @@ static inline void evl_exit_irq(void)

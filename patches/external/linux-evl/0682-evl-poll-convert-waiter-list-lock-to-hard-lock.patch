@@ -1,7 +1,7 @@
 From 35422ee8cfada5c85a2b36803c93280b2c97c6ba Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 682/985] evl/poll: convert waiter list lock to hard lock
+Subject: [PATCH 0682/1013] evl/poll: convert waiter list lock to hard lock
 
 Very short sections of code outside of any hot path are protected by
 such lock. Therefore we would not generally benefit from the
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index ede0d6ea1..abdb37d09 100644
+index ede0d6ea13cc..abdb37d09821 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -12,7 +12,6 @@

@@ -1,7 +1,7 @@
 From e7dbfc40b07742d69460c7d7aa4fd5177875a5c5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 21 Oct 2022 10:29:03 +0200
-Subject: [PATCH 764/985] evl/mutex: skip mutex transfer to unblocked waiter
+Subject: [PATCH 0764/1013] evl/mutex: skip mutex transfer to unblocked waiter
 
 A thread which has been forcibly unblocked while waiting for a mutex
 might still be linked to the mutex wait list, until it resumes in
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 28 insertions(+), 7 deletions(-)
 
 diff --git a/include/evl/list.h b/include/evl/list.h
-index 742ce664b..47841be6e 100644
+index 742ce664b084..47841be6e5ba 100644
 --- a/include/evl/list.h
 +++ b/include/evl/list.h
 @@ -38,9 +38,4 @@ do {										\
@@ -31,7 +31,7 @@ index 742ce664b..47841be6e 100644
 -
  #endif /* !_EVL_LIST_H_ */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 5e34e2d16..09cb7f9cf 100644
+index 5e34e2d163df..09cb7f9cf80a 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -1326,9 +1326,33 @@ static bool transfer_ownership(struct evl_mutex *mutex)

@@ -1,7 +1,7 @@
 From 0191254194a63bd9e9ffa047a4aad1c71b37ce91 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 30 Jun 2019 16:37:30 +0200
-Subject: [PATCH 430/985] evl/proxy: enable inband writes
+Subject: [PATCH 0430/1013] evl/proxy: enable inband writes
 
 Although writing to a proxy is primarily intended for oob callers,
 allowing inband tasks to use this channel too comes in handy as the
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 92 insertions(+), 61 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 3090b0ddc..978c3e959 100644
+index 3090b0ddc339..978c3e959309 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -9,6 +9,7 @@

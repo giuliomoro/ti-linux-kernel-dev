@@ -1,7 +1,7 @@
 From 400ed2b43dd965e2cf7c6e9d0cc6473b66c37c8d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 14 Feb 2019 10:44:17 +0100
-Subject: [PATCH 300/985] evl/sem: fix handling of evl_wait_timeout() status
+Subject: [PATCH 0300/1013] evl/sem: fix handling of evl_wait_timeout() status
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 0bf2f62f0..7afeacaff 100644
+index 0bf2f62f0525..7afeacafffe7 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -32,8 +32,8 @@ static int acquire_sem(struct evl_sem *sem,

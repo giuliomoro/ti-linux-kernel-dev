@@ -1,7 +1,7 @@
 From 161c14b254d5a976ac4433aa5fa5f196bf74575e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 16 Jul 2021 09:09:47 +0200
-Subject: [PATCH 047/985] PCI: brcmstb: irq_pipeline: enable pipelined
+Subject: [PATCH 0047/1013] PCI: brcmstb: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/drivers/pci/controller/pcie-brcmstb.c b/drivers/pci/controller/pcie-brcmstb.c
-index 81f085ceb..e35a31b31 100644
+index 81f085cebf62..e35a31b31fe6 100644
 --- a/drivers/pci/controller/pcie-brcmstb.c
 +++ b/drivers/pci/controller/pcie-brcmstb.c
 @@ -461,6 +461,7 @@ static struct irq_chip brcm_msi_irq_chip = {

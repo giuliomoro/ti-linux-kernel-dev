@@ -1,7 +1,7 @@
 From 9dc0e2c655249c3bf7047e769da7fe902bb43d6a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 21 Dec 2022 18:22:31 +0100
-Subject: [PATCH 808/985] evl/factory: constify dev argument to devnode cb
+Subject: [PATCH 0808/1013] evl/factory: constify dev argument to devnode cb
 
 As required since the v6.2 development cycle.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 1966f50ef..a17850c16 100644
+index 1966f50ef2af..a17850c165d1 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -844,7 +844,7 @@ bool evl_may_access_factory(struct evl_factory *fac)

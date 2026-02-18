@@ -1,0 +1,149 @@
+From 8cdb523b69844a57efef8e5484d0bde576e60973 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Mon, 27 Oct 2025 10:19:24 +0100
+Subject: [PATCH 0999/1013] evl/net: dev: clean ARP front cache on retirement
+
+We need to clean the route and ARP front caches from any entry which
+refers to a device which is going down. So far we did so for the route
+cache, ensure to clean the ARP cache as well.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/net/ipv4/arp.h |  2 +-
+ include/evl/net/route.h    |  2 +-
+ kernel/evl/net/dev.c       |  2 +-
+ kernel/evl/net/ipv4/arp.c  | 24 +++++++++++++++++++++---
+ kernel/evl/net/net.c       |  2 +-
+ kernel/evl/net/route.c     | 12 +++++++-----
+ 6 files changed, 32 insertions(+), 12 deletions(-)
+
+diff --git a/include/evl/net/ipv4/arp.h b/include/evl/net/ipv4/arp.h
+index 07f01aa75958..52aa17bcaf1e 100644
+--- a/include/evl/net/ipv4/arp.h
++++ b/include/evl/net/ipv4/arp.h
+@@ -32,7 +32,7 @@ int evl_net_init_arp(struct net *net);
+ 
+ void evl_net_cleanup_arp(struct net *net);
+ 
+-void evl_net_flush_arp(struct net *net);
++void evl_net_flush_arp(struct net *net, struct net_device *dev);
+ 
+ int evl_net_update_arp(struct neighbour *neigh);
+ 
+diff --git a/include/evl/net/route.h b/include/evl/net/route.h
+index 707c5936dd11..756482271961 100644
+--- a/include/evl/net/route.h
++++ b/include/evl/net/route.h
+@@ -49,7 +49,7 @@ int evl_net_add_device_route(struct net_device *dev);
+ 
+ void evl_net_remove_device_route(struct net_device *dev);
+ 
+-void evl_net_flush_routes(struct net *net, struct net_device *dev);
++void evl_net_retire_device(struct net_device *dev);
+ 
+ static inline struct dst_entry *evl_net_route_dst(const struct evl_net_route *ert)
+ {
+diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
+index 3869d57d1448..9361b7fed9d3 100644
+--- a/kernel/evl/net/dev.c
++++ b/kernel/evl/net/dev.c
+@@ -505,7 +505,7 @@ int evl_netdev_event(struct notifier_block *ev_block,
+ 	case NETDEV_GOING_DOWN:
+ 		if (netif_oob_port(dev)) {
+ 			disable_oob_port(dev);
+-			evl_net_flush_routes(dev_net(dev), dev);
++			evl_net_retire_device(dev);
+ 		}
+ 		break;
+ 	}
+diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
+index 296426e50a01..4e7a62f6e5b9 100644
+--- a/kernel/evl/net/ipv4/arp.c
++++ b/kernel/evl/net/ipv4/arp.c
+@@ -279,11 +279,29 @@ static struct notifier_block netevent_notifier __read_mostly = {
+ 	.notifier_call = netevent_handler,
+ };
+ 
+-void evl_net_flush_arp(struct net *net)
++static bool compare_arp_dev(struct evl_cache_entry *entry, void *arg)
++{
++	const struct evl_net_arp_entry *e =
++		container_of(entry, struct evl_net_arp_entry, entry);
++	struct net_device *dev = arg;
++
++	return dev == e->key.dev;
++}
++
++/*
++ * Flush the ARP entries maintained in the out-of-band front cache. If
++ * @dev is non-NULL, only the entries associated to the device are
++ * dropped. Otherwise, NULL is a wildcard for purging the cache
++ * entirely.
++ */
++void evl_net_flush_arp(struct net *net, struct net_device *dev)
+ {
+ 	struct oob_net_state *nets = &net->oob;
+ 
+-	evl_flush_cache(&nets->ipv4.arp);
++	if (dev)
++		evl_clean_cache(&nets->ipv4.arp, compare_arp_dev, dev);
++	else
++		evl_flush_cache(&nets->ipv4.arp);
+ }
+ 
+ int evl_net_init_arp(struct net *net)
+@@ -310,5 +328,5 @@ int evl_net_init_arp(struct net *net)
+ void evl_net_cleanup_arp(struct net *net)
+ {
+ 	unregister_netevent_notifier(&netevent_notifier);
+-	evl_net_flush_arp(net);
++	evl_net_flush_arp(net, NULL);
+ }
+diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
+index a18db00feaad..b5aee6b71012 100644
+--- a/kernel/evl/net/net.c
++++ b/kernel/evl/net/net.c
+@@ -228,7 +228,7 @@ static ssize_t ipv4_flush_arp_store(struct device *dev,
+ {
+ 	struct net *net = current->nsproxy->net_ns;
+ 
+-	evl_net_flush_arp(net);
++	evl_net_flush_arp(net, NULL);
+ 
+ 	return count;
+ }
+diff --git a/kernel/evl/net/route.c b/kernel/evl/net/route.c
+index b717901fb38d..1b40d889a587 100644
+--- a/kernel/evl/net/route.c
++++ b/kernel/evl/net/route.c
+@@ -9,6 +9,7 @@
+ #include <evl/net/socket.h>
+ #include <evl/net/ipv4.h>
+ #include <evl/net/ipv4/route.h>
++#include <evl/net/ipv4/arp.h>
+ 
+ /*
+  * Cache a new IP route.
+@@ -65,13 +66,14 @@ void ip_learn_oob_route(struct net *net, struct flowi4 *fl4, struct rtable *rt)
+ }
+ 
+ /*
+- * Flush the routes maintained in the out-of-band front cache. If @dev
+- * is non-NULL, only the routes going via the device are
+- * dropped. Otherwise, NULL is a wildcard for dropping all routes.
++ * Retire a device from the routing system. This involves flushing the
++ * routes and neighbour entries maintained in their respective
++ * out-of-band front caches.
+  */
+-void evl_net_flush_routes(struct net *net, struct net_device *dev)
++void evl_net_retire_device(struct net_device *dev)
+ {
+-	evl_net_flush_ipv4_routes(net, dev);
++	evl_net_flush_ipv4_routes(dev_net(dev), dev);
++	evl_net_flush_arp(dev_net(dev), dev);
+ }
+ 
+ /*
+-- 
+2.30.2
+

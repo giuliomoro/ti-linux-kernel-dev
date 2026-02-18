@@ -1,7 +1,7 @@
 From 1028ebb377247ef7e941e18f55dbdd9744da479c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 24 Jun 2025 23:11:40 +0200
-Subject: [PATCH 207/985] net: dovetail: fix inclusion hell with
+Subject: [PATCH 0207/1013] net: dovetail: fix inclusion hell with
  skb_oob_dma_addr()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+), 23 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index d0ee34964..0808b27b8 100644
+index d0ee34964484..0808b27b8c31 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -5258,7 +5258,6 @@ ssize_t skb_splice_from_iter(struct sk_buff *skb, struct iov_iter *iter,
@@ -52,7 +52,7 @@ index d0ee34964..0808b27b8 100644
  bool skb_release_oob(struct sk_buff *skb);
  void free_skb_oob(struct sk_buff *skb);
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 9b7c7081f..5183aa9f0 100644
+index 9b7c7081f7fa..5183aa9f0a10 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -50,7 +50,6 @@

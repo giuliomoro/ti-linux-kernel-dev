@@ -1,7 +1,7 @@
 From 577cb51ca99488e059a89a50ac0c0c7cb8abc5f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 Jan 2020 15:04:56 +0100
-Subject: [PATCH 556/985] evl/syscall: honor vDSO fallback calls in oob mode
+Subject: [PATCH 0556/1013] evl/syscall: honor vDSO fallback calls in oob mode
 
 In some situations, and particularly on legacy/broken hardware, the
 kernel might decide to declare the current vDSO-accessible clocksource
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 51 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 20630358d..8448a6984 100644
+index 20630358d3bd..8448a6984b54 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -2,7 +2,7 @@

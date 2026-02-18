@@ -1,7 +1,7 @@
 From 3dabd4d759e04d3cb4d4a86cc23138d8eff0179e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Dec 2022 18:45:47 +0100
-Subject: [PATCH 807/985] evl/mutex: fix acquire/release race causing missed
+Subject: [PATCH 0807/1013] evl/mutex: fix acquire/release race causing missed
  wakeup
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 29 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 5981c91a2..f0e6faac3 100644
+index 5981c91a27fc..f0e6faac3bb7 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -582,9 +582,30 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,

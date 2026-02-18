@@ -1,7 +1,7 @@
 From b80ac1f134e559bafbff193592561baa509e120a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 27 Feb 2024 15:18:38 +0100
-Subject: [PATCH 102/985] u64_stats: irq_pipeline: enable oob protection
+Subject: [PATCH 0102/1013] u64_stats: irq_pipeline: enable oob protection
 
 In preparation to enable eBPF execution from the oob stage, we need
 u64_stats to provide helpers for safely updating the counters from
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 60 insertions(+)
 
 diff --git a/include/linux/u64_stats_sync.h b/include/linux/u64_stats_sync.h
-index 457879938..4eaaf6496 100644
+index 457879938fc1..4eaaf6496572 100644
 --- a/include/linux/u64_stats_sync.h
 +++ b/include/linux/u64_stats_sync.h
 @@ -99,6 +99,8 @@ static inline void __u64_stats_update_begin(struct u64_stats_sync *syncp) { }

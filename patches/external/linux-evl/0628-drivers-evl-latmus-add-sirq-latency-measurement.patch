@@ -1,7 +1,7 @@
 From 29ea8b7560df938ed7545ebc2521b610399d18fc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 31 May 2020 18:30:00 +0200
-Subject: [PATCH 628/985] drivers/evl: latmus: add sirq latency measurement
+Subject: [PATCH 0628/1013] drivers/evl: latmus: add sirq latency measurement
 
 This mode measures the delay between the moment a synthetic interrupt
 is posted from the oob stage and when it is eventually received by its
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 136 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index d77cac143..0bc9263e6 100644
+index d77cac143178..0bc9263e63e4 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -44,6 +44,7 @@ struct tuning_score {
@@ -242,7 +242,7 @@ index d77cac143..0bc9263e6 100644
  		return -EINVAL;
  	}
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 4cc2f871f..9eebdb085 100644
+index 4cc2f871f3c1..9eebdb085fba 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -255,7 +255,7 @@ index 4cc2f871f..9eebdb085 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/devices/latmus.h b/include/uapi/evl/devices/latmus.h
-index 0b0207c3a..4045e57a3 100644
+index 0b0207c3a5ac..4045e57a305b 100644
 --- a/include/uapi/evl/devices/latmus.h
 +++ b/include/uapi/evl/devices/latmus.h
 @@ -14,6 +14,8 @@

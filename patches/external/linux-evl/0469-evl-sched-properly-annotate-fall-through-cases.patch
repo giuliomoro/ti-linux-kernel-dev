@@ -1,7 +1,7 @@
 From 359efb48b623c64233c728d3332d92d0e76b1907 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 10 Aug 2019 19:13:15 +0200
-Subject: [PATCH 469/985] evl/sched: properly annotate fall-through cases
+Subject: [PATCH 0469/1013] evl/sched: properly annotate fall-through cases
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index e314f961f..b89f2d9af 100644
+index e314f961f2d1..b89f2d9afa8c 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -718,7 +718,7 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -32,7 +32,7 @@ index e314f961f..b89f2d9af 100644
  		/*
  		 * This routine handles requests submitted from
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 2ae572398..607e8b09d 100644
+index 2ae572398c73..607e8b09d65b 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -318,7 +318,7 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,

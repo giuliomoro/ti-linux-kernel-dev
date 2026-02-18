@@ -1,7 +1,7 @@
 From e8fa83437ec12fd1fa3ab2dcb1cfafb124b1e231 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 23 Nov 2022 10:51:33 +0100
-Subject: [PATCH 795/985] evl/mutex: ensure PP mutexes have strictly static
+Subject: [PATCH 0795/1013] evl/mutex: ensure PP mutexes have strictly static
  priority
 
 Priority protection is about enforcing a static (ceiling) priority, so
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index b7ae28c8d..f2a0e209e 100644
+index b7ae28c8d47b..f2a0e209e727 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -888,12 +888,11 @@ void evl_requeue_mutex_wait(struct evl_wait_channel *wchan,

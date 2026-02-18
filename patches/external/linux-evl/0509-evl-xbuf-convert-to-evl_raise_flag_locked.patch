@@ -1,7 +1,7 @@
 From dd581106b82d6dd576eb75b1987660bd0ee40e97 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 15:56:51 +0200
-Subject: [PATCH 509/985] evl/xbuf: convert to evl_raise_flag_locked()
+Subject: [PATCH 0509/1013] evl/xbuf: convert to evl_raise_flag_locked()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 34e48f9ce..015b4c973 100644
+index 34e48f9ce0a5..015b4c973884 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -349,7 +349,7 @@ static int inbound_wait_output(struct xbuf_ring *ring, size_t len)

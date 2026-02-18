@@ -1,7 +1,7 @@
 From 589a4cdfe6c795f48d1d42c9738a7bad1568d6ac Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 29 Oct 2023 10:44:38 +0100
-Subject: [PATCH 828/985] evl/thread: remove useless dynamic lock key
+Subject: [PATCH 0828/1013] evl/thread: remove useless dynamic lock key
 
 All lock instances serializing accesses to the shared data in thread
 descriptors belong to the same class lockdep-wise. Calling
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 1 insertion(+), 16 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index a0f34ca97..2d1d6f874 100644
+index a0f34ca97c1e..2d1d6f8745c0 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -63,7 +63,6 @@ struct evl_init_thread_attr {
@@ -27,7 +27,7 @@ index a0f34ca97..2d1d6f874 100644
  	/*
  	 * Shared thread-specific data, covered by ->lock.
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index dac366d41..5cd1539cd 100644
+index dac366d41163..5cd1539cd3a3 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -230,6 +230,7 @@ int evl_init_thread(struct evl_thread *thread,

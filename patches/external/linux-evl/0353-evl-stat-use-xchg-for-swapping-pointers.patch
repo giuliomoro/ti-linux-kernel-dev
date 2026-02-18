@@ -1,7 +1,7 @@
 From f4f1afcd58be4470d20536192cad932ef96420db Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 21 Mar 2019 12:57:37 +0100
-Subject: [PATCH 353/985] evl/stat: use xchg() for swapping pointers
+Subject: [PATCH 0353/1013] evl/stat: use xchg() for swapping pointers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/include/evl/stat.h b/include/evl/stat.h
-index f669f2ba9..3a5d340d0 100644
+index f669f2ba9fc4..3a5d340d0537 100644
 --- a/include/evl/stat.h
 +++ b/include/evl/stat.h
 @@ -69,8 +69,7 @@ static inline void evl_reset_account(struct evl_account *account)

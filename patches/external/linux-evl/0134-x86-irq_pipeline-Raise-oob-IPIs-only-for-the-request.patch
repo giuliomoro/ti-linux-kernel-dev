@@ -1,7 +1,7 @@
 From 74e51b00d84a220a54fee47a922f70b8cc701e66 Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Thu, 28 Nov 2024 14:04:07 +0100
-Subject: [PATCH 134/985] x86: irq_pipeline: Raise oob IPIs only for the
+Subject: [PATCH 0134/1013] x86: irq_pipeline: Raise oob IPIs only for the
  requested cpumask
 
 irq_send_oob_ipi() silently migrates from the supplied cpumask to
@@ -42,7 +42,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 6c4fb847b..1eb0b6747 100644
+index 6c4fb847b4d4..1eb0b67479a2 100644
 --- a/arch/x86/kernel/smp.c
 +++ b/arch/x86/kernel/smp.c
 @@ -280,7 +280,7 @@ DEFINE_IDTENTRY_SYSVEC_PIPELINED(CALL_FUNCTION_SINGLE_VECTOR,

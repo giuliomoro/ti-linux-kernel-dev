@@ -1,7 +1,7 @@
 From ca49bf6dd309f94ca8b9fdd30cdec596407b5a7f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 2 Feb 2024 17:05:15 +0100
-Subject: [PATCH 873/985] evl/net: socket: handle release event
+Subject: [PATCH 0873/1013] evl/net: socket: handle release event
 
 sock_oob_release() is called when the file struct associated to the
 socket is closed, which unlike sock_oob_destroy() may block.
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 35 insertions(+), 14 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 1929db05f..9345a3f84 100644
+index 1929db05fd4e..9345a3f840ad 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -10,7 +10,7 @@
@@ -49,7 +49,7 @@ index 1929db05f..9345a3f84 100644
  		struct {
  			int real_ifindex;
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index e314ede1a..3f04aedd7 100644
+index e314ede1a000..3f04aedd7d85 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -240,8 +240,8 @@ static int attach_packet_socket(struct evl_socket *esk,
@@ -82,7 +82,7 @@ index e314ede1a..3f04aedd7 100644
  	.oob_send = send_packet,
  	.oob_poll = poll_packet,
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 8b7bda8fc..46f80a31f 100644
+index 8b7bda8fcb16..46f80a31f950 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -217,8 +217,8 @@ static struct evl_net_proto *find_oob_proto(int domain, int type, int protocol)

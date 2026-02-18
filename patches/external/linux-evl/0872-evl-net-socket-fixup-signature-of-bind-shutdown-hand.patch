@@ -1,7 +1,7 @@
 From c7a9c7a2d6c4a65a7f6e1ff85ce96445756c3d38 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 13 Feb 2024 15:23:06 +0100
-Subject: [PATCH 872/985] evl/net: socket: fixup signature of bind, shutdown
+Subject: [PATCH 0872/1013] evl/net: socket: fixup signature of bind, shutdown
  handlers
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 22 insertions(+), 22 deletions(-)
 
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 28cbe91dc..8b7bda8fc 100644
+index 28cbe91dcb8d..8b7bda8fcb16 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -339,63 +339,63 @@ void sock_oob_destroy(struct sock *sk)

@@ -1,7 +1,8 @@
 From 66526c91221ad3e11a8b31a8f5031548fcf45361 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 23 Aug 2022 12:04:26 +0200
-Subject: [PATCH 737/985] evl/thread: duly mark SIGDEBUG cause on direct signal
+Subject: [PATCH 0737/1013] evl/thread: duly mark SIGDEBUG cause on direct
+ signal
 
 The sigval information was not bearing the SIGDEBUG marker in case we
 signaled from in-band context directly. Set the marker in the common
@@ -13,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 606f24b90..4dc3aca39 100644
+index 606f24b902e5..4dc3aca39bec 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1304,10 +1304,11 @@ static void do_inband_signal(struct evl_thread *thread, int signo, int sigval)

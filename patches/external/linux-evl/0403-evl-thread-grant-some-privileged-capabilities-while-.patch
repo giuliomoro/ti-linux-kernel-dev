@@ -1,8 +1,8 @@
 From 68c4fdc328522cfba64e042c430e9bf3985c4a42 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 13 Jun 2019 10:18:39 +0200
-Subject: [PATCH 403/985] evl/thread: grant some privileged capabilities while
- attached
+Subject: [PATCH 0403/1013] evl/thread: grant some privileged capabilities
+ while attached
 
 Currently concerns SYS_NICE, IPC_LOCK and SYS_RAWIO. Capabilities
 which have been granted are dropped when the thread detaches from the
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 50 insertions(+)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 5cdbdfa7c..2fd2dcf00 100644
+index 5cdbdfa7c793..2fd2dcf00b4b 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -127,6 +127,7 @@ struct evl_thread {
@@ -27,7 +27,7 @@ index 5cdbdfa7c..2fd2dcf00 100644
  	/*
  	 * Thread data visible from userland through a window on the
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 879df473e..586cdbb4e 100644
+index 879df473ec78..586cdbb4e6ea 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -80,6 +80,26 @@ static inline void set_oob_threadinfo(struct evl_thread *thread)

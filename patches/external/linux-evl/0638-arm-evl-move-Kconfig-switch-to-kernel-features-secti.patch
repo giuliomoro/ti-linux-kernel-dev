@@ -1,7 +1,7 @@
 From 5e696bed546726ac254fe3ba8c859cbb2de313b2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 9 Aug 2020 12:20:47 +0200
-Subject: [PATCH 638/985] arm/evl: move Kconfig switch to kernel features
+Subject: [PATCH 0638/1013] arm/evl: move Kconfig switch to kernel features
  section
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index c8b40837e..37d8042c8 100644
+index c8b40837ebe7..37d8042c86fd 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
 @@ -315,8 +315,6 @@ config PGTABLE_LEVELS

@@ -1,7 +1,7 @@
 From 7ccde670402cb2fd5cecfaf2444c9118bb97f923 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 7 May 2019 14:05:46 +0200
-Subject: [PATCH 365/985] evl/clock: silence false positive UMR warning
+Subject: [PATCH 0365/1013] evl/clock: silence false positive UMR warning
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index a6923c7aa..5856d7bcc 100644
+index a6923c7aaa43..5856d7bcc732 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -624,6 +624,7 @@ static long timerfd_oob_ioctl(struct file *filp,

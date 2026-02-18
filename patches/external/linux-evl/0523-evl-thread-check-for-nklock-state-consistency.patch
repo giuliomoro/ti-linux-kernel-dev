@@ -1,7 +1,7 @@
 From 1f296b4f80622e8470c3d33f51887fc090516880 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Oct 2019 18:15:02 +0200
-Subject: [PATCH 523/985] evl/thread: check for nklock state consistency
+Subject: [PATCH 0523/1013] evl/thread: check for nklock state consistency
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index ef146eacb..b45de72b4 100644
+index ef146eacbeff..b45de72b45fe 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -250,6 +250,8 @@ static void uninit_thread(struct evl_thread *thread)

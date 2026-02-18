@@ -1,7 +1,7 @@
 From 6825c48f1e729239b4eee72cecdf2eca66393d8e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 17 Mar 2019 15:55:37 +0100
-Subject: [PATCH 348/985] evl/flag: add static initializer
+Subject: [PATCH 0348/1013] evl/flag: add static initializer
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 78699abb2..5b6a0b065 100644
+index 78699abb25dc..5b6a0b065872 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -15,16 +15,17 @@ struct evl_flag {

@@ -1,7 +1,8 @@
 From 77b247cf41eefdc7a5394c8cad8a99e8c9c804c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 28 Apr 2019 16:18:56 +0200
-Subject: [PATCH 078/985] x86/apic: irq_pipeline: enable pipelined clock events
+Subject: [PATCH 0078/1013] x86/apic: irq_pipeline: enable pipelined clock
+ events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 33 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 3415de368..0747b37b2 100644
+index 3415de368c84..0747b37b2404 100644
 --- a/arch/x86/kernel/apic/apic.c
 +++ b/arch/x86/kernel/apic/apic.c
 @@ -32,6 +32,7 @@

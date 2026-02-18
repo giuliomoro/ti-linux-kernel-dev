@@ -1,7 +1,7 @@
 From b5d0afe8aaa06b275dc6aa18040324f945c24293 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jul 2018 09:27:33 +0200
-Subject: [PATCH 017/985] clocksource/st_lpc: turn into user-visible MMIO
+Subject: [PATCH 0017/1013] clocksource/st_lpc: turn into user-visible MMIO
  clocksource
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index c984c7a22..53b3cf0b3 100644
+index c984c7a22bf7..53b3cf0b32d7 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
 @@ -631,7 +631,7 @@ config CLKSRC_ST_LPC
@@ -24,7 +24,7 @@ index c984c7a22..53b3cf0b3 100644
  	  Enable this option to use the Low Power controller timer
  	  as clocksource.
 diff --git a/drivers/clocksource/clksrc_st_lpc.c b/drivers/clocksource/clksrc_st_lpc.c
-index 419a88687..b30b814d2 100644
+index 419a886876e4..b30b814d271f 100644
 --- a/drivers/clocksource/clksrc_st_lpc.c
 +++ b/drivers/clocksource/clksrc_st_lpc.c
 @@ -51,7 +51,7 @@ static int __init st_clksrc_init(void)

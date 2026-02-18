@@ -1,7 +1,7 @@
 From f4a7f7498504c28eb25ceee674fe9046d35f0ae1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 20 Oct 2019 12:29:35 +0200
-Subject: [PATCH 482/985] evl/thread: detect preposterous absolute timeout in
+Subject: [PATCH 0482/1013] evl/thread: detect preposterous absolute timeout in
  sleep_on
 
 Botched evl_sleep_on() calls with absolute timeout values set into the
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 8eb696ac4..acde088e9 100644
+index 8eb696ac40c4..acde088e96dc 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -478,8 +478,7 @@ void evl_sleep_on(ktime_t timeout, enum evl_tmode timeout_mode,

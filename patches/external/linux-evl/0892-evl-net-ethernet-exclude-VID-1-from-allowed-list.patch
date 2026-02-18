@@ -1,7 +1,7 @@
 From b22510435751b43b3c41dd66077601b5e9fc804d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 27 Sep 2024 10:29:38 +0200
-Subject: [PATCH 892/985] evl/net: ethernet: exclude VID 1 from allowed list
+Subject: [PATCH 0892/1013] evl/net: ethernet: exclude VID 1 from allowed list
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
-index 5887b5cf6..de470dafa 100644
+index 5887b5cf675e..de470dafac98 100644
 --- a/kernel/evl/net/ethernet/input.c
 +++ b/kernel/evl/net/ethernet/input.c
 @@ -154,6 +154,12 @@ static struct evl_net_handler evl_net_ether = {

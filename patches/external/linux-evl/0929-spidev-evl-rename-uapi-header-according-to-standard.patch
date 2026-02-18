@@ -1,7 +1,8 @@
 From 79d4830c0826eac3760b73cef647825effa1d49d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 7 May 2025 14:44:39 +0200
-Subject: [PATCH 929/985] spidev: evl: rename uapi header according to standard
+Subject: [PATCH 0929/1013] spidev: evl: rename uapi header according to
+ standard
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -11,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  rename include/uapi/evl/devices/{spidev.h => spidev-abi.h} (100%)
 
 diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index dfd6cb6ec..27861ffaa 100644
+index dfd6cb6ec938..27861ffaa17b 100644
 --- a/drivers/spi/spidev.c
 +++ b/drivers/spi/spidev.c
 @@ -25,7 +25,7 @@

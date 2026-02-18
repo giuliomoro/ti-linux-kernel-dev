@@ -1,7 +1,7 @@
 From a639418debf6a72f85c5a15a7eff6632e3e3fbf8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 26 Oct 2023 17:14:47 +0200
-Subject: [PATCH 825/985] evl/doc: fix typo in comment
+Subject: [PATCH 0825/1013] evl/doc: fix typo in comment
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 9ed127f61..17ea7567d 100644
+index 9ed127f61957..17ea7567d1f9 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -336,9 +336,9 @@ static int do_element_visibility(struct evl_element *e,

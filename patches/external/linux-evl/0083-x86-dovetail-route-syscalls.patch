@@ -1,7 +1,7 @@
 From e4d59b55d5dae51f110de75ebe7c5d06f0cce80e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 May 2019 18:37:41 +0200
-Subject: [PATCH 083/985] x86: dovetail: route syscalls
+Subject: [PATCH 0083/1013] x86: dovetail: route syscalls
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
@@ -83,7 +83,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  5 files changed, 86 insertions(+), 1 deletion(-)
 
 diff --git a/arch/x86/entry/common.c b/arch/x86/entry/common.c
-index 51efd2da4..9190c805b 100644
+index 51efd2da4d7f..9190c805b24f 100644
 --- a/arch/x86/entry/common.c
 +++ b/arch/x86/entry/common.c
 @@ -78,6 +78,15 @@ __visible noinstr bool do_syscall_64(struct pt_regs *regs, int nr)
@@ -182,7 +182,7 @@ index 51efd2da4..9190c805b 100644
  	syscall_exit_to_user_mode(regs);
  	return true;
 diff --git a/arch/x86/include/asm/dovetail.h b/arch/x86/include/asm/dovetail.h
-index 771a275c6..f4b866b1a 100644
+index 771a275c6da4..f4b866b1a23b 100644
 --- a/arch/x86/include/asm/dovetail.h
 +++ b/arch/x86/include/asm/dovetail.h
 @@ -9,6 +9,7 @@
@@ -209,7 +209,7 @@ index 771a275c6..f4b866b1a 100644
  
  #endif /* _ASM_X86_DOVETAIL_H */
 diff --git a/arch/x86/include/asm/syscall.h b/arch/x86/include/asm/syscall.h
-index 7c488ff0c..59c07fa1c 100644
+index 7c488ff0c764..59c07fa1cd12 100644
 --- a/arch/x86/include/asm/syscall.h
 +++ b/arch/x86/include/asm/syscall.h
 @@ -121,6 +121,16 @@ static inline void syscall_get_arguments(struct task_struct *task,
@@ -230,7 +230,7 @@ index 7c488ff0c..59c07fa1c 100644
  {
  	/* x32 tasks should be considered AUDIT_ARCH_X86_64. */
 diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 610bbce0a..fc0b53297 100644
+index 610bbce0aa41..fc0b53297324 100644
 --- a/arch/x86/include/asm/thread_info.h
 +++ b/arch/x86/include/asm/thread_info.h
 @@ -102,6 +102,7 @@ struct thread_info {
@@ -250,7 +250,7 @@ index 610bbce0a..fc0b53297 100644
  #define _TIF_IO_BITMAP		(1 << TIF_IO_BITMAP)
  #define _TIF_SPEC_FORCE_UPDATE	(1 << TIF_SPEC_FORCE_UPDATE)
 diff --git a/include/linux/entry-common.h b/include/linux/entry-common.h
-index af163b434..be8c3a37c 100644
+index af163b43415d..be8c3a37cee4 100644
 --- a/include/linux/entry-common.h
 +++ b/include/linux/entry-common.h
 @@ -68,6 +68,14 @@

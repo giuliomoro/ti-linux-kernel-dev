@@ -1,7 +1,7 @@
 From e33f1d6b2afd644b0bbd7ed5de0a6e5cf6a62056 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 10 Oct 2020 19:44:52 +0200
-Subject: [PATCH 062/985] clocksource/exynos_mct: irq_pipeline: enable
+Subject: [PATCH 0062/1013] clocksource/exynos_mct: irq_pipeline: enable
  pipelined clock events
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 9 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index c90924e9a..37e30fdee 100644
+index c90924e9a56a..37e30fdee66a 100644
 --- a/drivers/clocksource/exynos_mct.c
 +++ b/drivers/clocksource/exynos_mct.c
 @@ -325,7 +325,8 @@ static int mct_set_state_periodic(struct clock_event_device *evt)

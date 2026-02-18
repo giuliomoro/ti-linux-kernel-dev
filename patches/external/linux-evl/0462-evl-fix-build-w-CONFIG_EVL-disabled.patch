@@ -1,7 +1,7 @@
 From e99375209159c328262dfea022ed51c6c916f7f6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Aug 2019 16:37:26 +0200
-Subject: [PATCH 462/985] evl: fix build w/ CONFIG_EVL disabled
+Subject: [PATCH 0462/1013] evl: fix build w/ CONFIG_EVL disabled
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 17 insertions(+)
 
 diff --git a/include/asm-generic/evl/irq.h b/include/asm-generic/evl/irq.h
-index bf50e9a1e..ea3d047c3 100644
+index bf50e9a1ebd2..ea3d047c33a2 100644
 --- a/include/asm-generic/evl/irq.h
 +++ b/include/asm-generic/evl/irq.h
 @@ -6,12 +6,16 @@
@@ -31,7 +31,7 @@ index bf50e9a1e..ea3d047c3 100644
  
  #endif /* !_ASM_GENERIC_EVL_IRQ_H */
 diff --git a/include/asm-generic/evl/thread_info.h b/include/asm-generic/evl/thread_info.h
-index bc1c7ada9..99cfd71e4 100644
+index bc1c7ada97a8..99cfd71e49bd 100644
 --- a/include/asm-generic/evl/thread_info.h
 +++ b/include/asm-generic/evl/thread_info.h
 @@ -2,6 +2,8 @@

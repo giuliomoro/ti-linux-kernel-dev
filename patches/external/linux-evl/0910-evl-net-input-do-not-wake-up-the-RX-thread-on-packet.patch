@@ -1,7 +1,7 @@
 From f7fb7ec866cf547c7f883134313e0687fc3f22ce Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 27 Mar 2025 16:05:28 +0100
-Subject: [PATCH 910/985] evl/net: input: do not wake up the RX thread on
+Subject: [PATCH 0910/1013] evl/net: input: do not wake up the RX thread on
  packet queuing
 
 There is no point in waking up the RX thread when accepting a packet.
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 3c6c8c116..26a4048a3 100644
+index 3c6c8c116689..26a4048a3d6a 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -119,6 +119,7 @@ void evl_net_wake_rx(struct net_device *dev)

@@ -1,7 +1,7 @@
 From 5fec59d17efa1753d823ca7c89c0f0817f69eb01 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 19:09:17 +0100
-Subject: [PATCH 295/985] evl/assert: clarify assertion about holding the
+Subject: [PATCH 0295/1013] evl/assert: clarify assertion about holding the
  global core lock
 
 As we are in the process of phasing out the nklock, convert
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 9 insertions(+), 9 deletions(-)
 
 diff --git a/include/evenless/assert.h b/include/evenless/assert.h
-index 7dd970514..6a68baccb 100644
+index 7dd97051453a..6a68baccb3c4 100644
 --- a/include/evenless/assert.h
 +++ b/include/evenless/assert.h
 @@ -36,7 +36,7 @@
@@ -31,7 +31,7 @@ index 7dd970514..6a68baccb 100644
  
  #endif /* !_EVENLESS_ASSERT_H */
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 901e77d0c..76cc0d868 100644
+index 901e77d0c9d7..76cc0d86894f 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -212,7 +212,7 @@ static inline int evl_need_resched(struct evl_rq *rq)
@@ -44,7 +44,7 @@ index 901e77d0c..76cc0d868 100644
  }
  
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
-index aeda2fe16..0207d9232 100644
+index aeda2fe16660..0207d92320af 100644
 --- a/kernel/evenless/sched/quota.c
 +++ b/kernel/evenless/sched/quota.c
 @@ -475,7 +475,7 @@ int evl_quota_create_group(struct evl_quota_group *tg,
@@ -93,7 +93,7 @@ index aeda2fe16..0207d9232 100644
  	return quota_sum_all(qs);
  }
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
-index de4eb5212..0f7f59ac8 100644
+index de4eb5212922..0f7f59ac8619 100644
 --- a/kernel/evenless/timer.c
 +++ b/kernel/evenless/timer.c
 @@ -275,7 +275,7 @@ void __evl_set_timer_rq(struct evl_timer *timer,

@@ -1,7 +1,7 @@
 From ebc2abf82090330233e36f52d79c302cdec06df1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 Feb 2019 11:02:06 +0100
-Subject: [PATCH 296/985] evl/factory: detect duplicate element names early
+Subject: [PATCH 0296/1013] evl/factory: detect duplicate element names early
 
 device_create() issues a debug backtrace to the kernel log upon
 duplicate device name.
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 61 insertions(+), 8 deletions(-)
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index b5f4b7bef..5a28fe61d 100644
+index b5f4b7bef370..5a28fe61d7c6 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -17,6 +17,8 @@
@@ -71,7 +71,7 @@ index b5f4b7bef..5a28fe61d 100644
  void evl_remove_element_device(struct evl_element *e);
  
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 522acee2a..787367676 100644
+index 522acee2abe2..787367676e7f 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -16,6 +16,8 @@

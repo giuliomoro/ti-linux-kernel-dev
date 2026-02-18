@@ -1,7 +1,8 @@
 From 4e93b920f1fb4fc781889071372f9f169819e5fb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 21 Jun 2025 18:46:28 +0200
-Subject: [PATCH 956/985] evl/net: udp: make receive slot label evl-ps friendly
+Subject: [PATCH 0956/1013] evl/net: udp: make receive slot label evl-ps
+ friendly
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 320d32a30..7e461e198 100644
+index 320d32a30aec..7e461e198cdb 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -50,8 +50,8 @@ static int attach_udp_socket(struct evl_socket *esk,

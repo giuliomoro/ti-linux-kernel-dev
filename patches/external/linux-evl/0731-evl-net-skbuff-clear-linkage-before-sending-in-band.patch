@@ -1,7 +1,8 @@
 From d3b46b8efb99d7a3354ed68b910eeefdbdf2e538 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 14 Jul 2022 16:50:08 +0200
-Subject: [PATCH 731/985] evl/net: skbuff: clear linkage before sending in-band
+Subject: [PATCH 0731/1013] evl/net: skbuff: clear linkage before sending
+ in-band
 
 We use the inner list head available from the skbuff header, which
 lives in a union with a couple of open-coded list pointers. Make sure
@@ -14,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 70e928efc..22ccd2a56 100644
+index 70e928efc379..22ccd2a56ec0 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -101,6 +101,14 @@ void evl_net_do_tx(void *arg)

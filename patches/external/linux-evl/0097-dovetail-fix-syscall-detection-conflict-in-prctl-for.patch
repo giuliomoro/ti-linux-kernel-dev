@@ -1,7 +1,7 @@
 From 3166cf9acb70410b2ce22eeb1d6dae306ecdc83f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 1 Aug 2024 09:52:03 +0200
-Subject: [PATCH 097/985] dovetail: fix syscall detection conflict in prctl()
+Subject: [PATCH 0097/1013] dovetail: fix syscall detection conflict in prctl()
  form
 
 PR_SET_VMA has bit 0x01000000 set, which breaks the detection logic
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 60 insertions(+), 26 deletions(-)
 
 diff --git a/include/linux/dovetail.h b/include/linux/dovetail.h
-index 88fbb0184..31e9d5eae 100644
+index 88fbb0184076..31e9d5eaed55 100644
 --- a/include/linux/dovetail.h
 +++ b/include/linux/dovetail.h
 @@ -249,6 +249,20 @@ void handle_inband_event(enum inband_event_type event,
@@ -65,7 +65,7 @@ index 88fbb0184..31e9d5eae 100644
 -
  #endif /* _LINUX_DOVETAIL_H */
 diff --git a/include/uapi/asm-generic/dovetail.h b/include/uapi/asm-generic/dovetail.h
-index 795aa3844..d5ff0044d 100644
+index 795aa384435d..d5ff0044d09c 100644
 --- a/include/uapi/asm-generic/dovetail.h
 +++ b/include/uapi/asm-generic/dovetail.h
 @@ -2,6 +2,12 @@
@@ -82,7 +82,7 @@ index 795aa3844..d5ff0044d 100644
 +
  #endif /* !__ASM_GENERIC_DOVETAIL_H */
 diff --git a/kernel/dovetail.c b/kernel/dovetail.c
-index 2e92d0b0c..08c649d6e 100644
+index 2e92d0b0c0ef..08c649d6e9d9 100644
 --- a/kernel/dovetail.c
 +++ b/kernel/dovetail.c
 @@ -7,6 +7,7 @@

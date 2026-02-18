@@ -1,7 +1,7 @@
 From 8a4744bb7b6a2ce44b7d4963bc6a8c0e54d70dd0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 3 Jul 2019 21:37:45 +0200
-Subject: [PATCH 436/985] evl/sched: inline queuing ops for the fifo policy
+Subject: [PATCH 0436/1013] evl/sched: inline queuing ops for the fifo policy
 
 SCHED_FIFO is the most critical and frequently used scheduling policy
 with EVL, so there is a net gain in inlining the small helpers
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 94 insertions(+), 107 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index ae3ead00a..0193b800e 100644
+index ae3ead00abff..0193b800e130 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -437,27 +437,44 @@ static inline int evl_calc_weighted_prio(struct evl_sched_class *sched_class,
@@ -71,7 +71,7 @@ index ae3ead00a..0193b800e 100644
  }
  
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index 9a32192d1..8e3519e27 100644
+index 9a32192d1f83..8e3519e27686 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -42,29 +42,85 @@ struct evl_thread;
@@ -174,7 +174,7 @@ index 9a32192d1..8e3519e27 100644
  
  #endif /* !_EVL_SCHED_QUEUE_H */
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 143e0193c..8dba933b8 100644
+index 143e0193cf5a..8dba933b834b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -474,63 +474,6 @@ void evl_init_schedq(struct evl_multilevel_queue *q)
@@ -260,7 +260,7 @@ index 143e0193c..8dba933b8 100644
  	return thread;
  }
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index 2d93629e4..c4ddc0572 100644
+index 2d93629e4b47..c4ddc0572bdc 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -12,32 +12,6 @@ static void evl_fifo_init(struct evl_rq *rq)

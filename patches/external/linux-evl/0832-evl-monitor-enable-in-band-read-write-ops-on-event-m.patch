@@ -1,7 +1,7 @@
 From 2b665f047a64418cb3067b0590c00f35355d12fd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 9 Nov 2023 13:48:31 +0100
-Subject: [PATCH 832/985] evl/monitor: enable in-band read/write ops on event
+Subject: [PATCH 0832/1013] evl/monitor: enable in-band read/write ops on event
  mask
 
 Event flags provide simple and flexible semantics for notifying
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 139 insertions(+), 9 deletions(-)
 
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 9532d57c0..8787dd979 100644
+index 9532d57c04e8..8787dd979d1a 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -34,7 +34,7 @@ index 9532d57c0..8787dd979 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 8c78f5383..3a241604c 100644
+index 8c78f53831ea..3a241604c7c7 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -7,6 +7,8 @@

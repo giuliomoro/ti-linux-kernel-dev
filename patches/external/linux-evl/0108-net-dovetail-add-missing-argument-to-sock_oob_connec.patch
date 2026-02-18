@@ -1,7 +1,7 @@
 From a258987e8d60bb824577e5e664bb44b3eaf685e3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 12 Nov 2023 12:09:18 +0100
-Subject: [PATCH 108/985] net: dovetail: add missing argument to
+Subject: [PATCH 0108/1013] net: dovetail: add missing argument to
  sock_oob_connect()
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/net/socket.c b/net/socket.c
-index 81e65b02e..02e9eaa45 100644
+index 81e65b02ee0a..02e9eaa458dc 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -167,7 +167,8 @@ int __weak sock_oob_bind(struct socket *sock, struct sockaddr *addr, int len)

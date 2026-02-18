@@ -1,7 +1,7 @@
 From 401dab9041e11caf5f1541c79fb4f28d5ae09c0e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 6 Jun 2025 10:41:58 +0200
-Subject: [PATCH 939/985] evl/net: udp: stop tracking rmem consumption
+Subject: [PATCH 0939/1013] evl/net: udp: stop tracking rmem consumption
 
 We had an imbalance between rmem get vs put operations in
 receive_udp() (i.e. put without prior get), causing the rmem check in
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 10 insertions(+), 23 deletions(-)
 
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index 7b3b0a735..23744e793 100644
+index 7b3b0a735127..23744e793881 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -63,8 +63,6 @@ struct sk_buff *evl_net_wget_skb(struct evl_socket *esk,
@@ -36,7 +36,7 @@ index 7b3b0a735..23744e793 100644
  				      ktime_t timeout,
  				      enum evl_tmode tmode);
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 48cec3ab3..aeed5634a 100644
+index 48cec3ab3eee..aeed5634a7e6 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -364,9 +364,10 @@ static ssize_t send_udp(struct evl_socket *esk,
@@ -68,7 +68,7 @@ index 48cec3ab3..aeed5634a 100644
  		}
  
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 820f1861c..b6caa1830 100644
+index 820f1861c033..b6caa18304f4 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -608,23 +608,6 @@ void evl_net_wput_skb(struct sk_buff *skb)

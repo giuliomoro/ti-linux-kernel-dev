@@ -1,7 +1,7 @@
 From 89553081c9b0ca70a3c2a702898810d8b90a5b0d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 5 Sep 2021 17:24:04 +0200
-Subject: [PATCH 717/985] evl/syscall: handle prctl() call form
+Subject: [PATCH 0717/1013] evl/syscall: handle prctl() call form
 
 Handle both the legacy and prctl-based call forms available from
 Dovetail, i.e.:
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 119 insertions(+), 156 deletions(-)
 
 diff --git a/arch/arm/include/asm/evl/syscall.h b/arch/arm/include/asm/evl/syscall.h
-index 57f7d11de..753f23d24 100644
+index 57f7d11de337..753f23d24fdf 100644
 --- a/arch/arm/include/asm/evl/syscall.h
 +++ b/arch/arm/include/asm/evl/syscall.h
 @@ -11,40 +11,10 @@
@@ -74,7 +74,7 @@ index 57f7d11de..753f23d24 100644
  
  static inline bool is_compat_oob_call(void)
 diff --git a/arch/arm64/include/asm/evl/syscall.h b/arch/arm64/include/asm/evl/syscall.h
-index 4750f77c4..7459d82c3 100644
+index 4750f77c48ee..7459d82c35b9 100644
 --- a/arch/arm64/include/asm/evl/syscall.h
 +++ b/arch/arm64/include/asm/evl/syscall.h
 @@ -10,41 +10,12 @@
@@ -122,7 +122,7 @@ index 4750f77c4..7459d82c3 100644
  
  #ifdef CONFIG_COMPAT
 diff --git a/arch/x86/include/asm/evl/syscall.h b/arch/x86/include/asm/evl/syscall.h
-index 379bde60f..30f7feb6b 100644
+index 379bde60f625..30f7feb6b915 100644
 --- a/arch/x86/include/asm/evl/syscall.h
 +++ b/arch/x86/include/asm/evl/syscall.h
 @@ -10,38 +10,10 @@
@@ -168,7 +168,7 @@ index 379bde60f..30f7feb6b 100644
  
  static inline bool is_compat_oob_call(void)
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index f70bfb335..58912a5f2 100644
+index f70bfb335562..58912a5f2649 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -181,7 +181,7 @@ index f70bfb335..58912a5f2 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 3724b8286..284102b5e 100644
+index 3724b8286973..284102b5ee47 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -25,6 +25,7 @@

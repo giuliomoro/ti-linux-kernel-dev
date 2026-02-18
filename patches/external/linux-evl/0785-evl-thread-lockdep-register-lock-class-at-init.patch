@@ -1,7 +1,7 @@
 From e33bb40a4c301b4d3109338280d8be37246381c4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 16 Nov 2022 11:50:15 +0100
-Subject: [PATCH 785/985] evl/thread: lockdep: register lock class at init
+Subject: [PATCH 0785/1013] evl/thread: lockdep: register lock class at init
 
 Hint about a new tracked lock using might_lock() when initializing a
 thread, so that we do not risk treading on in-band code for
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 9 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 6201cb8fa..f4eba804e 100644
+index 6201cb8fab07..f4eba804e832 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -168,20 +168,21 @@ int evl_init_thread(struct evl_thread *thread,

@@ -1,7 +1,7 @@
 From f11a6bba86be7e1b56d67925c91af60455c92058 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 31 May 2019 15:11:51 +0200
-Subject: [PATCH 391/985] evl/tick: clearify, update comment
+Subject: [PATCH 0391/1013] evl/tick: clearify, update comment
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index a80fc924f..f9780664c 100644
+index a80fc924fe7f..f9780664cb5c 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -105,11 +105,11 @@ static void clock_event_handler(struct clock_event_device *dummy)

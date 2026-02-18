@@ -1,8 +1,8 @@
 From 9dcb6f4d5fb3d9a455996200a12ac1db1c7b3ea6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2024 09:43:57 +0200
-Subject: [PATCH 894/985] evl/net: dev, input: fix unsafe bitwise operations on
- RX
+Subject: [PATCH 0894/1013] evl/net: dev, input: fix unsafe bitwise operations
+ on RX
 
 The physical interface might be receiving packets while we are busy
 setting/clearing the eBPF filter, causing bit loss since those
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index d13f7306e..8342fd884 100644
+index d13f7306e595..8342fd884d53 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -498,9 +498,9 @@ static void __set_rx_filter(struct evl_netdev_state *est,
@@ -34,7 +34,7 @@ index d13f7306e..8342fd884 100644
  
  	if (old)
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index d9cf22866..9ea9469f0 100644
+index d9cf22866ceb..9ea9469f0561 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -35,9 +35,10 @@ static void napi_poll_oob(struct evl_netdev_state *est) /* oob */

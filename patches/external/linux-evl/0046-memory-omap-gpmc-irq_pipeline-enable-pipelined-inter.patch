@@ -1,7 +1,7 @@
 From 0dd3f153bac2b7b43d5461fdca2286342c60f4e5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 29 Jun 2021 18:19:54 +0200
-Subject: [PATCH 046/985] memory: omap-gpmc: irq_pipeline: enable pipelined
+Subject: [PATCH 0046/1013] memory: omap-gpmc: irq_pipeline: enable pipelined
  interrupt control
 
 Switching the demultiplexer IRQ to out-of-band mode ensures the
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/memory/omap-gpmc.c b/drivers/memory/omap-gpmc.c
-index 719225c09..b2a662948 100644
+index 719225c09a4d..b2a662948da0 100644
 --- a/drivers/memory/omap-gpmc.c
 +++ b/drivers/memory/omap-gpmc.c
 @@ -1473,6 +1473,7 @@ static int gpmc_setup_irq(struct gpmc_device *gpmc)

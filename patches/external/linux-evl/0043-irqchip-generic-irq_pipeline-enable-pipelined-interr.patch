@@ -1,7 +1,7 @@
 From e2cb56e762a8cf8d638f26b6cbdf35107cf76da8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 29 Jun 2021 17:55:20 +0200
-Subject: [PATCH 043/985] irqchip/generic: irq_pipeline: enable pipelined
+Subject: [PATCH 0043/1013] irqchip/generic: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/irq/generic-chip.c b/kernel/irq/generic-chip.c
-index 32ffcbb87..69a13d260 100644
+index 32ffcbb87fa1..69a13d26097b 100644
 --- a/kernel/irq/generic-chip.c
 +++ b/kernel/irq/generic-chip.c
 @@ -16,7 +16,7 @@

@@ -1,7 +1,7 @@
 From 3a7a4c095a809211dd4690f57d617966c55bdf59 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 12 Nov 2022 16:11:43 +0100
-Subject: [PATCH 780/985] evl/thread: warn about failure to resume oob after
+Subject: [PATCH 0780/1013] evl/thread: warn about failure to resume oob after
  trap
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index ea320d56d..6201cb8fa 100644
+index ea320d56d36b..6201cb8fab07 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1605,6 +1605,7 @@ void handle_oob_trap_exit(unsigned int trapnr, struct pt_regs *regs)

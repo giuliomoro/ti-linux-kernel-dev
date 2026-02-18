@@ -1,7 +1,7 @@
 From ac6be124a90e130d0ec6e65b6d201de02bb97d6d Mon Sep 17 00:00:00 2001
 From: Gilles Chanteperdrix <gilles.chanteperdrix@xenomai.org>
 Date: Thu, 21 Jul 2016 00:59:57 +0200
-Subject: [PATCH 012/985] clocksource: mmio: add user-mappable mmio
+Subject: [PATCH 0012/1013] clocksource: mmio: add user-mappable mmio
  clocksources
 
 This is a building block for exporting MMIO clocksources to
@@ -28,7 +28,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 include/uapi/linux/clocksource.h
 
 diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
-index 9de751531..58a0c0230 100644
+index 9de751531831..58a0c02309b7 100644
 --- a/drivers/clocksource/mmio.c
 +++ b/drivers/clocksource/mmio.c
 @@ -6,12 +6,32 @@
@@ -563,7 +563,7 @@ index 9de751531..58a0c0230 100644
  }
 +device_initcall(mmio_clksrc_chr_dev_init);
 diff --git a/include/linux/cdev.h b/include/linux/cdev.h
-index 0e8cd6293..899ee4343 100644
+index 0e8cd6293deb..899ee4343b33 100644
 --- a/include/linux/cdev.h
 +++ b/include/linux/cdev.h
 @@ -2,23 +2,8 @@
@@ -593,7 +593,7 @@ index 0e8cd6293..899ee4343 100644
  
 diff --git a/include/linux/cdev_type.h b/include/linux/cdev_type.h
 new file mode 100644
-index 000000000..688b147a0
+index 000000000000..688b147a0736
 --- /dev/null
 +++ b/include/linux/cdev_type.h
 @@ -0,0 +1,22 @@
@@ -620,7 +620,7 @@ index 000000000..688b147a0
 +
 +#endif
 diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index c846436b6..5b31e4b90 100644
+index c846436b6459..5b31e4b90aef 100644
 --- a/include/linux/clocksource.h
 +++ b/include/linux/clocksource.h
 @@ -13,13 +13,16 @@
@@ -701,7 +701,7 @@ index c846436b6..5b31e4b90 100644
  #define TIMER_OF_DECLARE(name, compat, fn) \
 diff --git a/include/uapi/linux/clocksource.h b/include/uapi/linux/clocksource.h
 new file mode 100644
-index 000000000..966f92230
+index 000000000000..966f92230853
 --- /dev/null
 +++ b/include/uapi/linux/clocksource.h
 @@ -0,0 +1,39 @@

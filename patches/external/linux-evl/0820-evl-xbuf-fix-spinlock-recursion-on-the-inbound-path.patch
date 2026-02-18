@@ -1,7 +1,8 @@
 From 732ad6494a3debe0848971dbbc46a86af40d8133 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 23 Aug 2023 10:07:11 +0200
-Subject: [PATCH 820/985] evl/xbuf: fix spinlock recursion on the inbound path
+Subject: [PATCH 0820/1013] evl/xbuf: fix spinlock recursion on the inbound
+ path
 
 A thread calling do_xbuf_read() from the inband stage must make sure
 to drop the xbuf descriptor lock before it might be scheduled out, as
@@ -21,7 +22,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 2dc86667e..05423fe87 100644
+index 2dc86667ecc0..05423fe876da 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -365,7 +365,7 @@ static void inbound_signal_output(struct xbuf_ring *ring, bool sigpoll)

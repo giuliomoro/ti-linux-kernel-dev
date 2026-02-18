@@ -1,8 +1,8 @@
 From 68a5023c2e1b4f6facda2ca01dbd591b89643171 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 21 Feb 2024 11:41:06 +0100
-Subject: [PATCH 876/985] evl/net: dev: fix error unwinding on qdisc allocation
- failure
+Subject: [PATCH 0876/1013] evl/net: dev: fix error unwinding on qdisc
+ allocation failure
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 13 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 4053039b5..556391629 100644
+index 4053039b592d..556391629191 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -82,10 +82,10 @@ start_handler_thread(struct net_device *dev,

@@ -1,7 +1,7 @@
 From c924b77e52f84b63a8a7ff32bad3354a62fd9995 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 30 Jan 2019 12:15:09 +0100
-Subject: [PATCH 236/985] evl/wait: split mutex / wait queue support
+Subject: [PATCH 0236/1013] evl/wait: split mutex / wait queue support
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -73,7 +73,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evenless/wait.c
 
 diff --git a/drivers/evenless/hectic.c b/drivers/evenless/hectic.c
-index 11cf34c28..b085544c4 100644
+index 11cf34c28c27..b085544c4d38 100644
 --- a/drivers/evenless/hectic.c
 +++ b/drivers/evenless/hectic.c
 @@ -14,9 +14,8 @@
@@ -97,7 +97,7 @@ index 11cf34c28..b085544c4 100644
  	struct evl_kthread kthread; /* For kernel-space real-time tasks. */
  	unsigned int last_switch;
 diff --git a/drivers/evenless/latmus.c b/drivers/evenless/latmus.c
-index 35cf283fc..30444297d 100644
+index 35cf283fcd7f..30444297d630 100644
 --- a/drivers/evenless/latmus.c
 +++ b/drivers/evenless/latmus.c
 @@ -16,7 +16,7 @@
@@ -136,7 +136,7 @@ index 35cf283fc..30444297d 100644
  };
  
 diff --git a/include/evenless/clock.h b/include/evenless/clock.h
-index 346c4d174..c341ea4bd 100644
+index 346c4d17423f..c341ea4bdbcb 100644
 --- a/include/evenless/clock.h
 +++ b/include/evenless/clock.h
 @@ -41,13 +41,13 @@ struct evl_clock {
@@ -211,7 +211,7 @@ index 346c4d174..c341ea4bd 100644
  void evl_unregister_clock(struct evl_clock *clock);
  
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index 3aa7c56eb..956fbd924 100644
+index 3aa7c56eb4e0..956fbd92441b 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -38,9 +38,9 @@ struct evl_factory {
@@ -273,7 +273,7 @@ index 3aa7c56eb..956fbd924 100644
  void evl_unindex_element(struct evl_element *e);
  
 diff --git a/include/evenless/file.h b/include/evenless/file.h
-index 74755b135..265a67e83 100644
+index 74755b13505f..265a67e83023 100644
 --- a/include/evenless/file.h
 +++ b/include/evenless/file.h
 @@ -37,7 +37,7 @@ struct evl_file_binding {
@@ -287,7 +287,7 @@ index 74755b135..265a67e83 100644
  
 diff --git a/include/evenless/flag.h b/include/evenless/flag.h
 new file mode 100644
-index 000000000..9e188abc5
+index 000000000000..9e188abc5544
 --- /dev/null
 +++ b/include/evenless/flag.h
 @@ -0,0 +1,91 @@
@@ -383,7 +383,7 @@ index 000000000..9e188abc5
 +
 +#endif /* _EVENLESS_FLAG_H */
 diff --git a/include/evenless/ksem.h b/include/evenless/ksem.h
-index 726c263be..3f661e54f 100644
+index 726c263be9e2..3f661e54f2e3 100644
 --- a/include/evenless/ksem.h
 +++ b/include/evenless/ksem.h
 @@ -8,20 +8,20 @@
@@ -412,7 +412,7 @@ index 726c263be..3f661e54f 100644
  int evl_down(struct evl_ksem *sem);
  
 diff --git a/include/evenless/memory.h b/include/evenless/memory.h
-index 8a005e344..f9bd28016 100644
+index 8a005e344a7a..f9bd280169a3 100644
 --- a/include/evenless/memory.h
 +++ b/include/evenless/memory.h
 @@ -95,7 +95,7 @@ static inline void *evl_get_heap_base(const struct evl_heap *heap)
@@ -425,7 +425,7 @@ index 8a005e344..f9bd28016 100644
  void evl_destroy_heap(struct evl_heap *heap);
  
 diff --git a/include/evenless/monitor.h b/include/evenless/monitor.h
-index c442df286..fc9dd31e1 100644
+index c442df28666c..fc9dd31e1d1a 100644
 --- a/include/evenless/monitor.h
 +++ b/include/evenless/monitor.h
 @@ -9,16 +9,19 @@
@@ -452,7 +452,7 @@ index c442df286..fc9dd31e1 100644
  
  #endif /* !_EVENLESS_MONITOR_H */
 diff --git a/include/evenless/mutex.h b/include/evenless/mutex.h
-index 08438468d..79ee496ca 100644
+index 08438468dcfb..79ee496ca155 100644
 --- a/include/evenless/mutex.h
 +++ b/include/evenless/mutex.h
 @@ -7,13 +7,130 @@
@@ -589,7 +589,7 @@ index 08438468d..79ee496ca 100644
 +
  #endif /* !_EVENLESS_MUTEX_H */
 diff --git a/include/evenless/poller.h b/include/evenless/poller.h
-index b78910dae..0e9ca03a0 100644
+index b78910daee02..0e9ca03a0acb 100644
 --- a/include/evenless/poller.h
 +++ b/include/evenless/poller.h
 @@ -12,13 +12,13 @@
@@ -609,7 +609,7 @@ index b78910dae..0e9ca03a0 100644
  
  struct evl_poll_head {
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 8de66f8cb..1a05a6af8 100644
+index 8de66f8cbb00..1a05a6af8a8e 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -12,6 +12,7 @@
@@ -630,7 +630,7 @@ index 8de66f8cb..1a05a6af8 100644
  
  DECLARE_PER_CPU(struct evl_rq, evl_runqueues);
 diff --git a/include/evenless/sched/queue.h b/include/evenless/sched/queue.h
-index d3763cbe3..7a9f638a4 100644
+index d3763cbe37cf..7a9f638a4624 100644
 --- a/include/evenless/sched/queue.h
 +++ b/include/evenless/sched/queue.h
 @@ -32,13 +32,13 @@ struct evl_thread;
@@ -651,7 +651,7 @@ index d3763cbe3..7a9f638a4 100644
  struct evl_thread *evl_get_schedq(struct evl_multilevel_queue *q);
  
 diff --git a/include/evenless/sched/quota.h b/include/evenless/sched/quota.h
-index 601a6c9cc..763ebe537 100644
+index 601a6c9ccc67..763ebe53747e 100644
 --- a/include/evenless/sched/quota.h
 +++ b/include/evenless/sched/quota.h
 @@ -16,7 +16,7 @@
@@ -687,7 +687,7 @@ index 601a6c9cc..763ebe537 100644
  struct evl_quota_group *
  evl_quota_find_group(struct evl_rq *rq, int tgid);
 diff --git a/include/evenless/sched/rt.h b/include/evenless/sched/rt.h
-index da5ed06fa..f1eecc938 100644
+index da5ed06fa256..f1eecc9383ff 100644
 --- a/include/evenless/sched/rt.h
 +++ b/include/evenless/sched/rt.h
 @@ -48,10 +48,10 @@ static inline void __evl_dequeue_rt_thread(struct evl_thread *thread)
@@ -730,7 +730,7 @@ index da5ed06fa..f1eecc938 100644
  	if (p)
  		thread->cprio = p->rt.prio; /* Force update. */
 diff --git a/include/evenless/sched/weak.h b/include/evenless/sched/weak.h
-index 2a38e3392..2cbedab7c 100644
+index 2a38e33927e4..2cbedab7c329 100644
 --- a/include/evenless/sched/weak.h
 +++ b/include/evenless/sched/weak.h
 @@ -17,7 +17,7 @@
@@ -743,7 +743,7 @@ index 2a38e3392..2cbedab7c 100644
  #endif
  
 diff --git a/include/evenless/stat.h b/include/evenless/stat.h
-index 6016242a6..47da6d91e 100644
+index 6016242a6b43..47da6d91e330 100644
 --- a/include/evenless/stat.h
 +++ b/include/evenless/stat.h
 @@ -70,7 +70,7 @@ static inline void evl_reset_account(struct evl_account *account)
@@ -780,7 +780,7 @@ index 6016242a6..47da6d91e 100644
  }
 diff --git a/include/evenless/synch.h b/include/evenless/synch.h
 deleted file mode 100644
-index 95080e910..000000000
+index 95080e91073c..000000000000
 --- a/include/evenless/synch.h
 +++ /dev/null
 @@ -1,116 +0,0 @@
@@ -901,7 +901,7 @@ index 95080e910..000000000
 -
 -#endif /* !_EVENLESS_SYN_H_ */
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index b5a79270b..77d293d83 100644
+index b5a79270b7b1..77d293d8306a 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -10,18 +10,15 @@
@@ -1106,7 +1106,7 @@ index b5a79270b..77d293d83 100644
  int evl_unblock_kthread(struct evl_kthread *thread);
  
 diff --git a/include/evenless/tick.h b/include/evenless/tick.h
-index c485ca2da..db529b454 100644
+index c485ca2da9e6..db529b4542d6 100644
 --- a/include/evenless/tick.h
 +++ b/include/evenless/tick.h
 @@ -24,7 +24,7 @@ static inline void evl_program_local_tick(struct evl_clock *clock)
@@ -1119,7 +1119,7 @@ index c485ca2da..db529b454 100644
  #ifdef CONFIG_SMP
  	struct evl_clock *master = clock->master;
 diff --git a/include/evenless/timer.h b/include/evenless/timer.h
-index 87a3fd716..9fe240c80 100644
+index 87a3fd7167ad..9fe240c80fe6 100644
 --- a/include/evenless/timer.h
 +++ b/include/evenless/timer.h
 @@ -100,7 +100,7 @@ struct evl_tnode *evl_get_tqueue_head(struct evl_tqueue *tq)
@@ -1301,7 +1301,7 @@ index 87a3fd716..9fe240c80 100644
  	return true;
  }
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
-index 328e58006..f4d9dabe6 100644
+index 328e58006613..f4d9dabe6b29 100644
 --- a/include/evenless/wait.h
 +++ b/include/evenless/wait.h
 @@ -1,123 +1,92 @@
@@ -1484,7 +1484,7 @@ index 328e58006..f4d9dabe6 100644
 -#endif /* _EVENLESS_WAIT_H */
 +#endif /* !_EVENLESS_WAIT_H_ */
 diff --git a/include/evenless/xbuf.h b/include/evenless/xbuf.h
-index 776f917ea..2097508ff 100644
+index 776f917eadaf..2097508ff281 100644
 --- a/include/evenless/xbuf.h
 +++ b/include/evenless/xbuf.h
 @@ -13,16 +13,16 @@ struct evl_file;
@@ -1510,7 +1510,7 @@ index 776f917ea..2097508ff 100644
  
  #endif /* !_EVENLESS_XBUF_H */
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
-index e0a3cf40b..da4bfea6d 100644
+index e0a3cf40b6af..da4bfea6dda4 100644
 --- a/include/trace/events/evenless.h
 +++ b/include/trace/events/evenless.h
 @@ -23,7 +23,9 @@ struct evl_rq;
@@ -1660,7 +1660,7 @@ index e0a3cf40b..da4bfea6d 100644
  #define __timespec_fields(__name)				\
 diff --git a/include/uapi/evenless/mutex.h b/include/uapi/evenless/mutex.h
 new file mode 100644
-index 000000000..0944647f4
+index 000000000000..0944647f406f
 --- /dev/null
 +++ b/include/uapi/evenless/mutex.h
 @@ -0,0 +1,43 @@
@@ -1708,7 +1708,7 @@ index 000000000..0944647f4
 +
 +#endif /* !_EVENLESS_UAPI_MUTEX_H */
 diff --git a/include/uapi/evenless/sem.h b/include/uapi/evenless/sem.h
-index a934db710..bcfda6bd2 100644
+index a934db71078c..bcfda6bd2bc9 100644
 --- a/include/uapi/evenless/sem.h
 +++ b/include/uapi/evenless/sem.h
 @@ -7,7 +7,6 @@
@@ -1720,7 +1720,7 @@ index a934db710..bcfda6bd2 100644
  
  struct timespec;
 diff --git a/include/uapi/evenless/signal.h b/include/uapi/evenless/signal.h
-index c7aa01c12..8d66f64c9 100644
+index c7aa01c12651..8d66f64c98c9 100644
 --- a/include/uapi/evenless/signal.h
 +++ b/include/uapi/evenless/signal.h
 @@ -31,7 +31,7 @@
@@ -1735,7 +1735,7 @@ index c7aa01c12..8d66f64c9 100644
  #endif /* !_EVENLESS_UAPI_SIGNAL_H */
 diff --git a/include/uapi/evenless/synch.h b/include/uapi/evenless/synch.h
 deleted file mode 100644
-index bebc076bf..000000000
+index bebc076bf31f..000000000000
 --- a/include/uapi/evenless/synch.h
 +++ /dev/null
 @@ -1,65 +0,0 @@
@@ -1805,7 +1805,7 @@ index bebc076bf..000000000
 -
 -#endif /* !_EVENLESS_UAPI_SYNCH_H */
 diff --git a/include/uapi/evenless/types.h b/include/uapi/evenless/types.h
-index 9e8b95389..26a02ff9d 100644
+index 9e8b9538905f..26a02ff9dff6 100644
 --- a/include/uapi/evenless/types.h
 +++ b/include/uapi/evenless/types.h
 @@ -13,9 +13,9 @@ typedef __u32 fundle_t;
@@ -1822,7 +1822,7 @@ index 9e8b95389..26a02ff9d 100644
  /*
   * Strip all reserved bits from the handle, only retaining the fast
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index c950d6945..149e0e485 100644
+index c950d6945d3d..149e0e485b3d 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -254,24 +254,24 @@ config EVENLESS_DEBUG_USER
@@ -1862,7 +1862,7 @@ index c950d6945..149e0e485 100644
           thread, it receives a SIGDEBUG signal right before entering
  	 sleep.
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index b98e338fb..6175d2a74 100644
+index b98e338fb639..6175d2a744e1 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -18,12 +18,12 @@ evenless-y :=		\
@@ -1880,7 +1880,7 @@ index b98e338fb..6175d2a74 100644
  
  evenless-$(CONFIG_FTRACE) +=	trace.o
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index 3bc1dc2d0..cd3e61569 100644
+index 3bc1dc2d0327..cd3e6156995d 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -38,8 +38,8 @@ static DEFINE_MUTEX(clocklist_lock);
@@ -2119,7 +2119,7 @@ index 3bc1dc2d0..cd3e61569 100644
  		evl_put_element(&evl_mono_clock.element);
  
 diff --git a/kernel/evenless/control.c b/kernel/evenless/control.c
-index 3e2620e47..8bf430b8e 100644
+index 3e2620e47737..8bf430b8e7fc 100644
 --- a/kernel/evenless/control.c
 +++ b/kernel/evenless/control.c
 @@ -43,8 +43,8 @@ static int start_services(void)
@@ -2185,7 +2185,7 @@ index 3e2620e47..8bf430b8e 100644
  	size_t len = count;
  
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 90b869114..d7822d39f 100644
+index 90b869114e23..d7822d39f38f 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -44,7 +44,7 @@ static struct evl_factory *factories[] = {
@@ -2271,7 +2271,7 @@ index 90b869114..d7822d39f 100644
  		unregister_chrdev_region(factory_rdev, NR_FACTORIES);
  		class_destroy(evl_class);
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
-index dff5dad18..9627287f2 100644
+index dff5dad18f6d..9627287f2a2d 100644
 --- a/kernel/evenless/file.c
 +++ b/kernel/evenless/file.c
 @@ -70,7 +70,7 @@ static inline int index_sfd(struct evl_fd *sfd, struct file *filp)
@@ -2331,7 +2331,7 @@ index dff5dad18..9627287f2 100644
  		return -ENOMEM;
  
 diff --git a/kernel/evenless/init.c b/kernel/evenless/init.c
-index acf7533cf..0ebb75176 100644
+index acf7533cfac8..0ebb751764ce 100644
 --- a/kernel/evenless/init.c
 +++ b/kernel/evenless/init.c
 @@ -185,9 +185,9 @@ static int __init evl_init(void)
@@ -2348,7 +2348,7 @@ index acf7533cf..0ebb75176 100644
  	return 0;
  fail:
 diff --git a/kernel/evenless/ksem.c b/kernel/evenless/ksem.c
-index d48fbf42e..07960c3f8 100644
+index d48fbf42ea89..07960c3f89fc 100644
 --- a/kernel/evenless/ksem.c
 +++ b/kernel/evenless/ksem.c
 @@ -5,7 +5,7 @@
@@ -2402,7 +2402,7 @@ index d48fbf42e..07960c3f8 100644
  	else {
  		xnlock_get_irqsave(&nklock, flags);
 diff --git a/kernel/evenless/lock.c b/kernel/evenless/lock.c
-index 14e81c743..56e9dd0fa 100644
+index 14e81c7438b2..56e9dd0fa161 100644
 --- a/kernel/evenless/lock.c
 +++ b/kernel/evenless/lock.c
 @@ -44,7 +44,7 @@ void xnlock_dbg_prepare_acquire(ktime_t *start)
@@ -2435,7 +2435,7 @@ index 14e81c743..56e9dd0fa 100644
  		return 1;
  	}
 diff --git a/kernel/evenless/logger.c b/kernel/evenless/logger.c
-index db40f3ba3..0a91331c8 100644
+index db40f3ba3030..0a91331c82c8 100644
 --- a/kernel/evenless/logger.c
 +++ b/kernel/evenless/logger.c
 @@ -60,7 +60,7 @@ static void relay_output(struct work_struct *work)
@@ -2475,7 +2475,7 @@ index db40f3ba3..0a91331c8 100644
  	struct evl_logger_attrs attrs;
  	struct evl_logger *logger;
 diff --git a/kernel/evenless/mapper.c b/kernel/evenless/mapper.c
-index 0a3b91c98..1f0368726 100644
+index 0a3b91c98b15..1f036872646f 100644
 --- a/kernel/evenless/mapper.c
 +++ b/kernel/evenless/mapper.c
 @@ -46,7 +46,7 @@ static const struct file_operations mapper_fops = {
@@ -2488,7 +2488,7 @@ index 0a3b91c98..1f0368726 100644
  	struct evl_mapper_attrs attrs;
  	struct evl_mapper *mapper;
 diff --git a/kernel/evenless/memory.c b/kernel/evenless/memory.c
-index 35073bd8f..7419e7324 100644
+index 35073bd8fee3..7419e7324b8d 100644
 --- a/kernel/evenless/memory.c
 +++ b/kernel/evenless/memory.c
 @@ -81,8 +81,8 @@ page_is_valid(struct evl_heap *heap, int pg)
@@ -2593,7 +2593,7 @@ index 35073bd8f..7419e7324 100644
  EXPORT_SYMBOL_GPL(evl_free_chunk);
  
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index cf7295618..40e2d49fb 100644
+index cf7295618f3d..40e2d49fbfcf 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -8,7 +8,8 @@
@@ -2913,7 +2913,7 @@ index cf7295618..40e2d49fb 100644
  			evl_put_element(&owner->element);
  	}
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 78f64d6c2..266116568 100644
+index 78f64d6c2105..2661165688a4 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -1,69 +1,768 @@
@@ -3717,7 +3717,7 @@ index 78f64d6c2..266116568 100644
  }
 -EXPORT_SYMBOL_GPL(evl_unlock);
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
-index 543282a92..f0820531f 100644
+index 543282a924ae..f0820531f008 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poller.c
 @@ -21,7 +21,7 @@
@@ -3867,7 +3867,7 @@ index 543282a92..f0820531f 100644
  
  	return &poller->element;
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index f4a118e3d..c5a999a8a 100644
+index f4a118e3dd9c..c5a999a8a6bf 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -50,7 +50,7 @@ static void register_one_class(struct evl_sched_class *sched_class)
@@ -4111,7 +4111,7 @@ index f4a118e3d..c5a999a8a 100644
  			goto cleanup_rq;
  	}
 diff --git a/kernel/evenless/sched/idle.c b/kernel/evenless/sched/idle.c
-index 78e61db5d..489a65286 100644
+index 78e61db5d634..489a65286285 100644
 --- a/kernel/evenless/sched/idle.c
 +++ b/kernel/evenless/sched/idle.c
 @@ -13,19 +13,19 @@ static struct evl_thread *evl_idle_pick(struct evl_rq *rq)
@@ -4138,7 +4138,7 @@ index 78e61db5d..489a65286 100644
  	__evl_track_idle_priority(thread, p);
  }
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
-index fff24cba7..aeda2fe16 100644
+index fff24cba77cb..aeda2fe16660 100644
 --- a/kernel/evenless/sched/quota.c
 +++ b/kernel/evenless/sched/quota.c
 @@ -68,14 +68,14 @@ static inline int group_is_active(struct evl_quota_group *tg)
@@ -4273,7 +4273,7 @@ index fff24cba7..aeda2fe16 100644
  	struct evl_sched_quota *qs = &tg->rq->quota;
  	ktime_t now, elapsed, consumed;
 diff --git a/kernel/evenless/sched/rt.c b/kernel/evenless/sched/rt.c
-index 922501805..4f727a3be 100644
+index 922501805d35..4f727a3be9d4 100644
 --- a/kernel/evenless/sched/rt.c
 +++ b/kernel/evenless/sched/rt.c
 @@ -39,7 +39,7 @@ static void evl_rt_dequeue(struct evl_thread *thread)
@@ -4336,7 +4336,7 @@ index 922501805..4f727a3be 100644
  	if (thread->state & T_RRB)
  		return snprintf(buf, count, "%Ld\n",
 diff --git a/kernel/evenless/sched/weak.c b/kernel/evenless/sched/weak.c
-index a8d94daa8..83da85783 100644
+index a8d94daa8695..83da85783ada 100644
 --- a/kernel/evenless/sched/weak.c
 +++ b/kernel/evenless/sched/weak.c
 @@ -34,17 +34,17 @@ static struct evl_thread *weak_pick(struct evl_rq *rq)
@@ -4386,7 +4386,7 @@ index a8d94daa8..83da85783 100644
  
  	return 0;
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
-index 53722c0ed..f3488d7cc 100644
+index 53722c0edca6..f3488d7cc88a 100644
 --- a/kernel/evenless/sem.c
 +++ b/kernel/evenless/sem.c
 @@ -8,7 +8,7 @@
@@ -4579,7 +4579,7 @@ index 53722c0ed..f3488d7cc 100644
  	return ret;
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
 deleted file mode 100644
-index a5895d48e..000000000
+index a5895d48e76b..000000000000
 --- a/kernel/evenless/synch.c
 +++ /dev/null
 @@ -1,898 +0,0 @@
@@ -5482,7 +5482,7 @@ index a5895d48e..000000000
 -}
 -EXPORT_SYMBOL_GPL(evl_forget_syn_waiter);
 diff --git a/kernel/evenless/syscall.c b/kernel/evenless/syscall.c
-index 603bae6e9..845561deb 100644
+index 603bae6e95e1..845561deb00e 100644
 --- a/kernel/evenless/syscall.c
 +++ b/kernel/evenless/syscall.c
 @@ -13,7 +13,7 @@
@@ -5585,7 +5585,7 @@ index 603bae6e9..845561deb 100644
  
  static const evl_syshand evl_syscalls[] = {
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 83d8af8a6..1a57be962 100644
+index 83d8af8a6bc4..1a57be962764 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -24,7 +24,7 @@
@@ -6271,7 +6271,7 @@ index 83d8af8a6..1a57be962 100644
  
  	return ret;
 diff --git a/kernel/evenless/tick.c b/kernel/evenless/tick.c
-index 09061db66..db114f5b5 100644
+index 09061db666fa..db114f5b5636 100644
 --- a/kernel/evenless/tick.c
 +++ b/kernel/evenless/tick.c
 @@ -85,7 +85,7 @@ static int proxy_set_oneshot_stopped(struct clock_event_device *ced)
@@ -6323,7 +6323,7 @@ index 09061db66..db114f5b5 100644
  }
  #endif
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
-index 11727d465..8edfd7b8a 100644
+index 11727d465f2e..8edfd7b8a271 100644
 --- a/kernel/evenless/timer.c
 +++ b/kernel/evenless/timer.c
 @@ -38,7 +38,7 @@ lock_timer_base(struct evl_timer *timer, unsigned long *flags)
@@ -6398,7 +6398,7 @@ index 11727d465..8edfd7b8a 100644
  	return left->date < right->date
  		|| (left->date == right->date && left->prio > right->prio);
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
-index 262748cdf..ac74a11e1 100644
+index 262748cdf0c7..ac74a11e1b84 100644
 --- a/kernel/evenless/timerfd.c
 +++ b/kernel/evenless/timerfd.c
 @@ -21,14 +21,14 @@
@@ -6538,7 +6538,7 @@ index 262748cdf..ac74a11e1 100644
  
  	kfree_rcu(timerfd, element.rcu);
 diff --git a/kernel/evenless/trace.c b/kernel/evenless/trace.c
-index 8d798a74d..c0142aee2 100644
+index 8d798a74d4a8..c0142aee2a82 100644
 --- a/kernel/evenless/trace.c
 +++ b/kernel/evenless/trace.c
 @@ -12,7 +12,7 @@
@@ -6572,7 +6572,7 @@ index 8d798a74d..c0142aee2 100644
  }
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
 new file mode 100644
-index 000000000..09e1b8a93
+index 000000000000..09e1b8a939ba
 --- /dev/null
 +++ b/kernel/evenless/wait.c
 @@ -0,0 +1,143 @@
@@ -6720,7 +6720,7 @@ index 000000000..09e1b8a93
 +}
 +EXPORT_SYMBOL_GPL(evl_reorder_wait);
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index daf34018b..ea7ca547f 100644
+index daf34018bbf0..ea7ca547f15a 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -12,7 +12,7 @@

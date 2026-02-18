@@ -1,7 +1,8 @@
 From b41e85df504f9d14748eaebb72d5de35993c570a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 14 Aug 2019 16:05:14 +0200
-Subject: [PATCH 087/985] dmaengine: dovetail: define out-of-band DMA requests
+Subject: [PATCH 0087/1013] dmaengine: dovetail: define out-of-band DMA
+ requests
 
 Controlling DMA transfers from the out-of-band stage makes it possible
 to implement closed-loop control systems running at high frequency,
@@ -74,7 +75,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 49 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
-index c1357d7f3..17332b147 100644
+index c1357d7f3dc6..17332b147899 100644
 --- a/drivers/dma/dmaengine.c
 +++ b/drivers/dma/dmaengine.c
 @@ -579,7 +579,8 @@ int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_caps *caps)
@@ -101,7 +102,7 @@ index c1357d7f3..17332b147 100644
  		dev_dbg(device->dev,
  			 "WARN: Device release is not defined so it is not safe to unbind this driver while in use\n");
 diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
-index b137fdb56..98aef6d50 100644
+index b137fdb56093..98aef6d502a1 100644
 --- a/include/linux/dmaengine.h
 +++ b/include/linux/dmaengine.h
 @@ -61,6 +61,7 @@ enum dma_transaction_type {

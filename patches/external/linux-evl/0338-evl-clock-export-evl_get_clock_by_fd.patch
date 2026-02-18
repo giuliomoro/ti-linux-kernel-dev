@@ -1,7 +1,7 @@
 From 9536855538573b0b1cb54634abd79d38496e5f53 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Mar 2019 11:56:58 +0100
-Subject: [PATCH 338/985] evl/clock: export evl_get_clock_by_fd()
+Subject: [PATCH 0338/1013] evl/clock: export evl_get_clock_by_fd()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 43967d470..594dd137e 100644
+index 43967d470d8f..594dd137ef5c 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -419,6 +419,7 @@ struct evl_clock *evl_get_clock_by_fd(int efd)

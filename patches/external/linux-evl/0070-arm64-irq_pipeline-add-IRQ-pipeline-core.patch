@@ -1,7 +1,7 @@
 From b479611435e8fb4472fa5f1479a63af6338cb3e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Aug 2017 19:39:20 +0200
-Subject: [PATCH 070/985] arm64: irq_pipeline: add IRQ pipeline core
+Subject: [PATCH 0070/1013] arm64: irq_pipeline: add IRQ pipeline core
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -43,7 +43,7 @@ Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
  create mode 100644 arch/arm64/kernel/irq_pipeline.c
 
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 7887d18cc..df2ef10f7 100644
+index 7887d18cce3e..df2ef10f7ea5 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
 @@ -223,6 +223,7 @@ config ARM64
@@ -55,7 +55,7 @@ index 7887d18cc..df2ef10f7 100644
  	select HAVE_MOD_ARCH_SPECIFIC
  	select HAVE_NMI
 diff --git a/arch/arm64/include/asm/daifflags.h b/arch/arm64/include/asm/daifflags.h
-index 55f57dfa8..9f863ce0a 100644
+index 55f57dfa8e2f..9f863ce0ac9e 100644
 --- a/arch/arm64/include/asm/daifflags.h
 +++ b/arch/arm64/include/asm/daifflags.h
 @@ -12,6 +12,12 @@
@@ -109,7 +109,7 @@ index 55f57dfa8..9f863ce0a 100644
  		gic_write_pmr(regs->pmr_save);
 diff --git a/arch/arm64/include/asm/irq_pipeline.h b/arch/arm64/include/asm/irq_pipeline.h
 new file mode 100644
-index 000000000..09cb33b82
+index 000000000000..09cb33b826cb
 --- /dev/null
 +++ b/arch/arm64/include/asm/irq_pipeline.h
 @@ -0,0 +1,149 @@
@@ -263,7 +263,7 @@ index 000000000..09cb33b82
 +
 +#endif /* _ASM_ARM64_IRQ_PIPELINE_H */
 diff --git a/arch/arm64/include/asm/irqflags.h b/arch/arm64/include/asm/irqflags.h
-index d4d7451c2..3cf91ecd9 100644
+index d4d7451c2c12..3cf91ecd9519 100644
 --- a/arch/arm64/include/asm/irqflags.h
 +++ b/arch/arm64/include/asm/irqflags.h
 @@ -9,6 +9,10 @@
@@ -358,7 +358,7 @@ index d4d7451c2..3cf91ecd9 100644
 +
  #endif /* __ASM_IRQFLAGS_H */
 diff --git a/arch/arm64/include/asm/mmu_context.h b/arch/arm64/include/asm/mmu_context.h
-index 7c09d47e0..9282a79ea 100644
+index 7c09d47e09cb..9282a79ea8bc 100644
 --- a/arch/arm64/include/asm/mmu_context.h
 +++ b/arch/arm64/include/asm/mmu_context.h
 @@ -99,6 +99,9 @@ static inline void __cpu_set_tcr_t0sz(unsigned long t0sz)
@@ -396,7 +396,7 @@ index 7c09d47e0..9282a79ea 100644
  
  /*
 diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index 0abe975d6..10b4d0586 100644
+index 0abe975d68a8..10b4d0586b1f 100644
 --- a/arch/arm64/include/asm/ptrace.h
 +++ b/arch/arm64/include/asm/ptrace.h
 @@ -177,7 +177,13 @@ struct pt_regs {
@@ -414,7 +414,7 @@ index 0abe975d6..10b4d0586 100644
  
  static inline bool in_syscall(struct pt_regs const *regs)
 diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 3448150dc..68c1eca8f 100644
+index 3448150dcbfa..68c1eca8f05b 100644
 --- a/arch/arm64/include/asm/thread_info.h
 +++ b/arch/arm64/include/asm/thread_info.h
 @@ -67,6 +67,7 @@ void arch_setup_new_exec(void);
@@ -453,7 +453,7 @@ index 3448150dc..68c1eca8f 100644
 +
  #endif /* __ASM_THREAD_INFO_H */
 diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
-index 2b112f3b7..85c12fa4e 100644
+index 2b112f3b7510..85c12fa4ef6c 100644
 --- a/arch/arm64/kernel/Makefile
 +++ b/arch/arm64/kernel/Makefile
 @@ -56,6 +56,7 @@ obj-$(CONFIG_ACPI_NUMA)			+= acpi_numa.o
@@ -465,7 +465,7 @@ index 2b112f3b7..85c12fa4e 100644
  obj-$(CONFIG_ELF_CORE)			+= elfcore.o
  obj-$(CONFIG_KEXEC_CORE)		+= machine_kexec.o relocate_kernel.o	\
 diff --git a/arch/arm64/kernel/entry-common.c b/arch/arm64/kernel/entry-common.c
-index d23315ef7..5f4409644 100644
+index d23315ef7b67..5f4409644f14 100644
 --- a/arch/arm64/kernel/entry-common.c
 +++ b/arch/arm64/kernel/entry-common.c
 @@ -14,12 +14,12 @@
@@ -936,7 +936,7 @@ index d23315ef7..5f4409644 100644
  	exit_to_user_mode(regs);
  }
 diff --git a/arch/arm64/kernel/irq.c b/arch/arm64/kernel/irq.c
-index 85087e2df..ac77081fb 100644
+index 85087e2df564..ac77081fbdcf 100644
 --- a/arch/arm64/kernel/irq.c
 +++ b/arch/arm64/kernel/irq.c
 @@ -11,6 +11,7 @@
@@ -966,7 +966,7 @@ index 85087e2df..ac77081fb 100644
  	__do_softirq();
 diff --git a/arch/arm64/kernel/irq_pipeline.c b/arch/arm64/kernel/irq_pipeline.c
 new file mode 100644
-index 000000000..74c4746fb
+index 000000000000..74c4746fb207
 --- /dev/null
 +++ b/arch/arm64/kernel/irq_pipeline.c
 @@ -0,0 +1,24 @@
@@ -995,7 +995,7 @@ index 000000000..74c4746fb
 +	/* no per-arch init. */
 +}
 diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
-index 2edf88c1c..a5a7e4cd0 100644
+index 2edf88c1c695..a5a7e4cd0757 100644
 --- a/arch/arm64/kernel/process.c
 +++ b/arch/arm64/kernel/process.c
 @@ -528,6 +528,10 @@ static int do_set_tsc_mode(unsigned int val)
@@ -1010,7 +1010,7 @@ index 2edf88c1c..a5a7e4cd0 100644
  	update_thread_flag(TIF_TSC_SIGSEGV, tsc_sigsegv);
  	update_cntkctl_el1(current);
 diff --git a/arch/arm64/kernel/signal.c b/arch/arm64/kernel/signal.c
-index c7d311d8b..196531817 100644
+index c7d311d8b92a..196531817dda 100644
 --- a/arch/arm64/kernel/signal.c
 +++ b/arch/arm64/kernel/signal.c
 @@ -11,6 +11,7 @@
@@ -1022,7 +1022,7 @@ index c7d311d8b..196531817 100644
  #include <linux/stddef.h>
  #include <linux/uaccess.h>
 diff --git a/arch/arm64/kernel/smp.c b/arch/arm64/kernel/smp.c
-index 3b3f6b56e..d61133fbd 100644
+index 3b3f6b56e733..d61133fbd35b 100644
 --- a/arch/arm64/kernel/smp.c
 +++ b/arch/arm64/kernel/smp.c
 @@ -81,7 +81,7 @@ enum ipi_msg_type {
@@ -1220,7 +1220,7 @@ index 3b3f6b56e..d61133fbd 100644
  
  		ipi_desc[i] = irq_to_desc(ipi_base + i);
 diff --git a/arch/arm64/kernel/syscall.c b/arch/arm64/kernel/syscall.c
-index c442fcec6..8da4a08c1 100644
+index c442fcec6b9e..8da4a08c1fee 100644
 --- a/arch/arm64/kernel/syscall.c
 +++ b/arch/arm64/kernel/syscall.c
 @@ -2,6 +2,7 @@
@@ -1245,7 +1245,7 @@ index c442fcec6..8da4a08c1 100644
  	 * BTI note:
  	 * The architecture does not guarantee that SPSR.BTYPE is zero
 diff --git a/arch/arm64/kernel/traps.c b/arch/arm64/kernel/traps.c
-index e2e8ffa65..6798ede27 100644
+index e2e8ffa65aa5..6798ede27fc7 100644
 --- a/arch/arm64/kernel/traps.c
 +++ b/arch/arm64/kernel/traps.c
 @@ -14,6 +14,7 @@
@@ -1266,7 +1266,7 @@ index e2e8ffa65..6798ede27 100644
  /*
   * This function is protected against re-entrancy.
 diff --git a/arch/arm64/mm/fault.c b/arch/arm64/mm/fault.c
-index 2d1ebc0c3..c9fb321ab 100644
+index 2d1ebc0c3437..c9fb321ab2bf 100644
 --- a/arch/arm64/mm/fault.c
 +++ b/arch/arm64/mm/fault.c
 @@ -281,11 +281,11 @@ static bool __kprobes is_spurious_el1_translation_fault(unsigned long addr,

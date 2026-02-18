@@ -1,7 +1,7 @@
 From d206a0645f5eae7855befbf6a18a6e929c0d5bd9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 3 Sep 2020 17:08:35 +0200
-Subject: [PATCH 645/985] evl/assert: add explicit dependency on irqstage
+Subject: [PATCH 0645/1013] evl/assert: add explicit dependency on irqstage
  definitions
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index 842c8e430..e4cd8a47c 100644
+index 842c8e430ae4..e4cd8a47c9d3 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -9,6 +9,7 @@

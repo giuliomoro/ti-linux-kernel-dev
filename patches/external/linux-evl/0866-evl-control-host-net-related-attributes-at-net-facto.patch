@@ -1,7 +1,7 @@
 From 3f42e4a810248e18c9feae5dce0c1b5977ce6096 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 16 Nov 2023 15:40:10 +0100
-Subject: [PATCH 866/985] evl/control: host net-related attributes at 'net'
+Subject: [PATCH 0866/1013] evl/control: host net-related attributes at 'net'
  factory
 
 We are going to have several more net-related attributes, polluting
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 44 insertions(+), 33 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 2b8f696e3..14ace1510 100644
+index 2b8f696e3a14..14ace151002b 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -234,5 +234,6 @@ extern struct evl_factory evl_xbuf_factory;
@@ -30,7 +30,7 @@ index 2b8f696e3..14ace1510 100644
  
  #endif /* !_EVL_FACTORY_H */
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 6c27dabe1..2d1b44f3b 100644
+index 6c27dabe132c..2d1b44f3b0dc 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -12,8 +12,6 @@
@@ -88,7 +88,7 @@ index 6c27dabe1..2d1b44f3b 100644
  	NULL,
  };
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index ed5f84e44..a2f87b89f 100644
+index ed5f84e44706..a2f87b89f075 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -48,6 +48,9 @@ static struct evl_factory *factories[] = {
@@ -102,7 +102,7 @@ index ed5f84e44..a2f87b89f 100644
  	&evl_trace_factory,
  #endif
 diff --git a/kernel/evl/net/init.c b/kernel/evl/net/init.c
-index 81bec5ba5..695743b92 100644
+index 81bec5ba5093..695743b92a91 100644
 --- a/kernel/evl/net/init.c
 +++ b/kernel/evl/net/init.c
 @@ -15,6 +15,7 @@

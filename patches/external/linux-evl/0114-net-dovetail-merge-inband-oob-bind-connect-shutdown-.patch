@@ -1,7 +1,7 @@
 From 10a3c5f932377bdda5229ce8e1ad33010c003e26 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 13 Feb 2024 15:16:31 +0100
-Subject: [PATCH 114/985] net: dovetail: merge inband+oob bind, connect,
+Subject: [PATCH 0114/1013] net: dovetail: merge inband+oob bind, connect,
  shutdown ops
 
 Guarantee that binding, shutting down a socket on the oob side is part
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  4 files changed, 52 insertions(+), 42 deletions(-)
 
 diff --git a/include/net/sock.h b/include/net/sock.h
-index e6a17f44d..7d4093d83 100644
+index e6a17f44dd53..7d4093d83cf8 100644
 --- a/include/net/sock.h
 +++ b/include/net/sock.h
 @@ -1805,14 +1805,44 @@ void sock_pfree(struct sk_buff *skb);
@@ -72,7 +72,7 @@ index e6a17f44d..7d4093d83 100644
  
  int sk_setsockopt(struct sock *sk, int level, int optname,
 diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 8095e82de..99f6c675f 100644
+index 8095e82de808..99f6c675faa8 100644
 --- a/net/ipv4/af_inet.c
 +++ b/net/ipv4/af_inet.c
 @@ -558,6 +558,8 @@ int __inet_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len,
@@ -95,7 +95,7 @@ index 8095e82de..99f6c675f 100644
  	sk->sk_state_change(sk);
  	release_sock(sk);
 diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index 841bdc809..f586149ae 100644
+index 841bdc809639..f586149aee19 100644
 --- a/net/packet/af_packet.c
 +++ b/net/packet/af_packet.c
 @@ -3358,6 +3358,7 @@ static int packet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len
@@ -120,7 +120,7 @@ index 841bdc809..f586149ae 100644
  
  static struct proto packet_proto = {
 diff --git a/net/socket.c b/net/socket.c
-index 6609bade0..b184a5f0b 100644
+index 6609bade0eb5..b184a5f0b7c9 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -148,11 +148,6 @@ static void sock_show_fdinfo(struct seq_file *m, struct file *f)

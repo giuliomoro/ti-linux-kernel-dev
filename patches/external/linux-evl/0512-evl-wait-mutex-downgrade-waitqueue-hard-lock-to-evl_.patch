@@ -1,7 +1,7 @@
 From b424b8bbc0507e5cfa3091bd91c5b4456373e78e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 18:04:33 +0200
-Subject: [PATCH 512/985] evl/{wait, mutex}: downgrade waitqueue hard lock to
+Subject: [PATCH 0512/1013] evl/{wait, mutex}: downgrade waitqueue hard lock to
  evl_spinlock_t
 
 Until the ugly nklock is totally phased out and replaced with per-rq
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 8f9bd4b92..0a001a988 100644
+index 8f9bd4b924ab..0a001a98835f 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -31,7 +31,7 @@ struct evl_mutex {
@@ -48,7 +48,7 @@ index 8f9bd4b92..0a001a988 100644
  				.abort_wait = evl_abort_mutex_wait,	\
  				.reorder_wait = evl_reorder_mutex_wait,	\
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 03108ab70..1a94d4718 100644
+index 03108ab70a10..1a94d47183fd 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -26,13 +26,13 @@ struct evl_wait_queue {
@@ -68,7 +68,7 @@ index 03108ab70..1a94d4718 100644
  			.abort_wait = evl_abort_wait,			\
  			.reorder_wait = evl_reorder_wait,		\
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 13d842086..bb8787bc8 100644
+index 13d8420867b7..bb8787bc8ba3 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -377,7 +377,7 @@ static void init_mutex(struct evl_mutex *mutex,
@@ -81,7 +81,7 @@ index 13d842086..bb8787bc8 100644
  
  void evl_init_mutex_pi(struct evl_mutex *mutex,
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index cd76f88a2..5b16b7946 100644
+index cd76f88a24dc..5b16b7946a5a 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -18,7 +18,7 @@ void evl_init_wait(struct evl_wait_queue *wq,

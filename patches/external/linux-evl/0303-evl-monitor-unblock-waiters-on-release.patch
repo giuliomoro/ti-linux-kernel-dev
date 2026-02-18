@@ -1,7 +1,7 @@
 From cd2b781d6d7a85f3308b7cc12efb93bedc416ad7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 16:32:17 +0100
-Subject: [PATCH 303/985] evl/monitor: unblock waiters on release
+Subject: [PATCH 0303/1013] evl/monitor: unblock waiters on release
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index caaf2b77c..fde244222 100644
+index caaf2b77c701..fde244222206 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -181,11 +181,14 @@ static int __enter_monitor(struct evl_monitor *gate,

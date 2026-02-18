@@ -1,7 +1,7 @@
 From cdfb0e917633c50fa4c4b89b3be45cda1aee85c0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 23 Jan 2020 18:11:07 +0100
-Subject: [PATCH 562/985] evl/sem: general fix
+Subject: [PATCH 0562/1013] evl/sem: general fix
 
 Multiple bugs:
 
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/sem.h b/include/evl/sem.h
-index 2db96de95..9378e3888 100644
+index 2db96de9530a..9378e38886cd 100644
 --- a/include/evl/sem.h
 +++ b/include/evl/sem.h
 @@ -25,6 +25,7 @@ struct evl_ksem {
@@ -29,7 +29,7 @@ index 2db96de95..9378e3888 100644
  }
  
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index ac7381e4f..e4456f8f3 100644
+index ac7381e4fc09..e4456f8f3174 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -29,8 +29,7 @@ EXPORT_SYMBOL_GPL(evl_down_timeout);

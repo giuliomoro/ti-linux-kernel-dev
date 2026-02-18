@@ -1,7 +1,7 @@
 From 5993220bf145432970db5892063204fb9bfe4bf1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 11:43:59 +0200
-Subject: [PATCH 600/985] uapi/evl: sched: evl_tp_paramlen() should receive
+Subject: [PATCH 0600/1013] uapi/evl: sched: evl_tp_paramlen() should receive
  immediate parameter
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 431514f3c..549aa86de 100644
+index 431514f3c3e7..549aa86de78f 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -95,8 +95,9 @@ struct evl_tp_ctlinfo {
@@ -27,7 +27,7 @@ index 431514f3c..549aa86de 100644
  struct evl_sched_attrs {
  	int sched_policy;
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index d4e533723..3df23aace 100644
+index d4e533723ee2..3df23aace49c 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -154,7 +154,7 @@ static int do_tp_control(const struct evl_sched_ctlreq *ctl)

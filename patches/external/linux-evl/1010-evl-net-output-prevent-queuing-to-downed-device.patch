@@ -1,0 +1,130 @@
+From 0d6b8536594f5cd6c1e4738dac9dc74a62d7c0a7 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 17:49:41 +0100
+Subject: [PATCH 1010/1013] evl/net: output: prevent queuing to downed device
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ include/evl/net/output.h         |  3 ++-
+ kernel/evl/net/ethernet/output.c |  2 +-
+ kernel/evl/net/output.c          | 39 ++++++++++++++++++++------------
+ 3 files changed, 27 insertions(+), 17 deletions(-)
+
+diff --git a/include/evl/net/output.h b/include/evl/net/output.h
+index ef54154acec2..175ea2ca0658 100644
+--- a/include/evl/net/output.h
++++ b/include/evl/net/output.h
+@@ -13,7 +13,8 @@ struct sk_buff;
+ 
+ void evl_net_do_tx(void *arg);
+ 
+-int evl_net_transmit(struct sk_buff *skb);
++int evl_net_transmit(struct net_device *dev,
++		struct sk_buff *skb);
+ 
+ void evl_net_init_tx(void);
+ 
+diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
+index a34e1aeec857..5888d842a645 100644
+--- a/kernel/evl/net/ethernet/output.c
++++ b/kernel/evl/net/ethernet/output.c
+@@ -33,7 +33,7 @@ int evl_net_ether_transmit_raw(struct net_device *dev, struct sk_buff *skb)
+ 
+ 	netdev_dbg(dev, "transmitting %px\n", skb);
+ 
+-	return evl_net_transmit(skb);
++	return evl_net_transmit(dev, skb);
+ }
+ 
+ static int ether_transmit_one(struct net_device *dev, struct sk_buff *skb,
+diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
+index 45a8f1a6fe9d..ff961279380e 100644
+--- a/kernel/evl/net/output.c
++++ b/kernel/evl/net/output.c
+@@ -15,6 +15,7 @@
+ #include <evl/list.h>
+ #include <evl/lock.h>
+ #include <evl/flag.h>
++#include <evl/net/device.h>
+ #include <evl/net/socket.h>
+ #include <evl/net/output.h>
+ #include <evl/net/qdisc.h>
+@@ -202,12 +203,12 @@ static void xmit_inband(struct irq_work *work) /* in-band, stalled */
+ }
+ 
+ /* oob or in-band */
+-static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
++static int xmit_oob(struct net_device *real_dev, struct sk_buff *skb)
+ {
+-	struct evl_netdev_state *est = dev->oob_state.estate;
++	struct evl_netdev_state *est = real_dev->oob_state.estate;
+ 	int ret;
+ 
+-	ret = evl_net_sched_packet(dev, skb);
++	ret = evl_net_sched_packet(real_dev, skb);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -233,25 +234,33 @@ static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
+  *        the interface going down.
+  *	- skb->sk == NULL.
+  */
+-int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
++int evl_net_transmit(struct net_device *dev, struct sk_buff *skb) /* oob or in-band */
+ {
+ 	struct evl_net_skb_queue *rl = this_cpu_ptr(&oob_tx_relay);
+-	struct net_device *dev = skb->dev;
++	struct net_device *real_dev = evl_net_real_dev(dev);
+ 	unsigned long flags;
+ 	bool kick;
+ 
+-	if (EVL_WARN_ON(NET, !dev))
++	if (EVL_WARN_ON(NET, skb->dev != real_dev))
+ 		return -EINVAL;
+ 
+ 	if (EVL_WARN_ON(NET, skb->sk))
+ 		return -EINVAL;
+ 
++	/*
++	 * Synchronize with disable_oob_port() so that we won't queue
++	 * buffers for downed interfaces. The TX thread will drain any
++	 * unsent buffer that slipped in.
++	 */
++	if (!netif_oob_port(dev))
++		return -ENETDOWN;
++
+ 	timestamp_at_sched(skb);
+ 
+ 	skb_mark_not_on_list(skb);
+ 
+-	if (netdev_is_oob_capable(dev))
+-		return xmit_oob(dev, skb);
++	if (netdev_is_oob_capable(real_dev))
++		return xmit_oob(real_dev, skb);
+ 
+ 	/*
+ 	 * If running in-band, just push the skb for transmission
+@@ -264,13 +273,13 @@ int evl_net_transmit(struct sk_buff *skb) /* oob or in-band */
+ 	}
+ 
+ 	/*
+-	 * Running oob but net device is not oob-capable, resort to
+-	 * relaying the traffic to the in-band stage for enqueuing.
+-	 * Dovetail does ensure that __raise_softirq_irqoff() is safe
+-	 * to call from the oob stage provided hard irqs are off, but
+-	 * we want the softirq to be raised as soon as in-band resumes
+-	 * with interrupts enabled, so we go through the irq_work
+-	 * indirection first.
++	 * Running oob but the (real) net device is not oob-capable,
++	 * resort to relaying the traffic to the in-band stage for
++	 * enqueuing.  Dovetail does ensure that
++	 * __raise_softirq_irqoff() is safe to call from the oob stage
++	 * provided hard irqs are off, but we want the softirq to be
++	 * raised as soon as in-band resumes with interrupts enabled,
++	 * so we go through the irq_work indirection first.
+ 	 */
+ 	raw_spin_lock_irqsave(&rl->lock, flags);
+ 	kick = list_empty(&rl->queue);
+-- 
+2.30.2
+

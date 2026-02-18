@@ -1,7 +1,7 @@
 From 4e2f219b3829a0f056e98a26d9ff3f2d9880e6c1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 21 Feb 2024 11:58:35 +0100
-Subject: [PATCH 877/985] evl/net: dev: enable oob for any netdevice
+Subject: [PATCH 0877/1013] evl/net: dev: enable oob for any netdevice
 
 So far, turning on oob diversion was available to VLAN devices
 only. The rationale behind this restriction was that the VLAN id could
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  9 files changed, 93 insertions(+), 96 deletions(-)
 
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index 99ebde529..51bc61612 100644
+index 99ebde529442..51bc616126b5 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -9,6 +9,8 @@
@@ -54,7 +54,7 @@ index 99ebde529..51bc61612 100644
  
  #endif /* !_EVL_NET_DEVICE_H */
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 5f16040c7..fbe6c73fe 100644
+index 5f16040c7b59..fbe6c73feebd 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -83,8 +83,8 @@ struct evl_socket {
@@ -69,7 +69,7 @@ index 5f16040c7..fbe6c73fe 100644
  		} packet;
  		/* Used by all IP protocols we support. */
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 556391629..47528b3e5 100644
+index 556391629191..47528b3e5ed4 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -52,12 +52,12 @@
@@ -331,7 +331,7 @@ index 556391629..47528b3e5 100644
  	 */
  	if (event == NETDEV_GOING_DOWN && netdev_is_oob_port(dev)) {
 diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
-index 0929551d0..356a5f771 100644
+index 0929551d0cd2..356a5f7716e2 100644
 --- a/kernel/evl/net/ethernet/input.c
 +++ b/kernel/evl/net/ethernet/input.c
 @@ -20,9 +20,9 @@ static struct evl_net_handler evl_net_ether;
@@ -348,7 +348,7 @@ index 0929551d0..356a5f771 100644
   *
   * Currently, we only deal with IP input on ethernet medium.
 diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
-index e154554f5..c4bc0f4e8 100644
+index e154554f538f..c4bc0f4e829f 100644
 --- a/kernel/evl/net/ethernet/output.c
 +++ b/kernel/evl/net/ethernet/output.c
 @@ -7,8 +7,8 @@
@@ -371,7 +371,7 @@ index e154554f5..c4bc0f4e8 100644
  
  	return evl_net_ether_transmit_raw(dev, skb);
 diff --git a/kernel/evl/net/ipv4/output.c b/kernel/evl/net/ipv4/output.c
-index a8b664b4e..bffa85de7 100644
+index a8b664b4eead..bffa85de7407 100644
 --- a/kernel/evl/net/ipv4/output.c
 +++ b/kernel/evl/net/ipv4/output.c
 @@ -11,6 +11,7 @@
@@ -414,7 +414,7 @@ index a8b664b4e..bffa85de7 100644
  			ret = PTR_ERR(skb);
  			goto fail;
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 70b514536..eb8892fb1 100644
+index 70b514536288..eb8892fb1a55 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -151,7 +151,7 @@ static int xmit_oob(struct net_device *dev, struct sk_buff *skb)
@@ -437,7 +437,7 @@ index 70b514536..eb8892fb1 100644
  		return -EINVAL;
  
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 5651a9217..eedae58f0 100644
+index 5651a9217edf..eedae58f0940 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -80,7 +80,7 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,
@@ -525,7 +525,7 @@ index 5651a9217..eedae58f0 100644
  	if (IS_ERR(skb)) {
  		ret = PTR_ERR(skb);
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 7d8cead47..2c71fa205 100644
+index 7d8cead47eae..2c71fa205004 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -125,7 +125,7 @@ static void skb_recycler(struct evl_work *work)

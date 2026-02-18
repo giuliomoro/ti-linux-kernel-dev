@@ -1,7 +1,7 @@
 From 74d8ce19866728ec6f3f969cfc047a914a29d69f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 25 Jun 2019 18:56:09 +0200
-Subject: [PATCH 423/985] evl/mutex: turn user debug options into dynamic
+Subject: [PATCH 0423/1013] evl/mutex: turn user debug options into dynamic
  settings
 
 With this rework, we have two separate per-thread mode flags for
@@ -34,7 +34,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  8 files changed, 72 insertions(+), 114 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 0284f1ea6..8d89f7dd8 100644
+index 0284f1ea61e3..8d89f7dd82a1 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -69,12 +69,7 @@ void evl_flush_mutex(struct evl_mutex *mutex,
@@ -51,7 +51,7 @@ index 0284f1ea6..8d89f7dd8 100644
  void evl_abort_mutex_wait(struct evl_thread *thread,
  			struct evl_wait_channel *wchan);
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 0b940d1b8..7ee27955b 100644
+index 0b940d1b8eca..7ee27955b95d 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -767,9 +767,10 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
@@ -69,7 +69,7 @@ index 0b940d1b8..7ee27955b 100644
  TRACE_EVENT(evl_thread_update_mode,
  	TP_PROTO(int mode, bool set),
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index f5109f21e..93037c111 100644
+index f5109f21e1c5..93037c111794 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -82,7 +82,7 @@ index f5109f21e..93037c111 100644
  struct evl_core_info {
  	__u32 abi_level;
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 5519a51bc..b45dba787 100644
+index 5519a51bcb9a..b45dba787948 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -27,11 +27,11 @@
@@ -116,7 +116,7 @@ index 5519a51bc..b45dba787 100644
  struct evl_user_window {
  	__u32 state;
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index f638ce142..c61a77be7 100644
+index f638ce1422a7..c61a77be71fd 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -174,44 +174,15 @@ config EVL_DEBUG_MEMORY
@@ -174,7 +174,7 @@ index f638ce142..c61a77be7 100644
  config EVL_WATCHDOG
  	bool "Watchdog support"
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 8267d2812..354302b96 100644
+index 8267d2812f7d..354302b966b0 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -28,28 +28,27 @@ static inline int get_ceiling_value(struct evl_mutex *mutex)
@@ -300,7 +300,7 @@ index 8267d2812..354302b96 100644
  	if (curr->wprio > owner->wprio) {
  		if ((owner->info & T_WAKEN) && owner->wwake == &mutex->wchan) {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 7554b2d87..fe6929d56 100644
+index 7554b2d87794..fe6929d5673d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -142,6 +142,9 @@ int evl_init_thread(struct evl_thread *thread,
@@ -384,7 +384,7 @@ index 7554b2d87..fe6929d56 100644
  
  	/*
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index c7661fefc..6c4ea209a 100644
+index c7661fefc40c..6c4ea209abe1 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -39,9 +39,8 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,

@@ -1,7 +1,8 @@
 From 18601df2682ddbaf9a5b840f0a024dbf05c95949 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 13 Mar 2019 10:15:58 +0100
-Subject: [PATCH 344/985] drivers/evl: hectic: allow userland to init wait mode
+Subject: [PATCH 0344/1013] drivers/evl: hectic: allow userland to init wait
+ mode
 
 The hectic utility needs to tell us whether some rtus/rtup/rtuo
 threads are about to start waiting for an out-of-band event, so that
@@ -33,7 +34,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 34 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 5a72e73fb..029e651bf 100644
+index 5a72e73fba37..029e651bfd39 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -19,9 +19,7 @@
@@ -242,7 +243,7 @@ index 5a72e73fb..029e651bf 100644
  
  			evl_destroy_flag(&task->rt_synch);
 diff --git a/include/uapi/evl/devices/hectic.h b/include/uapi/evl/devices/hectic.h
-index 7832aff42..d52794527 100644
+index 7832aff42e23..d52794527065 100644
 --- a/include/uapi/evl/devices/hectic.h
 +++ b/include/uapi/evl/devices/hectic.h
 @@ -9,6 +9,10 @@

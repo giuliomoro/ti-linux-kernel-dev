@@ -1,7 +1,7 @@
 From e5a8035cad3455c61fdc432ceca0261203d09814 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 May 2020 18:08:35 +0200
-Subject: [PATCH 066/985] ARM: dovetail: route traps
+Subject: [PATCH 0066/1013] ARM: dovetail: route traps
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 
@@ -38,7 +38,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 arch/arm/include/asm/trace/exceptions.h
 
 diff --git a/arch/arm/include/asm/assembler.h b/arch/arm/include/asm/assembler.h
-index 6d063d1ea..6b1edd80f 100644
+index 6d063d1ea90f..6b1edd80fe60 100644
 --- a/arch/arm/include/asm/assembler.h
 +++ b/arch/arm/include/asm/assembler.h
 @@ -150,18 +150,6 @@ THUMB(	fpreg	.req	r7	)
@@ -61,7 +61,7 @@ index 6d063d1ea..6b1edd80f 100644
  	disable_irq_notrace
  	asm_trace_hardirqs_off \save
 diff --git a/arch/arm/include/asm/dovetail.h b/arch/arm/include/asm/dovetail.h
-index 86e81cce9..795a1fb90 100644
+index 86e81cce967c..795a1fb903ec 100644
 --- a/arch/arm/include/asm/dovetail.h
 +++ b/arch/arm/include/asm/dovetail.h
 @@ -6,4 +6,60 @@
@@ -126,7 +126,7 @@ index 86e81cce9..795a1fb90 100644
 +
  #endif /* _ASM_ARM_DOVETAIL_H */
 diff --git a/arch/arm/include/asm/thread_info.h b/arch/arm/include/asm/thread_info.h
-index 7352084fa..819d8f313 100644
+index 7352084fa049..819d8f3130ea 100644
 --- a/arch/arm/include/asm/thread_info.h
 +++ b/arch/arm/include/asm/thread_info.h
 @@ -190,6 +190,7 @@ extern int vfp_restore_user_hwstate(struct user_vfp *,
@@ -139,7 +139,7 @@ index 7352084fa..819d8f313 100644
  #endif /* __ASM_ARM_THREAD_INFO_H */
 diff --git a/arch/arm/include/asm/trace/exceptions.h b/arch/arm/include/asm/trace/exceptions.h
 new file mode 100644
-index 000000000..bdb666b3d
+index 000000000000..bdb666b3da4e
 --- /dev/null
 +++ b/arch/arm/include/asm/trace/exceptions.h
 @@ -0,0 +1,62 @@
@@ -206,7 +206,7 @@ index 000000000..bdb666b3d
 +/* This part must be outside protection */
 +#include <trace/define_trace.h>
 diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 454d0df89..0ae08fd3a 100644
+index 454d0df89197..0ae08fd3a644 100644
 --- a/arch/arm/kernel/entry-armv.S
 +++ b/arch/arm/kernel/entry-armv.S
 @@ -30,6 +30,7 @@
@@ -251,7 +251,7 @@ index 454d0df89..0ae08fd3a 100644
  	svc_exit r5				@ return from exception
   UNWIND(.fnend		)
 diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index c421a899f..30b9ba8f6 100644
+index c421a899fc84..30b9ba8f62e8 100644
 --- a/arch/arm/kernel/ptrace.c
 +++ b/arch/arm/kernel/ptrace.c
 @@ -205,7 +205,9 @@ void ptrace_break(struct pt_regs *regs)
@@ -265,7 +265,7 @@ index c421a899f..30b9ba8f6 100644
  }
  
 diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
-index 348eeb4c6..055779196 100644
+index 348eeb4c6986..055779196eb7 100644
 --- a/arch/arm/mm/alignment.c
 +++ b/arch/arm/mm/alignment.c
 @@ -19,6 +19,7 @@
@@ -332,7 +332,7 @@ index 348eeb4c6..055779196 100644
  
  static int __init noalign_setup(char *__unused)
 diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
-index 687af34b3..111c247c5 100644
+index 687af34b36af..111c247c5bfa 100644
 --- a/arch/arm/mm/fault.c
 +++ b/arch/arm/mm/fault.c
 @@ -23,6 +23,9 @@
@@ -507,7 +507,7 @@ index 687af34b3..111c247c5 100644
  
  /*
 diff --git a/arch/arm/vfp/vfpmodule.c b/arch/arm/vfp/vfpmodule.c
-index b68efe643..107e70a03 100644
+index b68efe643a12..107e70a039de 100644
 --- a/arch/arm/vfp/vfpmodule.c
 +++ b/arch/arm/vfp/vfpmodule.c
 @@ -14,6 +14,7 @@

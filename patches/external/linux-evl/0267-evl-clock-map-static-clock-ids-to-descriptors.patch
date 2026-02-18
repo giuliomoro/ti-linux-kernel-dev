@@ -1,7 +1,7 @@
 From 39972ab91c93870c926bd68492eca89f21c072cd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 6 Feb 2019 11:35:43 +0100
-Subject: [PATCH 267/985] evl/clock: map static clock ids to descriptors
+Subject: [PATCH 0267/1013] evl/clock: map static clock ids to descriptors
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/include/uapi/evenless/clock.h b/include/uapi/evenless/clock.h
-index 7abf84b8e..e06ac3a7f 100644
+index 7abf84b8ed0c..e06ac3a7f975 100644
 --- a/include/uapi/evenless/clock.h
 +++ b/include/uapi/evenless/clock.h
 @@ -7,6 +7,9 @@
@@ -24,7 +24,7 @@ index 7abf84b8e..e06ac3a7f 100644
  
  struct evl_clock_delayreq {
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index f8308d388..7ffb566e0 100644
+index f8308d388b5a..7ffb566e076b 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -397,11 +397,22 @@ struct evl_clock *evl_get_clock_by_fd(int efd)

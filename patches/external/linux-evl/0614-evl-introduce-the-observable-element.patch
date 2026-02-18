@@ -1,7 +1,7 @@
 From 76c4a0ed1e484f1220e0b99a24d3605b38a64d34 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 23 Apr 2020 15:52:51 +0200
-Subject: [PATCH 614/985] evl: introduce the observable element
+Subject: [PATCH 0614/1013] evl: introduce the observable element
 
 Observables enable the observer design pattern, in which any number of
 observer threads can be notified of updates to any number of
@@ -54,7 +54,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evl/observable.c
 
 diff --git a/include/asm-generic/evl/thread_info.h b/include/asm-generic/evl/thread_info.h
-index ed2bd105f..2aa2a697a 100644
+index ed2bd105f583..2aa2a697a99a 100644
 --- a/include/asm-generic/evl/thread_info.h
 +++ b/include/asm-generic/evl/thread_info.h
 @@ -5,9 +5,11 @@
@@ -78,7 +78,7 @@ index ed2bd105f..2aa2a697a 100644
  }
  
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 02ee9e52a..7238acf00 100644
+index 02ee9e52a09f..7238acf00021 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -38,6 +38,12 @@ struct evl_element;
@@ -184,7 +184,7 @@ index 02ee9e52a..7238acf00 100644
  
  #endif /* !_EVL_FACTORY_H */
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 14a81bd6b..35ee0f1c7 100644
+index 14a81bd6b2fa..35ee0f1c7fc7 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -13,7 +13,7 @@
@@ -207,7 +207,7 @@ index 14a81bd6b..35ee0f1c7 100644
  			struct evl_thread *originator);
 diff --git a/include/evl/observable.h b/include/evl/observable.h
 new file mode 100644
-index 000000000..f0766a445
+index 000000000000..f0766a445578
 --- /dev/null
 +++ b/include/evl/observable.h
 @@ -0,0 +1,59 @@
@@ -271,7 +271,7 @@ index 000000000..f0766a445
 +
 +#endif /* !_EVL_OBSERVABLE_H */
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index 522229a35..e9125a98b 100644
+index 522229a3559a..e9125a98be5a 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -41,6 +41,7 @@ struct evl_poll_watchpoint {
@@ -283,7 +283,7 @@ index 522229a35..e9125a98b 100644
  	struct evl_flag *flag;
  	struct file *filp;
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 291f77488..05f41a474 100644
+index 291f774881c5..05f41a474ebb 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -31,35 +31,32 @@
@@ -391,7 +391,7 @@ index 291f77488..05f41a474 100644
  			.sched_param.fifo.prio = __priority,		\
  		};							\
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 59891d777..d8f27f7ed 100644
+index 59891d777174..d8f27f7ed166 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -11,17 +11,24 @@
@@ -446,7 +446,7 @@ index 59891d777..d8f27f7ed 100644
  			int reason);
  
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 4c62b9835..c1cde0faa 100644
+index 4c62b9835825..c1cde0faa58e 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -293,7 +293,7 @@ TRACE_EVENT(evl_init_thread,
@@ -525,7 +525,7 @@ index 4c62b9835..c1cde0faa 100644
  
  DEFINE_EVENT(timer_event, evl_timer_stop,
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 5117423d0..794f8137d 100644
+index 5117423d065d..794f8137de50 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -11,14 +11,14 @@
@@ -546,7 +546,7 @@ index 5117423d0..794f8137d 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 6e5235499..3f255bcda 100644
+index 6e5235499b25..3f255bcda79c 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -17,10 +17,14 @@ struct evl_element_ids {
@@ -570,7 +570,7 @@ index 6e5235499..3f255bcda 100644
  	__u64 name_ptr;		/* (const char *name) */
 diff --git a/include/uapi/evl/observable.h b/include/uapi/evl/observable.h
 new file mode 100644
-index 000000000..5e610bde4
+index 000000000000..5e610bde4b56
 --- /dev/null
 +++ b/include/uapi/evl/observable.h
 @@ -0,0 +1,45 @@
@@ -620,7 +620,7 @@ index 000000000..5e610bde4
 +
 +#endif /* !_EVL_UAPI_OBSERVABLE_H */
 diff --git a/include/uapi/evl/poll.h b/include/uapi/evl/poll.h
-index bb14c1edb..321ebd016 100644
+index bb14c1edb7da..321ebd016d63 100644
 --- a/include/uapi/evl/poll.h
 +++ b/include/uapi/evl/poll.h
 @@ -21,11 +21,13 @@ struct evl_poll_ctlreq {
@@ -638,7 +638,7 @@ index bb14c1edb..321ebd016 100644
  
  struct evl_poll_waitreq {
 diff --git a/include/uapi/evl/signal.h b/include/uapi/evl/signal.h
-index f8f4f6b4d..3d4a869e1 100644
+index f8f4f6b4dbb9..3d4a869e1aa9 100644
 --- a/include/uapi/evl/signal.h
 +++ b/include/uapi/evl/signal.h
 @@ -9,6 +9,9 @@
@@ -667,7 +667,7 @@ index f8f4f6b4d..3d4a869e1 100644
 -
  #endif /* !_EVL_UAPI_SIGNAL_H */
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index fe5c3dd90..615290465 100644
+index fe5c3dd90793..615290465236 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -30,10 +30,13 @@
@@ -726,7 +726,7 @@ index fe5c3dd90..615290465 100644
  struct evl_user_window {
  	__u32 state;
 diff --git a/include/uapi/evl/types.h b/include/uapi/evl/types.h
-index fbc3170a9..975b25db6 100644
+index fbc3170a95b6..975b25db63e3 100644
 --- a/include/uapi/evl/types.h
 +++ b/include/uapi/evl/types.h
 @@ -44,4 +44,14 @@ struct __evl_itimerspec {
@@ -745,7 +745,7 @@ index fbc3170a9..975b25db6 100644
 +
  #endif /* !_EVL_UAPI_TYPES_H */
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index c61a77be7..39dd05b6a 100644
+index c61a77be71fd..39dd05b6a60c 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -103,6 +103,21 @@ config EVL_NR_PROXIES
@@ -791,7 +791,7 @@ index c61a77be7..39dd05b6a 100644
  	  The timeout value of the watchdog can be set using the
  	  EVL_WATCHDOG_TIMEOUT parameter.
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index 9bdee544b..474c80401 100644
+index 9bdee544b42d..474c804014fb 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -9,6 +9,7 @@ evl-y :=		\
@@ -803,7 +803,7 @@ index 9bdee544b..474c80401 100644
  	proxy.o		\
  	sem.o		\
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 5cdbb55d1..53212c521 100644
+index 5cdbb55d1b75..53212c521b49 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -43,6 +43,7 @@ static struct evl_factory *factories[] = {
@@ -955,7 +955,7 @@ index 5cdbb55d1..53212c521 100644
  	unsigned long flags;
  	struct rb_node *rb;
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 6f4674e34..ad04d304c 100644
+index 6f4674e34185..ad04d304c031 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -106,9 +106,9 @@ void __evl_commit_monitor_ceiling(void)
@@ -1013,7 +1013,7 @@ index 6f4674e34..ad04d304c 100644
  			owner ? evl_get_inband_pid(owner) : -1,
  			state->u.gate.ceiling,
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 59d0ed658..6c454bffb 100644
+index 59d0ed658504..6c454bffbd66 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -50,7 +50,7 @@ static inline bool enable_inband_switch(struct evl_thread *curr)
@@ -1114,7 +1114,7 @@ index 59d0ed658..6c454bffb 100644
  
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
 new file mode 100644
-index 000000000..9cf53c774
+index 000000000000..9cf53c774c47
 --- /dev/null
 +++ b/kernel/evl/observable.c
 @@ -0,0 +1,1147 @@
@@ -2266,7 +2266,7 @@ index 000000000..9cf53c774
 +	.flags	=	EVL_FACTORY_CLONE,
 +};
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 950283955..ff4e8301e 100644
+index 950283955247..ff4e8301e98c 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -35,6 +35,7 @@ struct poll_group {
@@ -2310,7 +2310,7 @@ index 950283955..ff4e8301e 100644
  			ret = raw_copy_to_user(u_set, &ev, sizeof(ev));
  			if (ret)
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 696ec5e5f..05dd4849e 100644
+index 696ec5e5fd49..05dd4849e2a3 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -315,6 +315,9 @@ proxy_factory_build(struct evl_factory *fac, const char *name,
@@ -2342,7 +2342,7 @@ index 696ec5e5f..05dd4849e 100644
  
  	if (out->ring.bufmem)
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index a415a23be..ff2fcc599 100644
+index a415a23bea37..ff2fcc59956d 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -96,7 +96,7 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */
@@ -2417,7 +2417,7 @@ index a415a23be..ff2fcc599 100644
  
  	/* @curr is now running inband. */
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index 91148d147..c7927e8b6 100644
+index 91148d147ac8..c7927e8b6a46 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -6,6 +6,7 @@
@@ -2438,7 +2438,7 @@ index 91148d147..c7927e8b6 100644
  	}
  
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 4b90f2113..b66467ffc 100644
+index 4b90f21136d0..b66467ffc6a7 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -190,7 +190,7 @@ static void prepare_for_signal(struct task_struct *p,
@@ -2478,7 +2478,7 @@ index 4b90f2113..b66467ffc 100644
  done:
  	if (curr->local_info & T_IGNOVR)
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 8bb5075d4..7b4d64d7c 100644
+index 8bb5075d4ff7..7b4d64d7c25d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -39,9 +39,14 @@
@@ -3024,7 +3024,7 @@ index 8bb5075d4..7b4d64d7c 100644
  };
  ATTRIBUTE_GROUPS(thread);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index d3a3e0a7f..031477459 100644
+index d3a3e0a7fdaa..031477459820 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -45,7 +45,7 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,
@@ -3049,7 +3049,7 @@ index d3a3e0a7f..031477459 100644
 +}
 +EXPORT_SYMBOL_GPL(evl_wait_head);
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index aaa37032d..8e8d42753 100644
+index aaa37032da2f..8e8d427538ab 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -639,6 +639,9 @@ xbuf_factory_build(struct evl_factory *fac, const char *name,

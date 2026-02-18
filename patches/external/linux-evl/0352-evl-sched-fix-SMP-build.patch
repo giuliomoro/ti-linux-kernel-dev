@@ -1,7 +1,7 @@
 From 077845968ad715d22f655ad052b1a216b5b46dd1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 18 Mar 2019 16:11:39 +0100
-Subject: [PATCH 352/985] evl/sched: fix SMP build
+Subject: [PATCH 0352/1013] evl/sched: fix SMP build
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 16 insertions(+), 18 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 948e1c1aa..7bb6f6c70 100644
+index 948e1c1aad98..7bb6f6c70100 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -178,18 +178,6 @@ struct evl_sched_class {

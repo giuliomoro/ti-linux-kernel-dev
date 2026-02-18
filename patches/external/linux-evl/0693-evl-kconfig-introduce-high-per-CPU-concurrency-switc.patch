@@ -1,7 +1,7 @@
 From fbfaef04d7fa53a9c801087052db47eb8d29169c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 6 Feb 2021 17:25:45 +0100
-Subject: [PATCH 693/985] evl: kconfig: introduce high per-CPU concurrency
+Subject: [PATCH 0693/1013] evl: kconfig: introduce high per-CPU concurrency
  switch
 
 EVL_HIGH_PERCPU_CONCURRENCY optimizes the implementation for
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 89 insertions(+), 82 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 7feec6c44..0f5616b26 100644
+index 7feec6c44f41..0f5616b26e38 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -31,127 +31,127 @@
@@ -209,7 +209,7 @@ index 7feec6c44..0f5616b26 100644
  struct evl_rq;
  
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index 196138db2..e5c889b38 100644
+index 196138db2c5b..e5c889b38813 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -38,40 +38,47 @@ config EVL_SCHED_TP_NR_PART
@@ -291,7 +291,7 @@ index 196138db2..e5c889b38 100644
  config EVL_RUNSTATS
  	bool "Collect runtime statistics"
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index 4e4a24d8e..705641343 100644
+index 4e4a24d8e658..705641343397 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -455,7 +455,7 @@ unsigned long evl_get_timer_overruns(struct evl_timer *timer)

@@ -1,7 +1,7 @@
 From 7645964c1051b96d7024df3ce847b95f275fada2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 7 Feb 2021 12:07:57 +0100
-Subject: [PATCH 697/985] evl/sched: refine tracepoints
+Subject: [PATCH 0697/1013] evl/sched: refine tracepoints
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 49 insertions(+), 7 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index f8054428e..786bf18a7 100644
+index f8054428e811..786bf18a7d2f 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -245,6 +245,24 @@ DEFINE_EVENT(evl_schedule_event, evl_reschedule_ipi,
@@ -64,7 +64,7 @@ index f8054428e..786bf18a7 100644
  	TP_PROTO(struct evl_thread *thread,
  		 const struct evl_init_thread_attr *iattr,
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index c73e0fc60..dcda37f09 100644
+index c73e0fc60a12..dcda37f09b48 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -826,8 +826,9 @@ static struct evl_thread *pick_next_thread(struct evl_rq *rq)

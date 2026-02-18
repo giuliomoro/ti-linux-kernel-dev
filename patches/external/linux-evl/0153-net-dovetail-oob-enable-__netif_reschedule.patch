@@ -1,7 +1,7 @@
 From 7c4c45f8529fd53f069bc4827447690a51d8ab43 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 13 Mar 2025 17:34:13 +0100
-Subject: [PATCH 153/985] net: dovetail: oob-enable __netif_reschedule()
+Subject: [PATCH 0153/1013] net: dovetail: oob-enable __netif_reschedule()
 
 This enables tx queue wake operation in turn.
 
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 20 insertions(+), 7 deletions(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 89c5974bc..e92013b3a 100644
+index 89c5974bc6d8..e92013b3a420 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -3186,13 +3186,26 @@ static void __netif_reschedule(struct Qdisc *q)

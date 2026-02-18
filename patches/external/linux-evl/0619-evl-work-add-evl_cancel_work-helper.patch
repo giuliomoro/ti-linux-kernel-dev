@@ -1,7 +1,7 @@
 From b231fe9349ea8941bc617895bd9bf72da9c20c11 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 May 2020 09:54:13 +0200
-Subject: [PATCH 619/985] evl/work: add evl_cancel_work() helper
+Subject: [PATCH 0619/1013] evl/work: add evl_cancel_work() helper
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+)
 
 diff --git a/include/evl/work.h b/include/evl/work.h
-index e3cc4a2a9..84c6ed62c 100644
+index e3cc4a2a9409..84c6ed62c4e2 100644
 --- a/include/evl/work.h
 +++ b/include/evl/work.h
 @@ -52,6 +52,13 @@ void evl_flush_work(struct evl_work *work)

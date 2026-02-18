@@ -1,8 +1,8 @@
 From e86dcbfa111b57fc271fd36b99ae0f1c87437341 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Nov 2022 12:12:02 +0100
-Subject: [PATCH 782/985] evl/wait: ensure timeout, break conditions supersede
- normal wakeups
+Subject: [PATCH 0782/1013] evl/wait: ensure timeout, break conditions
+ supersede normal wakeups
 
 We might receive a normal wakeup after a timeout or break condition
 occurred while sleeping on a waitqueue (the opposite cannot happen
@@ -41,7 +41,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 41 insertions(+), 46 deletions(-)
 
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index f135472e7..6a56918e2 100644
+index f135472e73a5..6a56918e2d40 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -176,73 +176,68 @@ int __evl_wait_schedule(struct evl_wait_channel *wchan)

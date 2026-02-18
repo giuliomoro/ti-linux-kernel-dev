@@ -1,0 +1,37 @@
+From 59452ec7ee355b0ad0c0794ba58eb0b8d509a4b8 Mon Sep 17 00:00:00 2001
+From: Florian Bezdeka <florian.bezdeka@siemens.com>
+Date: Thu, 25 Sep 2025 15:05:50 +0200
+Subject: [PATCH 0990/1013] kernel/irq/chip: Simplify should_feed_pipeline()
+
+No functional change.
+
+Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
+---
+ kernel/irq/chip.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+index ce9b09d6d07b..66a09d61969d 100644
+--- a/kernel/irq/chip.c
++++ b/kernel/irq/chip.c
+@@ -665,15 +665,13 @@ static inline bool should_feed_pipeline(struct irq_desc *desc, int state)
+ 	switch (state) {
+ 	case IRQ_FLOW_REPLAY:	/* Deferred to in-band. */
+ 		irq_clear_deferral(desc);
+-		break;
++		return false;
+ 	case IRQ_FLOW_FORWARD:	/* Handled oob, forwarded in-band. */
+ 		irq_clear_forward(desc);
+-		break;
++		return false;
+ 	default:
+ 		return true;
+ 	}
+-
+-	return false;
+ }
+ 
+ #ifdef CONFIG_IRQ_PIPELINE
+-- 
+2.30.2
+

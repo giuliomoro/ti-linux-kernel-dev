@@ -1,7 +1,7 @@
 From d1a2c998a00caa17128e9b5afbf3809c94574aa7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 8 Jun 2025 18:20:12 +0200
-Subject: [PATCH 942/985] evl/net: leave the experimental state
+Subject: [PATCH 0942/1013] evl/net: leave the experimental state
 
 The out-of-band network stack is no more experimental, drop the
 related caveat notice from the Kconfig help text.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index 83e5c97c2..604a1b8f4 100644
+index 83e5c97c21f2..604a1b8f4b2e 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -89,7 +89,7 @@ config EVL_RUNSTATS

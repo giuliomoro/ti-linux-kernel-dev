@@ -1,7 +1,7 @@
 From b8125098ef2ca4f76ea119d7570717b79e5362e2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 14 Oct 2022 10:04:36 +0200
-Subject: [PATCH 748/985] evl/wait: move lock to the wait channel base
+Subject: [PATCH 0748/1013] evl/wait: move lock to the wait channel base
 
 In order to walk the wait dependency chain which may exist between
 threads, we need to access the lock guarding each wait channel we may
@@ -33,7 +33,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  14 files changed, 144 insertions(+), 128 deletions(-)
 
 diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
-index cca48c1b9..b29093ac3 100644
+index cca48c1b9b24..b29093ac39e1 100644
 --- a/drivers/gpio/gpiolib-cdev.c
 +++ b/drivers/gpio/gpiolib-cdev.c
 @@ -2125,11 +2125,11 @@ static irqreturn_t lineevent_oob_irq_handler(int irq, void *p)
@@ -84,7 +84,7 @@ index cca48c1b9..b29093ac3 100644
  		if (ret) {
  			ret = raw_copy_to_user(buf, &ge, sizeof(ge));
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 230367752..44633dd04 100644
+index 230367752e48..44633dd04f75 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -51,10 +51,10 @@ static inline bool evl_read_flag(struct evl_flag *wf)
@@ -135,7 +135,7 @@ index 230367752..44633dd04 100644
  {
  	evl_flush_flag_locked(wf, T_BCAST);
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index e7ead0b59..86b98d1fa 100644
+index e7ead0b59e2a..86b98d1fac16 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -19,6 +19,8 @@
@@ -218,7 +218,7 @@ index e7ead0b59..86b98d1fa 100644
  void evl_destroy_wait(struct evl_wait_queue *wq);
  
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 23d039369..f09aaff24 100644
+index 23d0393694d0..f09aaff2440b 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -715,7 +715,7 @@ static int timerfd_release(struct inode *inode, struct file *filp)
@@ -231,7 +231,7 @@ index 23d039369..f09aaff24 100644
  	evl_put_element(&timerfd->timer.clock->element);
  	kfree(timerfd);
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index bb51ee056..1a2fefcd9 100644
+index bb51ee056321..1a2fefcd941a 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -114,7 +114,7 @@ void __evl_commit_monitor_ceiling(void)
@@ -333,7 +333,7 @@ index bb51ee056..1a2fefcd9 100644
  	rq = evl_get_thread_rq_noirq(curr);
  	curr->info &= ~T_SIGNAL;
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index ca1a1f71c..16f7cb005 100644
+index ca1a1f71cb3e..16f7cb005acc 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -32,7 +32,7 @@ find_packet_proto(__be16 protocol,
@@ -391,7 +391,7 @@ index ca1a1f71c..16f7cb005 100644
  	} while (!ret);
  
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 8fb80f352..3f5456b1e 100644
+index 8fb80f3526c7..3f5456b1e01b 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -63,7 +63,7 @@ static int recycling_count;
@@ -448,7 +448,7 @@ index 8fb80f352..3f5456b1e 100644
  	evl_signal_poll_events(&est->poll_head,	POLLOUT|POLLWRNORM);
  }
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 5402e157b..38946d24b 100644
+index 5402e157bbc5..38946d24b2ab 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -300,7 +300,7 @@ void evl_unregister_socket_domain(struct evl_socket_domain *domain)
@@ -489,7 +489,7 @@ index 5402e157b..38946d24b 100644
  		esk->proto->detach(esk);
  
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index dab0272cc..d48833551 100644
+index dab0272ccde5..d48833551404 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -189,9 +189,9 @@ static int add_subscription(struct evl_observable *observable,
@@ -687,7 +687,7 @@ index dab0272cc..d48833551 100644
  	return ret;
  }
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index b7942b750..e5fb14441 100644
+index b7942b750c59..e5fb14441bbb 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -38,9 +38,9 @@ int evl_trydown(struct evl_ksem *ksem)
@@ -729,7 +729,7 @@ index b7942b750..e5fb14441 100644
  }
  EXPORT_SYMBOL_GPL(evl_broadcast);
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index c20994aa3..882dd9833 100644
+index c20994aa3fc1..882dd98339b1 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -13,7 +13,7 @@
@@ -840,7 +840,7 @@ index c20994aa3..882dd9833 100644
  	evl_schedule();
  }
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 59dffe661..906c58dc7 100644
+index 59dffe66105c..906c58dc7ce5 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1680,14 +1680,14 @@ static void join_ptsync(struct evl_thread *curr)
@@ -879,7 +879,7 @@ index 59dffe661..906c58dc7 100644
  	return ret;
  }
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index f7fc2c733..6ed82402a 100644
+index f7fc2c733f55..6ed82402a34f 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -13,17 +13,32 @@
@@ -1033,7 +1033,7 @@ index f7fc2c733..6ed82402a 100644
  					struct evl_thread, wait_next);
  }
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index d28d3d805..baec8ec90 100644
+index d28d3d8057e3..baec8ec90f8e 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -439,7 +439,7 @@ static unsigned long outbound_lock(struct xbuf_ring *ring)

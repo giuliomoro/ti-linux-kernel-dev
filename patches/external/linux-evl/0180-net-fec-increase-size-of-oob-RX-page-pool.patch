@@ -1,7 +1,7 @@
 From 804bdeac4c53ee9b7209f9a48016bab5e26cb265 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sat, 7 Jun 2025 19:53:21 +0200
-Subject: [PATCH 180/985] net: fec: increase size of oob RX page pool
+Subject: [PATCH 0180/1013] net: fec: increase size of oob RX page pool
 
 Increase the RX page pool size up to four times the ring size, for
 coping with high traffic pressure and/or (too) slow handling on the
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index e850edf80..59aec903c 100644
+index e850edf80863..59aec903c8f0 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -3532,7 +3532,13 @@ fec_enet_alloc_rxq_buffers(struct net_device *ndev, unsigned int queue)

@@ -1,7 +1,7 @@
 From e7f50c38fd6007e918e9dd737859e266d1c1c316 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Oct 2019 18:03:24 +0200
-Subject: [PATCH 531/985] evl/mutex: convert to per-mutex lock
+Subject: [PATCH 0531/1013] evl/mutex: convert to per-mutex lock
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 297 insertions(+), 196 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index c1e4baa36..1023c9e36 100644
+index c1e4baa36ea4..1023c9e36c19 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -37,9 +37,6 @@ struct evl_mutex {
@@ -45,7 +45,7 @@ index c1e4baa36..1023c9e36 100644
  
  static inline
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 1113eb181..0c317e906 100644
+index 1113eb1811b8..0c317e90666c 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -16,6 +16,9 @@
@@ -965,7 +965,7 @@ index 1113eb181..0c317e906 100644
 +	evl_spin_unlock_irqrestore(&mutex->lock, flags);
  }
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 87f760c94..53bde2502 100644
+index 87f760c94de2..53bde250285b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -373,15 +373,17 @@ bool evl_set_effective_thread_priority(struct evl_thread *thread, int prio)
@@ -1059,7 +1059,7 @@ index 87f760c94..53bde2502 100644
  	if (unlikely(!test_resched(this_rq))) {
  		xnlock_put(&nklock);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 5bd54ecce..6fbdbccc5 100644
+index 5bd54ecce43a..6fbdbccc5a49 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -112,17 +112,22 @@ wchan_to_wait_queue(struct evl_wait_channel *wchan)

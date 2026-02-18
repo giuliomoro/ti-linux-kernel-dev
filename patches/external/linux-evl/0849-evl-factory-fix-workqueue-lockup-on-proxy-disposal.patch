@@ -1,7 +1,7 @@
 From 61b5e5284415438926f31d8e6a57c57227cda109 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 12 Jul 2024 16:15:15 +0200
-Subject: [PATCH 849/985] evl/factory: fix workqueue lockup on proxy disposal
+Subject: [PATCH 0849/1013] evl/factory: fix workqueue lockup on proxy disposal
 
 Element disposal must happen from an inband task context since
 dispose() handlers usually release resources to the inband
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 116 insertions(+), 28 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 6cc1a835b..26f434504 100644
+index 6cc1a835b1d1..26f4345045ce 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -15,7 +15,6 @@
@@ -42,7 +42,7 @@ index 6cc1a835b..26f434504 100644
  	struct {
  		struct file *filp;
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 0d22783ee..977946e42 100644
+index 0d22783ee369..977946e42e9a 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -23,6 +23,8 @@

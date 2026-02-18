@@ -1,7 +1,7 @@
 From cab765f7f38948d49e531f1e9d808fcefc2a3d12 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 29 Apr 2019 18:02:06 +0200
-Subject: [PATCH 005/985] serial: 8250: add raw console channel
+Subject: [PATCH 0005/1013] serial: 8250: add raw console channel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 45 insertions(+)
 
 diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 68baf75bd..7619eae28 100644
+index 68baf75bdadc..7619eae2827b 100644
 --- a/drivers/tty/serial/8250/8250_core.c
 +++ b/drivers/tty/serial/8250/8250_core.c
 @@ -492,6 +492,48 @@ static int univ8250_console_match(struct console *co, char *name, int idx,

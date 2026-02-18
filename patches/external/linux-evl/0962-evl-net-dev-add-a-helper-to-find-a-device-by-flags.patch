@@ -1,7 +1,8 @@
 From 2d08acbaf7d3a2d342971ecb88f76c1c9c81fbca Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 10:05:31 +0200
-Subject: [PATCH 962/985] evl/net: dev: add a helper to find a device by flags
+Subject: [PATCH 0962/1013] evl/net: dev: add a helper to find a device by
+ flags
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +11,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 28 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index 2d45ae898..d7a0519f5 100644
+index 2d45ae89804f..d7a0519f5ca6 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -27,6 +27,9 @@ int evl_netdev_event(struct notifier_block *ev_block,
@@ -24,7 +25,7 @@ index 2d45ae898..d7a0519f5 100644
  evl_net_get_dev_by_name(struct net *net, const char *name);
  
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 35dc0f531..32c8fcd69 100644
+index 35dc0f5318cb..32c8fcd694f9 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -379,8 +379,7 @@ struct net_device *evl_net_get_dev_by_index(struct net *net, int ifindex)

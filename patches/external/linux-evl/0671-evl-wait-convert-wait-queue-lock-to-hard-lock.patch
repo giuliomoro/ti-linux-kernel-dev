@@ -1,7 +1,7 @@
 From be33f7d2fac5b67a8ea34c988b58ac262aa6dc83 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 671/985] evl/wait: convert wait queue lock to hard lock
+Subject: [PATCH 0671/1013] evl/wait: convert wait queue lock to hard lock
 
 Out-of-band IRQs and EVL thread contexts would usually compete for
 such lock, which would require hard irqs to be disabled while holding
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  11 files changed, 99 insertions(+), 101 deletions(-)
 
 diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
-index 974aaaa85..cca48c1b9 100644
+index 974aaaa853eb..cca48c1b9b24 100644
 --- a/drivers/gpio/gpiolib-cdev.c
 +++ b/drivers/gpio/gpiolib-cdev.c
 @@ -2125,11 +2125,11 @@ static irqreturn_t lineevent_oob_irq_handler(int irq, void *p)
@@ -76,7 +76,7 @@ index 974aaaa85..cca48c1b9 100644
  		if (ret) {
  			ret = raw_copy_to_user(buf, &ge, sizeof(ge));
 diff --git a/include/evl/device.h b/include/evl/device.h
-index afdddc27f..6c0478293 100644
+index afdddc27f48d..6c0478293433 100644
 --- a/include/evl/device.h
 +++ b/include/evl/device.h
 @@ -10,7 +10,6 @@
@@ -88,7 +88,7 @@ index afdddc27f..6c0478293 100644
  #include <evl/wait.h>
  #include <evl/poll.h>
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index 7f59406e8..230367752 100644
+index 7f59406e89ba..230367752e48 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -51,10 +51,10 @@ static inline bool evl_read_flag(struct evl_flag *wf)
@@ -105,7 +105,7 @@ index 7f59406e8..230367752 100644
  static inline
  int evl_wait_flag_timeout(struct evl_flag *wf,
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 813c8d5c4..36249910b 100644
+index 813c8d5c4026..36249910b7f6 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -11,7 +11,6 @@
@@ -169,7 +169,7 @@ index 813c8d5c4..36249910b 100644
  }
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index c4dd4accf..0f216aab4 100644
+index c4dd4accfa67..0f216aab4a19 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -80,7 +80,7 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)
@@ -290,7 +290,7 @@ index c4dd4accf..0f216aab4 100644
  	evl_spin_unlock_irqrestore(&gate->lock, flags);
  
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index e79041e5a..6f7c7365d 100644
+index e79041e5a749..6f7c7365d9e9 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -189,9 +189,9 @@ static int add_subscription(struct evl_observable *observable,
@@ -479,7 +479,7 @@ index e79041e5a..6f7c7365d 100644
  	return ret;
  }
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index f65e38493..b7942b750 100644
+index f65e384932d9..b7942b750c59 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -38,9 +38,9 @@ int evl_trydown(struct evl_ksem *ksem)
@@ -521,7 +521,7 @@ index f65e38493..b7942b750 100644
  }
  EXPORT_SYMBOL_GPL(evl_broadcast);
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index c7927e8b6..c20994aa3 100644
+index c7927e8b6a46..c20994aa3fc1 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -53,7 +53,7 @@ static int claim_stax_from_oob(struct evl_stax *stax, int gateval)
@@ -623,7 +623,7 @@ index c7927e8b6..c20994aa3 100644
  	evl_schedule();
  }
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index dd08ecd5f..96b798774 100644
+index dd08ecd5fd0a..96b7987747c7 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1451,7 +1451,7 @@ int activate_oob_mm_state(struct oob_mm_state *p)
@@ -671,7 +671,7 @@ index dd08ecd5f..96b798774 100644
  	return ret;
  }
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index b053adbae..b47b14ae4 100644
+index b053adbaeba3..b47b14ae45fa 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -18,11 +18,11 @@ void __evl_init_wait(struct evl_wait_queue *wq,
@@ -813,7 +813,7 @@ index b053adbae..b47b14ae4 100644
  					struct evl_thread, wait_next);
  }
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 9a2b7d6cb..135c81720 100644
+index 9a2b7d6cb940..135c81720e38 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -440,7 +440,7 @@ static unsigned long outbound_lock(struct xbuf_ring *ring)

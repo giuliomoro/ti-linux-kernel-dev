@@ -1,8 +1,8 @@
 From 009d4e4e1cbbb0be946da51579ceb0ef7d5fd36b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Mar 2025 09:05:39 +0100
-Subject: [PATCH 143/985] arm64: fpsimd: dovetail: fix build w/ CONFIG_DOVETAIL
- off (take #2)
+Subject: [PATCH 0143/1013] arm64: fpsimd: dovetail: fix build w/
+ CONFIG_DOVETAIL off (take #2)
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 deletion(-)
 
 diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index c10a9e981..429a67528 100644
+index c10a9e981a60..429a6752843b 100644
 --- a/arch/arm64/kernel/fpsimd.c
 +++ b/arch/arm64/kernel/fpsimd.c
 @@ -258,7 +258,6 @@ void fpsimd_restore_current_oob(void)

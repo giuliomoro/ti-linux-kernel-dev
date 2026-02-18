@@ -1,8 +1,8 @@
 From e9102f755ffebc70c3c7277784d10f2d8090064e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 09:16:34 +0200
-Subject: [PATCH 754/985] evl/poll: lockdep: force registration of dynamic lock
- class
+Subject: [PATCH 0754/1013] evl/poll: lockdep: force registration of dynamic
+ lock class
 
 Lockdep may register a lock class lazily at first lock acquisition,
 which might happen oob for us. Since that registration depends on RCU,
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index f0b7d6363..08bba4f4e 100644
+index f0b7d63634a6..08bba4f4efba 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -605,6 +605,7 @@ int wait_events(struct file *filp,

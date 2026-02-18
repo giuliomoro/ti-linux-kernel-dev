@@ -1,7 +1,7 @@
 From 00abc89fb1a32e8e5cfc963e996fa60b1d1fcd1a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Jun 2025 13:10:39 +0200
-Subject: [PATCH 184/985] igb: prevent wrong detection of oob page
+Subject: [PATCH 0184/1013] igb: prevent wrong detection of oob page
 
 igb_is_oob_page() may be called with no oob RX pool allocated, in
 which case both compared pointers can only be NULL. Make sure to
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
-index e280c24d4..a05825bc2 100644
+index e280c24d46d6..a05825bc25f8 100644
 --- a/drivers/net/ethernet/intel/igb/igb_main.c
 +++ b/drivers/net/ethernet/intel/igb/igb_main.c
 @@ -816,7 +816,8 @@ static void igb_create_oob_pool(struct igb_ring *ring)

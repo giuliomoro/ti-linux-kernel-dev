@@ -1,7 +1,7 @@
 From cc0e2882da06a7fc89775111c2a6b2edf35db129 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 15 Jun 2020 19:46:45 +0200
-Subject: [PATCH 635/985] drivers/evl: latmus: stop sampling timer at end of
+Subject: [PATCH 0635/1013] drivers/evl: latmus: stop sampling timer at end of
  measurement
 
 We need to stop the sampling timer as soon as the test sitter unblocks
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 37 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 0bc9263e6..3633d8460 100644
+index 0bc9263e63e4..3633d8460c9f 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -63,6 +63,7 @@ struct latmus_runner {

@@ -1,7 +1,7 @@
 From dca6c1d75d4347e88ff13fe69f60117bd63b4f1c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 26 Jul 2019 21:41:56 +0200
-Subject: [PATCH 456/985] evl/clock: reinstate fast forward on tick overrun
+Subject: [PATCH 0456/1013] evl/clock: reinstate fast forward on tick overrun
 
 This is still beneficial in some scenarii which have been observed
 lately, and may come for (almost) free with a proper placement of
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 3344dbe2b..8cc4320a9 100644
+index 3344dbe2bd21..8cc4320a9570 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -296,9 +296,9 @@ static void do_clock_tick(struct evl_clock *clock, struct evl_timerbase *tmb)

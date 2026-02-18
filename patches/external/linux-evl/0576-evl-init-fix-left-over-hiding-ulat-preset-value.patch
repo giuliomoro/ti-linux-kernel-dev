@@ -1,7 +1,7 @@
 From 20ec80523cdd85882ff4d6593944863f674c0ea5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Feb 2020 11:22:26 +0100
-Subject: [PATCH 576/985] evl/init: fix left over hiding ulat preset value
+Subject: [PATCH 0576/1013] evl/init: fix left over hiding ulat preset value
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index f96d878ab..e6b88439c 100644
+index f96d878abb81..e6b88439c158 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -1037,7 +1037,7 @@ static void get_default_gravity(struct evl_clock_gravity *p)

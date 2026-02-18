@@ -1,7 +1,7 @@
 From c4e28493f785df8cb643713fbe36f0fb4cd2d1ad Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 6 Apr 2019 11:31:53 +0200
-Subject: [PATCH 356/985] evl/thread: fix handling of self-directed ioctls
+Subject: [PATCH 0356/1013] evl/thread: fix handling of self-directed ioctls
 
 SWITCH_INBAND, SWITCH_OOB, SET_MODE and CLEAR_MODE requests only apply
 to the caller and are mode-sensitive. Enforce these rules.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 24 insertions(+), 18 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index bed564614..1db0e312b 100644
+index bed5646146bb..1db0e312b93f 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2108,19 +2108,39 @@ static long thread_oob_ioctl(struct file *filp, unsigned int cmd,

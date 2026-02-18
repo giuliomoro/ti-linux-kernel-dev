@@ -1,7 +1,7 @@
 From 6cf15128456eabe5a1327290b649b86cf8397311 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 27 Jan 2020 17:54:40 +0100
-Subject: [PATCH 567/985] evl/thread: fix locking imbalance for
+Subject: [PATCH 0567/1013] evl/thread: fix locking imbalance for
  INBAND_TASK_SCHEDULE
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 8d653c14a..77a98fca8 100644
+index 8d653c14a848..77a98fca8c9d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1554,9 +1554,10 @@ static void handle_schedule_event(struct task_struct *next_task)

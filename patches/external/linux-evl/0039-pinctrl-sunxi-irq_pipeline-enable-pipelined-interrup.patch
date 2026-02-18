@@ -1,7 +1,7 @@
 From f7eadebc4724830b351f33e56a36eeb31d7ed0a3 Mon Sep 17 00:00:00 2001
 From: leo <vtk-powerlab@yandex.ru>
 Date: Tue, 24 Dec 2019 19:14:08 +0100
-Subject: [PATCH 039/985] pinctrl/sunxi: irq_pipeline: enable pipelined
+Subject: [PATCH 0039/1013] pinctrl/sunxi: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/pinctrl/sunxi/pinctrl-sunxi.c b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
-index 8fbbdcc52..7b10fffe3 100644
+index 8fbbdcc52deb..7b10fffe3771 100644
 --- a/drivers/pinctrl/sunxi/pinctrl-sunxi.c
 +++ b/drivers/pinctrl/sunxi/pinctrl-sunxi.c
 @@ -1164,7 +1164,7 @@ static struct irq_chip sunxi_pinctrl_edge_irq_chip = {
@@ -34,7 +34,7 @@ index 8fbbdcc52..7b10fffe3 100644
  
  static int sunxi_pinctrl_irq_of_xlate(struct irq_domain *d,
 diff --git a/drivers/pinctrl/sunxi/pinctrl-sunxi.h b/drivers/pinctrl/sunxi/pinctrl-sunxi.h
-index a87a2f944..54f18a970 100644
+index a87a2f944d60..54f18a970085 100644
 --- a/drivers/pinctrl/sunxi/pinctrl-sunxi.h
 +++ b/drivers/pinctrl/sunxi/pinctrl-sunxi.h
 @@ -172,7 +172,7 @@ struct sunxi_pinctrl {

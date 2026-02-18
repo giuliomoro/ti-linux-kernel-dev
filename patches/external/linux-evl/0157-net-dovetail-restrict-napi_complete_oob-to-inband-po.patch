@@ -1,8 +1,8 @@
 From bced6e2e595cd3b3df7a96bfbad6e0b8821550a9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 27 Mar 2025 15:50:51 +0100
-Subject: [PATCH 157/985] net: dovetail: restrict napi_complete_oob() to inband
- polling completion
+Subject: [PATCH 0157/1013] net: dovetail: restrict napi_complete_oob() to
+ inband polling completion
 
 napi_complete_oob() is called by napi_complete_done() to start
 processing the ingress packets received from a device which is not
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 116f98b73..b52a4ac43 100644
+index 116f98b73221..b52a4ac43606 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -5292,6 +5292,12 @@ bool netif_receive_oob(struct sk_buff *skb)

@@ -1,7 +1,7 @@
 From 599043c73d7a073c9624df8d517b2c920cacdf00 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 10:18:46 +0200
-Subject: [PATCH 495/985] evl/monitor: fix event poller notification upon
+Subject: [PATCH 0495/1013] evl/monitor: fix event poller notification upon
  wakeup
 
 Do not assume event->next is always available for maintaining the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index fd1c2e126..a1868e175 100644
+index fd1c2e126e77..a1868e175d18 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -38,6 +38,7 @@ struct evl_monitor {

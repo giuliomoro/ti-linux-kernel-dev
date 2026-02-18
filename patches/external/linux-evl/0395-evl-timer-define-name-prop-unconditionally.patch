@@ -1,7 +1,7 @@
 From baaf21c58e09a11b01b39ac62a5e8f8d94f9a06b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 7 Jun 2019 15:39:40 +0200
-Subject: [PATCH 395/985] evl/timer: define name prop unconditionally
+Subject: [PATCH 0395/1013] evl/timer: define name prop unconditionally
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 23 insertions(+), 49 deletions(-)
 
 diff --git a/include/evl/timer.h b/include/evl/timer.h
-index 63e55fa6c..ae9ce2332 100644
+index 63e55fa6ce13..ae9ce2332ab9 100644
 --- a/include/evl/timer.h
 +++ b/include/evl/timer.h
 @@ -140,35 +140,21 @@ evl_this_cpu_timers(struct evl_clock *clock)
@@ -119,7 +119,7 @@ index 63e55fa6c..ae9ce2332 100644
  	evl_init_timer(__timer, &evl_mono_clock, __handler, NULL,	\
  		EVL_TIMER_IGRAVITY)
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 9d245c6f7..b6172a7ab 100644
+index 9d245c6f7415..b6172a7ab75d 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -642,16 +642,18 @@ TRACE_EVENT(evl_timer_bolt,
@@ -173,7 +173,7 @@ index 9d245c6f7..b6172a7ab 100644
  
  DEFINE_EVENT(wq_event, evl_wait,
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index d6ac666d5..7ff0b513f 100644
+index d6ac666d5b11..7ff0b513f1e8 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -344,11 +344,8 @@ void __evl_init_timer(struct evl_timer *timer,

@@ -1,7 +1,7 @@
 From 66a18fbbc04303b0bf347b46e471c8fc275914f6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Mar 2019 20:20:51 +0100
-Subject: [PATCH 329/985] evl/timerfd: merge into clock support as a
+Subject: [PATCH 0329/1013] evl/timerfd: merge into clock support as a
  sub-function
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  delete mode 100644 kernel/evenless/timerfd.c
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index adcccffe3..d1b660a46 100644
+index adcccffe344c..d1b660a46a70 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -152,7 +152,6 @@ extern struct evl_factory evl_control_factory;
@@ -31,7 +31,7 @@ index adcccffe3..d1b660a46 100644
  extern struct evl_factory evl_xbuf_factory;
  extern struct evl_factory evl_proxy_factory;
 diff --git a/include/uapi/evenless/clock.h b/include/uapi/evenless/clock.h
-index ecc571c75..61396ca41 100644
+index ecc571c756b7..61396ca411c8 100644
 --- a/include/uapi/evenless/clock.h
 +++ b/include/uapi/evenless/clock.h
 @@ -22,5 +22,23 @@ struct evl_clock_sleepreq {
@@ -60,7 +60,7 @@ index ecc571c75..61396ca41 100644
  #endif /* !_EVENLESS_UAPI_CLOCK_H */
 diff --git a/include/uapi/evenless/timerfd.h b/include/uapi/evenless/timerfd.h
 deleted file mode 100644
-index 65a4e72fd..000000000
+index 65a4e72fdcbc..000000000000
 --- a/include/uapi/evenless/timerfd.h
 +++ /dev/null
 @@ -1,31 +0,0 @@
@@ -96,7 +96,7 @@ index 65a4e72fd..000000000
 -
 -#endif /* !_EVENLESS_UAPI_TIMERFD_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 08f85a02c..4454e7a69 100644
+index 08f85a02ce72..4454e7a69b9e 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -99,15 +99,6 @@ config EVENLESS_NR_CLOCKS
@@ -116,7 +116,7 @@ index 08f85a02c..4454e7a69 100644
  	int "Maximum number of x-buffers"
  	range 1 16384
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 7c276dc08..084a791b0 100644
+index 7c276dc08a64..084a791b0147 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -20,7 +20,6 @@ evenless-y :=		\
@@ -128,7 +128,7 @@ index 7c276dc08..084a791b0 100644
  	xbuf.o
  
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
-index 8c33a290c..dfe50b62e 100644
+index 8c33a290c991..dfe50b62e487 100644
 --- a/kernel/evenless/clock.c
 +++ b/kernel/evenless/clock.c
 @@ -18,10 +18,14 @@
@@ -408,7 +408,7 @@ index 8c33a290c..dfe50b62e 100644
  
  static const struct file_operations clock_fops = {
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 7e6c35047..641551f43 100644
+index 7e6c350474a7..641551f43a93 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -35,7 +35,6 @@ static struct evl_factory *factories[] = {
@@ -421,7 +421,7 @@ index 7e6c35047..641551f43 100644
  	&evl_proxy_factory,
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
 deleted file mode 100644
-index fc0b56a3b..000000000
+index fc0b56a3b9ec..000000000000
 --- a/kernel/evenless/timerfd.c
 +++ /dev/null
 @@ -1,266 +0,0 @@

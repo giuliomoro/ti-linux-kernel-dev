@@ -1,7 +1,7 @@
 From 04d75b7c8149fc9b0bbf9d06f39dbd89704218d9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 2 Feb 2024 16:47:44 +0100
-Subject: [PATCH 113/985] net: dovetail: reinstate socket release hook
+Subject: [PATCH 0113/1013] net: dovetail: reinstate socket release hook
 
 Now that we won't trigger any use-after-free by spuriously
 dereferencing the potentially stale sock->sk struct anymore, we can
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/net/socket.c b/net/socket.c
-index 1c9171cc4..6609bade0 100644
+index 1c9171cc4807..6609bade0eb5 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -158,6 +158,10 @@ int __weak sock_oob_attach(struct socket *sock)

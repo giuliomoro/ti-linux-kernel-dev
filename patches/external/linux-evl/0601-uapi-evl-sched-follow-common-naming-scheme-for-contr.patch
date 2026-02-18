@@ -1,7 +1,7 @@
 From 2c2b6b6bbc46fb78ead3b6308da69efe6a9b43cc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 12:56:33 +0200
-Subject: [PATCH 601/985] uapi/evl: sched: follow common naming scheme for
+Subject: [PATCH 0601/1013] uapi/evl: sched: follow common naming scheme for
  control ops
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/include/uapi/evl/sched.h b/include/uapi/evl/sched.h
-index 549aa86de..4b5440527 100644
+index 549aa86de78f..4b544052798d 100644
 --- a/include/uapi/evl/sched.h
 +++ b/include/uapi/evl/sched.h
 @@ -77,11 +77,11 @@ struct __evl_tp_window {
@@ -32,7 +32,7 @@ index 549aa86de..4b5440527 100644
  
  struct evl_tp_ctlparam {
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 2d5a0444d..73a2ea6b2 100644
+index 2d5a0444d847..73a2ea6b2e56 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -329,22 +329,22 @@ static int tp_control(int cpu, union evl_sched_ctlparam *ctlp,

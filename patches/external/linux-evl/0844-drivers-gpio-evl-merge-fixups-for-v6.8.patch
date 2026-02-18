@@ -1,7 +1,7 @@
 From cc2aafdb3a9b03708ac53b0c7696b05e9916ad0c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Mar 2024 19:45:05 +0100
-Subject: [PATCH 844/985] drivers/gpio: evl: merge fixups for v6.8
+Subject: [PATCH 0844/1013] drivers/gpio: evl: merge fixups for v6.8
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
-index adec20c0c..a87bedd9f 100644
+index adec20c0c3bd..a87bedd9fc70 100644
 --- a/drivers/gpio/gpiolib-cdev.c
 +++ b/drivers/gpio/gpiolib-cdev.c
 @@ -2113,6 +2113,30 @@ static ssize_t lineevent_read(struct file *file, char __user *buf,

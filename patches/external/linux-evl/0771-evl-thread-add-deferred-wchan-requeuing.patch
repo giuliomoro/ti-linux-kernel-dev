@@ -1,7 +1,7 @@
 From 898e9ba56b85f8ff3aff3359c1e9f247899a6db8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 29 Oct 2022 17:58:28 +0200
-Subject: [PATCH 771/985] evl/thread: add deferred wchan requeuing
+Subject: [PATCH 0771/1013] evl/thread: add deferred wchan requeuing
 
 Changing the priority and/or scheduling policy a thread undergoes
 requires to requeue it in the wait channel it may be pending on at the
@@ -41,7 +41,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  9 files changed, 352 insertions(+), 279 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 3be0f7e81..045db8db3 100644
+index 3be0f7e81c83..045db8db328b 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -30,13 +30,6 @@ struct evl_thread;
@@ -67,7 +67,7 @@ index 3be0f7e81..045db8db3 100644
 -
  #endif /* !_EVL_MUTEX_H */
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 279ef6442..7bba6903c 100644
+index 279ef6442b43..7bba6903c6ed 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -386,6 +386,12 @@ static inline bool evl_cannot_block(void)
@@ -110,7 +110,7 @@ index 279ef6442..7bba6903c 100644
  				       int prio);
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index f2f2f09ff..24350bf97 100644
+index f2f2f09ff46d..24350bf9780b 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -21,6 +21,7 @@
@@ -148,7 +148,7 @@ index f2f2f09ff..24350bf97 100644
  
  void evl_discard_thread(struct evl_thread *thread);
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 6667b786d..d1c1f9296 100644
+index 6667b786d4d5..d1c1f92966e5 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -31,6 +31,13 @@ struct evl_wait_channel {
@@ -178,7 +178,7 @@ index 6667b786d..d1c1f9296 100644
 +
  #endif /* !_EVL_WAIT_H_ */
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 8aec520a6..2dbe7f77f 100644
+index 8aec520a6652..2dbe7f77fef2 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -44,7 +44,7 @@
@@ -191,7 +191,7 @@ index 8aec520a6..2dbe7f77f 100644
  #define T_CANCELD 0x00000040 /* Cancellation request is pending */
  #define T_PIALERT 0x00000080 /* Priority inversion alert (HM notified) */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 6808e1ecc..02ab80c38 100644
+index 6808e1eccd18..02ab80c38010 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -19,25 +19,6 @@
@@ -538,7 +538,7 @@ index 6808e1ecc..02ab80c38 100644
  		return;
  	}
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 191a94cf6..01387e32b 100644
+index 191a94cf6c2b..01387e32b92d 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -264,6 +264,7 @@ void evl_double_rq_unlock(struct evl_rq *rq1, struct evl_rq *rq2)
@@ -621,7 +621,7 @@ index 191a94cf6..01387e32b 100644
  		evl_commit_monitor_ceiling();
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index e43250186..4a3c6b5bb 100644
+index e43250186bf8..4a3c6b5bb941 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -152,6 +152,10 @@ static void pin_to_initial_cpu(struct evl_thread *thread)
@@ -716,7 +716,7 @@ index e43250186..4a3c6b5bb 100644
  	return ret;
  }
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index e00307e4a..309b22bb9 100644
+index e00307e4a9f2..309b22bb958c 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -275,3 +275,221 @@ struct evl_thread *evl_wait_head(struct evl_wait_queue *wq)

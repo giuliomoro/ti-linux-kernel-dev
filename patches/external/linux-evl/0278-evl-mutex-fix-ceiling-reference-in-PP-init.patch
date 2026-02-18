@@ -1,7 +1,7 @@
 From a456b67eff5f80a345adaabe7db40b483b96df87 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 9 Feb 2019 11:10:14 +0100
-Subject: [PATCH 278/985] evl/mutex: fix ceiling reference in PP init
+Subject: [PATCH 0278/1013] evl/mutex: fix ceiling reference in PP init
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index 989d8c2cf..183453f9b 100644
+index 989d8c2cf4a4..183453f9b129 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -311,7 +311,7 @@ static void init_mutex(struct evl_mutex *mutex,

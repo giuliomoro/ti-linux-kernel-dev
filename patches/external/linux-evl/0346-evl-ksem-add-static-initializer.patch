@@ -1,7 +1,7 @@
 From 5d726ed68238a4630618d1d9fba5fabca85b98be Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 17 Mar 2019 15:51:27 +0100
-Subject: [PATCH 346/985] evl/ksem: add static initializer
+Subject: [PATCH 0346/1013] evl/ksem: add static initializer
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 20 insertions(+), 20 deletions(-)
 
 diff --git a/include/evl/sem.h b/include/evl/sem.h
-index 11b82e9f8..99bec2d58 100644
+index 11b82e9f809e..99bec2d587f4 100644
 --- a/include/evl/sem.h
 +++ b/include/evl/sem.h
 @@ -11,14 +11,27 @@
@@ -46,7 +46,7 @@ index 11b82e9f8..99bec2d58 100644
  int evl_down_timeout(struct evl_ksem *ksem,
  		ktime_t timeout);
 diff --git a/kernel/evl/sem.c b/kernel/evl/sem.c
-index 10f316575..43c7b38d8 100644
+index 10f316575d14..43c7b38d865c 100644
 --- a/kernel/evl/sem.c
 +++ b/kernel/evl/sem.c
 @@ -10,19 +10,6 @@

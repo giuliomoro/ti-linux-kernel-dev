@@ -1,7 +1,7 @@
 From 0c30458afc38ef344252f7b28cbe08167ef09d4a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 1 Jul 2019 11:01:16 +0200
-Subject: [PATCH 431/985] evl/timerfd: enable get/set from in-band context
+Subject: [PATCH 0431/1013] evl/timerfd: enable get/set from in-band context
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index c8ab6a688..6d97fed08 100644
+index c8ab6a68888d..6d97fed08b78 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -606,8 +606,8 @@ static bool read_timerfd_event(struct evl_timerfd *timerfd)

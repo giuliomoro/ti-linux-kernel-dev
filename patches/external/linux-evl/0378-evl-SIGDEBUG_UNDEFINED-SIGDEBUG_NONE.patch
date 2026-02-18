@@ -1,7 +1,7 @@
 From ac485e1de0256678caecbd5374c1763b90344262 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 21 May 2019 07:58:27 +0200
-Subject: [PATCH 378/985] evl: SIGDEBUG_UNDEFINED -> SIGDEBUG_NONE
+Subject: [PATCH 0378/1013] evl: SIGDEBUG_UNDEFINED -> SIGDEBUG_NONE
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 13 insertions(+), 13 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 8c781ab4e..153002f74 100644
+index 8c781ab4e8ca..153002f74039 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -500,9 +500,9 @@ DEFINE_EVENT(curr_thread_event, evl_switched_oob,
@@ -28,7 +28,7 @@ index 8c781ab4e..153002f74 100644
  			 { SIGDEBUG_MIGRATE_SYSCALL,	"syscall" },	\
  			 { SIGDEBUG_MIGRATE_FAULT,	"fault" })
 diff --git a/include/uapi/evl/signal.h b/include/uapi/evl/signal.h
-index e98759c80..e422ab80d 100644
+index e98759c80590..e422ab80d5f3 100644
 --- a/include/uapi/evl/signal.h
 +++ b/include/uapi/evl/signal.h
 @@ -25,7 +25,7 @@
@@ -41,7 +41,7 @@ index e98759c80..e422ab80d 100644
  #define SIGDEBUG_MIGRATE_SYSCALL	2
  #define SIGDEBUG_MIGRATE_FAULT		3
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 59da6c6cd..d22604dd5 100644
+index 59da6c6cd757..d22604dd5dee 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -60,7 +60,7 @@ static void prepare_for_signal(struct task_struct *p,
@@ -72,7 +72,7 @@ index 59da6c6cd..d22604dd5 100644
  done:
  	curr->local_info &= ~T_HICCUP;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index e929524b2..a3ae619d1 100644
+index e929524b2454..a3ae619d1f9e 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -709,7 +709,7 @@ void evl_switch_inband(int cause)

@@ -1,7 +1,7 @@
 From df229877b5715039ad34a756cace6bc10c084bfd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 18 Mar 2019 16:11:30 +0100
-Subject: [PATCH 350/985] evl/assert: fix SMP build
+Subject: [PATCH 0350/1013] evl/assert: fix SMP build
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/include/evl/assert.h b/include/evl/assert.h
-index 1eecf6ca8..261942a59 100644
+index 1eecf6ca8985..261942a59b5b 100644
 --- a/include/evl/assert.h
 +++ b/include/evl/assert.h
 @@ -28,8 +28,7 @@

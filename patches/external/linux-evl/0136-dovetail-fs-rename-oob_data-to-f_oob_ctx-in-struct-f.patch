@@ -1,8 +1,8 @@
 From 9216caf1a7610d0f4c66a27e90f2db302b8529fd Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Jan 2025 18:13:47 +0100
-Subject: [PATCH 136/985] dovetail: fs: rename oob_data to f_oob_ctx in struct
- file
+Subject: [PATCH 0136/1013] dovetail: fs: rename oob_data to f_oob_ctx in
+ struct file
 
 The notion of "oob data" is used across several kernel subsystems,
 particularly in the networking area. Dovetail's notion of out-of-band
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index bb0b1e433..78108527b 100644
+index bb0b1e433b38..78108527b2c1 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -1067,7 +1067,9 @@ struct file {

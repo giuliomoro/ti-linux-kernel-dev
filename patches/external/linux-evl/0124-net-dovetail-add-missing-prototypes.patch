@@ -1,7 +1,7 @@
 From e71322260041acd98ca93453e41f5cbe06266ae6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 23 Sep 2024 12:22:41 +0200
-Subject: [PATCH 124/985] net: dovetail: add missing prototypes
+Subject: [PATCH 0124/1013] net: dovetail: add missing prototypes
 
 At this chance, remove unused weak function leftovers.
 
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 39 insertions(+), 9 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index ef54c1173..22bf5382d 100644
+index ef54c11731f5..22bf5382dc4d 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4426,6 +4426,9 @@ bool netif_deliver_oob(struct sk_buff *skb);
@@ -29,7 +29,7 @@ index ef54c1173..22bf5382d 100644
  static inline void netdev_set_oob_capable(struct net_device *dev)
  {
 diff --git a/include/net/route.h b/include/net/route.h
-index 8a11d19f8..8d3687b91 100644
+index 8a11d19f897b..8d3687b91b40 100644
 --- a/include/net/route.h
 +++ b/include/net/route.h
 @@ -406,4 +406,9 @@ static inline struct neighbour *ip_neigh_for_gw(struct rtable *rt,
@@ -43,7 +43,7 @@ index 8a11d19f8..8d3687b91 100644
 +
  #endif	/* _ROUTE_H */
 diff --git a/include/net/sock.h b/include/net/sock.h
-index 7d4093d83..1d752ac8c 100644
+index 7d4093d83cf8..1d752ac8c83f 100644
 --- a/include/net/sock.h
 +++ b/include/net/sock.h
 @@ -1811,14 +1811,39 @@ static inline bool sock_oob_capable(struct socket *sock)
@@ -88,7 +88,7 @@ index 7d4093d83..1d752ac8c 100644
  		sock_oob_destroy(sk);
  }
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index c5dd6a584..26939e405 100644
+index c5dd6a584158..26939e405221 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -587,9 +587,6 @@ EXPORT_SYMBOL(sysctl_max_oob_skb);
@@ -111,7 +111,7 @@ index c5dd6a584..26939e405 100644
  	struct skbuff_oob_pool *c = &skbuff_oob_pool;
  	unsigned int n, max_skbs;
 diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index ff43d4cc6..cb3b1eb29 100644
+index ff43d4cc61a7..cb3b1eb29c73 100644
 --- a/net/ipv4/route.c
 +++ b/net/ipv4/route.c
 @@ -2880,12 +2880,12 @@ struct dst_entry *ipv4_blackhole_route(struct net *net, struct dst_entry *dst_or

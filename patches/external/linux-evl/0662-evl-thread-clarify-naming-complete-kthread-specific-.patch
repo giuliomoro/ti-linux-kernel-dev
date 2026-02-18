@@ -1,8 +1,8 @@
 From 2fd6caf04a464a98fe9fd6ad7eec33750a064aa7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 17 Dec 2020 11:28:09 +0100
-Subject: [PATCH 662/985] evl/thread: clarify naming, complete kthread-specific
- interface
+Subject: [PATCH 0662/1013] evl/thread: clarify naming, complete
+ kthread-specific interface
 
 By convention, all thread-related calls which implicitly affect
 current and therefore do not take any @thread parameter should use a
@@ -29,7 +29,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 49 insertions(+), 35 deletions(-)
 
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index 7e2cd9556..134e29109 100644
+index 7e2cd9556fcb..134e29109a21 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -455,20 +455,20 @@ void kthread_handler(struct evl_kthread *kthread)
@@ -59,7 +59,7 @@ index 7e2cd9556..134e29109 100644
  			}
  		}
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index cbca3eaf4..40b14418e 100644
+index cbca3eaf4f1c..40b14418ea76 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -158,14 +158,6 @@ struct evl_thread {
@@ -158,7 +158,7 @@ index cbca3eaf4..40b14418e 100644
  
  #endif /* !_EVL_THREAD_H */
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index dc7119d35..8df773ea9 100644
+index dc7119d352ee..8df773ea9bd6 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -491,7 +491,7 @@ static int clock_sleep(struct evl_clock *clock,
@@ -171,7 +171,7 @@ index dc7119d35..8df773ea9 100644
  		return 0;
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 979bff2e5..354f58e2b 100644
+index 979bff2e526d..354f58e2b650 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -777,8 +777,8 @@ ktime_t evl_get_thread_period(struct evl_thread *thread)

@@ -1,7 +1,7 @@
 From 4c2fb0a4d249fe587235ef84a70d19450e7d6f8c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 20 Jun 2019 14:52:59 +0200
-Subject: [PATCH 411/985] evl/poll: better align with epoll() interface
+Subject: [PATCH 0411/1013] evl/poll: better align with epoll() interface
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 16 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index c118af3cc..f2e4d62fd 100644
+index c118af3cc9a2..f2e4d62fd49c 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -149,7 +149,7 @@ static int check_no_loop_deeper(struct poll_group *origin,

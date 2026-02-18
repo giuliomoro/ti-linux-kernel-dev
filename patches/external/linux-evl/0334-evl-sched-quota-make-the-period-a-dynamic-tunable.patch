@@ -1,7 +1,7 @@
 From 80ee0904b32320c040256205e07aff168493515f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 Mar 2019 12:27:04 +0100
-Subject: [PATCH 334/985] evl/sched: quota: make the period a dynamic tunable
+Subject: [PATCH 0334/1013] evl/sched: quota: make the period a dynamic tunable
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 57 insertions(+), 16 deletions(-)
 
 diff --git a/include/evenless/sched/quota.h b/include/evenless/sched/quota.h
-index 259ced3c3..2eea3555b 100644
+index 259ced3c318f..2eea3555b414 100644
 --- a/include/evenless/sched/quota.h
 +++ b/include/evenless/sched/quota.h
 @@ -70,6 +70,10 @@ evl_quota_find_group(struct evl_rq *rq, int tgid);
@@ -27,7 +27,7 @@ index 259ced3c3..2eea3555b 100644
  
  #endif /* !_EVENLESS_SCHED_QUOTA_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 4e832e2dd..d14a709a0 100644
+index 4e832e2dd6e6..d14a709a0e6a 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -12,24 +12,10 @@ config EVENLESS_SCHED_QUOTA
@@ -57,7 +57,7 @@ index 4e832e2dd..d14a709a0 100644
  	bool "Runtime statistics"
  	default y
 diff --git a/kernel/evenless/control.c b/kernel/evenless/control.c
-index 228338da7..687ebc369 100644
+index 228338da7cc7..687ebc36978b 100644
 --- a/kernel/evenless/control.c
 +++ b/kernel/evenless/control.c
 @@ -257,9 +257,48 @@ static ssize_t abi_show(struct device *dev,
@@ -110,7 +110,7 @@ index 228338da7..687ebc369 100644
  };
  ATTRIBUTE_GROUPS(control);
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
-index bc96bd771..94c1d4cf4 100644
+index bc96bd7713c3..94c1d4cf4cd1 100644
 --- a/kernel/evenless/sched/quota.c
 +++ b/kernel/evenless/sched/quota.c
 @@ -55,6 +55,8 @@

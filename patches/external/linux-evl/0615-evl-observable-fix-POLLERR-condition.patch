@@ -1,7 +1,7 @@
 From 32a164846f77d36eca70ca46cd14bf6eaaccf017 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 May 2020 19:39:19 +0200
-Subject: [PATCH 615/985] evl/observable: fix POLLERR condition
+Subject: [PATCH 0615/1013] evl/observable: fix POLLERR condition
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/observable.c b/kernel/evl/observable.c
-index 9cf53c774..78e8ab9a6 100644
+index 9cf53c774c47..78e8ab9a6650 100644
 --- a/kernel/evl/observable.c
 +++ b/kernel/evl/observable.c
 @@ -940,10 +940,9 @@ static __poll_t poll_observable(struct evl_observable *observable)

@@ -1,7 +1,7 @@
 From 240cb9f9ee7df94df5fccc94102b0fd09d2c662a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 21 Oct 2022 11:09:06 +0200
-Subject: [PATCH 765/985] evl/mutex: fix lock imbalance detection
+Subject: [PATCH 0765/1013] evl/mutex: fix lock imbalance detection
 
 Depending on the caller to undergo the SCHED_WEAK policy for checking
 for lock imbalance excludes the common case when threads don't.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 09cb7f9cf..ba59debfd 100644
+index 09cb7f9cf80a..ba59debfd986 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -64,19 +64,13 @@ static inline void disable_inband_switch(struct evl_thread *curr)

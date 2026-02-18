@@ -1,7 +1,7 @@
 From 2fee59132653f2e79f252ec5055bf5d8e5b1cee7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Sep 2020 19:56:28 +0200
-Subject: [PATCH 648/985] evl/sched: fifo: drop rq rotation handler
+Subject: [PATCH 0648/1013] evl/sched: fifo: drop rq rotation handler
 
 There is no user for this one.
 
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 37 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 05f6250a8..4d32a03e2 100644
+index 05f6250a81de..4d32a03e2220 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -121,8 +121,6 @@ struct evl_sched_class {
@@ -40,7 +40,7 @@ index 05f6250a8..4d32a03e2 100644
  {
  	int ret = 0;
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index c4ddc0572..2b97777f5 100644
+index c4ddc0572bdc..2b97777f544d 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -12,31 +12,6 @@ static void evl_fifo_init(struct evl_rq *rq)

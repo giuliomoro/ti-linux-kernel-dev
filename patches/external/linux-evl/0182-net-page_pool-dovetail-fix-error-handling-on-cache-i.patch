@@ -1,8 +1,8 @@
 From 92a775d57e0f6ca64684551ad3e646b0fe289a3d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 16:27:01 +0200
-Subject: [PATCH 182/985] net/page_pool: dovetail: fix error handling on cache
- init failure
+Subject: [PATCH 0182/1013] net/page_pool: dovetail: fix error handling on
+ cache init failure
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index 72a3c18d7..df8e28940 100644
+index 72a3c18d7f3f..df8e28940b8f 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -602,11 +602,11 @@ static int page_pool_init_cache(struct page_pool *pool)

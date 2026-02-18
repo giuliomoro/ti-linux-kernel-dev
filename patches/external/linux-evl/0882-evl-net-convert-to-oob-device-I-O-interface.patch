@@ -1,7 +1,7 @@
 From 10119aa75909d86dbf98c10a8f91b0ddcc32794e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 15:38:45 +0100
-Subject: [PATCH 882/985] evl/net: convert to oob device I/O interface
+Subject: [PATCH 0882/1013] evl/net: convert to oob device I/O interface
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  12 files changed, 447 insertions(+), 412 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index 345b3dd24..45f32cf90 100644
+index 345b3dd245bc..45f32cf90c60 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -6,9 +6,11 @@
@@ -103,7 +103,7 @@ index 345b3dd24..45f32cf90 100644
  
  #endif /* !_ASM_GENERIC_EVL_NETDEVICE_H */
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index b747c94ad..a44c3a682 100644
+index b747c94adc96..a44c3a682988 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -21,8 +21,6 @@ struct iovec;
@@ -127,7 +127,7 @@ index b747c94ad..a44c3a682 100644
 -
  #endif /* !_EVL_NET_SKB_H */
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index a3c01a57d..d13f7306e 100644
+index a3c01a57dcd8..d13f7306e595 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -40,22 +40,22 @@
@@ -320,7 +320,7 @@ index a3c01a57d..d13f7306e 100644
  	}
  
 diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
-index c4bc0f4e8..c05076691 100644
+index c4bc0f4e829f..c05076691dba 100644
 --- a/kernel/evl/net/ethernet/output.c
 +++ b/kernel/evl/net/ethernet/output.c
 @@ -28,7 +28,7 @@ int evl_net_ether_transmit_raw(struct net_device *dev, struct sk_buff *skb)
@@ -333,7 +333,7 @@ index c4bc0f4e8..c05076691 100644
  
  	netdev_dbg(dev, "transmitting %px\n", skb);
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index e876ec4c1..d9cf22866 100644
+index e876ec4c1cb7..d9cf22866ceb 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -19,9 +19,69 @@
@@ -519,7 +519,7 @@ index e876ec4c1..d9cf22866 100644
 -	evl_raise_flag(&est->rx_flag);
 -}
 diff --git a/kernel/evl/net/ipv4/arp.c b/kernel/evl/net/ipv4/arp.c
-index fba7d0bb0..8b60cc5e1 100644
+index fba7d0bb075a..8b60cc5e19f7 100644
 --- a/kernel/evl/net/ipv4/arp.c
 +++ b/kernel/evl/net/ipv4/arp.c
 @@ -121,14 +121,14 @@ static void update_arp_cache(struct neighbour *neigh) /* in-band */
@@ -549,7 +549,7 @@ index fba7d0bb0..8b60cc5e1 100644
  		if (neigh->dead || neigh->nud_state & (NUD_FAILED|NUD_STALE))
  			uncache_arp_entry(cache, neigh);
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 429787cc1..f08e54175 100644
+index 429787cc12dd..f08e5417526b 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -204,7 +204,7 @@ static bool find_egress_path(struct evl_socket *esk, __be32 daddr,
@@ -582,7 +582,7 @@ index 429787cc1..f08e54175 100644
  	sum -= check;
  	if (!sum && skb->ip_summed == CHECKSUM_COMPLETE)
 diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
-index 5f0ec61b5..4998f627f 100644
+index 5f0ec61b5940..4998f627fad0 100644
 --- a/kernel/evl/net/net.c
 +++ b/kernel/evl/net/net.c
 @@ -50,10 +50,6 @@ int __init evl_net_init(void)
@@ -636,7 +636,7 @@ index 5f0ec61b5..4998f627f 100644
  	&dev_attr_arp.attr,
  	NULL,
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index cd3a95edc..279aaedd0 100644
+index cd3a95edc14b..279aaedd0519 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -99,21 +99,23 @@ static void skb_xmit_inband(struct sk_buff *skb)
@@ -720,7 +720,7 @@ index cd3a95edc..279aaedd0 100644
  {
  	struct evl_net_skb_queue *txq;
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 99a5f6d00..7a134101b 100644
+index 99a5f6d00bd2..7a134101b838 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -155,7 +155,6 @@ static bool packet_deliver(struct sk_buff *skb, int protocol) /* oob */
@@ -785,7 +785,7 @@ index 99a5f6d00..7a134101b 100644
  	}
  
 diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
-index 0cb5cfdbf..6bfd3c144 100644
+index 0cb5cfdbfba8..6bfd3c144655 100644
 --- a/kernel/evl/net/qdisc/core.c
 +++ b/kernel/evl/net/qdisc/core.c
 @@ -72,9 +72,6 @@ int evl_net_sched_packet(struct net_device *dev, struct sk_buff *skb) /* oob/in-
@@ -799,7 +799,7 @@ index 0cb5cfdbf..6bfd3c144 100644
  }
  
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 3c2cfb89b..2d7c7213f 100644
+index 3c2cfb89b790..2d7c7213f864 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -10,96 +10,60 @@

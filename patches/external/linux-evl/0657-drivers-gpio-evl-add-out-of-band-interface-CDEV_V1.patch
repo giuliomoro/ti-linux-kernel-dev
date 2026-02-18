@@ -1,7 +1,7 @@
 From 2dfd09695b57ab46a17fa9e785f22054239a7e5b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 15 Nov 2020 12:08:30 +0100
-Subject: [PATCH 657/985] drivers/gpio: evl: add out-of-band interface
+Subject: [PATCH 0657/1013] drivers/gpio: evl: add out-of-band interface
  (CDEV_V1)
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 include/uapi/evl/devices/gpio.h
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index d93cd4f72..e390e4ca5 100644
+index d93cd4f722b4..e390e4ca5feb 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
 @@ -47,6 +47,16 @@ config OF_GPIO_MM_GPIOCHIP
@@ -38,7 +38,7 @@ index d93cd4f72..e390e4ca5 100644
  	bool "Debug GPIO calls"
  	depends on DEBUG_KERNEL
 diff --git a/drivers/gpio/gpiolib-cdev.c b/drivers/gpio/gpiolib-cdev.c
-index 78c9d9ed3..974aaaa85 100644
+index 78c9d9ed3d68..974aaaa853eb 100644
 --- a/drivers/gpio/gpiolib-cdev.c
 +++ b/drivers/gpio/gpiolib-cdev.c
 @@ -31,6 +31,7 @@
@@ -470,7 +470,7 @@ index 78c9d9ed3..974aaaa85 100644
  	put_unused_fd(fd);
  out_free_le:
 diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 209871c21..996af98fa 100644
+index 209871c219d6..996af98fa7ce 100644
 --- a/drivers/gpio/gpiolib.c
 +++ b/drivers/gpio/gpiolib.c
 @@ -3532,6 +3532,78 @@ int gpiod_set_array_value_complex(bool raw, bool can_sleep,
@@ -553,7 +553,7 @@ index 209871c21..996af98fa 100644
   * gpiod_set_raw_value() - assign a gpio's raw value
   * @desc: gpio whose value will be assigned
 diff --git a/drivers/gpio/gpiolib.h b/drivers/gpio/gpiolib.h
-index 87ce37535..3e67c687c 100644
+index 87ce3753500e..3e67c687c6c6 100644
 --- a/drivers/gpio/gpiolib.h
 +++ b/drivers/gpio/gpiolib.h
 @@ -150,6 +150,17 @@ int gpiod_set_array_value_complex(bool raw, bool can_sleep,
@@ -576,7 +576,7 @@ index 87ce37535..3e67c687c 100644
  struct gpio_desc_label {
 diff --git a/include/evl/devices/gpio.h b/include/evl/devices/gpio.h
 new file mode 100644
-index 000000000..06d03464f
+index 000000000000..06d03464ff68
 --- /dev/null
 +++ b/include/evl/devices/gpio.h
 @@ -0,0 +1,38 @@
@@ -620,7 +620,7 @@ index 000000000..06d03464f
 +#endif /* !_EVL_DEVICES_GPIO_H */
 diff --git a/include/uapi/evl/devices/gpio.h b/include/uapi/evl/devices/gpio.h
 new file mode 100644
-index 000000000..06e43fbe8
+index 000000000000..06e43fbe8263
 --- /dev/null
 +++ b/include/uapi/evl/devices/gpio.h
 @@ -0,0 +1,10 @@

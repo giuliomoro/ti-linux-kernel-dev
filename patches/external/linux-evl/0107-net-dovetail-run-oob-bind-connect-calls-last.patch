@@ -1,7 +1,7 @@
 From 9d73fe28c08e2be6d6acba2e2f76ca226c0fd2b4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 6 Nov 2023 10:39:48 +0100
-Subject: [PATCH 107/985] net: dovetail: run oob bind+connect calls last
+Subject: [PATCH 0107/1013] net: dovetail: run oob bind+connect calls last
 
 Out-of-band handlers for bind() and connect() may want to reuse some
 information determined by the in-band handlers, so let's invert the
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/net/socket.c b/net/socket.c
-index c79227e67..81e65b02e 100644
+index c79227e67b44..81e65b02ee0a 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -1962,6 +1962,9 @@ int __sys_bind_socket(struct socket *sock, struct sockaddr_storage *address,

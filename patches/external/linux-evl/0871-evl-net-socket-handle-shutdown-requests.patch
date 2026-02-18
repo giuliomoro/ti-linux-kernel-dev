@@ -1,7 +1,7 @@
 From e1e171d891b46bc4f6afe361e6b41819d096e025 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 1 Feb 2024 10:46:03 +0100
-Subject: [PATCH 871/985] evl/net: socket: handle shutdown requests
+Subject: [PATCH 0871/1013] evl/net: socket: handle shutdown requests
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 30 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 2877fecb2..1929db05f 100644
+index 2877fecb2e4b..1929db05fd4e 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -32,6 +32,7 @@ struct evl_net_proto {
@@ -22,7 +22,7 @@ index 2877fecb2..1929db05f 100644
  		unsigned long arg);
  	ssize_t (*oob_send)(struct evl_socket *esk,
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 2d0fa3a09..28cbe91dc 100644
+index 2d0fa3a09e94..28cbe91dcb8d 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -377,6 +377,27 @@ int sock_oob_connect(struct socket *sock,

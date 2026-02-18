@@ -1,7 +1,7 @@
 From 441ad9c27249cf89e89659508dfe1cb84219e560 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 7 Jun 2019 15:51:11 +0200
-Subject: [PATCH 397/985] evl/trace: rename worst case latency event
+Subject: [PATCH 0397/1013] evl/trace: rename worst case latency event
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index bd42f8f9f..33449630a 100644
+index bd42f8f9fba6..33449630afae 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -858,7 +858,7 @@ TRACE_EVENT(evl_latspot,

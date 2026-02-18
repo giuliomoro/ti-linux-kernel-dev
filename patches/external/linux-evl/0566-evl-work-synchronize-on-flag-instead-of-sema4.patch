@@ -1,7 +1,7 @@
 From 12c1feea23f3a8699c4c5ec249a06519f570b251 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 27 Jan 2020 10:46:41 +0100
-Subject: [PATCH 566/985] evl/work: synchronize on flag instead of sema4
+Subject: [PATCH 0566/1013] evl/work: synchronize on flag instead of sema4
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/work.h b/include/evl/work.h
-index 8494b596f..32f2e4a66 100644
+index 8494b596feab..32f2e4a66290 100644
 --- a/include/evl/work.h
 +++ b/include/evl/work.h
 @@ -9,7 +9,7 @@
@@ -32,7 +32,7 @@ index 8494b596f..32f2e4a66 100644
  };
  
 diff --git a/kernel/evl/work.c b/kernel/evl/work.c
-index 07e7c577e..b4f3cd2fd 100644
+index 07e7c577eb42..b4f3cd2fdd28 100644
 --- a/kernel/evl/work.c
 +++ b/kernel/evl/work.c
 @@ -20,7 +20,7 @@ static void do_wq_work_sync(struct work_struct *wq_work)

@@ -1,7 +1,7 @@
 From 75704c91f345308c9dabb50377d3ee861b02d453 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 29 Apr 2025 11:38:00 +0200
-Subject: [PATCH 920/985] evl/net: output: acquire the stax for xmit
+Subject: [PATCH 0920/1013] evl/net: output: acquire the stax for xmit
 
 Since we want the inband stack to acquire the xmit stax lock directly
 from __netif_txq_lock() instead of leaving this to each oob-capable
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 20 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index 279aaedd0..28abe93ae 100644
+index 279aaedd0519..28abe93aea6e 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -26,23 +26,38 @@ DEFINE_IRQ_WORK(oob_xmit_work, xmit_inband);

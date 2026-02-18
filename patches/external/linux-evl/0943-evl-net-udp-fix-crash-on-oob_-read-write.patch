@@ -1,7 +1,7 @@
 From 58f2d3486b2879517b890d1ca068a5b71e1132ba Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 10 Jun 2025 14:40:17 +0200
-Subject: [PATCH 943/985] evl/net: udp: fix crash on oob_{read, write}
+Subject: [PATCH 0943/1013] evl/net: udp: fix crash on oob_{read, write}
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 31 insertions(+), 30 deletions(-)
 
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index aeed5634a..c97f4505b 100644
+index aeed5634a7e6..c97f4505bd85 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -432,61 +432,62 @@ static ssize_t send_udp(struct evl_socket *esk,

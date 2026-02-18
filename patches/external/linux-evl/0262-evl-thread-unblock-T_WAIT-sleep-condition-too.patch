@@ -1,7 +1,7 @@
 From 4214174523f3f16c7278e3c517cf113197aeb048 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 5 Feb 2019 17:39:54 +0100
-Subject: [PATCH 262/985] evl/thread: unblock T_WAIT sleep condition too
+Subject: [PATCH 0262/1013] evl/thread: unblock T_WAIT sleep condition too
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 35 insertions(+), 37 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 227594580..8ee282046 100644
+index 227594580d3d..8ee2820465c0 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -653,43 +653,6 @@ void evl_release_thread(struct evl_thread *thread, int mask)

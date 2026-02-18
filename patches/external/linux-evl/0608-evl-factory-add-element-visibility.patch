@@ -1,7 +1,7 @@
 From 887545c4ee2f4a070f8b38d2f1c98c24ffb3e282 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 17 Apr 2020 09:12:13 +0200
-Subject: [PATCH 608/985] evl: factory: add element visibility
+Subject: [PATCH 0608/1013] evl: factory: add element visibility
 
 Allow users to decide whether a new element should be made public or
 private at creation time, depending on a clone operation attribute.
@@ -30,7 +30,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  13 files changed, 287 insertions(+), 101 deletions(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index a0af8889c..b20c483d3 100644
+index a0af8889c21f..b20c483d38ed 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -442,10 +442,11 @@ static int rtswitch_create_kthread(struct rtswitch_context *ctx,
@@ -50,7 +50,7 @@ index a0af8889c..b20c483d3 100644
  	 * On error, clear the flag bits in order to avoid calling
  	 * evl_cancel_kthread() for an invalid thread in
 diff --git a/drivers/evl/latmus.c b/drivers/evl/latmus.c
-index adcc64bdb..d77cac143 100644
+index adcc64bdb9dc..d77cac143178 100644
 --- a/drivers/evl/latmus.c
 +++ b/drivers/evl/latmus.c
 @@ -409,9 +409,11 @@ create_kthread_runner(int priority, int cpu)
@@ -69,7 +69,7 @@ index adcc64bdb..d77cac143 100644
  		kfree(k_runner);
  		return ERR_PTR(ret);
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index 01132cc56..fb7f7174d 100644
+index 01132cc56fe8..fb7f7174d432 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -30,12 +30,10 @@ struct evl_clock_gravity {
@@ -101,7 +101,7 @@ index 01132cc56..fb7f7174d 100644
  	struct list_head next;
  	struct evl_element element;
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 6fa23b614..02ee9e52a 100644
+index 6fa23b614e74..02ee9e52a09f 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -21,6 +21,7 @@
@@ -177,7 +177,7 @@ index 6fa23b614..02ee9e52a 100644
  void evl_remove_element_device(struct evl_element *e);
  
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2f76247a7..291f77488 100644
+index 2f76247a7d71..291f774881c5 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -316,10 +316,10 @@ static inline void evl_propagate_schedparam_change(struct evl_thread *curr)
@@ -219,7 +219,7 @@ index 2f76247a7..291f77488 100644
  static inline void evl_cancel_kthread(struct evl_kthread *kthread)
  {
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 029a9f676..8e3caa420 100644
+index 029a9f6761de..8e3caa4208be 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -11,14 +11,14 @@
@@ -240,7 +240,7 @@ index 029a9f676..8e3caa420 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 28efded62..6e5235499 100644
+index 28efded6222a..6e5235499b25 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -17,10 +17,18 @@ struct evl_element_ids {
@@ -263,7 +263,7 @@ index 28efded62..6e5235499 100644
  
  #define EVL_IOC_CLONE	_IOWR(EVL_FACTORY_IOCBASE, 0, struct evl_clone_req)
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index dd4b2dc44..0e64118fa 100644
+index dd4b2dc444d8..0e64118faf55 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -34,6 +34,7 @@
@@ -326,7 +326,7 @@ index dd4b2dc44..0e64118fa 100644
  		evl_put_element(&evl_mono_clock.element);
  
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 4ca23cb65..5cdbb55d1 100644
+index 4ca23cb6584b..5cdbb55d1b75 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -19,6 +19,8 @@
@@ -825,7 +825,7 @@ index 4ca23cb65..5cdbb55d1 100644
  			goto fail_dev;
  	}
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index c15f2332b..6f4674e34 100644
+index c15f2332b126..6f4674e34185 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -762,7 +762,7 @@ static const struct file_operations monitor_fops = {
@@ -848,7 +848,7 @@ index c15f2332b..6f4674e34 100644
  		goto fail_element;
  
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index b15972265..a0abc2531 100644
+index b1597226526e..a0abc2531fea 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -290,7 +290,7 @@ static const struct file_operations proxy_fops = {
@@ -871,7 +871,7 @@ index b15972265..a0abc2531 100644
  		goto fail_element;
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index a1f8f3a50..2de803f68 100644
+index a1f8f3a50e79..2de803f686e0 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -425,17 +425,18 @@ static int kthread_trampoline(void *arg)
@@ -916,7 +916,7 @@ index a1f8f3a50..2de803f68 100644
  		kfree(curr);
  		return ERR_PTR(ret);
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 4b4654892..aaa37032d 100644
+index 4b465489276b..aaa37032da2f 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -628,7 +628,7 @@ EXPORT_SYMBOL_GPL(evl_write_xbuf);

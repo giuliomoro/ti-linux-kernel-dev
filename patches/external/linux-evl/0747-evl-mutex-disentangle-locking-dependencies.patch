@@ -1,7 +1,7 @@
 From a7a4b21b91079d060f6f29a57725f1626334edf2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 4 Oct 2022 11:19:07 +0200
-Subject: [PATCH 747/985] evl/mutex: disentangle locking dependencies
+Subject: [PATCH 0747/1013] evl/mutex: disentangle locking dependencies
 
 This is a preparation patch for introducing a new locking model which
 will address a truckload of ABBA issues already detected by
@@ -64,7 +64,7 @@ construction. Simplify some call signatures accordingly.
  3 files changed, 175 insertions(+), 123 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index bb1f93573..d6100d49e 100644
+index bb1f935738b4..d6100d49ecba 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -83,7 +83,8 @@ void evl_detect_boost_drop(void);
@@ -78,7 +78,7 @@ index bb1f93573..d6100d49e 100644
  
  void evl_drop_tracking_mutexes(struct evl_thread *curr);
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 6a0e4f5e2..e7ead0b59 100644
+index 6a0e4f5e2ce1..e7ead0b59e2a 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -16,11 +16,13 @@
@@ -98,7 +98,7 @@ index 6a0e4f5e2..e7ead0b59 100644
  	const char *name;
  };
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 861426e36..e879e3304 100644
+index 861426e36b75..e879e3304854 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -19,6 +19,25 @@

@@ -1,7 +1,7 @@
 From 459d63c81c87e23899af5eadc8524e4671b757f3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 17:58:15 +0100
-Subject: [PATCH 667/985] evl/sched: do not consider oob stall on enabling
+Subject: [PATCH 0667/1013] evl/sched: do not consider oob stall on enabling
  preemption
 
 Checking the oob stall bit in __evl_enable_preempt() to block the
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 4d32a03e2..6318a3eb1 100644
+index 4d32a03e2220..6318a3eb1412 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -333,8 +333,7 @@ static inline void __evl_disable_preempt(void)

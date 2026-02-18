@@ -1,7 +1,8 @@
 From 6e484fe5ba94dead032df5af8107efaf0fa9bcd2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 27 Oct 2022 11:11:21 +0200
-Subject: [PATCH 770/985] evl/mutex: switch to sleep-and-retry locking pattern
+Subject: [PATCH 0770/1013] evl/mutex: switch to sleep-and-retry locking
+ pattern
 
 Instead of having evl_unlock_mutex() eagerly transfer the ownership of
 a mutex to the next waiter in line directly, wake the latter up and
@@ -31,7 +32,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 275 insertions(+), 475 deletions(-)
 
 diff --git a/include/evl/list.h b/include/evl/list.h
-index 47841be6e..85fa2f79b 100644
+index 47841be6e5ba..85fa2f79ba1a 100644
 --- a/include/evl/list.h
 +++ b/include/evl/list.h
 @@ -38,4 +38,12 @@ do {										\
@@ -48,7 +49,7 @@ index 47841be6e..85fa2f79b 100644
 +
  #endif /* !_EVL_LIST_H_ */
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index b937166b9..3be0f7e81 100644
+index b937166b91f9..3be0f7e81c83 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -19,12 +19,24 @@
@@ -87,7 +88,7 @@ index b937166b9..3be0f7e81 100644
  
  #endif /* !_EVL_MUTEX_H */
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 5c182dd04..f2f2f09ff 100644
+index 5c182dd04414..f2f2f09ff46d 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -29,7 +29,7 @@
@@ -108,7 +109,7 @@ index 5c182dd04..f2f2f09ff 100644
  	struct evl_timer rtimer;  /* Resource timer */
  	struct evl_timer ptimer;  /* Periodic timer */
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index 47bad95a8..8aec520a6 100644
+index 47bad95a890b..8aec520a6652 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -44,8 +44,8 @@
@@ -123,7 +124,7 @@ index 47bad95a8..8aec520a6 100644
  #define T_PIALERT 0x00000080 /* Priority inversion alert (HM notified) */
  #define T_SCHEDP  0x00000100 /* Schedparam propagation is pending */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index c03336424..6808e1ecc 100644
+index c033364246cd..6808e1eccd18 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -16,14 +16,9 @@
@@ -1102,7 +1103,7 @@ index c03336424..6808e1ecc 100644
  			list_add_priff(mutex, &owner->boosters, wprio, next_booster);
  		}
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 2bfa16642..191a94cf6 100644
+index 2bfa16642f66..191a94cf6c2b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -448,7 +448,7 @@ int evl_set_thread_policy_locked(struct evl_thread *thread,
@@ -1225,7 +1226,7 @@ index 2bfa16642..191a94cf6 100644
  			evl_dequeue_thread(thread);
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 7e8a76e2d..e43250186 100644
+index 7e8a76e2d8d5..e43250186bf8 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -212,7 +212,6 @@ int evl_init_thread(struct evl_thread *thread,

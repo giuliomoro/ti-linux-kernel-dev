@@ -1,7 +1,7 @@
 From a07ed0a7e08ed33b3e8b2e405554e5209bd87b47 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 22 Jun 2025 18:00:45 +0200
-Subject: [PATCH 958/985] evl/net: skb: fix in-band release path
+Subject: [PATCH 0958/1013] evl/net: skb: fix in-band release path
 
 free_oob_skb() may receive in-band buffer shells (!skb_is_oob())
 conveying oob storage, those were wrongly released to the oob pool so
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 30 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index b6caa1830..51e466864 100644
+index b6caa18304f4..51e4668645a5 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -217,12 +217,6 @@ static void __free_evl_skb(struct sk_buff *skb, struct net_device *dev)

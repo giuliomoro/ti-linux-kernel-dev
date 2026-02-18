@@ -1,7 +1,7 @@
 From b4719b20395f19e6ca2787c8d6f55c70141f7c04 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 6 Feb 2019 15:17:32 +0100
-Subject: [PATCH 268/985] evl/monitor: add timeout to gate lock operation
+Subject: [PATCH 0268/1013] evl/monitor: add timeout to gate lock operation
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 42 insertions(+), 14 deletions(-)
 
 diff --git a/include/uapi/evenless/monitor.h b/include/uapi/evenless/monitor.h
-index b4ace6058..5733b5a87 100644
+index b4ace6058054..5733b5a87336 100644
 --- a/include/uapi/evenless/monitor.h
 +++ b/include/uapi/evenless/monitor.h
 @@ -38,6 +38,10 @@ struct evl_monitor_state {
@@ -34,7 +34,7 @@ index b4ace6058..5733b5a87 100644
  #define EVL_MONIOC_WAIT		_IOWR(EVL_MONITOR_IOCBASE, 2, struct evl_monitor_waitreq)
  #define EVL_MONIOC_UNWAIT	_IOWR(EVL_MONITOR_IOCBASE, 3, struct evl_monitor_unwaitreq)
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
-index 105220c4a..01a4760bc 100644
+index 105220c4aa0e..01a4760bcaf0 100644
 --- a/kernel/evenless/monitor.c
 +++ b/kernel/evenless/monitor.c
 @@ -164,21 +164,34 @@ static void wakeup_waiters(struct evl_monitor *event)

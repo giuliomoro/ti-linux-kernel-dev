@@ -1,7 +1,7 @@
 From c74d0e96b479ae6e22b4be6d21a9eb58a52a5ea0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 3 Oct 2018 15:30:27 +0200
-Subject: [PATCH 026/985] KGDB: irq_pipeline: basic adaptation to oob stage
+Subject: [PATCH 0026/1013] KGDB: irq_pipeline: basic adaptation to oob stage
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-index ce1bb2301..12d6dfb34 100644
+index ce1bb2301c06..12d6dfb34aef 100644
 --- a/kernel/debug/debug_core.c
 +++ b/kernel/debug/debug_core.c
 @@ -107,8 +107,8 @@ static struct kgdb_bkpt		kgdb_break[KGDB_MAX_BREAKPOINTS] = {

@@ -1,7 +1,7 @@
 From 93927c4f05780fb448e48554f0d8a981b1b5cccb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Jan 2021 17:20:50 +0100
-Subject: [PATCH 685/985] evl: convert to fallthrough markers
+Subject: [PATCH 0685/1013] evl: convert to fallthrough markers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 449af6fbf..a2a1cc010 100644
+index 449af6fbf1f8..a2a1cc010a92 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1227,7 +1227,7 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -32,7 +32,7 @@ index 449af6fbf..a2a1cc010 100644
  		/*
  		 * This routine handles requests submitted from
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index a9a0d5a37..ccb8e1acf 100644
+index a9a0d5a37724..ccb8e1acfd22 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -331,7 +331,7 @@ static ssize_t tp_control(int cpu, union evl_sched_ctlparam *ctlp,

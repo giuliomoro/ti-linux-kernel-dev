@@ -1,7 +1,7 @@
 From 71e0fb076807374bd1d13a94b7567b8a53f57251 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 18 Jun 2025 19:19:43 +0200
-Subject: [PATCH 193/985] genirq: irq_pipeline: introduce in-band offload
+Subject: [PATCH 0193/1013] genirq: irq_pipeline: introduce in-band offload
  helpers
 
 Offloading work to a workqueue from the oob stage is a fairly common
@@ -30,7 +30,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 
 diff --git a/include/linux/inband_work.h b/include/linux/inband_work.h
 new file mode 100644
-index 000000000..6960a79fd
+index 000000000000..6960a79fde81
 --- /dev/null
 +++ b/include/linux/inband_work.h
 @@ -0,0 +1,209 @@
@@ -244,7 +244,7 @@ index 000000000..6960a79fd
 +
 +#endif /* _LINUX_INBAND_WORK_H */
 diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
-index cc352bb07..581faf046 100644
+index cc352bb07494..581faf046607 100644
 --- a/kernel/irq/pipeline.c
 +++ b/kernel/irq/pipeline.c
 @@ -15,6 +15,7 @@

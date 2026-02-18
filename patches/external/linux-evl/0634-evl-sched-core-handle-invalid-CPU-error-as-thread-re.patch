@@ -1,7 +1,7 @@
 From 9ef02c9a5bc703a54e75885b81db13d8e27e9b81 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 15 Jun 2020 19:03:52 +0200
-Subject: [PATCH 634/985] evl/sched: core: handle invalid CPU error as thread
+Subject: [PATCH 0634/1013] evl/sched: core: handle invalid CPU error as thread
  resumes oob
 
 A thread might resume oob from a CPU which is excluded from the set
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 45 insertions(+), 42 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index ff2fcc599..25b214cc8 100644
+index ff2fcc59956d..25b214cc88c5 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -262,6 +262,12 @@ static void migrate_rq(struct evl_thread *thread, struct evl_rq *dst_rq)

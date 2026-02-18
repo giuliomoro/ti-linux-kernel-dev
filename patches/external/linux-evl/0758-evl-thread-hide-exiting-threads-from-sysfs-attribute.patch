@@ -1,8 +1,8 @@
 From 835e33a3c4e8d536f6333a37639f74904435ea6e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 14:52:12 +0200
-Subject: [PATCH 758/985] evl/thread: hide exiting threads from sysfs attribute
- files
+Subject: [PATCH 0758/1013] evl/thread: hide exiting threads from sysfs
+ attribute files
 
 Threads are special elements in that they may exit independently from
 the existence of their respective backing cdev. Make sure to hide
@@ -49,7 +49,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 16 insertions(+)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 2698d378b..c5bb1a58a 100644
+index 2698d378b827..c5bb1a58aa5b 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -143,6 +143,14 @@ __evl_get_element_by_fundle(struct evl_index *map,
@@ -68,7 +68,7 @@ index 2698d378b..c5bb1a58a 100644
  {
  	return !!(e->clone_flags & EVL_CLONE_PUBLIC);
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 799195242..4647a58b9 100644
+index 799195242dd6..4647a58b93da 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -277,6 +277,14 @@ static void uninit_thread(struct evl_thread *thread)

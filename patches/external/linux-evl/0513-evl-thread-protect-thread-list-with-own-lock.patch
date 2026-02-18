@@ -1,7 +1,7 @@
 From 2f22c96825b3444e948143710bba4ebc267c8792 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 21:01:10 +0200
-Subject: [PATCH 513/985] evl/thread: protect thread list with own lock
+Subject: [PATCH 0513/1013] evl/thread: protect thread list with own lock
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 48 insertions(+), 34 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 26de3a313..959ec45e2 100644
+index 26de3a3139d2..959ec45e2ff4 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -141,6 +141,7 @@ struct evl_thread {
@@ -23,7 +23,7 @@ index 26de3a313..959ec45e2 100644
  
  struct evl_kthread {
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 5f7ea5c07..b1a3ed25b 100644
+index 5f7ea5c07efc..b1a3ed25b06f 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -31,10 +31,6 @@ EXPORT_PER_CPU_SYMBOL_GPL(evl_runqueues);
@@ -38,7 +38,7 @@ index 5f7ea5c07..b1a3ed25b 100644
  
  #define for_each_evl_sched_class(p)			\
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 360d7fd79..b19a0a004 100644
+index 360d7fd79d4c..b19a0a0042b1 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -41,6 +41,12 @@

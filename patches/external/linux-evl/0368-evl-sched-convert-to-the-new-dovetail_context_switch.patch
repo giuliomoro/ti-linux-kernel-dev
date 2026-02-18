@@ -1,7 +1,7 @@
 From c88c06ce64897c5c6c682aa7210aefab52bae289 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 9 May 2019 11:05:35 +0200
-Subject: [PATCH 368/985] evl/sched: convert to the new
+Subject: [PATCH 0368/1013] evl/sched: convert to the new
  dovetail_context_switch() interface
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 30 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 451c84c23..a6710001f 100644
+index 451c84c23d7d..a6710001f942 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -670,17 +670,15 @@ static inline int test_resched(struct evl_rq *rq)

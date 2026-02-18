@@ -1,7 +1,7 @@
 From 9b00d24308e4467ae76ae9ebc3410d1538935be8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 19:32:30 +0100
-Subject: [PATCH 320/985] evl/flag: provide _nosched variants for all wakeup
+Subject: [PATCH 0320/1013] evl/flag: provide _nosched variants for all wakeup
  forms
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/include/evenless/flag.h b/include/evenless/flag.h
-index c95258be8..4510708e8 100644
+index c95258be867a..4510708e8fd6 100644
 --- a/include/evenless/flag.h
 +++ b/include/evenless/flag.h
 @@ -77,15 +77,25 @@ static inline void evl_raise_flag(struct evl_flag *wf)

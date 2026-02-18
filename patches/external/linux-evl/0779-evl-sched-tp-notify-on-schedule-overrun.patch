@@ -1,7 +1,7 @@
 From 5ea6c6478e1266c3cbfea5616fb957c64780cbd4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 6 Nov 2022 12:36:11 +0100
-Subject: [PATCH 779/985] evl/sched: tp: notify on schedule overrun
+Subject: [PATCH 0779/1013] evl/sched: tp: notify on schedule overrun
 
 Send the EVL_HMDIAG_OVERRUN event to a thread which overruns a time
 frame if the T_WOSO flag is set for such thread.
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index ccb8e1acf..fa68347be 100644
+index ccb8e1acfd22..fa68347bec2a 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -58,13 +58,29 @@ static void tp_schedule_next(struct evl_sched_tp *tp)

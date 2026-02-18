@@ -1,8 +1,8 @@
 From 6f546067b2bb47bc05daef042664c5caafa2e957 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 May 2020 15:26:14 +0200
-Subject: [PATCH 623/985] evl/proxy: fix handling of POLLIN by the out-of-band
- poll handler
+Subject: [PATCH 0623/1013] evl/proxy: fix handling of POLLIN by the
+ out-of-band poll handler
 
 Just like in the in-band case, we cannot fully rely on testing the
 ring buffer for (non-)emptiness in order to detect data
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index 5a3e225f0..e589d3de0 100644
+index 5a3e225f0d99..e589d3de0efa 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -447,6 +447,7 @@ static __poll_t proxy_oob_poll(struct file *filp,

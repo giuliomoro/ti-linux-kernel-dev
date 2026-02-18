@@ -1,7 +1,7 @@
 From 20fc77bc47084f6c989ceb8b6a6c3b0e688e4f5d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Apr 2020 20:19:01 +0200
-Subject: [PATCH 613/985] evl/proxy: fix race on output
+Subject: [PATCH 0613/1013] evl/proxy: fix race on output
 
 Multiple concurrent writers could cause a missed wake up of the relay
 worker, which would keep them blocked on the drain flag upon
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 38 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index a0abc2531..696ec5e5f 100644
+index a0abc2531fea..696ec5e5fd49 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -16,6 +16,7 @@

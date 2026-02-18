@@ -1,7 +1,7 @@
 From c90e7acbf47484debaf9a86c27ac2fc17e0e7101 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Dec 2020 19:04:13 +0100
-Subject: [PATCH 679/985] evl/thread: detect sleeping call with preemption
+Subject: [PATCH 0679/1013] evl/thread: detect sleeping call with preemption
  disabled
 
 Sleeping voluntarily with EVL preemption disabled is a bug. Add the
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2b13b7830..41a7f512f 100644
+index 2b13b78306f7..41a7f512f5f4 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -16,8 +16,6 @@
@@ -27,7 +27,7 @@ index 2b13b7830..41a7f512f 100644
  #include <evl/init.h>
  #include <evl/timer.h>
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 50565fa2d..173b036d0 100644
+index 50565fa2d6da..173b036d0dcf 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -29,7 +29,6 @@

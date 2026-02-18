@@ -1,8 +1,8 @@
 From ea7138eac6f0792a4a8e23d6e07c5c7d6dd74430 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 24 Apr 2025 16:23:59 +0200
-Subject: [PATCH 918/985] evl/net: input: ensure proper memory ordering on wake
- up
+Subject: [PATCH 0918/1013] evl/net: input: ensure proper memory ordering on
+ wake up
 
 The RX_SCHED flag should be visible to other CPUs only once the
 napi_poll queue is updated. Instead of fiddling with explicit membars,
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index e9b598c8d..be52d4e49 100644
+index e9b598c8d479..be52d4e49e0b 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -36,9 +36,8 @@ static void do_poll(struct evl_netdev_state *est) /* oob */

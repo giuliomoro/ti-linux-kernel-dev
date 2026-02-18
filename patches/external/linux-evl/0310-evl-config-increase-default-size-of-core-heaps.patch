@@ -1,7 +1,7 @@
 From c9b2ed5249b30eb8c1a281e890052e1558e6aa68 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Feb 2019 12:04:32 +0100
-Subject: [PATCH 310/985] evl/config: increase default size of core heaps
+Subject: [PATCH 0310/1013] evl/config: increase default size of core heaps
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index edf245142..4ec461eef 100644
+index edf245142960..4ec461eef9e9 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -53,14 +53,14 @@ menu "Sizes and static limits"

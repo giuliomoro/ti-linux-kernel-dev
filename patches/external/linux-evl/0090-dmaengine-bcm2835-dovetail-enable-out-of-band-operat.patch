@@ -1,7 +1,7 @@
 From 5da22a41c1d28ff39cfdba557b6769c8d1f4b8c8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Apr 2020 20:00:09 +0200
-Subject: [PATCH 090/985] dmaengine: bcm2835: dovetail: enable out-of-band
+Subject: [PATCH 0090/1013] dmaengine: bcm2835: dovetail: enable out-of-band
  operations
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 135 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 271af0144..9eaf3a5d6 100644
+index 271af014492e..9eaf3a5d6f6b 100644
 --- a/drivers/dma/Kconfig
 +++ b/drivers/dma/Kconfig
 @@ -144,6 +144,13 @@ config DMA_BCM2835
@@ -29,7 +29,7 @@ index 271af0144..9eaf3a5d6 100644
  	tristate "JZ4780 DMA support"
  	depends on MIPS || COMPILE_TEST
 diff --git a/drivers/dma/bcm2835-dma.c b/drivers/dma/bcm2835-dma.c
-index e1b92b4d7..6ac93049d 100644
+index e1b92b4d7b05..6ac93049d1ff 100644
 --- a/drivers/dma/bcm2835-dma.c
 +++ b/drivers/dma/bcm2835-dma.c
 @@ -29,6 +29,7 @@

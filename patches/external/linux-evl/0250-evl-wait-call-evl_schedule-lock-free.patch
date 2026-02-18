@@ -1,7 +1,7 @@
 From 74b09355968d8cd16caf97cb054ecd21f5c94fe2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 11:00:42 +0100
-Subject: [PATCH 250/985] evl/wait: call evl_schedule() lock-free
+Subject: [PATCH 0250/1013] evl/wait: call evl_schedule() lock-free
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index af3b04939..56e71dfe7 100644
+index af3b049398e5..56e71dfe7341 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -40,7 +40,6 @@ int evl_wait_timeout(struct evl_wait_queue *wq, ktime_t timeout,

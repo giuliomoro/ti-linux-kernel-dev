@@ -1,7 +1,7 @@
 From 2f8f9132d9c6f7df1049dd37252956c66750bd92 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Jun 2019 19:54:45 +0200
-Subject: [PATCH 410/985] evl/monitor: honor O_NONBLOCK
+Subject: [PATCH 0410/1013] evl/monitor: honor O_NONBLOCK
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index adf49ea5d..8cc428e36 100644
+index adf49ea5d5ba..8cc428e36c56 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -315,10 +315,11 @@ static inline bool test_event_mask(struct evl_monitor_state *state,

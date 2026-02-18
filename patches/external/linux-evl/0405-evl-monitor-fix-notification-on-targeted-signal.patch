@@ -1,7 +1,7 @@
 From 5165e4404608e169ab83f6af05d6e5dbc0ac91d0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Jun 2019 12:05:32 +0200
-Subject: [PATCH 405/985] evl/monitor: fix notification on targeted signal
+Subject: [PATCH 0405/1013] evl/monitor: fix notification on targeted signal
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 9f983c1b4..f392883fc 100644
+index 9f983c1b4d59..f392883fc82b 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -81,7 +81,8 @@ int evl_signal_monitor_targeted(struct evl_thread *target, int monfd)

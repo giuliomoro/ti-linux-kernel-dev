@@ -1,7 +1,7 @@
 From 7d06dae27e198a64e914542b1baef254a5eebf96 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 31 Jan 2019 18:44:29 +0100
-Subject: [PATCH 237/985] evl/lock: drop legacy debug
+Subject: [PATCH 0237/1013] evl/lock: drop legacy debug
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 33 insertions(+), 202 deletions(-)
 
 diff --git a/include/evenless/assert.h b/include/evenless/assert.h
-index af06494b8..7dd970514 100644
+index af06494b8987..7dd97051453a 100644
 --- a/include/evenless/assert.h
 +++ b/include/evenless/assert.h
 @@ -34,10 +34,9 @@
@@ -33,7 +33,7 @@ index af06494b8..7dd970514 100644
  
  #endif /* !_EVENLESS_ASSERT_H */
 diff --git a/include/evenless/lock.h b/include/evenless/lock.h
-index 28825c887..a5ee56425 100644
+index 28825c887e24..a5ee56425528 100644
 --- a/include/evenless/lock.h
 +++ b/include/evenless/lock.h
 @@ -24,57 +24,6 @@
@@ -238,7 +238,7 @@ index 28825c887..a5ee56425 100644
  DECLARE_EXTERN_XNLOCK(nklock);
  
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 1a05a6af8..2241652e8 100644
+index 1a05a6af8a8e..2241652e863c 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -309,7 +309,7 @@ static inline void __evl_enable_preempt(void)
@@ -260,7 +260,7 @@ index 1a05a6af8..2241652e8 100644
  static inline bool evl_in_irq(void)
  {
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 149e0e485..edf245142 100644
+index 149e0e485b3d..edf245142960 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -231,19 +231,6 @@ config EVENLESS_DEBUG_MEMORY
@@ -284,7 +284,7 @@ index 149e0e485..edf245142 100644
  	bool "User consistency checks"
  	help
 diff --git a/kernel/evenless/lock.c b/kernel/evenless/lock.c
-index 56e9dd0fa..2150252c6 100644
+index 56e9dd0fa161..2150252c65ec 100644
 --- a/kernel/evenless/lock.c
 +++ b/kernel/evenless/lock.c
 @@ -16,87 +16,19 @@
@@ -382,7 +382,7 @@ index 56e9dd0fa..2150252c6 100644
 -#endif
 +#endif /* CONFIG_SMP */
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index c5a999a8a..1bd162d0d 100644
+index c5a999a8a6bf..1bd162d0d33e 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -271,7 +271,7 @@ struct evl_thread *evl_pick_thread(struct evl_rq *rq)

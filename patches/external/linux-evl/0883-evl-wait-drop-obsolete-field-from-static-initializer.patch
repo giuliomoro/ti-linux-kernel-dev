@@ -1,7 +1,8 @@
 From 09a7f3ae0bf5202c42f9628b322533aa67c3520c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 12 Sep 2024 11:21:05 +0200
-Subject: [PATCH 883/985] evl/wait: drop obsolete field from static initializer
+Subject: [PATCH 0883/1013] evl/wait: drop obsolete field from static
+ initializer
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 deletion(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index adb3e6d18..fd363331c 100644
+index adb3e6d185f4..fd363331c2fc 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -38,7 +38,6 @@ struct evl_wait_queue {

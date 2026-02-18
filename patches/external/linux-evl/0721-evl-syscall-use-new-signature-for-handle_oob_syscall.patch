@@ -1,7 +1,7 @@
 From af660fbdd0a4671cb2708224fc3c8f779be922fc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Nov 2021 16:41:58 +0100
-Subject: [PATCH 721/985] evl/syscall: use new signature for
+Subject: [PATCH 0721/1013] evl/syscall: use new signature for
  handle_oob_syscall()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 16 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 284102b5e..af40de7a3 100644
+index 284102b5ee47..af40de7a3fba 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -428,27 +428,24 @@ static unsigned int collect_syscall_args(struct pt_regs *regs,

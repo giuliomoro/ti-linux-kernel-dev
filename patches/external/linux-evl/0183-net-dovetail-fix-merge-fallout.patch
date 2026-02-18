@@ -1,7 +1,7 @@
 From f4704c57f4f5ad21d54d6c1f5cfb93a6a4d9f574 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 21:06:05 +0200
-Subject: [PATCH 183/985] net: dovetail: fix merge fallout
+Subject: [PATCH 0183/1013] net: dovetail: fix merge fallout
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 5852b5839..0a96c36f2 100644
+index 5852b5839266..0a96c36f2561 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -1170,6 +1170,7 @@ bool napi_pp_put_page(netmem_ref netmem)

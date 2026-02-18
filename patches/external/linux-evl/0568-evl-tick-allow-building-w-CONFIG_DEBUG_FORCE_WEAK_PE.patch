@@ -1,7 +1,7 @@
 From cfda11ba2d7484e3cbc58784414f8842438a8c9f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 29 Jan 2020 17:19:38 +0100
-Subject: [PATCH 568/985] evl/tick: allow building w/
+Subject: [PATCH 0568/1013] evl/tick: allow building w/
  CONFIG_DEBUG_FORCE_WEAK_PER_CPU on
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index 1a82d8d46..bfaf74136 100644
+index 1a82d8d46b22..bfaf741369a5 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -21,7 +21,7 @@

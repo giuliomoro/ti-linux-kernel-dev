@@ -1,7 +1,7 @@
 From 970c95c7fb4d9c63362b7ed2849bdeecc4534c96 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 16 Apr 2020 11:06:31 +0200
-Subject: [PATCH 599/985] evl/thread: send -EOPNOTSUPP to requests for
+Subject: [PATCH 0599/1013] evl/thread: send -EOPNOTSUPP to requests for
  unavailable sched policy
 
 Upon requests involving SCHED_TP, SCHED_QUOTA policies which have been
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 16 insertions(+), 10 deletions(-)
 
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index 0a1e8a6d9..d4e533723 100644
+index 0a1e8a6d9d21..d4e533723ee2 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -130,7 +130,7 @@ static int do_quota_control(const struct evl_sched_ctlreq *ctl)
@@ -39,7 +39,7 @@ index 0a1e8a6d9..d4e533723 100644
  
  #endif
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f2fbe3807..a415a23be 100644
+index f2fbe3807b64..a415a23bea37 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1202,11 +1202,11 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -90,7 +90,7 @@ index f2fbe3807..a415a23be 100644
  
  	*tslice_r = tslice;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 1c8f6d236..a1f8f3a50 100644
+index 1c8f6d236211..a1f8f3a50e79 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1935,8 +1935,8 @@ static int set_sched_attrs(struct evl_thread *thread,

@@ -1,8 +1,8 @@
 From aba95677341931657582f35d4ff8f4ad8b5690a5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 19 May 2019 10:33:00 +0200
-Subject: [PATCH 376/985] evl/thread: simplify and sanitize synchronization on
- join
+Subject: [PATCH 0376/1013] evl/thread: simplify and sanitize synchronization
+ on join
 
 Waiting for the next RCU quiet period is not a reliable way to ensure
 the joiner won't resume too early before the joinee is fully
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 18 insertions(+), 79 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 0b15c9319..34f0dd5f1 100644
+index 0b15c9319d8b..34f0dd5f1ada 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -275,13 +275,6 @@ static void cleanup_current_thread(void)

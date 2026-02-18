@@ -1,7 +1,7 @@
 From 5c8be6e14a321441d8d0955cd9e5cafff442f8c6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 9 May 2019 16:29:10 +0200
-Subject: [PATCH 369/985] evl/trace: fix evl_wakeup_thread event trace
+Subject: [PATCH 0369/1013] evl/trace: fix evl_wakeup_thread event trace
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 5 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index deaca0a65..8c781ab4e 100644
+index deaca0a6565e..8c781ab4e8ca 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -337,25 +337,26 @@ TRACE_EVENT(evl_sleep_on,

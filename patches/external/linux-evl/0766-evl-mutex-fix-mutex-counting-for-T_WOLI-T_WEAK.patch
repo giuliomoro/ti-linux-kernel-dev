@@ -1,7 +1,7 @@
 From a24e82def53f04ede4f12e086dabd3de08c45a1f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 21 Oct 2022 11:52:28 +0200
-Subject: [PATCH 766/985] evl/mutex: fix mutex counting for T_WOLI|T_WEAK
+Subject: [PATCH 0766/1013] evl/mutex: fix mutex counting for T_WOLI|T_WEAK
 
 When T_WOLI/T_WEAK is set for a thread acquiring or releasing a mutex,
 the count of mutexes it holds is tracked. Problem is that in some
@@ -45,7 +45,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 28 insertions(+), 20 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 53b9cafc7..b937166b9 100644
+index 53b9cafc7cb7..b937166b91f9 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -23,6 +23,7 @@ struct evl_thread;
@@ -57,7 +57,7 @@ index 53b9cafc7..b937166b9 100644
  struct evl_mutex {
  	int wprio;
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 0bf36a6d2..5c182dd04 100644
+index 0bf36a6d2488..5c182dd04414 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -131,7 +131,7 @@ struct evl_thread {
@@ -70,7 +70,7 @@ index 0bf36a6d2..5c182dd04 100644
  	struct {
  		struct evl_counter isw;	/* in-band switches */
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index ba59debfd..6d11f94ac 100644
+index ba59debfd986..6d11f94ac334 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -53,23 +53,31 @@ static inline int get_ceiling_value(struct evl_mutex *mutex)
@@ -157,7 +157,7 @@ index ba59debfd..6d11f94ac 100644
  	 * Priority boost for PP mutex is applied to the owner, unlike
  	 * PI boost which is applied to waiters. Therefore, we have to
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index be5b92416..f303bc4f8 100644
+index be5b92416f57..f303bc4f822f 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -305,7 +305,7 @@ static int do_oob_syscall(struct irq_stage *stage, struct pt_regs *regs,
@@ -179,7 +179,7 @@ index be5b92416..f303bc4f8 100644
  	}
  done:
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 4647a58b9..88f719432 100644
+index 4647a58b93da..88f7194324f2 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -216,7 +216,7 @@ int evl_init_thread(struct evl_thread *thread,
@@ -201,7 +201,7 @@ index 4647a58b9..88f719432 100644
  }
  
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index c2c161a57..e00307e4a 100644
+index c2c161a57c46..e00307e4a9f2 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -87,7 +87,7 @@ void evl_add_wait_queue(struct evl_wait_queue *wq, ktime_t timeout,

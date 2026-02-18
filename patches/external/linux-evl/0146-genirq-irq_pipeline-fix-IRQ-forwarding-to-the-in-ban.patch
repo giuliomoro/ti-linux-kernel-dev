@@ -1,7 +1,7 @@
 From 325925e0670ce6193c37254d21377442d2e9ae51 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 29 Apr 2025 22:06:15 +0200
-Subject: [PATCH 146/985] genirq: irq_pipeline: fix IRQ forwarding to the
+Subject: [PATCH 0146/1013] genirq: irq_pipeline: fix IRQ forwarding to the
  in-band stage
 
 A forwarded interrupt event might trigger again before the in-band
@@ -33,7 +33,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 41 insertions(+), 23 deletions(-)
 
 diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 90d02b982..4e81a93fc 100644
+index 90d02b9822f0..4e81a93fc7f5 100644
 --- a/kernel/irq/chip.c
 +++ b/kernel/irq/chip.c
 @@ -508,7 +508,6 @@ static bool irq_check_poll(struct irq_desc *desc)

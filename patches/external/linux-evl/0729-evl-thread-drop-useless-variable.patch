@@ -1,7 +1,7 @@
 From 63cec8b5bf2856e62cb263bf4f4284ad7999ccd2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 19 Jun 2022 19:14:43 +0200
-Subject: [PATCH 729/985] evl/thread: drop useless variable
+Subject: [PATCH 0729/1013] evl/thread: drop useless variable
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 9670b3740..606f24b90 100644
+index 9670b37402e0..606f24b902e5 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -820,7 +820,6 @@ int evl_set_period(struct evl_clock *clock,

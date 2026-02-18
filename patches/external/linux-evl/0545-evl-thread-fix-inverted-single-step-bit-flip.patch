@@ -1,7 +1,7 @@
 From 96a74a1ea6fa4206df794833a3671e8c8683bc31 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 20 Nov 2019 13:01:07 +0100
-Subject: [PATCH 545/985] evl/thread: fix inverted single-step bit flip
+Subject: [PATCH 0545/1013] evl/thread: fix inverted single-step bit flip
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 357234462..6dd105c80 100644
+index 357234462d61..6dd105c808c7 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -466,7 +466,7 @@ void evl_sleep_on_locked(ktime_t timeout, enum evl_tmode timeout_mode,

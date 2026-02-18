@@ -1,7 +1,7 @@
 From 467b5314b1f07f387572a1766fdcdce673fbf172 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 24 Dec 2020 11:07:54 +0100
-Subject: [PATCH 666/985] evl/file: convert to crossing mechanism for release
+Subject: [PATCH 0666/1013] evl/file: convert to crossing mechanism for release
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 23 insertions(+), 46 deletions(-)
 
 diff --git a/include/evl/file.h b/include/evl/file.h
-index 15f6cd518..630a20182 100644
+index 15f6cd5184cf..630a20182dc9 100644
 --- a/include/evl/file.h
 +++ b/include/evl/file.h
 @@ -7,12 +7,9 @@
@@ -61,7 +61,7 @@ index 15f6cd518..630a20182 100644
  
  struct evl_file *evl_watch_fd(unsigned int fd,
 diff --git a/kernel/evl/file.c b/kernel/evl/file.c
-index 0593211fe..0ba2c7d7f 100644
+index 0593211fe4e8..0ba2c7d7f4e3 100644
 --- a/kernel/evl/file.c
 +++ b/kernel/evl/file.c
 @@ -24,10 +24,11 @@ static struct rb_root fd_tree = RB_ROOT;

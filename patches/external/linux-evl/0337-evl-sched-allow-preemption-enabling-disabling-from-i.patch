@@ -1,7 +1,7 @@
 From 7dbd19b0d147f805aff5990ec3fb3399def30617 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 Mar 2019 16:32:03 +0100
-Subject: [PATCH 337/985] evl/sched: allow preemption enabling/disabling from
+Subject: [PATCH 0337/1013] evl/sched: allow preemption enabling/disabling from
  in-band
 
 Since our preemption count is stack-based, there is no issue to allow
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index cef5b2317..f19ad6dfd 100644
+index cef5b2317008..f19ad6dfd65b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -273,14 +273,12 @@ struct evl_thread *evl_pick_thread(struct evl_rq *rq)

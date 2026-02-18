@@ -1,8 +1,8 @@
 From 79e8bb7e9273b4431c93d3d1a036087b28a945e0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Dec 2022 16:35:48 +0100
-Subject: [PATCH 803/985] evl/mutex: fix inconsistent ownership information on
- release
+Subject: [PATCH 0803/1013] evl/mutex: fix inconsistent ownership information
+ on release
 
 drop_booster() may unlock the wait channel if some priority adjustment
 is required for the last owner as a result of dropping it. Meanwhile,
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 64f0808f0..f5abc467b 100644
+index 64f0808f04d3..f5abc467b4ad 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -200,7 +200,7 @@ static int fast_grab_mutex(struct evl_mutex *mutex, fundle_t *oldh)

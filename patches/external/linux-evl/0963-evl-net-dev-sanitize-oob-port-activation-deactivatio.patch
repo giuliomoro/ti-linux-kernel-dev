@@ -1,7 +1,7 @@
 From 790dd56b2ff0965ed8d7c9a6f2c4cd45efeebd6c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 12:05:14 +0200
-Subject: [PATCH 963/985] evl/net: dev: sanitize oob port
+Subject: [PATCH 0963/1013] evl/net: dev: sanitize oob port
  activation/deactivation
 
 The former interface EVL_SOCKIOC_{ACTIVATE/DEACTIVATE} simply could
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  7 files changed, 106 insertions(+), 77 deletions(-)
 
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index d7a0519f5..ef7c89f2e 100644
+index d7a0519f5ca6..ef7c89f2ef72 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -13,13 +13,12 @@
@@ -55,7 +55,7 @@ index d7a0519f5..ef7c89f2e 100644
  
  enum evl_net_rx_action
 diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
-index 7c2a2a206..fb2a30de7 100644
+index 7c2a2a2065c4..fb2a30de7a08 100644
 --- a/include/uapi/evl/net/device-abi.h
 +++ b/include/uapi/evl/net/device-abi.h
 @@ -12,5 +12,6 @@
@@ -66,7 +66,7 @@ index 7c2a2a206..fb2a30de7 100644
  
  #endif /* !_EVL_UAPI_NET_DEVICE_ABI_H */
 diff --git a/include/uapi/evl/net/net-abi.h b/include/uapi/evl/net/net-abi.h
-index 2dbdcbeba..bc1a5574d 100644
+index 2dbdcbeba3fe..bc1a5574de8f 100644
 --- a/include/uapi/evl/net/net-abi.h
 +++ b/include/uapi/evl/net/net-abi.h
 @@ -13,11 +13,21 @@
@@ -93,7 +93,7 @@ index 2dbdcbeba..bc1a5574d 100644
  
  #endif /* !_EVL_UAPI_NET_NET_ABI_H */
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index 0393a81a1..e53aaacee 100644
+index 0393a81a1073..e53aaaceefae 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -46,11 +46,6 @@ struct user_oob_msghdr {
@@ -118,7 +118,7 @@ index 0393a81a1..e53aaacee 100644
  #define EVL_SOCKIOC_RECVMSG	_IOWR(EVL_SOCKET_IOCBASE, 4, struct user_oob_msghdr)
  #define EVL_SOCKIOC_SOLICIT	_IOW(EVL_SOCKET_IOCBASE, 5, struct evl_net_solicit)
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 32c8fcd69..a93a534fc 100644
+index 32c8fcd694f9..a93a534fc62e 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -27,6 +27,7 @@
@@ -313,7 +313,7 @@ index 32c8fcd69..a93a534fc 100644
 +	return ret;
 +}
 diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
-index 972417dd0..9a0728f01 100644
+index 972417dd05ea..9a0728f01cf6 100644
 --- a/kernel/evl/net/net.c
 +++ b/kernel/evl/net/net.c
 @@ -102,27 +102,55 @@ void __init evl_net_cleanup(void)
@@ -380,7 +380,7 @@ index 972417dd0..9a0728f01 100644
  			return -EFAULT;
  		break;
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 38065222f..123ea4f30 100644
+index 38065222f592..123ea4f3030f 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -813,9 +813,8 @@ __poll_t sock_oob_poll(struct file *filp,

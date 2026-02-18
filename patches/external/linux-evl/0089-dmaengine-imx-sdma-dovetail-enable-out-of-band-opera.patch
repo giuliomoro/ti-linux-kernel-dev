@@ -1,7 +1,7 @@
 From 09efb2ad854a00f318f07036c6feb1c9d0a83a11 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Apr 2020 11:22:07 +0200
-Subject: [PATCH 089/985] dmaengine: imx-sdma: dovetail: enable out-of-band
+Subject: [PATCH 0089/1013] dmaengine: imx-sdma: dovetail: enable out-of-band
  operations
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 171 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 86e32af2d..271af0144 100644
+index 86e32af2dea4..271af014492e 100644
 --- a/drivers/dma/Kconfig
 +++ b/drivers/dma/Kconfig
 @@ -283,6 +283,13 @@ config IMX_SDMA
@@ -29,7 +29,7 @@ index 86e32af2d..271af0144 100644
  	tristate "Intel integrated DMA 64-bit support"
  	depends on HAS_IOMEM
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index 72299a08a..11ea7cfb4 100644
+index 72299a08af44..11ea7cfb4edb 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
 @@ -543,6 +543,10 @@ struct sdma_engine {

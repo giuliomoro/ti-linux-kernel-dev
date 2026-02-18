@@ -1,7 +1,7 @@
 From 99b68780fd3433250a93a0260e12837196e29c5c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Nov 2020 18:17:09 +0100
-Subject: [PATCH 011/985] eventfd: convert to f_op->write_iter()
+Subject: [PATCH 0011/1013] eventfd: convert to f_op->write_iter()
 
 In the wake of the set_fs() removal, enable eventfd files to be
 written to by the kernel_write() interface, which restricts usage to
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/fs/eventfd.c b/fs/eventfd.c
-index 22c934f3a..a8aca706c 100644
+index 22c934f3a080..a8aca706c647 100644
 --- a/fs/eventfd.c
 +++ b/fs/eventfd.c
 @@ -244,16 +244,16 @@ static ssize_t eventfd_read(struct kiocb *iocb, struct iov_iter *to)

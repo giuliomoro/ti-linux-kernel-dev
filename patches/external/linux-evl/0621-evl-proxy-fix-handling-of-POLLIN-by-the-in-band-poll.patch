@@ -1,8 +1,8 @@
 From 698583938e8fa513e63179f1fe58a82c43643214 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 10 May 2020 12:48:24 +0200
-Subject: [PATCH 621/985] evl/proxy: fix handling of POLLIN by the in-band poll
- handler
+Subject: [PATCH 0621/1013] evl/proxy: fix handling of POLLIN by the in-band
+ poll handler
 
 Testing the input ring buffer for (non-)emptiness tells us nothing
 about the readability of the target file, which may have data
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+)
 
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index fd0c31bc2..b44d3dd89 100644
+index fd0c31bc2357..b44d3dd89b7e 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -533,6 +533,10 @@ static __poll_t proxy_poll(struct file *filp, poll_table *wait)

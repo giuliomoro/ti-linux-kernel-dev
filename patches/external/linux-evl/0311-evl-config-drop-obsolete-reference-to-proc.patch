@@ -1,7 +1,7 @@
 From c7713353ca35ebdaa6a0b2684565536c14e4dfc0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 16 Feb 2019 12:06:19 +0100
-Subject: [PATCH 311/985] evl/config: drop obsolete reference to /proc
+Subject: [PATCH 0311/1013] evl/config: drop obsolete reference to /proc
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 4ec461eef..1b04cfea1 100644
+index 4ec461eef9e9..1b04cfea1186 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -44,8 +44,8 @@ config EVENLESS_STATS

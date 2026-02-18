@@ -1,7 +1,7 @@
 From ab58bf3f8ce953a359e88fff3699b68a3b868271 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 22 Jan 2020 12:16:24 +0100
-Subject: [PATCH 559/985] drivers/evl: add Kconfig help strings
+Subject: [PATCH 0559/1013] drivers/evl: add Kconfig help strings
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/evl/Kconfig b/drivers/evl/Kconfig
-index b80e46356..792404d29 100644
+index b80e4635695a..792404d29924 100644
 --- a/drivers/evl/Kconfig
 +++ b/drivers/evl/Kconfig
 @@ -1,13 +1,24 @@

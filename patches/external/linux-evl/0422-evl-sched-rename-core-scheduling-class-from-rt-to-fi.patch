@@ -1,7 +1,7 @@
 From 78a5761ae752eac43bc080d8f25b83f57af94099 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 25 Jun 2019 15:41:16 +0200
-Subject: [PATCH 422/985] evl/sched: rename core scheduling class from rt to
+Subject: [PATCH 0422/1013] evl/sched: rename core scheduling class from rt to
  fifo
 
 We want the policy to appear clearly in the name.
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  rename kernel/evl/sched/{rt.c => fifo.c} (50%)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index d64b48abb..ae3ead00a 100644
+index d64b48abb80a..ae3ead00abff 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -61,7 +61,7 @@
@@ -68,7 +68,7 @@ index d64b48abb..ae3ead00a 100644
  	if (ret)
 diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
 new file mode 100644
-index 000000000..6eecd7b6e
+index 000000000000..6eecd7b6ec9a
 --- /dev/null
 +++ b/include/evl/sched/fifo.h
 @@ -0,0 +1,114 @@
@@ -187,7 +187,7 @@ index 000000000..6eecd7b6e
 +
 +#endif /* !_EVL_SCHED_FIFO_H */
 diff --git a/include/evl/sched/param.h b/include/evl/sched/param.h
-index 441925da0..342c3affe 100644
+index 441925da0e73..342c3affee86 100644
 --- a/include/evl/sched/param.h
 +++ b/include/evl/sched/param.h
 @@ -16,7 +16,7 @@ struct evl_weak_param {
@@ -209,7 +209,7 @@ index 441925da0..342c3affe 100644
  #ifdef CONFIG_EVL_SCHED_QUOTA
  	struct evl_quota_param quota;
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index 39c04e581..9a32192d1 100644
+index 39c04e5810cd..9a32192d1f83 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -14,10 +14,10 @@
@@ -229,7 +229,7 @@ index 39c04e581..9a32192d1 100644
  #define EVL_CORE_MAX_PRIO  (MAX_RT_PRIO + 1)
 diff --git a/include/evl/sched/rt.h b/include/evl/sched/rt.h
 deleted file mode 100644
-index 97d77be28..000000000
+index 97d77be2848c..000000000000
 --- a/include/evl/sched/rt.h
 +++ /dev/null
 @@ -1,114 +0,0 @@
@@ -348,7 +348,7 @@ index 97d77be28..000000000
 -
 -#endif /* !_EVL_SCHED_RT_H */
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2fd2dcf00..164225189 100644
+index 2fd2dcf00b4b..164225189675 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -312,8 +312,8 @@ int __evl_run_kthread(struct evl_kthread *kthread);
@@ -363,7 +363,7 @@ index 2fd2dcf00..164225189 100644
  		(__kthread)->threadfn = __fn;				\
  		(__kthread)->status = 0;				\
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 0cefb73eb..8267d2812 100644
+index 0cefb73ebbb4..8267d2812f7d 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -20,7 +20,7 @@ static inline int get_ceiling_value(struct evl_mutex *mutex)
@@ -387,7 +387,7 @@ index 0cefb73eb..8267d2812 100644
  	mutex->wprio = wprio;
  	list_add_priff(mutex, &owner->boosters, wprio, next);
 diff --git a/kernel/evl/sched/Makefile b/kernel/evl/sched/Makefile
-index cfa48b63b..5d9245823 100644
+index cfa48b63b36b..5d9245823f45 100644
 --- a/kernel/evl/sched/Makefile
 +++ b/kernel/evl/sched/Makefile
 @@ -4,7 +4,7 @@ ccflags-y += -Ikernel
@@ -400,7 +400,7 @@ index cfa48b63b..5d9245823 100644
  	weak.o
  
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index a7975b6c8..765fd4b74 100644
+index a7975b6c829c..765fd4b7466b 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -63,7 +63,7 @@ static void register_classes(void)
@@ -466,7 +466,7 @@ diff --git a/kernel/evl/sched/rt.c b/kernel/evl/sched/fifo.c
 similarity index 50%
 rename from kernel/evl/sched/rt.c
 rename to kernel/evl/sched/fifo.c
-index ff83e77f6..2d93629e4 100644
+index ff83e77f6bbc..2d93629e4b47 100644
 --- a/kernel/evl/sched/rt.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -7,47 +7,47 @@
@@ -625,7 +625,7 @@ index ff83e77f6..2d93629e4 100644
 -EXPORT_SYMBOL_GPL(evl_sched_rt);
 +EXPORT_SYMBOL_GPL(evl_sched_fifo);
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index a2ce8d364..a00f6a3f2 100644
+index a2ce8d3645c9..a00f6a3f2229 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -13,7 +13,7 @@
@@ -742,7 +742,7 @@ index a2ce8d364..a00f6a3f2 100644
  	}
  
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index aa33db9de..f200522b5 100644
+index aa33db9ded3a..f200522b59aa 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -205,14 +205,14 @@ static void tp_migrate(struct evl_thread *thread, struct evl_rq *rq)
@@ -783,7 +783,7 @@ index aa33db9de..f200522b5 100644
  done:
  	old_gps = tp->gps;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index bf7910629..7554b2d87 100644
+index bf7910629fd0..7554b2d87794 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -366,12 +366,12 @@ static int kthread_trampoline(void *arg)

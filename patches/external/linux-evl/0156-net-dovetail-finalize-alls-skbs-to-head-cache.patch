@@ -1,7 +1,7 @@
 From 0fc99f14cdf520b8e127c05a4f1b7fbc59b5cb5a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 27 Mar 2025 08:21:42 +0100
-Subject: [PATCH 156/985] net: dovetail: finalize alls skbs to head cache
+Subject: [PATCH 0156/1013] net: dovetail: finalize alls skbs to head cache
 
 Abusing the semantics of SKB_FCLONE_UNAVAILABLE to determine whether a
 skb should go to the NAPI cache makes no sense, this is fragile at
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 5 insertions(+), 9 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 65884f4c4..c82c295dd 100644
+index 65884f4c4763..c82c295dd1d0 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -5302,7 +5302,11 @@ static inline dma_addr_t skb_oob_storage_addr(const struct sk_buff *skb)
@@ -41,7 +41,7 @@ index 65884f4c4..c82c295dd 100644
  /**
   *	__skb_inband_clone - In-band specific setup for skbs for a
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 8122feaea..43d1fd518 100644
+index 8122feaea227..43d1fd518a4d 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -612,14 +612,6 @@ bool recycle_skb_oob(struct sk_buff *skb)

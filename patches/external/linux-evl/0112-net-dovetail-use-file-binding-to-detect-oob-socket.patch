@@ -1,7 +1,8 @@
 From 642907d80ff35fb9b5cefbef5a4f5e89803153a7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 2 Feb 2024 16:36:30 +0100
-Subject: [PATCH 112/985] net: dovetail: use file binding to detect oob socket
+Subject: [PATCH 0112/1013] net: dovetail: use file binding to detect oob
+ socket
 
 sock->sk might be stale while the encpasulating BSD socket is not, so
 dereferencing sock->sk is not always safe.
@@ -17,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/socket.c b/net/socket.c
-index cd4bc91fb..1c9171cc4 100644
+index cd4bc91fb1cc..1c9171cc4807 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -150,7 +150,7 @@ static void sock_show_fdinfo(struct seq_file *m, struct file *f)

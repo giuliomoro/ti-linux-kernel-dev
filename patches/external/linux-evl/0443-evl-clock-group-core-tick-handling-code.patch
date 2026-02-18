@@ -1,7 +1,7 @@
 From 9ab5beea9b090f6a417794ac10870153d2a8c5d0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Jul 2019 12:13:40 +0200
-Subject: [PATCH 443/985] evl/clock: group core tick handling code
+Subject: [PATCH 0443/1013] evl/clock: group core tick handling code
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 49 insertions(+), 53 deletions(-)
 
 diff --git a/include/evl/clock.h b/include/evl/clock.h
-index 8ca6bf9e6..8c55b371b 100644
+index 8ca6bf9e624a..8c55b371bea2 100644
 --- a/include/evl/clock.h
 +++ b/include/evl/clock.h
 @@ -20,6 +20,7 @@
@@ -32,7 +32,7 @@ index 8ca6bf9e6..8c55b371b 100644
  
  void evl_adjust_timers(struct evl_clock *clock,
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 6d97fed08..d7411a52e 100644
+index 6d97fed08b78..d7411a52ead0 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -272,30 +272,16 @@ static inline bool timer_needs_enqueuing(struct evl_timer *timer)
@@ -118,7 +118,7 @@ index 6d97fed08..d7411a52e 100644
  
  void evl_stop_timers(struct evl_clock *clock)
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index f9780664c..fab24fe87 100644
+index f9780664cb5c..fab24fe87727 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -80,41 +80,6 @@ static int proxy_set_oneshot_stopped(struct clock_event_device *proxy_dev)

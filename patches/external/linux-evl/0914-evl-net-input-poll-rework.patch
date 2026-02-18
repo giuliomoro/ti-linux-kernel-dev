@@ -1,7 +1,7 @@
 From 12efcbe6df49602144568f03b0d8bf98cc9f2a67 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 15 Apr 2025 09:10:26 +0200
-Subject: [PATCH 914/985] evl/net: input: poll rework
+Subject: [PATCH 0914/1013] evl/net: input: poll rework
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 39 insertions(+), 19 deletions(-)
 
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 181b3db0f..86e8ce25b 100644
+index 181b3db0fbf4..86e8ce25b472 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -21,15 +21,15 @@

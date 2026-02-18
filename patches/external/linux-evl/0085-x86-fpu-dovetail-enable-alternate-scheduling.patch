@@ -1,7 +1,7 @@
 From 4784b3b4aced19f0c7918c1fcecd06600e6d7c05 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 9 Apr 2022 16:19:51 +0200
-Subject: [PATCH 085/985] x86/fpu: dovetail: enable alternate scheduling
+Subject: [PATCH 0085/1013] x86/fpu: dovetail: enable alternate scheduling
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -33,7 +33,7 @@ Signed-off-by: Jamie Huang <jamienstar@163.com>
  8 files changed, 252 insertions(+), 51 deletions(-)
 
 diff --git a/arch/x86/include/asm/dovetail.h b/arch/x86/include/asm/dovetail.h
-index f4b866b1a..001520262 100644
+index f4b866b1a23b..001520262ce6 100644
 --- a/arch/x86/include/asm/dovetail.h
 +++ b/arch/x86/include/asm/dovetail.h
 @@ -9,14 +9,20 @@
@@ -75,7 +75,7 @@ index f4b866b1a..001520262 100644
  
  /*
 diff --git a/arch/x86/include/asm/fpu/api.h b/arch/x86/include/asm/fpu/api.h
-index 2b3227188..86d5fed8f 100644
+index 2b3227188df9..86d5fed8fd40 100644
 --- a/arch/x86/include/asm/fpu/api.h
 +++ b/arch/x86/include/asm/fpu/api.h
 @@ -66,20 +66,29 @@ static inline void kernel_fpu_begin(void)
@@ -126,7 +126,7 @@ index 2b3227188..86d5fed8f 100644
   * Query the presence of one or more xfeatures. Works on any legacy CPU as well.
   *
 diff --git a/arch/x86/include/asm/fpu/sched.h b/arch/x86/include/asm/fpu/sched.h
-index c485f1944..029f5a5d6 100644
+index c485f1944c5f..029f5a5d6788 100644
 --- a/arch/x86/include/asm/fpu/sched.h
 +++ b/arch/x86/include/asm/fpu/sched.h
 @@ -3,6 +3,7 @@
@@ -210,7 +210,7 @@ index c485f1944..029f5a5d6 100644
  }
  
 diff --git a/arch/x86/include/asm/fpu/types.h b/arch/x86/include/asm/fpu/types.h
-index de16862bf..121c48a09 100644
+index de16862bf230..121c48a091f8 100644
 --- a/arch/x86/include/asm/fpu/types.h
 +++ b/arch/x86/include/asm/fpu/types.h
 @@ -462,6 +462,18 @@ struct fpu {
@@ -233,7 +233,7 @@ index de16862bf..121c48a09 100644
  	 * @avx512_timestamp:
  	 *
 diff --git a/arch/x86/kernel/fpu/core.c b/arch/x86/kernel/fpu/core.c
-index c5316bd98..76fa5ff17 100644
+index c5316bd98ebb..76fa5ff17cfe 100644
 --- a/arch/x86/kernel/fpu/core.c
 +++ b/arch/x86/kernel/fpu/core.c
 @@ -19,6 +19,7 @@
@@ -534,7 +534,7 @@ index c5316bd98..76fa5ff17 100644
 +
 +#endif
 diff --git a/arch/x86/kernel/fpu/signal.c b/arch/x86/kernel/fpu/signal.c
-index 8abe60919..1784ad9c1 100644
+index 8abe60919e2f..1784ad9c1d48 100644
 --- a/arch/x86/kernel/fpu/signal.c
 +++ b/arch/x86/kernel/fpu/signal.c
 @@ -68,15 +68,17 @@ static inline bool check_xstate_in_sigframe(struct fxregs_state __user *fxbuf,
@@ -660,7 +660,7 @@ index 8abe60919..1784ad9c1 100644
  }
  
 diff --git a/arch/x86/kernel/fpu/xstate.c b/arch/x86/kernel/fpu/xstate.c
-index 22abb5ee0..ff8a175e7 100644
+index 22abb5ee0cf2..ff8a175e79bd 100644
 --- a/arch/x86/kernel/fpu/xstate.c
 +++ b/arch/x86/kernel/fpu/xstate.c
 @@ -1022,6 +1022,7 @@ int arch_set_user_pkey_access(struct task_struct *tsk, int pkey,
@@ -716,7 +716,7 @@ index 22abb5ee0..ff8a175e7 100644
  	/* Only free valloc'ed state */
  	if (curfps && curfps->is_valloc)
 diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 9118b5742..a5f819e69 100644
+index 9118b5742f40..a5f819e69113 100644
 --- a/arch/x86/kernel/process_64.c
 +++ b/arch/x86/kernel/process_64.c
 @@ -613,8 +613,15 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)

@@ -1,0 +1,59 @@
+From 9e8b8e4161e0c56b7b507c22d2e4f9be1e0695e6 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Tue, 28 Oct 2025 09:41:05 +0100
+Subject: [PATCH 1005/1013] igb: flush current oob pool on (re)configure
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ drivers/net/ethernet/intel/igb/igb_main.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/igb/igb_main.c b/drivers/net/ethernet/intel/igb/igb_main.c
+index 22bb1bde10dd..0573ef48bed5 100644
+--- a/drivers/net/ethernet/intel/igb/igb_main.c
++++ b/drivers/net/ethernet/intel/igb/igb_main.c
+@@ -796,6 +796,14 @@ static void igb_disable_oob(struct net_device *netdev)
+ 	}
+ }
+ 
++static void igb_destroy_oob_pool(struct igb_ring *rx_ring)
++{
++	if (rx_ring->rx_oob_pool) {
++		page_pool_destroy(rx_ring->rx_oob_pool);
++		rx_ring->rx_oob_pool = NULL;
++	}
++}
++
+ static void igb_create_oob_pool(struct igb_ring *ring)
+ {
+ 	struct igb_adapter *adapter = netdev_priv(ring->netdev);
+@@ -809,7 +817,10 @@ static void igb_create_oob_pool(struct igb_ring *ring)
+ 		.offset = 0,
+ 		.max_len = igb_rx_pg_size(ring),
+ 	};
+-	struct page_pool *rx_oob_pool = page_pool_create(&params);
++	struct page_pool *rx_oob_pool;
++
++	igb_destroy_oob_pool(ring);
++	rx_oob_pool = page_pool_create(&params);
+ 
+ 	/*
+ 	 * On error allocating the oob pool, we can still operate in
+@@ -821,14 +832,6 @@ static void igb_create_oob_pool(struct igb_ring *ring)
+ 	ring->rx_oob_pool = rx_oob_pool;
+ }
+ 
+-static void igb_destroy_oob_pool(struct igb_ring *rx_ring)
+-{
+-	if (rx_ring->rx_oob_pool) {
+-		page_pool_destroy(rx_ring->rx_oob_pool);
+-		rx_ring->rx_oob_pool = NULL;
+-	}
+-}
+-
+ static struct page *igb_alloc_rx_page(struct igb_ring *rx_ring)
+ {
+ 	if (likely(igb_running_oob()))
+-- 
+2.30.2
+

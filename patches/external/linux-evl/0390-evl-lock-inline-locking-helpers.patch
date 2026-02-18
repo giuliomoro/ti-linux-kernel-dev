@@ -1,7 +1,7 @@
 From 14f8966a47cd38fd8c2c636e482cfe155ae4a35d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 31 May 2019 14:18:51 +0200
-Subject: [PATCH 390/985] evl/lock: inline locking helpers
+Subject: [PATCH 0390/1013] evl/lock: inline locking helpers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 2 insertions(+), 21 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index d25668874..6bb2fa600 100644
+index d25668874abd..6bb2fa6006ab 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -54,7 +54,7 @@ static inline void xnlock_init (struct xnlock *lock)
@@ -41,7 +41,7 @@ index d25668874..6bb2fa600 100644
  __xnlock_get_irqsave(struct xnlock *lock)
  {
 diff --git a/kernel/evl/lock.c b/kernel/evl/lock.c
-index 3ddd24a15..bbc9ff28d 100644
+index 3ddd24a153be..bbc9ff28d00f 100644
 --- a/kernel/evl/lock.c
 +++ b/kernel/evl/lock.c
 @@ -11,24 +11,9 @@

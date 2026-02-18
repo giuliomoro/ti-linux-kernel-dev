@@ -1,7 +1,7 @@
 From 680b5c80186f89cd6f47cd60d9a69a7ff01f69ca Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 20 Jun 2020 19:23:58 +0200
-Subject: [PATCH 644/985] evl: pull asm syscall defs from evl/uaccess.h
+Subject: [PATCH 0644/1013] evl: pull asm syscall defs from evl/uaccess.h
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 2 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/uaccess.h b/include/evl/uaccess.h
-index 679bc5b80..349e6ec7f 100644
+index 679bc5b80877..349e6ec7f8c6 100644
 --- a/include/evl/uaccess.h
 +++ b/include/evl/uaccess.h
 @@ -8,6 +8,7 @@
@@ -26,7 +26,7 @@ index 679bc5b80..349e6ec7f 100644
  static inline unsigned long __must_check
  raw_copy_from_user_ptr64(void *to, u64 from_ptr, unsigned long n)
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 0e64118fa..e00da3dfb 100644
+index 0e64118faf55..e00da3dfb59b 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -33,7 +33,6 @@
@@ -38,7 +38,7 @@ index 0e64118fa..e00da3dfb 100644
  #include <uapi/evl/clock.h>
  #include <trace/events/evl.h>
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index a59c1ec93..bdac208d7 100644
+index a59c1ec9369a..bdac208d72c5 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -15,7 +15,6 @@
@@ -50,7 +50,7 @@ index a59c1ec93..bdac208d7 100644
  #include <uapi/evl/control.h>
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index d2ba6a88c..6809bf9c0 100644
+index d2ba6a88c21a..6809bf9c0773 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -20,7 +20,6 @@
@@ -62,7 +62,7 @@ index d2ba6a88c..6809bf9c0 100644
  #include <trace/events/evl.h>
  
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 930e91afc..9bc2a72fe 100644
+index 930e91afce6b..9bc2a72fe698 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -19,7 +19,6 @@
@@ -74,7 +74,7 @@ index 930e91afc..9bc2a72fe 100644
  struct poll_group {
  	struct rb_root item_index;  /* struct poll_item */
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index c35b03f6c..b58295c51 100644
+index c35b03f6c711..b58295c51cbd 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -41,7 +41,7 @@

@@ -1,8 +1,8 @@
 From 5c2193cc8aab276a594592220412e0cc116b5c8b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 10 Jul 2018 18:44:45 +0200
-Subject: [PATCH 016/985] clocksource/arm_global_timer: turn into user-visible
- MMIO clocksource
+Subject: [PATCH 0016/1013] clocksource/arm_global_timer: turn into
+ user-visible MMIO clocksource
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 19 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index e6c74ba7f..c984c7a22 100644
+index e6c74ba7fbc3..c984c7a22bf7 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
 @@ -382,6 +382,7 @@ config SUN50I_ERRATUM_UNKNOWN1
@@ -23,7 +23,7 @@ index e6c74ba7f..c984c7a22 100644
  	help
  	  This option enables support for the ARM global timer unit.
 diff --git a/drivers/clocksource/arm_global_timer.c b/drivers/clocksource/arm_global_timer.c
-index a05cfaab5..78aa518aa 100644
+index a05cfaab5f84..78aa518aa9b8 100644
 --- a/drivers/clocksource/arm_global_timer.c
 +++ b/drivers/clocksource/arm_global_timer.c
 @@ -200,11 +200,6 @@ static int gt_dying_cpu(unsigned int cpu)

@@ -1,7 +1,7 @@
 From f295d256f2016b702b2c17aa9715d744254205a3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 12 Mar 2019 12:31:32 +0100
-Subject: [PATCH 343/985] evl/thread: add T_BCAST to the WAKE and INFO masks
+Subject: [PATCH 0343/1013] evl/thread: add T_BCAST to the WAKE and INFO masks
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 2e4f33f7f..eaf3873e9 100644
+index 2e4f33f7fe86..eaf3873e9a92 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -26,8 +26,8 @@

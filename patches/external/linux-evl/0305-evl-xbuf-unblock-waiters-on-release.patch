@@ -1,7 +1,7 @@
 From 2b56d5526c1f7ce86427553bcb4e3aef12e81bff Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 16:40:00 +0100
-Subject: [PATCH 305/985] evl/xbuf: unblock waiters on release
+Subject: [PATCH 0305/1013] evl/xbuf: unblock waiters on release
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index 1b9faaadf..9e283ec22 100644
+index 1b9faaadf79d..9e283ec22a18 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -571,9 +571,19 @@ static __poll_t xbuf_oob_poll(struct file *filp,

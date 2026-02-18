@@ -1,7 +1,7 @@
 From 825ba1f4f30dcc880cfa64cf2f106723b53fe9b4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Jul 2021 18:29:54 +0200
-Subject: [PATCH 706/985] evl/factory: define access check for factories
+Subject: [PATCH 0706/1013] evl/factory: define access check for factories
 
 Some operations on factories started from /sys may be sensitive. Add a
 predicate to check whether the caller is authorized to perform such
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 12 insertions(+)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index 7847158dd..847250a80 100644
+index 7847158dd5a9..847250a80a3c 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -192,6 +192,8 @@ int evl_create_factory(struct evl_factory *fac, dev_t rdev);
@@ -30,7 +30,7 @@ index 7847158dd..847250a80 100644
  
  void evl_early_cleanup_factories(void);
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index 241634b8b..2f3a8bfbd 100644
+index 241634b8bea2..2f3a8bfbda96 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -21,6 +21,8 @@

@@ -1,7 +1,7 @@
 From b229e745848f61cbe0d29c08938748f9ee6dd42a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Dec 2020 17:31:02 +0100
-Subject: [PATCH 683/985] evl/lock: add preemption tracking
+Subject: [PATCH 0683/1013] evl/lock: add preemption tracking
 
 An EVL lock is now distinct from a hard lock in that it tracks and
 disables preemption in the core when held.
@@ -20,7 +20,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 104 insertions(+), 13 deletions(-)
 
 diff --git a/include/evl/lock.h b/include/evl/lock.h
-index 4cf670d69..a9b1a186a 100644
+index 4cf670d69249..a9b1a186aa35 100644
 --- a/include/evl/lock.h
 +++ b/include/evl/lock.h
 @@ -6,10 +6,54 @@

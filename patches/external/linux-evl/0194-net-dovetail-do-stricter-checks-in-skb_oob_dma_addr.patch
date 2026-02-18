@@ -1,7 +1,7 @@
 From 638b339e7fc9c40a4c06dd13c4e084c32b98b627 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 18 Jun 2025 10:14:42 +0200
-Subject: [PATCH 194/985] net: dovetail: do stricter checks in
+Subject: [PATCH 0194/1013] net: dovetail: do stricter checks in
  skb_oob_dma_addr()
 
 Make sure the storage area carried by the skb does not belong to an
@@ -17,7 +17,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index c4f041dd2..245e35782 100644
+index c4f041dd2e9b..245e3578256f 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -5257,6 +5257,7 @@ ssize_t skb_splice_from_iter(struct sk_buff *skb, struct iov_iter *iter,

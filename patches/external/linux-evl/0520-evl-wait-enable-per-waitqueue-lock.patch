@@ -1,7 +1,7 @@
 From 1da227cbcf1f1894db54bfee6fb2e9a1f3602bc6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2019 21:44:06 +0200
-Subject: [PATCH 520/985] evl/wait: enable per-waitqueue lock
+Subject: [PATCH 0520/1013] evl/wait: enable per-waitqueue lock
 
 Get rid of the ugly big lock for protecting access to wait queues,
 using a per-waitqueue lock instead. The valid locking order is
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  11 files changed, 324 insertions(+), 232 deletions(-)
 
 diff --git a/include/evl/flag.h b/include/evl/flag.h
-index aa6510c19..119c61125 100644
+index aa6510c19aa4..119c61125c04 100644
 --- a/include/evl/flag.h
 +++ b/include/evl/flag.h
 @@ -25,7 +25,8 @@ struct evl_flag {
@@ -121,7 +121,7 @@ index aa6510c19..119c61125 100644
  
  static inline void evl_flush_flag(struct evl_flag *wf, int reason)
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index d0439f42f..522229a35 100644
+index d0439f42f9b2..522229a3559a 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -21,7 +21,7 @@ struct file;
@@ -134,7 +134,7 @@ index d0439f42f..522229a35 100644
  
  struct evl_poll_head {
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 50d526830..db3c74ec3 100644
+index 50d526830d5f..db3c74ec3094 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -12,7 +12,6 @@
@@ -146,7 +146,7 @@ index 50d526830..db3c74ec3 100644
  #include <evl/sched/weak.h>
  #include <evl/sched/quota.h>
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 226b32f6f..3a41cc234 100644
+index 226b32f6f960..3a41cc2341bc 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -96,8 +96,8 @@ struct evl_thread {
@@ -161,7 +161,7 @@ index 226b32f6f..3a41cc234 100644
  	struct list_head boosters;
  
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 4d6bef86e..cf935723e 100644
+index 4d6bef86e8a2..cf935723ec76 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -56,7 +56,7 @@ struct evl_wait_queue {
@@ -232,7 +232,7 @@ index 4d6bef86e..cf935723e 100644
  void evl_destroy_wait(struct evl_wait_queue *wq);
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 8dce3de0c..9f2f7866e 100644
+index 8dce3de0cae9..9f2f7866ed8d 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -30,8 +30,9 @@ struct evl_monitor {
@@ -569,7 +569,7 @@ index 8dce3de0c..9f2f7866e 100644
  
  	evl_free_chunk(&evl_shared_heap, mon->state);
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 707f32bbd..1113eb181 100644
+index 707f32bbd353..1113eb1811b8 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -459,8 +459,45 @@ int evl_trylock_mutex(struct evl_mutex *mutex)
@@ -645,7 +645,7 @@ index 707f32bbd..1113eb181 100644
  	curr->info &= ~T_WAKEN;
  
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 6ff002e4d..5e2b785e1 100644
+index 6ff002e4de62..5e2b785e100d 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -60,7 +60,7 @@ void evl_poll_watch(struct evl_poll_head *head,
@@ -671,7 +671,7 @@ index 6ff002e4d..5e2b785e1 100644
  	for (n = 0, wpt = curr->poll_context.table;
  	     n < curr->poll_context.nr; n++, wpt++) {
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index e37436476..9e86292ce 100644
+index e37436476e62..9e86292ceb80 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -98,9 +98,10 @@ static void relay_output(struct work_struct *work)
@@ -688,7 +688,7 @@ index e37436476..9e86292ce 100644
  
  static void relay_output_irq(struct irq_work *work)
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 870fccf4b..5bd54ecce 100644
+index 870fccf4bad1..5bd54ecce43a 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -12,8 +12,9 @@
@@ -823,7 +823,7 @@ index 870fccf4b..5bd54ecce 100644
  
  	return ret;
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index 015b4c973..7f01e74fb 100644
+index 015b4c973884..7f01e74fb907 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -34,12 +34,12 @@ struct xbuf_ring {

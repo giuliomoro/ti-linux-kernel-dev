@@ -1,7 +1,8 @@
 From 1b50db55e22d81242506e8e304088bb6704b2f67 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 24 Jun 2025 14:39:32 +0200
-Subject: [PATCH 967/985] evl/net: ethernet: fix buffer leak on transmit error
+Subject: [PATCH 0967/1013] evl/net: ethernet: fix buffer leak on transmit
+ error
 
 We need evl_net_ether_transmit() to drop all skbs starting from the
 heading one on error, since we have the information about the precise
@@ -17,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 29 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/evl/net/ethernet/output.c b/kernel/evl/net/ethernet/output.c
-index c05076691..a34e1aeec 100644
+index c05076691dba..a34e1aeec857 100644
 --- a/kernel/evl/net/ethernet/output.c
 +++ b/kernel/evl/net/ethernet/output.c
 @@ -6,7 +6,7 @@
@@ -91,7 +92,7 @@ index c05076691..a34e1aeec 100644
  
  	return 0;
 diff --git a/kernel/evl/net/ipv4/udp.c b/kernel/evl/net/ipv4/udp.c
-index 7e461e198..aa0893513 100644
+index 7e461e198cdb..aa0893513abf 100644
 --- a/kernel/evl/net/ipv4/udp.c
 +++ b/kernel/evl/net/ipv4/udp.c
 @@ -246,7 +246,6 @@ static int send_datagram(struct sk_buff *skb, struct net_device *dev,

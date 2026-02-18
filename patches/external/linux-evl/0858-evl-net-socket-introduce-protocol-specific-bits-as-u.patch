@@ -1,8 +1,8 @@
 From 26261361fdbf699e19020f39568eedd91c710184 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 8 Nov 2023 15:59:20 +0100
-Subject: [PATCH 858/985] evl/net: socket: introduce protocol-specific bits as
- union
+Subject: [PATCH 0858/1013] evl/net: socket: introduce protocol-specific bits
+ as union
 
 Plan for adding more protocol-specific data, such as ipv4 bits. Let's
 have them grouped into a union in the EVL socket descriptoor.
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 17 insertions(+), 15 deletions(-)
 
 diff --git a/include/evl/net/socket.h b/include/evl/net/socket.h
-index 8b4b5a273..4ec2116f7 100644
+index 8b4b5a2739b7..4ec2116f7ed2 100644
 --- a/include/evl/net/socket.h
 +++ b/include/evl/net/socket.h
 @@ -71,12 +71,14 @@ struct evl_socket {
@@ -39,7 +39,7 @@ index 8b4b5a273..4ec2116f7 100644
  };
  
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index cd765ea29..86ff952dc 100644
+index cd765ea29846..86ff952dc598 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -74,11 +74,11 @@ static bool __packet_deliver(struct evl_net_rxqueue *rxq,

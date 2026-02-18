@@ -1,7 +1,7 @@
 From e7588c385499bd1aa5bd5892422fe38aec777113 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 10 Oct 2020 18:57:35 +0200
-Subject: [PATCH 041/985] pinctrl: samsung: irq_pipeline: enable pipelined
+Subject: [PATCH 0041/1013] pinctrl: samsung: irq_pipeline: enable pipelined
  interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/pinctrl/samsung/pinctrl-exynos.c b/drivers/pinctrl/samsung/pinctrl-exynos.c
-index 7887fd416..9e1fa86b2 100644
+index 7887fd416651..9e1fa86b2b6a 100644
 --- a/drivers/pinctrl/samsung/pinctrl-exynos.c
 +++ b/drivers/pinctrl/samsung/pinctrl-exynos.c
 @@ -302,6 +302,7 @@ static const struct exynos_irq_chip exynos_gpio_irq_chip __initconst = {

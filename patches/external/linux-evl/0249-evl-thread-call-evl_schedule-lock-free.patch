@@ -1,7 +1,7 @@
 From b19a7164c3c025efee80bfc0e329f19a1347456a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 10:59:57 +0100
-Subject: [PATCH 249/985] evl/thread: call evl_schedule() lock-free
+Subject: [PATCH 0249/1013] evl/thread: call evl_schedule() lock-free
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index b857a3865..a64b3eafc 100644
+index b857a3865c93..a64b3eafc885 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -436,9 +436,10 @@ void evl_start_thread(struct evl_thread *thread)

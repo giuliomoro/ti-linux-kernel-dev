@@ -1,7 +1,7 @@
 From 8147e82499cfb819999ca795fd82105409566048 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Jan 2019 12:47:25 +0100
-Subject: [PATCH 225/985] evl/wait: strip unused bits before overhaul
+Subject: [PATCH 0225/1013] evl/wait: strip unused bits before overhaul
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 30 insertions(+), 128 deletions(-)
 
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
-index 1fe8e5f86..328e58006 100644
+index 1fe8e5f8655d..328e58006613 100644
 --- a/include/evenless/wait.h
 +++ b/include/evenless/wait.h
 @@ -7,21 +7,25 @@

@@ -1,7 +1,7 @@
 From e0eeaed3af662393cdce88fd7240f91b07e20c5d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 11 Feb 2019 18:08:16 +0100
-Subject: [PATCH 293/985] evl/sched: drop unused helper
+Subject: [PATCH 0293/1013] evl/sched: drop unused helper
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 deletions(-)
 
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 9bf3f2823..9025ca30e 100644
+index 9bf3f2823113..9025ca30e767 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -342,11 +342,6 @@ static inline bool evl_cannot_block(void)

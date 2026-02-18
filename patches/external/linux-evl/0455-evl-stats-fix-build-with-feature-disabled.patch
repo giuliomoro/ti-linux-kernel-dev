@@ -1,7 +1,7 @@
 From 8090b717133b5cf4b9a0eecb7924f0a3b4eeae9d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 25 Jul 2019 21:15:43 +0200
-Subject: [PATCH 455/985] evl/stats: fix build with feature disabled
+Subject: [PATCH 0455/1013] evl/stats: fix build with feature disabled
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 9 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/stat.h b/include/evl/stat.h
-index 3a5d340d0..a94aa709c 100644
+index 3a5d340d0537..a94aa709c9fe 100644
 --- a/include/evl/stat.h
 +++ b/include/evl/stat.h
 @@ -23,7 +23,9 @@ struct evl_account {
@@ -34,7 +34,7 @@ index 3a5d340d0..a94aa709c 100644
  	} while (0)
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 10b98d13c..30590148c 100644
+index 10b98d13c1be..30590148c34e 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2013,10 +2013,11 @@ void evl_get_thread_state(struct evl_thread *thread,

@@ -1,7 +1,7 @@
 From f8e6e04398a03fbc055b835cc4f962dfa735231a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 10 Oct 2020 18:57:08 +0200
-Subject: [PATCH 038/985] irqchip/exynos-combiner: irq_pipeline: enable
+Subject: [PATCH 0038/1013] irqchip/exynos-combiner: irq_pipeline: enable
  pipelined interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/irqchip/exynos-combiner.c b/drivers/irqchip/exynos-combiner.c
-index 552aa04ff..4ae8e5895 100644
+index 552aa04ff063..4ae8e5895ddf 100644
 --- a/drivers/irqchip/exynos-combiner.c
 +++ b/drivers/irqchip/exynos-combiner.c
 @@ -24,7 +24,7 @@

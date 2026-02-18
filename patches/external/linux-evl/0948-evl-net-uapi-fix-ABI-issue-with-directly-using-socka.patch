@@ -1,7 +1,7 @@
 From 7120745713cf92cb08cdcdb298968d545d7c0679 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 20:57:07 +0200
-Subject: [PATCH 948/985] evl/net: uapi: fix ABI issue with directly using
+Subject: [PATCH 0948/1013] evl/net: uapi: fix ABI issue with directly using
  sockaddr
 
 Detected by hdrtest.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index f41882f9b..0393a81a1 100644
+index f41882f9b244..0393a81a1073 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -7,6 +7,7 @@
@@ -34,7 +34,7 @@ index f41882f9b..0393a81a1 100644
  };
  
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 01df9a365..4d0386ce7 100644
+index 01df9a365a61..4d0386ce75ef 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -819,7 +819,8 @@ static long sock_inband_ioctl(struct sock *sk, unsigned int cmd,

@@ -1,7 +1,7 @@
 From 18147c450d35fd15ca7f93c63bdf377c611bb6f6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 10 Apr 2023 12:25:36 +0200
-Subject: [PATCH 815/985] evl/sched: introduce sched_name() handler
+Subject: [PATCH 0815/1013] evl/sched: introduce sched_name() handler
 
 Some policies may advertise their name differently depending on the
 thread for which it is queried, in which case reporting the policy's
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  7 files changed, 35 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 3b256e404..0285dbc32 100644
+index 3b256e404167..0285dbc32a22 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -159,6 +159,7 @@ struct evl_sched_class {
@@ -36,7 +36,7 @@ index 3b256e404..0285dbc32 100644
  			      char *buf, ssize_t count);
  	ssize_t (*sched_control)(int cpu, union evl_sched_ctlparam *ctlp,
 diff --git a/kernel/evl/sched/fifo.c b/kernel/evl/sched/fifo.c
-index 2ff1b6fd9..c8d0456e7 100644
+index 2ff1b6fd920e..c8d0456e7f64 100644
 --- a/kernel/evl/sched/fifo.c
 +++ b/kernel/evl/sched/fifo.c
 @@ -53,6 +53,14 @@ static void evl_fifo_ceilprio(struct evl_thread *thread, int prio)
@@ -63,7 +63,7 @@ index 2ff1b6fd9..c8d0456e7 100644
  	.weight			=	EVL_CLASS_WEIGHT(4),
  	.policy			=	SCHED_FIFO,
 diff --git a/kernel/evl/sched/idle.c b/kernel/evl/sched/idle.c
-index 90e5f71bd..11b156a7f 100644
+index 90e5f71bd06e..11b156a7f6b1 100644
 --- a/kernel/evl/sched/idle.c
 +++ b/kernel/evl/sched/idle.c
 @@ -35,12 +35,18 @@ static void evl_idle_ceilprio(struct evl_thread *thread, int prio)
@@ -86,7 +86,7 @@ index 90e5f71bd..11b156a7f 100644
  	.policy			=	SCHED_IDLE,
  	.name			=	"idle"
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index a8e78f579..158bb2e24 100644
+index a8e78f57979a..158bb2e2423e 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -474,6 +474,11 @@ static void quota_migrate(struct evl_thread *thread, struct evl_rq *rq)
@@ -110,7 +110,7 @@ index a8e78f579..158bb2e24 100644
  	.sched_control		=	quota_control,
  	.weight			=	EVL_CLASS_WEIGHT(2),
 diff --git a/kernel/evl/sched/tp.c b/kernel/evl/sched/tp.c
-index 8aa52e70f..d55b214f8 100644
+index 8aa52e70ff67..d55b214f81e6 100644
 --- a/kernel/evl/sched/tp.c
 +++ b/kernel/evl/sched/tp.c
 @@ -241,6 +241,11 @@ static void tp_migrate(struct evl_thread *thread, struct evl_rq *rq)
@@ -134,7 +134,7 @@ index 8aa52e70f..d55b214f8 100644
  	.sched_control		=	tp_control,
  	.weight			=	EVL_CLASS_WEIGHT(3),
 diff --git a/kernel/evl/sched/weak.c b/kernel/evl/sched/weak.c
-index 933b91e29..5dfd47000 100644
+index 933b91e29fc1..5dfd470009a6 100644
 --- a/kernel/evl/sched/weak.c
 +++ b/kernel/evl/sched/weak.c
 @@ -85,6 +85,11 @@ static int weak_declare(struct evl_thread *thread,
@@ -158,7 +158,7 @@ index 933b91e29..5dfd47000 100644
  	.policy			=	SCHED_WEAK,
  	.name			=	"weak"
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 836e769a5..dac366d41 100644
+index 836e769a5716..dac366d41163 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2646,7 +2646,7 @@ static ssize_t sched_show(struct device *dev,

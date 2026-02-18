@@ -1,7 +1,7 @@
 From 2f87af9cd2f6fe253edaa9ebe1b2813e0109a0da Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 10:49:20 +0100
-Subject: [PATCH 245/985] evl/flag: call evl_schedule() lock-free
+Subject: [PATCH 0245/1013] evl/flag: call evl_schedule() lock-free
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 3 deletions(-)
 
 diff --git a/include/evenless/flag.h b/include/evenless/flag.h
-index 9e188abc5..350ea50e2 100644
+index 9e188abc5544..350ea50e2e2a 100644
 --- a/include/evenless/flag.h
 +++ b/include/evenless/flag.h
 @@ -78,12 +78,10 @@ static inline bool evl_raise_flag(struct evl_flag *wf)

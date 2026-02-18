@@ -1,7 +1,7 @@
 From 0559b897574f0688f294075803d46eae794085f2 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Mon, 23 Jun 2025 09:01:21 +0200
-Subject: [PATCH 204/985] e1000e: make CONFIG_E1000E_OOB depend on
+Subject: [PATCH 0204/1013] e1000e: make CONFIG_E1000E_OOB depend on
  CONFIG_E1000E
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/net/ethernet/intel/Kconfig b/drivers/net/ethernet/intel/Kconfig
-index 349c461d6..a44ffcd0f 100644
+index 349c461d6829..a44ffcd0f330 100644
 --- a/drivers/net/ethernet/intel/Kconfig
 +++ b/drivers/net/ethernet/intel/Kconfig
 @@ -89,7 +89,7 @@ config E1000E_HWTS

@@ -1,7 +1,7 @@
 From 741765e20be1f48eaf5df49d56382a357d0d3292 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Nov 2019 12:03:03 +0100
-Subject: [PATCH 537/985] evl/timer: annotate lock nesting for lockdep
+Subject: [PATCH 0537/1013] evl/timer: annotate lock nesting for lockdep
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evl/timer.c b/kernel/evl/timer.c
-index de545c180..640dccb67 100644
+index de545c180970..640dccb67e30 100644
 --- a/kernel/evl/timer.c
 +++ b/kernel/evl/timer.c
 @@ -71,12 +71,10 @@ static inline void double_timer_base_lock(struct evl_timerbase *tb1,

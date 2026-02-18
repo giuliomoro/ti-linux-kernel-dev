@@ -1,7 +1,7 @@
 From a7cfb1187a783803d535fab28c87468af3a30a59 Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Fri, 5 Sep 2025 11:38:07 +0200
-Subject: [PATCH 213/985] x86: irq_pipeline: Fix build failure for
+Subject: [PATCH 0213/1013] x86: irq_pipeline: Fix build failure for
  !IRQ_PIPELINE but X86_FRED
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -40,7 +40,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/x86/include/asm/irq_vectors.h b/arch/x86/include/asm/irq_vectors.h
-index de7592d87..dd755c95f 100644
+index de7592d870e9..dd755c95f3b4 100644
 --- a/arch/x86/include/asm/irq_vectors.h
 +++ b/arch/x86/include/asm/irq_vectors.h
 @@ -109,7 +109,7 @@

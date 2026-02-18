@@ -1,7 +1,7 @@
 From 9b952a6ef4e0fe3b7f9e2f7603d1a388ff46bc4c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 20 Mar 2025 10:03:00 +0100
-Subject: [PATCH 174/985] net/page_pool: dovetail: allow for high order pages
+Subject: [PATCH 0174/1013] net/page_pool: dovetail: allow for high order pages
  in oob cache
 
 At this chance, fix a page leak at init since we weren't releasing the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 94 insertions(+), 28 deletions(-)
 
 diff --git a/include/net/page_pool/types.h b/include/net/page_pool/types.h
-index ebba4f852..ff8c04267 100644
+index ebba4f852c2c..ff8c04267bc1 100644
 --- a/include/net/page_pool/types.h
 +++ b/include/net/page_pool/types.h
 @@ -283,15 +283,9 @@ static inline bool page_pool_is_oob(struct page_pool *pool)
@@ -37,7 +37,7 @@ index ebba4f852..ff8c04267 100644
  static inline void page_pool_destroy(struct page_pool *pool)
  {
 diff --git a/net/core/dev.c b/net/core/dev.c
-index 8ad135b6e..723ba54cd 100644
+index 8ad135b6edaa..723ba54cd5c7 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -6664,7 +6664,7 @@ static void __napi_busy_loop(unsigned int napi_id,
@@ -50,7 +50,7 @@ index 8ad135b6e..723ba54cd 100644
  	if (!IS_ENABLED(CONFIG_PREEMPT_RT))
  		preempt_disable();
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index 2dd5c1653..1c49fd2f9 100644
+index 2dd5c165335b..1c49fd2f91ce 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -191,6 +191,8 @@ static void page_pool_struct_check(void)

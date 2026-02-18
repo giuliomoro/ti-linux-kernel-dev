@@ -1,7 +1,7 @@
 From b4334c4701015e2087a701f777d63b557aaed3ad Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Nov 2021 16:04:57 +0100
-Subject: [PATCH 720/985] evl: kconfig: turn on DOVETAIL_DEBUG on CORE/NET
+Subject: [PATCH 0720/1013] evl: kconfig: turn on DOVETAIL_DEBUG on CORE/NET
  debug
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index 811deba7d..be00a495f 100644
+index 811deba7dc0d..be00a495fab9 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -235,6 +235,7 @@ if EVL_DEBUG

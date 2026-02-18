@@ -1,7 +1,7 @@
 From 4080e48e624725d416e3dcf8f02e4daf4e98283f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 20 Jun 2025 15:27:16 +0200
-Subject: [PATCH 954/985] evl/lib: cache: add entry init helper
+Subject: [PATCH 0954/1013] evl/lib: cache: add entry init helper
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  2 files changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/include/evl/cache.h b/include/evl/cache.h
-index 846503eb6..d47535694 100644
+index 846503eb64c8..d4753569421e 100644
 --- a/include/evl/cache.h
 +++ b/include/evl/cache.h
 @@ -70,6 +70,9 @@ int evl_init_cache(struct evl_cache *cache);
@@ -24,7 +24,7 @@ index 846503eb6..d47535694 100644
  			struct evl_cache_entry *entry);
  
 diff --git a/kernel/evl/lib/cache.c b/kernel/evl/lib/cache.c
-index 82c6faf13..10ff464f2 100644
+index 82c6faf13e8b..10ff464f2245 100644
 --- a/kernel/evl/lib/cache.c
 +++ b/kernel/evl/lib/cache.c
 @@ -33,6 +33,22 @@ void evl_cleanup_cache(struct evl_cache *cache) /* in-band */

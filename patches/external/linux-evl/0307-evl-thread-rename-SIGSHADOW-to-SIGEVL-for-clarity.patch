@@ -1,7 +1,7 @@
 From ee5711a6c0ffbaf7f703c0ceec374af5038a8945 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 15 Feb 2019 19:53:32 +0100
-Subject: [PATCH 307/985] evl/thread: rename SIGSHADOW to SIGEVL for clarity
+Subject: [PATCH 0307/1013] evl/thread: rename SIGSHADOW to SIGEVL for clarity
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 9 insertions(+), 11 deletions(-)
 
 diff --git a/include/uapi/evenless/signal.h b/include/uapi/evenless/signal.h
-index 8d66f64c9..4c92f5a54 100644
+index 8d66f64c98c9..4c92f5a54533 100644
 --- a/include/uapi/evenless/signal.h
 +++ b/include/uapi/evenless/signal.h
 @@ -9,13 +9,13 @@
@@ -31,7 +31,7 @@ index 8d66f64c9..4c92f5a54 100644
  #define SIGDEBUG			SIGXCPU
  #define sigdebug_code(si)		((si)->si_value.sival_int)
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 03a321ba0..e19bae57f 100644
+index 03a321ba0f3d..e19bae57fd7c 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -580,12 +580,12 @@ void evl_hold_thread(struct evl_thread *thread, int mask)

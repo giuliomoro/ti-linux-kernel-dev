@@ -1,7 +1,7 @@
 From cd8061f137f80516de86e8fdd128cc40b7876b36 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 10 Jun 2025 14:46:27 +0200
-Subject: [PATCH 944/985] evl/net: packet: fix crash on oob_{read, write}
+Subject: [PATCH 0944/1013] evl/net: packet: fix crash on oob_{read, write}
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 82 insertions(+), 73 deletions(-)
 
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index 2a0171b97..e0842b841 100644
+index 2a0171b97cd8..e0842b841e54 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -371,33 +371,37 @@ static struct net_device *find_xmit_device(struct evl_socket *esk,

@@ -1,7 +1,7 @@
 From 88d874f5bb0cd932a92596d3c0ea2b146d4c0183 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 30 Jul 2019 11:18:06 +0200
-Subject: [PATCH 457/985] evl/clock: inline proxy tick propagation
+Subject: [PATCH 0457/1013] evl/clock: inline proxy tick propagation
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 18 insertions(+), 15 deletions(-)
 
 diff --git a/include/evl/tick.h b/include/evl/tick.h
-index d6183106f..79bb5a852 100644
+index d6183106f62d..79bb5a852c79 100644
 --- a/include/evl/tick.h
 +++ b/include/evl/tick.h
 @@ -10,7 +10,9 @@
@@ -45,7 +45,7 @@ index d6183106f..79bb5a852 100644
  
  void evl_disable_tick(void);
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 8cc4320a9..c4625bc84 100644
+index 8cc4320a9570..c4625bc8480d 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -353,10 +353,10 @@ void evl_core_tick(struct clock_event_device *dummy) /* hard irqs off */
@@ -63,7 +63,7 @@ index 8cc4320a9..c4625bc84 100644
  	if ((this_rq->lflags & RQ_TPROXY) && (this_rq->curr->state & T_ROOT))
  		evl_notify_proxy_tick(this_rq);
 diff --git a/kernel/evl/tick.c b/kernel/evl/tick.c
-index fab24fe87..625040277 100644
+index fab24fe87727..625040277e1e 100644
 --- a/kernel/evl/tick.c
 +++ b/kernel/evl/tick.c
 @@ -80,18 +80,6 @@ static int proxy_set_oneshot_stopped(struct clock_event_device *proxy_dev)

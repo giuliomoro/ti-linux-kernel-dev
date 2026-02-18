@@ -1,7 +1,7 @@
 From 5dc59f64bf3588b8ddd1861947ef4eca2b1d8779 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 18 Jul 2021 11:48:07 +0200
-Subject: [PATCH 708/985] evl/time: set EVL_NONBLOCK value to KTIME_MAX
+Subject: [PATCH 0708/1013] evl/time: set EVL_NONBLOCK value to KTIME_MAX
 
 Align on the in-band definition of a ktime value which cannot
 represent a sensible timeout.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/include/evl/timeout.h b/include/evl/timeout.h
-index a5c9325b7..75557acf0 100644
+index a5c9325b73bb..75557acf0ca8 100644
 --- a/include/evl/timeout.h
 +++ b/include/evl/timeout.h
 @@ -19,7 +19,7 @@

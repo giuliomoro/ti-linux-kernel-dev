@@ -1,7 +1,7 @@
 From d7c4cc2f3a46e9604e09d9b19053fb5179a6b30b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 22 Apr 2025 15:17:54 +0200
-Subject: [PATCH 915/985] evl/net: skb: save cached copy of netdev address
+Subject: [PATCH 0915/1013] evl/net: skb: save cached copy of netdev address
 
 We need to keep a pointer to the originating device for the release
 path (__free_evl_skb), since a regular protocol layer (e.g. UDP) might
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 24 insertions(+), 6 deletions(-)
 
 diff --git a/include/evl/net/skb.h b/include/evl/net/skb.h
-index a44c3a682..ae6f091db 100644
+index a44c3a682988..ae6f091db1b1 100644
 --- a/include/evl/net/skb.h
 +++ b/include/evl/net/skb.h
 @@ -22,6 +22,7 @@ struct iovec;
@@ -30,7 +30,7 @@ index a44c3a682..ae6f091db 100644
  		/* protocol-specific stuff should live here. */
  	};
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 86e8ce25b..61d3a11a4 100644
+index 86e8ce25b472..61d3a11a4072 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -167,12 +167,17 @@ EXPORT_SYMBOL_GPL(evl_net_wake_rx);
@@ -53,7 +53,7 @@ index 86e8ce25b..61d3a11a4 100644
  	/*
  	 * Enqueue the packet. The NIC driver is expected to call
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index cfb1cbd95..0230e1f1c 100644
+index cfb1cbd9515c..0230e1f1c02b 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -177,6 +177,15 @@ struct sk_buff *evl_net_dev_alloc_skb(struct net_device *dev,

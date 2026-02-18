@@ -1,7 +1,7 @@
 From 2fcb906e7e33f5ba14110a4c37ed734056d996b4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 6 Apr 2020 17:16:35 +0200
-Subject: [PATCH 091/985] spi: dovetail: add generic support for out-of-band
+Subject: [PATCH 0091/1013] spi: dovetail: add generic support for out-of-band
  transfers
 
 These changes introduce a kernel API for running out-of-band SPI
@@ -34,7 +34,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 394 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 823797217..c80e92c4d 100644
+index 823797217404..c80e92c4dc93 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
 @@ -32,6 +32,10 @@ config SPI_DEBUG
@@ -49,7 +49,7 @@ index 823797217..c80e92c4d 100644
  # MASTER side ... talking to discrete SPI slave chips including microcontrollers
  #
 diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 8d6341b0d..fffa0df92 100644
+index 8d6341b0d866..fffa0df92337 100644
 --- a/drivers/spi/spi.c
 +++ b/drivers/spi/spi.c
 @@ -3077,6 +3077,9 @@ struct spi_controller *__spi_alloc_controller(struct device *dev,
@@ -391,7 +391,7 @@ index 8d6341b0d..fffa0df92 100644
  
  #if IS_ENABLED(CONFIG_OF_DYNAMIC)
 diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 71ad76693..b7a8eed18 100644
+index 71ad766932d3..b7a8eed183ed 100644
 --- a/include/linux/spi/spi.h
 +++ b/include/linux/spi/spi.h
 @@ -10,6 +10,7 @@

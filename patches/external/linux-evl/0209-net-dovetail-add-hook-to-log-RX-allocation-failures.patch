@@ -1,7 +1,8 @@
 From 79adf3b6b18b1802649d99dc6ecc6b974ab66246 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Tue, 1 Jul 2025 12:38:55 +0200
-Subject: [PATCH 209/985] net: dovetail: add hook to log RX allocation failures
+Subject: [PATCH 0209/1013] net: dovetail: add hook to log RX allocation
+ failures
 
 The out-of-band core needs to export to oob-capable drivers an
 interface for reporting allocation failures on the RX path.
@@ -15,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index d5b9289d9..7561c79ea 100644
+index d5b9289d9578..7561c79eaffa 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -4434,6 +4434,7 @@ int napi_poll_oob(struct napi_struct *n, struct list_head *repoll);

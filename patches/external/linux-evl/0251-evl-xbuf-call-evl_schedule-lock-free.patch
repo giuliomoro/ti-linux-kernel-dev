@@ -1,7 +1,7 @@
 From 161fa7fefdd65ee3a3be2fd28edf1f8eb1353a33 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 3 Feb 2019 11:01:22 +0100
-Subject: [PATCH 251/985] evl/xbuf: call evl_schedule() lock-free
+Subject: [PATCH 0251/1013] evl/xbuf: call evl_schedule() lock-free
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index cc3be3f12..ae0cf9ee9 100644
+index cc3be3f12707..ae0cf9ee9ca3 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -190,7 +190,6 @@ static ssize_t do_xbuf_read(struct xbuf_ring *ring,

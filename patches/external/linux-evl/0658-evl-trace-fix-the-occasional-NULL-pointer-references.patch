@@ -1,7 +1,8 @@
 From 189f30bacf800d1dc1afc4d325d0a4239bbf72c4 Mon Sep 17 00:00:00 2001
 From: lio via Evl <evl@evlproject.org>
 Date: Wed, 18 Nov 2020 15:28:34 +0100
-Subject: [PATCH 658/985] evl trace:fix the occasional NULL pointer references
+Subject: [PATCH 0658/1013] evl trace:fix the occasional NULL pointer
+ references
 
 Trace event *evl_sched_attrs* calls TP_printk("%s") to out print the thread
 name get by evl_element_name().
@@ -17,7 +18,7 @@ Signed-off-by: lio <carver4lio@163.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 1c3a10d9d..49f5adb7d 100644
+index 1c3a10d9d170..49f5adb7daf3 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -177,7 +177,8 @@ DECLARE_EVENT_CLASS(evl_sched_attrs,

@@ -1,7 +1,8 @@
 From 3012cce623d6f3a64b6d590fe7a7a14e2b389644 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 15:37:39 +0100
-Subject: [PATCH 118/985] net: dovetail: add infrastructure for oob device I/O
+Subject: [PATCH 0118/1013] net: dovetail: add infrastructure for oob device
+ I/O
 
 Enabling oob I/O for netdevices requires:
 
@@ -50,7 +51,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  13 files changed, 600 insertions(+), 280 deletions(-)
 
 diff --git a/include/dovetail/netdevice.h b/include/dovetail/netdevice.h
-index 5bd975ccd..2939e017b 100644
+index 5bd975ccd5b3..2939e017bbe2 100644
 --- a/include/dovetail/netdevice.h
 +++ b/include/dovetail/netdevice.h
 @@ -9,4 +9,15 @@
@@ -70,7 +71,7 @@ index 5bd975ccd..2939e017b 100644
 +
  #endif /* !_DOVETAIL_NETDEVICE_H */
 diff --git a/include/linux/net.h b/include/linux/net.h
-index 7e6bfe21a..0beed129e 100644
+index 7e6bfe21a7cb..0beed129e36b 100644
 --- a/include/linux/net.h
 +++ b/include/linux/net.h
 @@ -342,6 +342,16 @@ static inline bool sendpages_ok(struct page *page, size_t len, size_t offset)
@@ -91,7 +92,7 @@ index 7e6bfe21a..0beed129e 100644
  		   size_t num, size_t len);
  int kernel_sendmsg_locked(struct sock *sk, struct msghdr *msg,
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index d615293ac..b5d9eb78d 100644
+index d615293ac3eb..b5d9eb78d013 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
 @@ -330,6 +330,7 @@ enum netdev_state_t {
@@ -303,7 +304,7 @@ index d615293ac..b5d9eb78d 100644
  /*
   * Network interface message level settings
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 3f4e37221..5b7178726 100644
+index 3f4e372217f4..5b7178726268 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -519,6 +519,9 @@ enum {
@@ -536,7 +537,7 @@ index 3f4e37221..5b7178726 100644
  #endif	/* __KERNEL__ */
  #endif	/* _LINUX_SKBUFF_H */
 diff --git a/include/net/page_pool/types.h b/include/net/page_pool/types.h
-index f53e2c90b..83a47de61 100644
+index f53e2c90b686..83a47de61044 100644
 --- a/include/net/page_pool/types.h
 +++ b/include/net/page_pool/types.h
 @@ -30,9 +30,11 @@
@@ -594,7 +595,7 @@ index f53e2c90b..83a47de61 100644
  static inline void page_pool_destroy(struct page_pool *pool)
  {
 diff --git a/net/Kconfig b/net/Kconfig
-index 5142e9067..3bbff6974 100644
+index 5142e9067284..3bbff69749ef 100644
 --- a/net/Kconfig
 +++ b/net/Kconfig
 @@ -68,6 +68,8 @@ config SKB_EXTENSIONS
@@ -617,7 +618,7 @@ index 5142e9067..3bbff6974 100644
  	default n
  	bool "Page pool stats"
 diff --git a/net/core/dev.c b/net/core/dev.c
-index f51cf8082..175ed7a1a 100644
+index f51cf8082f13..175ed7a1a2a3 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -3249,11 +3249,11 @@ void dev_kfree_skb_irq_reason(struct sk_buff *skb, enum skb_drop_reason reason)
@@ -986,7 +987,7 @@ index f51cf8082..175ed7a1a 100644
  		INIT_CSD(&sd->defer_csd, trigger_rx_softirq, sd);
  		spin_lock_init(&sd->defer_lock);
 diff --git a/net/core/gro.c b/net/core/gro.c
-index e6a95a1a4..2e9d77278 100644
+index e6a95a1a493c..2e9d772784e5 100644
 --- a/net/core/gro.c
 +++ b/net/core/gro.c
 @@ -624,6 +624,13 @@ gro_result_t napi_gro_receive(struct napi_struct *napi, struct sk_buff *skb)
@@ -1004,7 +1005,7 @@ index e6a95a1a4..2e9d77278 100644
  		return GRO_NORMAL;
  
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index b1c3e0ad6..fa37fb969 100644
+index b1c3e0ad6dbf..fa37fb969b8c 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -188,6 +188,9 @@ static void page_pool_struct_check(void)
@@ -1179,7 +1180,7 @@ index b1c3e0ad6..fa37fb969 100644
  	*offset = pool->frag_offset;
  
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 8503abd49..18fc3b548 100644
+index 8503abd49089..18fc3b548980 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -470,17 +470,26 @@ static void __build_skb_around(struct sk_buff *skb, void *data,
@@ -1507,7 +1508,7 @@ index 8503abd49..18fc3b548 100644
  }
  
 diff --git a/net/core/sysctl_net_core.c b/net/core/sysctl_net_core.c
-index 47e2743ff..56db24434 100644
+index 47e2743ffe22..56db24434ae6 100644
 --- a/net/core/sysctl_net_core.c
 +++ b/net/core/sysctl_net_core.c
 @@ -633,6 +633,17 @@ static struct ctl_table net_core_table[] = {
@@ -1529,7 +1530,7 @@ index 47e2743ff..56db24434 100644
  
  static struct ctl_table netns_core_table[] = {
 diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index faaffd3d3..ff43d4cc6 100644
+index faaffd3d373a..ff43d4cc61a7 100644
 --- a/net/ipv4/route.c
 +++ b/net/ipv4/route.c
 @@ -2907,7 +2907,7 @@ struct rtable *ip_route_output_flow(struct net *net, struct flowi4 *flp4,
@@ -1542,7 +1543,7 @@ index faaffd3d3..ff43d4cc6 100644
  
  	return rt;
 diff --git a/net/socket.c b/net/socket.c
-index b184a5f0b..d54daa1f3 100644
+index b184a5f0b7c9..d54daa1f3839 100644
 --- a/net/socket.c
 +++ b/net/socket.c
 @@ -2187,7 +2187,7 @@ int __sys_connect_file(struct file *file, struct sockaddr_storage *address,

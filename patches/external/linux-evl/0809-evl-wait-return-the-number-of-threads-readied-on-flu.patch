@@ -1,7 +1,7 @@
 From 3e77ddcc671b0b2bad5121ba236cd13832430240 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 26 Dec 2022 18:45:58 +0100
-Subject: [PATCH 809/985] evl/wait: return the number of threads readied on
+Subject: [PATCH 0809/1013] evl/wait: return the number of threads readied on
  flush
 
 We can make a good use of this information in order to implement
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 12 insertions(+), 5 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index db54e5587..ba58c0210 100644
+index db54e5587016..ba58c0210e89 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -140,10 +140,10 @@ void evl_destroy_wait(struct evl_wait_queue *wq);
@@ -31,7 +31,7 @@ index db54e5587..ba58c0210 100644
  
  struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index a6465882b..5305a0a1b 100644
+index a6465882b3cb..5305a0a1b132 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -115,9 +115,10 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

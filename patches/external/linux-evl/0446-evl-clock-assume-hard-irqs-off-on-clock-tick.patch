@@ -1,7 +1,7 @@
 From 3516b5a1597e7567c61154fba9a83a0bbbb50d58 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 13 Jul 2019 20:16:11 +0200
-Subject: [PATCH 446/985] evl/clock: assume hard irqs off on clock tick
+Subject: [PATCH 0446/1013] evl/clock: assume hard irqs off on clock tick
 
 Callers of evl_announce_tick() and evl_core_tick() are expected to run
 over an interrupt context, so we may assume hard irqs off on entry.
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index bd1fab485..c8428b096 100644
+index bd1fab485d4c..c8428b096933 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -280,11 +280,13 @@ static void do_clock_tick(struct evl_clock *clock, struct evl_timerbase *tmb)

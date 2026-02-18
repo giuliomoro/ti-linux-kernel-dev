@@ -1,7 +1,7 @@
 From 58a116e66940c8fca5c34a2e8d6dcce966605941 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 1 May 2025 12:26:10 +0200
-Subject: [PATCH 923/985] evl/net: socket: introduce set/get opt requests
+Subject: [PATCH 0923/1013] evl/net: socket: introduce set/get opt requests
 
 With the upcoming support for packet timestamping, we are going to
 have more socket options, time has come to provide for dedicated
@@ -24,7 +24,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 172 insertions(+), 26 deletions(-)
 
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index 03f298b73..386b48360 100644
+index 03f298b73a3c..386b48360c44 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -10,14 +10,14 @@
@@ -45,7 +45,7 @@ index 03f298b73..386b48360 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/net/socket-abi.h b/include/uapi/evl/net/socket-abi.h
-index 9664c0fb9..8a8f2060c 100644
+index 9664c0fb9214..8a8f2060c20d 100644
 --- a/include/uapi/evl/net/socket-abi.h
 +++ b/include/uapi/evl/net/socket-abi.h
 @@ -41,12 +41,25 @@ struct evl_net_solicit {
@@ -82,7 +82,7 @@ index 9664c0fb9..8a8f2060c 100644
  
  #endif /* !_EVL_UAPI_NET_SOCKET_ABI_H */
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 4157f9821..0e18c993c 100644
+index 4157f9821de3..0e18c993c602 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -572,42 +572,175 @@ __poll_t sock_oob_poll(struct file *filp,

@@ -1,7 +1,7 @@
 From 7819e4b123dc61049dd128a2464d40efc66bf450 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 10 May 2019 10:36:38 +0200
-Subject: [PATCH 371/985] evl/clock: decrease default u-gravity value
+Subject: [PATCH 0371/1013] evl/clock: decrease default u-gravity value
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index 5856d7bcc..9e154369e 100644
+index 5856d7bcc732..9e154369e801 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -978,7 +978,7 @@ static int set_coreclk_gravity(struct evl_clock *clock,

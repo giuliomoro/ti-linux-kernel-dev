@@ -1,7 +1,7 @@
 From d9caa7dcb29f61bb5c1b89c31d760d0e303ec0e4 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 18 Sep 2025 11:03:15 +0200
-Subject: [PATCH 216/985] net/page_pool: dovetail: fix build (missing call
+Subject: [PATCH 0216/1013] net/page_pool: dovetail: fix build (missing call
  argument)
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/core/page_pool.c b/net/core/page_pool.c
-index df8e28940..d7de177af 100644
+index df8e28940b8f..d7de177af67a 100644
 --- a/net/core/page_pool.c
 +++ b/net/core/page_pool.c
 @@ -601,7 +601,7 @@ static int page_pool_init_cache(struct page_pool *pool)

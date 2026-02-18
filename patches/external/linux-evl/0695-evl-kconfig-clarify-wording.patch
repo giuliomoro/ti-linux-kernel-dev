@@ -1,7 +1,7 @@
 From e63df9f8ed2df897e14b7e10a11aa3bdbf4a7f79 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 7 Feb 2021 11:11:46 +0100
-Subject: [PATCH 695/985] evl: kconfig: clarify wording
+Subject: [PATCH 0695/1013] evl: kconfig: clarify wording
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index e5c889b38..fff08f1a8 100644
+index e5c889b38813..fff08f1a8001 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -15,7 +15,7 @@ config EVL_SCHED_QUOTA

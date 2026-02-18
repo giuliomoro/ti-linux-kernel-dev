@@ -1,7 +1,7 @@
 From 64062d7aa08533617ebca567fd175c491b35a718 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Jul 2021 18:36:00 +0200
-Subject: [PATCH 707/985] evl/wait: export wait channel of threads to /sys,
+Subject: [PATCH 0707/1013] evl/wait: export wait channel of threads to /sys,
  ftrace
 
 Knowing which synchronization object a thread sleeps on may be quite
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 39 insertions(+), 1 deletion(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index de7bccd1a..faa3ee3e4 100644
+index de7bccd1ae18..faa3ee3e4a32 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -107,6 +107,7 @@ struct evl_kmutex {
@@ -28,7 +28,7 @@ index de7bccd1a..faa3ee3e4 100644
  		},							\
  		.fastlock = ATOMIC_INIT(0),				\
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index 70fc49867..acb254cde 100644
+index 70fc4986754b..acb254cde0e1 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -351,6 +351,7 @@ TRACE_EVENT(evl_sleep_on,
@@ -56,7 +56,7 @@ index 70fc49867..acb254cde 100644
  );
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 5926cdd61..4d176c157 100644
+index 5926cdd6121d..4d176c157743 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2716,6 +2716,39 @@ static ssize_t observable_show(struct device *dev,

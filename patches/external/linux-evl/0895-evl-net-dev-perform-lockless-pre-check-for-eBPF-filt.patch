@@ -1,7 +1,7 @@
 From eef6920c30959d68cf34dfd98fdc0d220f58a3c7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 10 Oct 2024 10:08:03 +0200
-Subject: [PATCH 895/985] evl/net: dev: perform lockless pre-check for eBPF
+Subject: [PATCH 0895/1013] evl/net: dev: perform lockless pre-check for eBPF
  filter
 
 Don't enter an RCU read-locked section if there is no filter installed
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 8342fd884..894d4c864 100644
+index 8342fd884d53..894d4c864ff6 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -466,16 +466,18 @@ int evl_netdev_event(struct notifier_block *ev_block,

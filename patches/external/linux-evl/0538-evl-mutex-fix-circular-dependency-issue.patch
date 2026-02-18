@@ -1,7 +1,7 @@
 From 5abea97eb806bca9ca51bc9ba9405531f29b4453 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 2 Nov 2019 15:20:15 +0100
-Subject: [PATCH 538/985] evl/mutex: fix circular dependency issue
+Subject: [PATCH 0538/1013] evl/mutex: fix circular dependency issue
 
 Proper locking order is mutex->lock first, thread->lock next.
 
@@ -26,7 +26,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 84 insertions(+), 49 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 04c1f029c..14a81bd6b 100644
+index 04c1f029c718..14a81bd6b2fa 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -37,15 +37,27 @@ struct evl_mutex {
@@ -63,7 +63,7 @@ index 04c1f029c..14a81bd6b 100644
  
  int evl_trylock_mutex(struct evl_mutex *mutex);
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index e639c84cf..f2c6013ee 100644
+index e639c84cf00d..f2c6013ee7af 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -225,6 +225,10 @@ int evl_init_thread(struct evl_thread *thread,
@@ -78,7 +78,7 @@ index e639c84cf..f2c6013ee 100644
  		struct evl_clock *clock,
  		struct evl_wait_channel *wchan);
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 64ed8f27f..8cec883d4 100644
+index 64ed8f27fd66..8cec883d4bf5 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -125,8 +125,8 @@ static int adjust_boost(struct evl_thread *owner,
@@ -267,7 +267,7 @@ index 64ed8f27f..8cec883d4 100644
  }
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index b032fbb8e..e3ddd505a 100644
+index b032fbb8efaa..e3ddd505ae27 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -459,20 +459,20 @@ int __evl_run_kthread(struct evl_kthread *kthread)

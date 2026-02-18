@@ -1,7 +1,7 @@
 From 958c6cd4ee9a5bd3e8ab3827ad5c2c5a30caea0c Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 25 Oct 2022 11:27:05 +0200
-Subject: [PATCH 767/985] evl/mutex: fix unlock vs lock race
+Subject: [PATCH 0767/1013] evl/mutex: fix unlock vs lock race
 
 In a locking attempt, walking the PI chain is preemptible by other
 CPUs since mutex->wchan.lock may be released during the process, so
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 48 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 6d11f94ac..c31bdc417 100644
+index 6d11f94ac334..c31bdc4171d8 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -1231,19 +1231,44 @@ int evl_lock_mutex_timeout(struct evl_mutex *mutex, ktime_t timeout,

@@ -1,7 +1,7 @@
 From 277be38946758480abf1caf230e44c85ef9f7287 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 12 Jun 2019 16:02:03 +0200
-Subject: [PATCH 400/985] evl/monitor: add event mask protocol
+Subject: [PATCH 0400/1013] evl/monitor: add event mask protocol
 
 This protocol operates the monitor value as a set of boolean event
 flags forming a 32bit-wide event group. All bits from a group are
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 111 insertions(+), 33 deletions(-)
 
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index dc1d1aee0..ecd071fc7 100644
+index dc1d1aee08a5..ecd071fc79c1 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -16,6 +16,7 @@
@@ -49,7 +49,7 @@ index dc1d1aee0..ecd071fc7 100644
  
  #endif /* !_EVL_UAPI_MONITOR_H */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 5c2170cbe..4eb88ea7d 100644
+index 5c2170cbe656..4eb88ea7d009 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -296,15 +296,48 @@ static void untrack_event(struct evl_monitor *event,

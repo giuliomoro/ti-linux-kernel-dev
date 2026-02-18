@@ -1,7 +1,8 @@
 From beb1be221a5de5714d2f4375bb221b06fdb4b183 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 21 Apr 2020 19:35:33 +0200
-Subject: [PATCH 611/985] evl/thread: add unblock, demote and yield operations
+Subject: [PATCH 0611/1013] evl/thread: add unblock, demote and yield
+ operations
 
 - EVL_THRIOC_UNBLOCK releases the target thread from any ongoing wait
   on a resource (does not apply to forcible suspension).
@@ -28,7 +29,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 68 insertions(+), 46 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index e0e21481f..4c62b9835 100644
+index e0e21481fb46..4c62b9835825 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -777,17 +777,20 @@ DEFINE_EVENT(evl_sched_attrs, evl_thread_getsched,
@@ -56,7 +57,7 @@ index e0e21481f..4c62b9835 100644
  		  __entry->mode, evl_print_thread_mode(__entry->mode))
  );
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 8e3caa420..5117423d0 100644
+index 8e3caa4208be..5117423d065d 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -69,7 +70,7 @@ index 8e3caa420..5117423d0 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index cf353a6df..fe5c3dd90 100644
+index cf353a6dfb94..fe5c3dd90793 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -107,7 +107,10 @@ struct evl_thread_state {
@@ -86,7 +87,7 @@ index cf353a6df..fe5c3dd90 100644
  
  #endif /* !_EVL_UAPI_THREAD_H */
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 2de803f68..8bb5075d4 100644
+index 2de803f686e0..8bb5075d4ff7 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1403,33 +1403,6 @@ int evl_killall(int mask)

@@ -1,7 +1,7 @@
 From 5a13050700f8bc87d4485a10d6118aad4c310bc7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 22 Jul 2022 18:54:50 +0200
-Subject: [PATCH 734/985] evl/net: skb: request more headroom from skb alloc,
+Subject: [PATCH 0734/1013] evl/net: skb: request more headroom from skb alloc,
  reset calls
 
 We may now require additional headroom to be allocated for oob
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 229a99da1..8fb80f352 100644
+index 229a99da1190..8fb80f3526c7 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -247,7 +247,7 @@ static void free_skb(struct sk_buff *skb)

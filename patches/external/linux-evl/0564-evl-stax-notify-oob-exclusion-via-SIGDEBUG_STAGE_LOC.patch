@@ -1,7 +1,7 @@
 From 38dd273e80524b35eb941addcef09168207b513f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 25 Jan 2020 12:03:53 +0100
-Subject: [PATCH 564/985] evl/stax: notify oob exclusion via
+Subject: [PATCH 0564/1013] evl/stax: notify oob exclusion via
  SIGDEBUG_STAGE_LOCKED
 
 Enabling the T_WOSX bit in the thread mode will cause
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 13 insertions(+), 2 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 65485f92c..71630cbfe 100644
+index 65485f92ccd4..71630cbfe0b8 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -36,7 +36,7 @@ index 65485f92c..71630cbfe 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/signal.h b/include/uapi/evl/signal.h
-index e422ab80d..cbdf68b7b 100644
+index e422ab80d5f3..cbdf68b7b90a 100644
 --- a/include/uapi/evl/signal.h
 +++ b/include/uapi/evl/signal.h
 @@ -33,5 +33,6 @@
@@ -47,7 +47,7 @@ index e422ab80d..cbdf68b7b 100644
  
  #endif /* !_EVL_UAPI_SIGNAL_H */
 diff --git a/include/uapi/evl/thread.h b/include/uapi/evl/thread.h
-index da7f0f985..0f11a5121 100644
+index da7f0f985cf2..0f11a51218bb 100644
 --- a/include/uapi/evl/thread.h
 +++ b/include/uapi/evl/thread.h
 @@ -32,6 +32,7 @@
@@ -67,7 +67,7 @@ index da7f0f985..0f11a5121 100644
  /* Local information flags (private to current thread) */
  
 diff --git a/kernel/evl/stax.c b/kernel/evl/stax.c
-index bc90aea57..5b6d53468 100644
+index bc90aea57e5e..5b6d534683d5 100644
 --- a/kernel/evl/stax.c
 +++ b/kernel/evl/stax.c
 @@ -45,8 +45,10 @@ static inline bool oob_may_access(int gateval)
@@ -102,7 +102,7 @@ index bc90aea57..5b6d53468 100644
  }
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 372bdb239..8d653c14a 100644
+index 372bdb239ae6..8d653c14a848 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1368,7 +1368,7 @@ int evl_update_mode(__u32 mask, bool set)

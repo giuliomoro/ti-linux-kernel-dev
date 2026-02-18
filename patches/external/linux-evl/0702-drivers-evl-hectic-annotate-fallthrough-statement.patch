@@ -1,7 +1,7 @@
 From 6fa7fb18099b921b2c7fcffd372f8a69241775fb Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 27 Jul 2021 19:09:33 +0200
-Subject: [PATCH 702/985] drivers/evl: hectic: annotate fallthrough statement
+Subject: [PATCH 0702/1013] drivers/evl: hectic: annotate fallthrough statement
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/evl/hectic.c b/drivers/evl/hectic.c
-index 3882c5e85..92fec7c86 100644
+index 3882c5e85dab..92fec7c86c3e 100644
 --- a/drivers/evl/hectic.c
 +++ b/drivers/evl/hectic.c
 @@ -415,7 +415,7 @@ static void rtswitch_kthread(void *arg)

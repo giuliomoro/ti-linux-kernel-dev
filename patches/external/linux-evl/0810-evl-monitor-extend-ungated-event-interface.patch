@@ -1,7 +1,7 @@
 From 35c44a1e845f34437aa3a55594d782b222095748 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 26 Dec 2022 18:58:44 +0100
-Subject: [PATCH 810/985] evl/monitor: extend ungated event interface
+Subject: [PATCH 0810/1013] evl/monitor: extend ungated event interface
 
 Applications were missing some features from ungated events
 (i.e. count/sema4 and mask) in order to make it easier to use them as
@@ -32,7 +32,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 343 insertions(+), 152 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 8b55f380a..4a33e38e6 100644
+index 8b55f380a7b9..4a33e38e6b9d 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -45,7 +45,7 @@ index 8b55f380a..4a33e38e6 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 3d68eb0cd..434bb0894 100644
+index 3d68eb0cd624..434bb089464d 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -63,6 +63,10 @@ struct evl_monitor_unwaitreq {
@@ -84,7 +84,7 @@ index 3d68eb0cd..434bb0894 100644
  
  #endif /* !_EVL_UAPI_MONITOR_H */
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index fd9841f69..77b2e851b 100644
+index fd9841f69e5b..77b2e851bf8f 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -284,188 +284,282 @@ static int exit_monitor(struct evl_monitor *gate)

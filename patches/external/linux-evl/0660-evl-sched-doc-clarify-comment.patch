@@ -1,7 +1,7 @@
 From 6de3550ed1ea52680f49fe47fd2cf2eea29cc8c0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Dec 2020 12:56:12 +0100
-Subject: [PATCH 660/985] evl/sched: doc: clarify comment
+Subject: [PATCH 0660/1013] evl/sched: doc: clarify comment
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index cdf77302d..ea2547891 100644
+index cdf77302d321..ea254789158d 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -887,10 +887,11 @@ static inline bool test_resched(struct evl_rq *this_rq)

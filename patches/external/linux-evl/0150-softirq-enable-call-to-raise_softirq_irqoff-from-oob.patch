@@ -1,7 +1,7 @@
 From cb456cc79e85116d2b885140e6f98d0b94995023 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 13 Mar 2025 10:10:38 +0100
-Subject: [PATCH 150/985] softirq: enable call to raise_softirq_irqoff() from
+Subject: [PATCH 0150/1013] softirq: enable call to raise_softirq_irqoff() from
  oob
 
 __raise_softirq_irqoff() was already oob-enabled, extend this
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 8 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 00ff17635..b774032f4 100644
+index 00ff17635041..b774032f4deb 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
 @@ -704,9 +704,15 @@ inline void raise_softirq_irqoff(unsigned int nr)

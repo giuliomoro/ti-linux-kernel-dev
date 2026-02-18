@@ -1,7 +1,7 @@
 From 2babb6fecbadb8f5906db2529283a280b6573645 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 14:59:19 +0100
-Subject: [PATCH 321/985] evl/poll: drop watchpoints on fd closure
+Subject: [PATCH 0321/1013] evl/poll: drop watchpoints on fd closure
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -12,7 +12,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 338 insertions(+), 201 deletions(-)
 
 diff --git a/include/evenless/file.h b/include/evenless/file.h
-index 674bcddf2..1d7c424c6 100644
+index 674bcddf24c3..1d7c424c6d62 100644
 --- a/include/evenless/file.h
 +++ b/include/evenless/file.h
 @@ -10,12 +10,14 @@
@@ -51,7 +51,7 @@ index 674bcddf2..1d7c424c6 100644
  
  void evl_cleanup_files(void);
 diff --git a/include/evenless/poll.h b/include/evenless/poll.h
-index 3fbfd1a5b..a9cdb3c35 100644
+index 3fbfd1a5b090..a9cdb3c35f1d 100644
 --- a/include/evenless/poll.h
 +++ b/include/evenless/poll.h
 @@ -26,6 +26,10 @@ struct evl_poll_head {
@@ -73,7 +73,7 @@ index 3fbfd1a5b..a9cdb3c35 100644
 +
  #endif /* !_EVENLESS_POLL_H */
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
-index fbdcea66b..2054c570e 100644
+index fbdcea66b273..2054c570e8ca 100644
 --- a/kernel/evenless/file.c
 +++ b/kernel/evenless/file.c
 @@ -12,10 +12,12 @@
@@ -313,7 +313,7 @@ index fbdcea66b..2054c570e 100644
   * evl_open_file - Open new file with OOB capabilities
   *
 diff --git a/kernel/evenless/poll.c b/kernel/evenless/poll.c
-index adf0c5e7a..30b722e7d 100644
+index adf0c5e7a55d..30b722e7d8d6 100644
 --- a/kernel/evenless/poll.c
 +++ b/kernel/evenless/poll.c
 @@ -10,6 +10,7 @@

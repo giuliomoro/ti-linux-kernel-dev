@@ -1,7 +1,7 @@
 From a314bfa4bc8e94cdd4e5d0d38b64a7dd6a95c4e1 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 3 Dec 2022 12:52:18 +0100
-Subject: [PATCH 802/985] evl/wait: drop debug leftover
+Subject: [PATCH 0802/1013] evl/wait: drop debug leftover
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 74312448c..db54e5587 100644
+index 74312448c839..db54e5587016 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -32,10 +32,10 @@ struct evl_wait_channel {

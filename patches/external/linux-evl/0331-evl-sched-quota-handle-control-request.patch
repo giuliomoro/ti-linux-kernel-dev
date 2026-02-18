@@ -1,7 +1,7 @@
 From ab101106e5be8ec93bd2d2bfceb5f22a89cedb27 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 8 Mar 2019 18:10:20 +0100
-Subject: [PATCH 331/985] evl/sched: quota: handle control request
+Subject: [PATCH 0331/1013] evl/sched: quota: handle control request
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 225 insertions(+), 20 deletions(-)
 
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
-index 76cc0d868..47a73542b 100644
+index 76cc0d86894f..47a73542b37b 100644
 --- a/include/evenless/sched.h
 +++ b/include/evenless/sched.h
 @@ -113,6 +113,7 @@ extern struct list_head evl_thread_list;
@@ -35,7 +35,7 @@ index 76cc0d868..47a73542b 100644
  	struct evl_sched_class *next;
  	int weight;
 diff --git a/include/uapi/evenless/control.h b/include/uapi/evenless/control.h
-index e0715014d..7a1535e8c 100644
+index e0715014d95a..7a1535e8cc55 100644
 --- a/include/uapi/evenless/control.h
 +++ b/include/uapi/evenless/control.h
 @@ -7,6 +7,8 @@
@@ -55,7 +55,7 @@ index e0715014d..7a1535e8c 100644
  
  #endif /* !_EVENLESS_UAPI_CONTROL_H */
 diff --git a/include/uapi/evenless/sched.h b/include/uapi/evenless/sched.h
-index 38a0e05a1..3ab7191cb 100644
+index 38a0e05a1bcd..3ab7191cb3e8 100644
 --- a/include/uapi/evenless/sched.h
 +++ b/include/uapi/evenless/sched.h
 @@ -33,4 +33,49 @@ struct evl_sched_attrs {
@@ -109,7 +109,7 @@ index 38a0e05a1..3ab7191cb 100644
 +
  #endif /* !_EVENLESS_UAPI_SCHED_H */
 diff --git a/kernel/evenless/control.c b/kernel/evenless/control.c
-index 59fe713e2..228338da7 100644
+index 59fe713e2ecd..228338da7cc7 100644
 --- a/kernel/evenless/control.c
 +++ b/kernel/evenless/control.c
 @@ -10,6 +10,7 @@
@@ -223,7 +223,7 @@ index 59fe713e2..228338da7 100644
  	.mmap		=	control_mmap,
  };
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
-index 4051047d1..77ed93f85 100644
+index 4051047d1079..77ed93f85558 100644
 --- a/kernel/evenless/sched/core.c
 +++ b/kernel/evenless/sched/core.c
 @@ -2,7 +2,7 @@
@@ -236,7 +236,7 @@ index 4051047d1..77ed93f85 100644
  
  #include <linux/types.h>
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
-index 0207d9232..237201a52 100644
+index 0207d92320af..237201a52d55 100644
 --- a/kernel/evenless/sched/quota.c
 +++ b/kernel/evenless/sched/quota.c
 @@ -54,6 +54,8 @@

@@ -1,7 +1,7 @@
 From 27aba564cf48a617d2b76be1f44796029afa24e5 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 15 Jun 2019 20:55:16 +0200
-Subject: [PATCH 404/985] evl/monitor: fix event tracking for gates
+Subject: [PATCH 0404/1013] evl/monitor: fix event tracking for gates
 
 Make sure the per-event gate_offset and gate pointer are reset
 properly when the event is removed from the per-gate event tracking
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 36 insertions(+), 47 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 4eb88ea7d..9f983c1b4 100644
+index 4eb88ea7d009..9f983c1b4d59 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -115,6 +115,15 @@ void __evl_commit_monitor_ceiling(void)  /* nklock held, irqs off, OOB */

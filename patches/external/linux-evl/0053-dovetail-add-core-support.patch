@@ -1,7 +1,7 @@
 From 7675af42350687b9603e50d904d3655d2a3988a8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 21 Jul 2016 21:04:43 +0200
-Subject: [PATCH 053/985] dovetail: add core support
+Subject: [PATCH 0053/1013] dovetail: add core support
 
 This is the basic interface layer for hosting a high-priority resident
 co-kernel, aka "dovetailing".
@@ -91,7 +91,7 @@ Signed-off-by: Florian Bezdeka <florian.bezdeka@siemens.com>
 
 diff --git a/Documentation/dovetail.rst b/Documentation/dovetail.rst
 new file mode 100644
-index 000000000..5d37b0455
+index 000000000000..5d37b0455fe4
 --- /dev/null
 +++ b/Documentation/dovetail.rst
 @@ -0,0 +1,30 @@
@@ -126,7 +126,7 @@ index 000000000..5d37b0455
 +The reference implementation of a Dovetail-based companion core is
 +maintained at https://evlproject.org/core/.
 diff --git a/arch/Kconfig b/arch/Kconfig
-index 593f020c5..07a8deee8 100644
+index 593f020c5551..07a8deee8f39 100644
 --- a/arch/Kconfig
 +++ b/arch/Kconfig
 @@ -243,6 +243,9 @@ config ARCH_CORRECT_STACKTRACE_ON_KRETPROBE
@@ -140,7 +140,7 @@ index 593f020c5..07a8deee8 100644
  	bool
  
 diff --git a/fs/exec.c b/fs/exec.c
-index d60794372..3a9a9b6e8 100644
+index d60794372963..3a9a9b6e8919 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -33,6 +33,7 @@
@@ -197,7 +197,7 @@ index d60794372..3a9a9b6e8 100644
  	me->personality &= ~bprm->per_clear;
  
 diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 3d89de310..f42dcd81a 100644
+index 3d89de31066a..f42dcd81aa30 100644
 --- a/fs/fcntl.c
 +++ b/fs/fcntl.c
 @@ -1164,7 +1164,7 @@ static int __init fcntl_init(void)
@@ -210,7 +210,7 @@ index 3d89de310..f42dcd81a 100644
  			(VALID_OPEN_FLAGS & ~(O_NONBLOCK | O_NDELAY)) |
  			__FMODE_EXEC | __FMODE_NONOTIFY));
 diff --git a/fs/file.c b/fs/file.c
-index bfc9eb9e7..4ec3449a2 100644
+index bfc9eb9e7229..4ec3449a27e9 100644
 --- a/fs/file.c
 +++ b/fs/file.c
 @@ -422,6 +422,7 @@ static struct fdtable *close_files(struct files_struct * files)
@@ -262,7 +262,7 @@ index bfc9eb9e7..4ec3449a2 100644
  
  	if (tofree)
 diff --git a/fs/ioctl.c b/fs/ioctl.c
-index 6e0c95438..ceee3ad7d 100644
+index 6e0c954388d4..ceee3ad7d185 100644
 --- a/fs/ioctl.c
 +++ b/fs/ioctl.c
 @@ -947,6 +947,22 @@ long compat_ptr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -290,7 +290,7 @@ index 6e0c95438..ceee3ad7d 100644
  {
 diff --git a/include/dovetail/mm_info.h b/include/dovetail/mm_info.h
 new file mode 100644
-index 000000000..504bd1d87
+index 000000000000..504bd1d875d1
 --- /dev/null
 +++ b/include/dovetail/mm_info.h
 @@ -0,0 +1,12 @@
@@ -308,7 +308,7 @@ index 000000000..504bd1d87
 +#endif /* !_DOVETAIL_MM_INFO_H */
 diff --git a/include/dovetail/poll.h b/include/dovetail/poll.h
 new file mode 100644
-index 000000000..d15b14f88
+index 000000000000..d15b14f887cd
 --- /dev/null
 +++ b/include/dovetail/poll.h
 @@ -0,0 +1,12 @@
@@ -326,7 +326,7 @@ index 000000000..d15b14f88
 +#endif /* !_DOVETAIL_POLL_H */
 diff --git a/include/dovetail/thread_info.h b/include/dovetail/thread_info.h
 new file mode 100644
-index 000000000..4dea8bf1e
+index 000000000000..4dea8bf1ecff
 --- /dev/null
 +++ b/include/dovetail/thread_info.h
 @@ -0,0 +1,13 @@
@@ -345,7 +345,7 @@ index 000000000..4dea8bf1e
 +#endif /* !_DOVETAIL_THREAD_INFO_H */
 diff --git a/include/linux/dovetail.h b/include/linux/dovetail.h
 new file mode 100644
-index 000000000..88fbb0184
+index 000000000000..88fbb0184076
 --- /dev/null
 +++ b/include/linux/dovetail.h
 @@ -0,0 +1,348 @@
@@ -698,7 +698,7 @@ index 000000000..88fbb0184
 +
 +#endif /* _LINUX_DOVETAIL_H */
 diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index a332e79b3..31d552753 100644
+index a332e79b3207..31d552753e43 100644
 --- a/include/linux/fcntl.h
 +++ b/include/linux/fcntl.h
 @@ -10,7 +10,7 @@
@@ -711,7 +711,7 @@ index a332e79b3..31d552753 100644
  /* List of all valid flags for the how->resolve argument: */
  #define VALID_RESOLVE_FLAGS \
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 37a01c9d9..bb0b1e433 100644
+index 37a01c9d9658..bb0b1e433b38 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
 @@ -61,6 +61,7 @@ struct kiocb;
@@ -755,7 +755,7 @@ index 37a01c9d9..bb0b1e433 100644
  	int (*open) (struct inode *, struct file *);
  	int (*flush) (struct file *, fl_owner_t id);
 diff --git a/include/linux/irqstage.h b/include/linux/irqstage.h
-index ccb810cac..175c2e85b 100644
+index ccb810cac0dc..175c2e85bb62 100644
 --- a/include/linux/irqstage.h
 +++ b/include/linux/irqstage.h
 @@ -14,6 +14,8 @@
@@ -782,7 +782,7 @@ index ccb810cac..175c2e85b 100644
  
  DECLARE_PER_CPU(struct irq_pipeline_data, irq_pipeline);
 diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 2e836d44f..61689e33b 100644
+index 2e836d44f738..61689e33b51a 100644
 --- a/include/linux/kvm_host.h
 +++ b/include/linux/kvm_host.h
 @@ -16,6 +16,7 @@
@@ -866,7 +866,7 @@ index 2e836d44f..61689e33b 100644
  static inline void kvm_handle_signal_exit(struct kvm_vcpu *vcpu)
  {
 diff --git a/include/linux/lockdep.h b/include/linux/lockdep.h
-index 88cfd6aff..6256ad0c5 100644
+index 88cfd6affa5c..6256ad0c5a18 100644
 --- a/include/linux/lockdep.h
 +++ b/include/linux/lockdep.h
 @@ -601,6 +601,14 @@ DECLARE_PER_CPU(unsigned int, lockdep_recursion);
@@ -894,7 +894,7 @@ index 88cfd6aff..6256ad0c5 100644
  # define lockdep_assert_no_hardirq() do { } while (0)
  
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 41f5c88bd..85d288789 100644
+index 41f5c88bdf3b..85d2887896fa 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
 @@ -18,6 +18,7 @@
@@ -922,7 +922,7 @@ index 41f5c88bd..85d288789 100644
  		return false;
  
 diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
-index 6894de506..8913edd5f 100644
+index 6894de506b36..8913edd5f8bc 100644
 --- a/include/linux/mm_types.h
 +++ b/include/linux/mm_types.h
 @@ -22,6 +22,8 @@
@@ -945,7 +945,7 @@ index 6894de506..8913edd5f 100644
  		struct work_struct async_put_work;
  
 diff --git a/include/linux/poll.h b/include/linux/poll.h
-index fc641b50f..74c7881c4 100644
+index fc641b50f129..74c7881c4c41 100644
 --- a/include/linux/poll.h
 +++ b/include/linux/poll.h
 @@ -9,6 +9,7 @@
@@ -957,7 +957,7 @@ index fc641b50f..74c7881c4 100644
  #include <uapi/linux/eventpoll.h>
  
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index eeb4c0d3c..9a6d09f61 100644
+index eeb4c0d3ce2d..9a6d09f6166d 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
 @@ -147,6 +147,12 @@ struct user_event_mm;
@@ -974,7 +974,7 @@ index eeb4c0d3c..9a6d09f61 100644
   * Special states are those that do not use the normal wait-loop pattern. See
   * the comment with set_special_state().
 diff --git a/include/linux/sched/coredump.h b/include/linux/sched/coredump.h
-index e62ff805c..73de18353 100644
+index e62ff805cfc9..73de18353e79 100644
 --- a/include/linux/sched/coredump.h
 +++ b/include/linux/sched/coredump.h
 @@ -91,6 +91,7 @@ static inline int get_dumpable(struct mm_struct *mm)
@@ -986,7 +986,7 @@ index e62ff805c..73de18353 100644
  #define MMF_TOPDOWN		31	/* mm searches top down by default */
  #define MMF_TOPDOWN_MASK	(1 << MMF_TOPDOWN)
 diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 1fce4f606..6b247d6aa 100644
+index 1fce4f606770..6b247d6aa9eb 100644
 --- a/include/linux/vmalloc.h
 +++ b/include/linux/vmalloc.h
 @@ -311,6 +311,7 @@ pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
@@ -999,7 +999,7 @@ index 1fce4f606..6b247d6aa 100644
  bool vmalloc_dump_obj(void *object);
 diff --git a/include/uapi/asm-generic/dovetail.h b/include/uapi/asm-generic/dovetail.h
 new file mode 100644
-index 000000000..795aa3844
+index 000000000000..795aa384435d
 --- /dev/null
 +++ b/include/uapi/asm-generic/dovetail.h
 @@ -0,0 +1,7 @@
@@ -1011,7 +1011,7 @@ index 000000000..795aa3844
 +
 +#endif /* !__ASM_GENERIC_DOVETAIL_H */
 diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index 80f37a0d4..5ff5c6ce4 100644
+index 80f37a0d40d7..5ff5c6ce4275 100644
 --- a/include/uapi/asm-generic/fcntl.h
 +++ b/include/uapi/asm-generic/fcntl.h
 @@ -89,6 +89,14 @@
@@ -1031,7 +1031,7 @@ index 80f37a0d4..5ff5c6ce4 100644
  
 diff --git a/kernel/Kconfig.dovetail b/kernel/Kconfig.dovetail
 new file mode 100644
-index 000000000..c9ec30d1b
+index 000000000000..c9ec30d1b4a4
 --- /dev/null
 +++ b/kernel/Kconfig.dovetail
 @@ -0,0 +1,23 @@
@@ -1059,7 +1059,7 @@ index 000000000..c9ec30d1b
 +       depends on DOVETAIL
 +       def_bool y
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 87866b037..766a30c6a 100644
+index 87866b037fbe..766a30c6a82f 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -109,6 +109,7 @@ obj-$(CONFIG_RING_BUFFER) += trace/
@@ -1072,7 +1072,7 @@ index 87866b037..766a30c6a 100644
  obj-$(CONFIG_KCSAN) += kcsan/
 diff --git a/kernel/dovetail.c b/kernel/dovetail.c
 new file mode 100644
-index 000000000..2e92d0b0c
+index 000000000000..2e92d0b0c0ef
 --- /dev/null
 +++ b/kernel/dovetail.c
 @@ -0,0 +1,452 @@
@@ -1529,7 +1529,7 @@ index 000000000..2e92d0b0c
 +}
 +EXPORT_SYMBOL_GPL(dovetail_stop);
 diff --git a/kernel/exit.c b/kernel/exit.c
-index d465b36bc..8c2a34c52 100644
+index d465b36bcc86..8c2a34c529d5 100644
 --- a/kernel/exit.c
 +++ b/kernel/exit.c
 @@ -14,6 +14,7 @@
@@ -1549,7 +1549,7 @@ index d465b36bc..8c2a34c52 100644
  	seccomp_filter_release(tsk);
  
 diff --git a/kernel/fork.c b/kernel/fork.c
-index 97c9afe3e..b65471c9c 100644
+index 97c9afe3efc3..b65471c9cee8 100644
 --- a/kernel/fork.c
 +++ b/kernel/fork.c
 @@ -51,6 +51,7 @@
@@ -1587,7 +1587,7 @@ index 97c9afe3e..b65471c9c 100644
  	mm_put_huge_zero_folio(mm);
  	set_mm_exe_file(mm, NULL);
 diff --git a/kernel/irq/pipeline.c b/kernel/irq/pipeline.c
-index 180973306..452515804 100644
+index 180973306db9..452515804579 100644
 --- a/kernel/irq/pipeline.c
 +++ b/kernel/irq/pipeline.c
 @@ -5,6 +5,7 @@
@@ -1615,7 +1615,7 @@ index 180973306..452515804 100644
  }
  
 diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 14dc07766..ea7e564f4 100644
+index 14dc07766fcc..ea7e564f4740 100644
 --- a/kernel/kthread.c
 +++ b/kernel/kthread.c
 @@ -1441,6 +1441,7 @@ void kthread_use_mm(struct mm_struct *mm)
@@ -1640,7 +1640,7 @@ index 14dc07766..ea7e564f4 100644
  	task_unlock(tsk);
  #ifdef finish_arch_post_lock_switch
 diff --git a/kernel/notifier.c b/kernel/notifier.c
-index b3ce28f39..d468a86c6 100644
+index b3ce28f39eb6..d468a86c69b0 100644
 --- a/kernel/notifier.c
 +++ b/kernel/notifier.c
 @@ -227,6 +227,9 @@ int atomic_notifier_call_chain(struct atomic_notifier_head *nh,
@@ -1654,7 +1654,7 @@ index b3ce28f39..d468a86c6 100644
  	ret = notifier_call_chain(&nh->head, val, v, -1, NULL);
  	rcu_read_unlock();
 diff --git a/kernel/ptrace.c b/kernel/ptrace.c
-index d5f89f9ef..4a77d52ad 100644
+index d5f89f9ef29f..4a77d52ad195 100644
 --- a/kernel/ptrace.c
 +++ b/kernel/ptrace.c
 @@ -842,10 +842,12 @@ static int ptrace_resume(struct task_struct *child, long request,
@@ -1671,7 +1671,7 @@ index d5f89f9ef..4a77d52ad 100644
  		user_disable_single_step(child);
  	}
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index af88e0707..09afc0b8a 100644
+index af88e070766e..09afc0b8a98a 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
 @@ -3089,6 +3089,8 @@ static int __set_cpus_allowed_ptr_locked(struct task_struct *p,
@@ -2054,7 +2054,7 @@ index af88e0707..09afc0b8a 100644
  {
  	if (in_hardirq() && cpu == smp_processor_id()) {
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 9f01c4bc4..fc438a704 100644
+index 9f01c4bc4fbb..fc438a704b77 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
 @@ -49,6 +49,7 @@
@@ -2066,7 +2066,7 @@ index 9f01c4bc4..fc438a704 100644
  #include <linux/profile.h>
  #include <linux/psi.h>
 diff --git a/kernel/signal.c b/kernel/signal.c
-index 468b589c3..21bb91a4d 100644
+index 468b589c39e6..21bb91a4d709 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
 @@ -762,6 +762,9 @@ void signal_wake_up_state(struct task_struct *t, unsigned int state)
@@ -2111,7 +2111,7 @@ index 468b589c3..21bb91a4d 100644
  	 * We are back.  Now reacquire the siglock before touching
  	 * last_siginfo, so that we are sure to have synchronized with
 diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index cd9cb7ccb..73b3d2032 100644
+index cd9cb7ccb540..73b3d2032516 100644
 --- a/kernel/time/hrtimer.c
 +++ b/kernel/time/hrtimer.c
 @@ -991,6 +991,7 @@ void clock_was_set(unsigned int bases)
@@ -2123,7 +2123,7 @@ index cd9cb7ccb..73b3d2032 100644
  
  static void clock_was_set_work(struct work_struct *work)
 diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index b420034ac..1e5ded7ac 100644
+index b420034acbbb..1e5ded7ac8b1 100644
 --- a/lib/Kconfig.debug
 +++ b/lib/Kconfig.debug
 @@ -1054,6 +1054,16 @@ config IRQ_PIPELINE_TORTURE_TEST
@@ -2144,7 +2144,7 @@ index b420034ac..1e5ded7ac 100644
  
  config PANIC_ON_OOPS
 diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index f94a9d413..21ff8d710 100644
+index f94a9d413585..21ff8d710b9f 100644
 --- a/mm/huge_memory.c
 +++ b/mm/huge_memory.c
 @@ -1720,6 +1720,7 @@ int copy_huge_pud(struct mm_struct *dst_mm, struct mm_struct *src_mm,
@@ -2156,7 +2156,7 @@ index f94a9d413..21ff8d710 100644
  	if (is_cow_mapping(vma->vm_flags) && pud_write(pud)) {
  		pudp_set_wrprotect(src_mm, addr, src_pud);
 diff --git a/mm/memory.c b/mm/memory.c
-index b6daa0e67..6a64fcfe9 100644
+index b6daa0e673a5..6a64fcfe92a3 100644
 --- a/mm/memory.c
 +++ b/mm/memory.c
 @@ -6712,6 +6712,15 @@ void print_vma_addr(char *prefix, unsigned long ip)
@@ -2176,7 +2176,7 @@ index b6daa0e67..6a64fcfe9 100644
  		return;
  	__might_sleep(file, line);
 diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 3519c4e4f..4d9ed3a18 100644
+index 3519c4e4f841..4d9ed3a18b21 100644
 --- a/mm/vmalloc.c
 +++ b/mm/vmalloc.c
 @@ -306,6 +306,8 @@ static int vmap_range_noflush(unsigned long addr, unsigned long end,

@@ -1,7 +1,7 @@
 From a36d74ca9b58af9cf47ded616740358fcf0cb93e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Nov 2022 09:41:52 +0100
-Subject: [PATCH 787/985] evl/net: fix inclusion guard
+Subject: [PATCH 0787/1013] evl/net: fix inclusion guard
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index b83bd9a8d..7f6bfad4f 100644
+index b83bd9a8d347..7f6bfad4fbfa 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -2,7 +2,7 @@

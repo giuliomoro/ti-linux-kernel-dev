@@ -1,7 +1,7 @@
 From 1e1be4dddf0f2ca0643badc896c3232fa6e3a69e Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 21 Feb 2024 17:44:30 +0100
-Subject: [PATCH 879/985] evl/net: allow for eBPF-based filtering on early RX
+Subject: [PATCH 0879/1013] evl/net: allow for eBPF-based filtering on early RX
  path
 
 We can use eBPF filtering in order to leave the decision about oob vs
@@ -40,7 +40,7 @@ discriminators.
  rename kernel/evl/net/{init.c => net.c} (79%)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index 7f6bfad4f..345b3dd24 100644
+index 7f6bfad4fbfa..345b3dd245bc 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -5,6 +5,7 @@
@@ -85,7 +85,7 @@ index 7f6bfad4f..345b3dd24 100644
  	int refs;
  };
 diff --git a/include/evl/net.h b/include/evl/net.h
-index e283a9dca..9b194d69b 100644
+index e283a9dcacf4..9b194d69bf93 100644
 --- a/include/evl/net.h
 +++ b/include/evl/net.h
 @@ -13,6 +13,7 @@
@@ -97,7 +97,7 @@ index e283a9dca..9b194d69b 100644
  int evl_net_init(void);
  
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index 51bc61612..bd1b3ea81 100644
+index 51bc616126b5..bd1b3ea81e01 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -10,10 +10,13 @@
@@ -147,7 +147,7 @@ index 51bc61612..bd1b3ea81 100644
  {
  	if (is_vlan_dev(dev))
 diff --git a/include/evl/net/input.h b/include/evl/net/input.h
-index f0f2b99c6..2838cb04a 100644
+index f0f2b99c6dab..2838cb04a7e6 100644
 --- a/include/evl/net/input.h
 +++ b/include/evl/net/input.h
 @@ -35,6 +35,8 @@ void evl_net_free_rxqueue(struct evl_net_rxqueue *rxq);
@@ -160,7 +160,7 @@ index f0f2b99c6..2838cb04a 100644
  {
  	return list_empty(&rxq->subscribers);
 diff --git a/include/uapi/evl/control-abi.h b/include/uapi/evl/control-abi.h
-index a06a837d6..39e005195 100644
+index a06a837d616e..39e005195fa6 100644
 --- a/include/uapi/evl/control-abi.h
 +++ b/include/uapi/evl/control-abi.h
 @@ -17,7 +17,7 @@
@@ -174,7 +174,7 @@ index a06a837d6..39e005195 100644
  
 diff --git a/include/uapi/evl/net/bpf-abi.h b/include/uapi/evl/net/bpf-abi.h
 new file mode 100644
-index 000000000..08757fedb
+index 000000000000..08757fedb5fc
 --- /dev/null
 +++ b/include/uapi/evl/net/bpf-abi.h
 @@ -0,0 +1,17 @@
@@ -197,7 +197,7 @@ index 000000000..08757fedb
 +#endif /* !_EVL_UAPI_NET_BPF_ABI_H */
 diff --git a/include/uapi/evl/net/device-abi.h b/include/uapi/evl/net/device-abi.h
 new file mode 100644
-index 000000000..7c2a2a206
+index 000000000000..7c2a2a2065c4
 --- /dev/null
 +++ b/include/uapi/evl/net/device-abi.h
 @@ -0,0 +1,16 @@
@@ -219,7 +219,7 @@ index 000000000..7c2a2a206
 +#endif /* !_EVL_UAPI_NET_DEVICE_ABI_H */
 diff --git a/include/uapi/evl/net/net-abi.h b/include/uapi/evl/net/net-abi.h
 new file mode 100644
-index 000000000..c75e571a8
+index 000000000000..c75e571a8f19
 --- /dev/null
 +++ b/include/uapi/evl/net/net-abi.h
 @@ -0,0 +1,23 @@
@@ -247,7 +247,7 @@ index 000000000..c75e571a8
 +
 +#endif /* !_EVL_UAPI_NET_NET_ABI_H */
 diff --git a/kernel/evl/Kconfig b/kernel/evl/Kconfig
-index a79e6318c..b4cc2fd13 100644
+index a79e6318c13b..b4cc2fd1356e 100644
 --- a/kernel/evl/Kconfig
 +++ b/kernel/evl/Kconfig
 @@ -94,6 +94,7 @@ config EVL_NET
@@ -276,7 +276,7 @@ index a79e6318c..b4cc2fd13 100644
  
  menu "Pre-calibrated latency"
 diff --git a/kernel/evl/net/Makefile b/kernel/evl/net/Makefile
-index d7f1348f7..b5fd52780 100644
+index d7f1348f7fd2..b5fd52780e1d 100644
 --- a/kernel/evl/net/Makefile
 +++ b/kernel/evl/net/Makefile
 @@ -1,5 +1,5 @@
@@ -288,7 +288,7 @@ index d7f1348f7..b5fd52780 100644
 -net-y := init.o socket.o dev.o input.o output.o skb.o route.o
 +networking-y := net.o socket.o dev.o input.o output.o skb.o route.o
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 47528b3e5..e5b98ab82 100644
+index 47528b3e5ed4..e5b98ab827b1 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -11,9 +11,15 @@
@@ -539,7 +539,7 @@ index 47528b3e5..e5b98ab82 100644
 +	return ret;
 +}
 diff --git a/kernel/evl/net/ethernet/input.c b/kernel/evl/net/ethernet/input.c
-index 356a5f771..5887b5cf6 100644
+index 356a5f7716e2..5887b5cf675e 100644
 --- a/kernel/evl/net/ethernet/input.c
 +++ b/kernel/evl/net/ethernet/input.c
 @@ -16,29 +16,87 @@ static DECLARE_BITMAP(vlan_map, VLAN_N_VID);
@@ -672,7 +672,7 @@ index 356a5f771..5887b5cf6 100644
  	evl_net_receive(skb, &evl_net_ether);
  
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 3e77960f5..f9a37511a 100644
+index 3e77960f5402..f9a37511a04e 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -16,6 +16,7 @@
@@ -779,7 +779,7 @@ diff --git a/kernel/evl/net/init.c b/kernel/evl/net/net.c
 similarity index 79%
 rename from kernel/evl/net/init.c
 rename to kernel/evl/net/net.c
-index 1beabe957..5f0ec61b5 100644
+index 1beabe957688..5f0ec61b5940 100644
 --- a/kernel/evl/net/init.c
 +++ b/kernel/evl/net/net.c
 @@ -12,6 +12,7 @@

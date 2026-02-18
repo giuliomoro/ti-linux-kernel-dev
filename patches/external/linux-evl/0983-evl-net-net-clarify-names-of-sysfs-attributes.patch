@@ -1,7 +1,7 @@
 From f774f9a7dcb44ffaa5764a22ff487baf03063025 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Oct 2025 12:33:38 +0200
-Subject: [PATCH 983/985] evl/net: net: clarify names of sysfs attributes
+Subject: [PATCH 0983/1013] evl/net: net: clarify names of sysfs attributes
 
 Routes and ARP (table) attributes are all IPv4-related, write-only,
 for the purpose of flushing the respective tables. Make this obvious
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/net/net.c b/kernel/evl/net/net.c
-index 9a0728f01..aa7eefc4f 100644
+index 9a0728f01cf6..aa7eefc4f9c1 100644
 --- a/kernel/evl/net/net.c
 +++ b/kernel/evl/net/net.c
 @@ -183,7 +183,7 @@ static ssize_t vlans_store(struct device *dev,

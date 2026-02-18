@@ -1,0 +1,31 @@
+From a6f5aa2f454e58c2c8c28a711a3bfe40ba9973d2 Mon Sep 17 00:00:00 2001
+From: Philippe Gerum <rpm@xenomai.org>
+Date: Sun, 26 Oct 2025 12:51:47 +0100
+Subject: [PATCH 0994/1013] net: dovetail: fix trashed error state on
+ sock_inband_setopt_redirect()
+
+e.g. enabling SO_BROADCAST on an oob socket would cause ENOIOCTLCMD to
+be propagated to userland as a result of redirecting the call to the
+oob stack. Clear the error state as appropriate if the oob stack did
+not handle the request.
+
+Signed-off-by: Philippe Gerum <rpm@xenomai.org>
+---
+ net/core/sock.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 96638ed92cca..9939900fc6b7 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1293,6 +1293,7 @@ int sk_setsockopt(struct sock *sk, int level, int optname,
+ 		ret = sock_inband_setopt_redirect(sk, level, optname, optval, optlen);
+ 		if (ret != -ENOIOCTLCMD)
+ 			goto out;
++		ret = 0;
+ 	}
+ 
+ 	switch (optname) {
+-- 
+2.30.2
+

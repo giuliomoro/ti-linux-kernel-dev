@@ -1,7 +1,7 @@
 From f23b3c2bd792cdaf18ae030b6b6a95f703d5a289 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Thu, 19 Jun 2025 15:19:37 +0200
-Subject: [PATCH 198/985] fec: refactor conditional build of oob-specific
+Subject: [PATCH 0198/1013] fec: refactor conditional build of oob-specific
  features
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 62 insertions(+), 61 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index ac5a173df..968037edc 100644
+index ac5a173dfbd0..968037edc67f 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -322,7 +322,7 @@ static int mii_cnt;

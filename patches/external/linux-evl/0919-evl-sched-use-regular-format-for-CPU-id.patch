@@ -1,7 +1,7 @@
 From f5c4db42bde43bcb9c3c25ad8e10625c7ef1f698 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 27 Apr 2025 16:08:45 +0200
-Subject: [PATCH 919/985] evl/sched: use regular format for CPU id
+Subject: [PATCH 0919/1013] evl/sched: use regular format for CPU id
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 7154481b7..c1da116dc 100644
+index 7154481b75cf..c1da116dcdae 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -107,10 +107,10 @@ static void watchdog_handler(struct evl_timer *timer) /* oob stage stalled */

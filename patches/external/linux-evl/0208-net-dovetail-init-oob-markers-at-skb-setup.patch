@@ -1,7 +1,7 @@
 From 1c88deb604902fd6a73475db593dd0eb397db054 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 25 Jun 2025 09:01:59 +0200
-Subject: [PATCH 208/985] net: dovetail: init oob markers at skb setup
+Subject: [PATCH 0208/1013] net: dovetail: init oob markers at skb setup
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 24 insertions(+)
 
 diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 0808b27b8..2790f237e 100644
+index 0808b27b8c31..2790f237ef1c 100644
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
 @@ -5270,6 +5270,16 @@ struct sk_buff *get_oob_skb(void);
@@ -54,7 +54,7 @@ index 0808b27b8..2790f237e 100644
  {
  	return false;
 diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 5183aa9f0..74dda4e49 100644
+index 5183aa9f0a10..74dda4e49ff7 100644
 --- a/net/core/skbuff.c
 +++ b/net/core/skbuff.c
 @@ -655,6 +655,7 @@ struct sk_buff *get_oob_skb(void)

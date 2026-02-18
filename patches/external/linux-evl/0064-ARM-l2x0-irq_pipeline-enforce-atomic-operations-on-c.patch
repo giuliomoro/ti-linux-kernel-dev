@@ -1,8 +1,8 @@
 From 2dafb721d7456d35d3fe5087e648d548adb0cad7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 5 Jul 2019 10:59:52 +0200
-Subject: [PATCH 064/985] ARM: l2x0: irq_pipeline: enforce atomic operations on
- cacheline ranges
+Subject: [PATCH 0064/1013] ARM: l2x0: irq_pipeline: enforce atomic operations
+ on cacheline ranges
 
 We may want to perform cache maintenance operations from out-of-band
 context. Serialize contexts performing operations on cacheline ranges
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index e3e816012..b2af3e0da 100644
+index e3e816012e7e..b2af3e0da869 100644
 --- a/arch/arm/mm/cache-l2x0.c
 +++ b/arch/arm/mm/cache-l2x0.c
 @@ -38,7 +38,7 @@ struct l2c_init_data {

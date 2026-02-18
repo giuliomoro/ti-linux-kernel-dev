@@ -1,7 +1,7 @@
 From 4000a0d64cf424de4377702bbb99f0dbc6027ead Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 13 Jun 2025 09:50:35 +0200
-Subject: [PATCH 191/985] irq_work: dovetail: never defer local work posted
+Subject: [PATCH 0191/1013] irq_work: dovetail: never defer local work posted
  from oob
 
 There is the assumption by oob callers that any work set pending on
@@ -63,7 +63,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/irq_work.c b/kernel/irq_work.c
-index 360a23d0e..502ab2576 100644
+index 360a23d0e8e9..502ab2576e30 100644
 --- a/kernel/irq_work.c
 +++ b/kernel/irq_work.c
 @@ -81,7 +81,11 @@ void __weak irq_local_work_raise(void)

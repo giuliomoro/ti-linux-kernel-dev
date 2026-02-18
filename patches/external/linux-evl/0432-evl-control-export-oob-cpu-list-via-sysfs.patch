@@ -1,7 +1,7 @@
 From 38fa4fc2ab6561a498a2a341d1ecd17247b9de45 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 2 Jul 2019 09:44:00 +0200
-Subject: [PATCH 432/985] evl/control: export oob cpu list via sysfs
+Subject: [PATCH 0432/1013] evl/control: export oob cpu list via sysfs
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+)
 
 diff --git a/kernel/evl/control.c b/kernel/evl/control.c
-index c0eb05ca1..a2594a417 100644
+index c0eb05ca1f07..a2594a41758f 100644
 --- a/kernel/evl/control.c
 +++ b/kernel/evl/control.c
 @@ -310,6 +310,15 @@ static ssize_t abi_show(struct device *dev,

@@ -1,7 +1,7 @@
 From 575d1e97749b6e373a2c96d38be87ebca67c51e3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 4 Jun 2025 12:33:56 +0200
-Subject: [PATCH 935/985] evl/net: skb: enable page pool for pseudo-devices
+Subject: [PATCH 0935/1013] evl/net: skb: enable page pool for pseudo-devices
 
 We may enable the oob mode for pseudo-devices like the loopback
 interface (lo). Make sure to skip the DMA settings when creating the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 8 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index adc8692d5..9d8e014a9 100644
+index adc8692d59e2..9d8e014a9a96 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -523,7 +523,7 @@ int evl_net_dev_build_pool(struct net_device *dev)

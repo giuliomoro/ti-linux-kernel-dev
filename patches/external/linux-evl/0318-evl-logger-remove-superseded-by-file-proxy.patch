@@ -1,7 +1,7 @@
 From abb2ff317e753c608d3a30e99fe056a0e9140e93 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 15:49:48 +0100
-Subject: [PATCH 318/985] evl/logger: remove - superseded by file proxy
+Subject: [PATCH 0318/1013] evl/logger: remove - superseded by file proxy
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  delete mode 100644 kernel/evenless/logger.c
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index 8bc42eb67..516fef366 100644
+index 8bc42eb67339..516fef366770 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -149,7 +149,6 @@ void evl_cleanup_factories(void);
@@ -28,7 +28,7 @@ index 8bc42eb67..516fef366 100644
  extern struct evl_factory evl_sem_factory;
 diff --git a/include/uapi/evenless/logger.h b/include/uapi/evenless/logger.h
 deleted file mode 100644
-index aa3f93f7d..000000000
+index aa3f93f7d45b..000000000000
 --- a/include/uapi/evenless/logger.h
 +++ /dev/null
 @@ -1,19 +0,0 @@
@@ -52,7 +52,7 @@ index aa3f93f7d..000000000
 -
 -#endif /* !_EVENLESS_UAPI_LOGGER_H */
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 502d72469..bbe5256b7 100644
+index 502d72469165..bbe5256b7778 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -11,7 +11,6 @@ evenless-y :=		\
@@ -64,7 +64,7 @@ index 502d72469..bbe5256b7 100644
  	memory.o	\
  	monitor.o	\
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 6060961c2..b1497669c 100644
+index 6060961c2837..b1497669c25e 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -39,7 +39,6 @@ static struct evl_factory *factories[] = {
@@ -86,7 +86,7 @@ index 6060961c2..b1497669c 100644
  static dev_t factory_rdev;
 diff --git a/kernel/evenless/logger.c b/kernel/evenless/logger.c
 deleted file mode 100644
-index 33994af0f..000000000
+index 33994af0fb0a..000000000000
 --- a/kernel/evenless/logger.c
 +++ /dev/null
 @@ -1,255 +0,0 @@

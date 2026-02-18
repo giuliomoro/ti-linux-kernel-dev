@@ -1,7 +1,8 @@
 From bae81a1e1d2feabf105c22d2d28250fae0de26c2 Mon Sep 17 00:00:00 2001
 From: Jan Kiszka <jan.kiszka@siemens.com>
 Date: Fri, 18 Jun 2021 08:29:53 +0200
-Subject: [PATCH 080/985] x86/hpet: irq_pipeline: enable access to clocksource
+Subject: [PATCH 0080/1013] x86/hpet: irq_pipeline: enable access to
+ clocksource
 
 While it's slow, has scalability issues, it remains the second-best
 clocksource for Linux on x86. If Linux decides that the TSC is not
@@ -15,7 +16,7 @@ Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index af7ca2c73..5e710d401 100644
+index af7ca2c73770..5e710d401b50 100644
 --- a/arch/x86/kernel/hpet.c
 +++ b/arch/x86/kernel/hpet.c
 @@ -814,7 +814,7 @@ static u64 read_hpet(struct clocksource *cs)

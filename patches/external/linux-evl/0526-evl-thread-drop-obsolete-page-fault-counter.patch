@@ -1,7 +1,7 @@
 From 9a67b996cb2acb685995d7004ad01900b7367a4a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 26 Oct 2019 18:28:44 +0200
-Subject: [PATCH 526/985] evl/thread: drop obsolete page fault counter
+Subject: [PATCH 0526/1013] evl/thread: drop obsolete page fault counter
 
 This is a Xenomai-originated relic we don't need. We can get reports
 of unexpected page faults yielding to stage switches to inband as
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 7 deletions(-)
 
 diff --git a/arch/arm/include/asm/evl/thread.h b/arch/arm/include/asm/evl/thread.h
-index 423ef7517..bde236884 100644
+index 423ef75176e4..bde236884c49 100644
 --- a/arch/arm/include/asm/evl/thread.h
 +++ b/arch/arm/include/asm/evl/thread.h
 @@ -5,7 +5,6 @@
@@ -33,7 +33,7 @@ index 423ef7517..bde236884 100644
  					 (__trapnr == ARM_TRAP_BREAK || \
  					  (__trapnr) == ARM_TRAP_UNDEFINSTR))
 diff --git a/arch/arm64/include/asm/evl/thread.h b/arch/arm64/include/asm/evl/thread.h
-index 4e1938364..78a7f77d7 100644
+index 4e1938364a80..78a7f77d7ebc 100644
 --- a/arch/arm64/include/asm/evl/thread.h
 +++ b/arch/arm64/include/asm/evl/thread.h
 @@ -2,7 +2,6 @@
@@ -45,7 +45,7 @@ index 4e1938364..78a7f77d7 100644
  					 (__trapnr == ARM64_TRAP_DEBUG || \
  					  (__trapnr) == ARM64_TRAP_UNDI))
 diff --git a/arch/x86/include/asm/evl/thread.h b/arch/x86/include/asm/evl/thread.h
-index 956801d24..e07cb475e 100644
+index 956801d241cc..e07cb475e109 100644
 --- a/arch/x86/include/asm/evl/thread.h
 +++ b/arch/x86/include/asm/evl/thread.h
 @@ -4,7 +4,6 @@
@@ -57,7 +57,7 @@ index 956801d24..e07cb475e 100644
  					(__trapnr == X86_TRAP_DB ||	\
  						(__trapnr) == X86_TRAP_BP))
 diff --git a/include/evl/thread.h b/include/evl/thread.h
-index 3a41cc234..2f32c4853 100644
+index 3a41cc2341bc..2f32c48537b2 100644
 --- a/include/evl/thread.h
 +++ b/include/evl/thread.h
 @@ -123,7 +123,6 @@ struct evl_thread {
@@ -69,7 +69,7 @@ index 3a41cc234..2f32c4853 100644
  		struct evl_account lastperiod; /* Interval marker for execution time reports */
  	} stat;
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index d260c0227..38f84b607 100644
+index d260c022780e..38f84b607a2d 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1622,9 +1622,6 @@ void handle_oob_trap(unsigned int trapnr, struct pt_regs *regs)

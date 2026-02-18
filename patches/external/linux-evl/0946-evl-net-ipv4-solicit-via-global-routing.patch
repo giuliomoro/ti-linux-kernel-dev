@@ -1,7 +1,7 @@
 From 25e14c50a665bc58411bfd1345a1d6f047f89b57 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 11 Jun 2025 16:49:03 +0200
-Subject: [PATCH 946/985] evl/net: ipv4: solicit via global routing
+Subject: [PATCH 0946/1013] evl/net: ipv4: solicit via global routing
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/kernel/evl/net/ipv4/ipv4.c b/kernel/evl/net/ipv4/ipv4.c
-index 581353b4e..b44138922 100644
+index 581353b4e48c..b44138922ba5 100644
 --- a/kernel/evl/net/ipv4/ipv4.c
 +++ b/kernel/evl/net/ipv4/ipv4.c
 @@ -252,7 +252,7 @@ int evl_net_ipv4_solicit(struct evl_socket *esk,

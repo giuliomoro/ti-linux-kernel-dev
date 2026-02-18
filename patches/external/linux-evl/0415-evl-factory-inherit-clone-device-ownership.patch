@@ -1,7 +1,7 @@
 From 8fff18577136c930c8737952bc7886ea7235ef39 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 21 Jun 2019 15:08:48 +0200
-Subject: [PATCH 415/985] evl/factory: inherit clone device ownership
+Subject: [PATCH 0415/1013] evl/factory: inherit clone device ownership
 
 Per-factory device types are introduced to control the ownership of
 element devices. Those are created under the /dev/evl hierachy upon
@@ -25,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 92 insertions(+), 35 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index a60559d6c..dc4ac92bf 100644
+index a60559d6cac6..dc4ac92bf138 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -49,10 +49,13 @@ struct evl_factory {
@@ -52,7 +52,7 @@ index a60559d6c..dc4ac92bf 100644
  	unsigned int minor;
  	int refs;
 diff --git a/kernel/evl/factory.c b/kernel/evl/factory.c
-index a0ef3630a..ed35023fa 100644
+index a0ef3630aa21..ed35023fae22 100644
 --- a/kernel/evl/factory.c
 +++ b/kernel/evl/factory.c
 @@ -14,6 +14,7 @@

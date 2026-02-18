@@ -1,7 +1,7 @@
 From bc1bb9b2074e468475795cd5b61078df36f7df7b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Wed, 23 Apr 2025 18:21:50 +0200
-Subject: [PATCH 917/985] evl/net: input: switch to oob-capable napi_poll()
+Subject: [PATCH 0917/1013] evl/net: input: switch to oob-capable napi_poll()
 
 The inband napi_poll() implementation now supports oob calls via
 napi_poll_oob(), use this instead of open coding it.
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 33 insertions(+), 59 deletions(-)
 
 diff --git a/include/asm-generic/evl/netdevice.h b/include/asm-generic/evl/netdevice.h
-index 213a23930..c762b14af 100644
+index 213a23930f74..c762b14afd71 100644
 --- a/include/asm-generic/evl/netdevice.h
 +++ b/include/asm-generic/evl/netdevice.h
 @@ -40,9 +40,9 @@ struct evl_netdev_state {
@@ -32,7 +32,7 @@ index 213a23930..c762b14af 100644
  	struct evl_net_qdisc *qdisc;
  	struct evl_kthread *tx_handler;
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index 13252f1e4..dc7d43657 100644
+index 13252f1e4a8f..dc7d43657261 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -164,8 +164,8 @@ static int enable_oob_port(struct net_device *dev,
@@ -47,7 +47,7 @@ index 13252f1e4..dc7d43657 100644
  
  	kt = start_handler_thread(real_dev, evl_net_do_rx,
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index 61d3a11a4..e9b598c8d 100644
+index 61d3a11a4072..e9b598c8d479 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -19,68 +19,42 @@

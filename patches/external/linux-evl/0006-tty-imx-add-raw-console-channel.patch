@@ -1,7 +1,7 @@
 From 096836db3da5065bca70acdfaad6aac9c3fdbf64 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 22 Aug 2019 10:36:23 +0200
-Subject: [PATCH 006/985] tty: imx: add raw console channel
+Subject: [PATCH 0006/1013] tty: imx: add raw console channel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 34 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
-index deb9635cb..c9ef0e772 100644
+index deb9635cb48d..c9ef0e77237e 100644
 --- a/drivers/tty/serial/imx.c
 +++ b/drivers/tty/serial/imx.c
 @@ -2078,24 +2078,11 @@ static void imx_uart_console_putchar(struct uart_port *port, unsigned char ch)

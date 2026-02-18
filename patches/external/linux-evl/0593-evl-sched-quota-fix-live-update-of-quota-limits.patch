@@ -1,7 +1,7 @@
 From 79f47619f70fdf894cec91afed12d43ca8397e87 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 28 Mar 2020 17:28:30 +0100
-Subject: [PATCH 593/985] evl/sched: quota: fix live update of quota limits
+Subject: [PATCH 0593/1013] evl/sched: quota: fix live update of quota limits
 
 Adapt commit #133e996 from https://git.xenomai.org/xenomai fixing how
 we recalculate the time budget of the running thread for the updated
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 32 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/evl/sched/quota.c b/kernel/evl/sched/quota.c
-index 694986b3e..ad7a9b342 100644
+index 694986b3e567..ad7a9b342433 100644
 --- a/kernel/evl/sched/quota.c
 +++ b/kernel/evl/sched/quota.c
 @@ -61,24 +61,28 @@ static DECLARE_BITMAP(group_map, MAX_QUOTA_GROUPS);

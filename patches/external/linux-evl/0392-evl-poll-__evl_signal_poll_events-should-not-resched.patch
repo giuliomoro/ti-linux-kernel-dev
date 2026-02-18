@@ -1,7 +1,7 @@
 From 0b3f5134f395ea0510e405f3e536ce60bd169732 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 4 Jun 2019 12:11:28 +0200
-Subject: [PATCH 392/985] evl/poll: __evl_signal_poll_events() should not
+Subject: [PATCH 0392/1013] evl/poll: __evl_signal_poll_events() should not
  reschedule
 
 Sending pollable signals is most likely done from a context which
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 2 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index b2a82e047..422bee35b 100644
+index b2a82e04766a..422bee35b0c7 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -96,8 +96,6 @@ void __evl_signal_poll_events(struct evl_poll_head *head,

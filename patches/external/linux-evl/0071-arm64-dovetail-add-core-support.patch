@@ -1,7 +1,7 @@
 From 8c3ec9c810420d7238b480ef88be024beff86011 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 13 Sep 2018 19:11:56 +0200
-Subject: [PATCH 071/985] arm64: dovetail: add core support
+Subject: [PATCH 0071/1013] arm64: dovetail: add core support
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 arch/arm64/include/asm/dovetail.h
 
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index df2ef10f7..94b7a7dd5 100644
+index df2ef10f7ea5..94b7a7dd5c07 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
 @@ -224,6 +224,7 @@ config ARM64
@@ -36,7 +36,7 @@ index df2ef10f7..94b7a7dd5 100644
  	help
 diff --git a/arch/arm64/include/asm/dovetail.h b/arch/arm64/include/asm/dovetail.h
 new file mode 100644
-index 000000000..8c0af9bbf
+index 000000000000..8c0af9bbf972
 --- /dev/null
 +++ b/arch/arm64/include/asm/dovetail.h
 @@ -0,0 +1,9 @@
@@ -50,7 +50,7 @@ index 000000000..8c0af9bbf
 +
 +#endif /* _ASM_ARM64_DOVETAIL_H */
 diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 68c1eca8f..f5a5b5156 100644
+index 68c1eca8f05b..f5a5b5156c08 100644
 --- a/arch/arm64/include/asm/thread_info.h
 +++ b/arch/arm64/include/asm/thread_info.h
 @@ -14,6 +14,7 @@
@@ -94,7 +94,7 @@ index 68c1eca8f..f5a5b5156 100644
  
  #endif /* __ASM_THREAD_INFO_H */
 diff --git a/arch/arm64/include/asm/uaccess.h b/arch/arm64/include/asm/uaccess.h
-index 1aa4ecb73..797e3e319 100644
+index 1aa4ecb73429..797e3e319dcc 100644
 --- a/arch/arm64/include/asm/uaccess.h
 +++ b/arch/arm64/include/asm/uaccess.h
 @@ -60,7 +60,7 @@ static inline void __uaccess_ttbr0_disable(void)
@@ -134,7 +134,7 @@ index 1aa4ecb73..797e3e319 100644
  
  static inline bool uaccess_ttbr0_disable(void)
 diff --git a/arch/arm64/kernel/entry-common.c b/arch/arm64/kernel/entry-common.c
-index 5f4409644..e9f6b17b9 100644
+index 5f4409644f14..e9f6b17b9973 100644
 --- a/arch/arm64/kernel/entry-common.c
 +++ b/arch/arm64/kernel/entry-common.c
 @@ -444,6 +444,29 @@ static void __sched arm64_preempt_schedule_irq(void)

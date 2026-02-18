@@ -1,7 +1,7 @@
 From f7cbd31673a1798cbc6d7a586405391f040b918b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 28 Jul 2016 19:29:24 +0200
-Subject: [PATCH 008/985] sched: add interface to synchronous flags
+Subject: [PATCH 0008/1013] sched: add interface to synchronous flags
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 64 insertions(+)
 
 diff --git a/include/linux/thread_info.h b/include/linux/thread_info.h
-index 9ea0b2806..38335d589 100644
+index 9ea0b28068f4..38335d5892d7 100644
 --- a/include/linux/thread_info.h
 +++ b/include/linux/thread_info.h
 @@ -260,6 +260,70 @@ void arch_task_cache_init(void); /* for CONFIG_SH */

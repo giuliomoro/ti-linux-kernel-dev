@@ -1,7 +1,7 @@
 From e4f2bd688c7c3f3ed30e237d9b706c399aba1a24 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 13 Feb 2020 15:42:43 +0100
-Subject: [PATCH 572/985] evl: deny accessing attributes of clone devices
+Subject: [PATCH 0572/1013] evl: deny accessing attributes of clone devices
 
 In essence, clone devices are no actual elements but virtual objects
 to create them, although both kinds belong to the same device
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 23 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/factory.h b/include/evl/factory.h
-index dc4ac92bf..6fa23b614 100644
+index dc4ac92bf138..6fa23b614e74 100644
 --- a/include/evl/factory.h
 +++ b/include/evl/factory.h
 @@ -118,8 +118,8 @@ __evl_get_element_by_fundle(struct evl_factory *fac,
@@ -33,7 +33,7 @@ index dc4ac92bf..6fa23b614 100644
  
  void evl_put_element(struct evl_element *e);
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index f36a9e4c1..5fc977233 100644
+index f36a9e4c1175..5fc9772336fb 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -896,6 +896,9 @@ static ssize_t state_show(struct device *dev,
@@ -47,7 +47,7 @@ index f36a9e4c1..5fc977233 100644
  
  	if (mon->type == EVL_MONITOR_EVENT) {
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 77a98fca8..3c1bbe187 100644
+index 77a98fca8c9d..3c1bbe187e46 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2095,7 +2095,11 @@ static ssize_t state_show(struct device *dev,
@@ -106,7 +106,7 @@ index 77a98fca8..3c1bbe187 100644
  
  	return ret;
 diff --git a/kernel/evl/xbuf.c b/kernel/evl/xbuf.c
-index bf8ee9c73..d8c1e1b0a 100644
+index bf8ee9c731f2..d8c1e1b0ad32 100644
 --- a/kernel/evl/xbuf.c
 +++ b/kernel/evl/xbuf.c
 @@ -732,6 +732,8 @@ static ssize_t rings_show(struct device *dev,

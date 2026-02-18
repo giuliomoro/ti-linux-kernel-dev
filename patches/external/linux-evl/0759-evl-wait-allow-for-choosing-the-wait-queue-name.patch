@@ -1,7 +1,7 @@
 From 53cb53932a8f431ba1afbf40177d4926701036c7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 19 Oct 2022 15:19:54 +0200
-Subject: [PATCH 759/985] evl/wait: allow for choosing the wait queue name
+Subject: [PATCH 0759/1013] evl/wait: allow for choosing the wait queue name
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 354e55c80..6667b786d 100644
+index 354e55c80730..6667b786d4d5 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -123,8 +123,11 @@ void __evl_init_wait(struct evl_wait_queue *wq,
@@ -27,7 +27,7 @@ index 354e55c80..6667b786d 100644
  #define evl_init_wait_on_stack(__wq, __clock, __flags)	\
  	do {								\
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 89f5c23bf..83746924f 100644
+index 89f5c23bf344..83746924f3c8 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -874,7 +874,8 @@ monitor_factory_build(struct evl_factory *fac, const char __user *u_name,

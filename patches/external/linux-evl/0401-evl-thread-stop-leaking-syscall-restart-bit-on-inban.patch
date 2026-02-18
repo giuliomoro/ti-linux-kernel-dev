@@ -1,7 +1,7 @@
 From 315a5e78ffe6da9f3fd1ab2e1caf6f9ba8327ef6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 12 Jun 2019 18:57:23 +0200
-Subject: [PATCH 401/985] evl/thread: stop leaking syscall restart bit on
+Subject: [PATCH 0401/1013] evl/thread: stop leaking syscall restart bit on
  inband switch
 
 The inband kernel does not attempt to restart an interrupted syscall
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index d01334452..763f6be48 100644
+index d0133445218c..763f6be4804c 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -665,6 +665,7 @@ void evl_switch_inband(int cause)

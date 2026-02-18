@@ -1,7 +1,7 @@
 From 2b163e1742c68602e41a09a3b498d25d5a709369 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 21 Apr 2020 19:34:48 +0200
-Subject: [PATCH 609/985] evl/syscall: dump syscall symbolic name upon EPERM
+Subject: [PATCH 0609/1013] evl/syscall: dump syscall symbolic name upon EPERM
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/syscall.c b/kernel/evl/syscall.c
-index 4c6f2bcb6..4b90f2113 100644
+index 4c6f2bcb664b..4b90f21136d0 100644
 --- a/kernel/evl/syscall.c
 +++ b/kernel/evl/syscall.c
 @@ -124,6 +124,15 @@ static const evl_syshand evl_systbl[] = {

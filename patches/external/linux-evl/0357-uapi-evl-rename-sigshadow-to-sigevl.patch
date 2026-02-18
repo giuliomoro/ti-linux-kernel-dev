@@ -1,7 +1,7 @@
 From ff9fbb177a3c34416c6e0c6aeaeae7f1bb9929af Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 22 Apr 2019 18:16:32 +0200
-Subject: [PATCH 357/985] uapi: evl: rename sigshadow to sigevl
+Subject: [PATCH 0357/1013] uapi: evl: rename sigshadow to sigevl
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/include/uapi/evl/signal.h b/include/uapi/evl/signal.h
-index 74e53bc10..e98759c80 100644
+index 74e53bc106a8..e98759c80590 100644
 --- a/include/uapi/evl/signal.h
 +++ b/include/uapi/evl/signal.h
 @@ -10,9 +10,9 @@

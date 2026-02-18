@@ -1,7 +1,7 @@
 From 8f61a44532bb6424ec34e47b218a20c604f2a6bc Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 7 Jun 2019 15:45:10 +0200
-Subject: [PATCH 396/985] evl/clock: fix tracepoints for clock name
+Subject: [PATCH 0396/1013] evl/clock: fix tracepoints for clock name
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 12 deletions(-)
 
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index b6172a7ab..bd42f8f9f 100644
+index b6172a7ab75d..bd42f8f9fba6 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -191,17 +191,17 @@ DECLARE_EVENT_CLASS(evl_clock_timespec,

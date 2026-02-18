@@ -1,7 +1,7 @@
 From e6b521e56f61daee35473b4fe2a6c75ea519ed22 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 24 Mar 2021 19:01:32 +0100
-Subject: [PATCH 689/985] evl/sched: stop referring to obsolete
+Subject: [PATCH 0689/1013] evl/sched: stop referring to obsolete
  MAX_USER_RT_PRIO
 
 Since #ae18ad281e, MAX_RT_PRIO should be used instead.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/include/evl/sched/fifo.h b/include/evl/sched/fifo.h
-index 89a6b8995..69dbb995b 100644
+index 89a6b8995eae..69dbb995b31a 100644
 --- a/include/evl/sched/fifo.h
 +++ b/include/evl/sched/fifo.h
 @@ -18,7 +18,7 @@
@@ -26,7 +26,7 @@ index 89a6b8995..69dbb995b 100644
  extern struct evl_sched_class evl_sched_fifo;
  
 diff --git a/include/evl/sched/queue.h b/include/evl/sched/queue.h
-index 8e3519e27..8b8f432e2 100644
+index 8e3519e27686..8b8f432e2848 100644
 --- a/include/evl/sched/queue.h
 +++ b/include/evl/sched/queue.h
 @@ -15,9 +15,9 @@

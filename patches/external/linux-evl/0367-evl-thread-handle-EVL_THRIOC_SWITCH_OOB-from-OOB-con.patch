@@ -1,7 +1,7 @@
 From 0651724a62e52c8c702f5f2e8d73851d2d5eb190 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 8 May 2019 19:17:18 +0200
-Subject: [PATCH 367/985] evl/thread: handle EVL_THRIOC_SWITCH_OOB from OOB
+Subject: [PATCH 0367/1013] evl/thread: handle EVL_THRIOC_SWITCH_OOB from OOB
  context only
 
 The only sane way to issue a request for switching OOB via
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 4 deletions(-)
 
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index cf0031b8a..0b15c9319 100644
+index cf0031b8aa75..0b15c9319d8b 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -2176,10 +2176,6 @@ static long thread_ioctl(struct file *filp, unsigned int cmd,

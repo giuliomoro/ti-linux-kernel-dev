@@ -1,7 +1,7 @@
 From fa6c73702ef45a166daccaecae2a7120fcedd875 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 13 Aug 2019 15:11:45 +0200
-Subject: [PATCH 470/985] evl/file: do not pollute namespace if disabled
+Subject: [PATCH 0470/1013] evl/file: do not pollute namespace if disabled
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/include/evl/file.h b/include/evl/file.h
-index 67adafb56..e90104abc 100644
+index 67adafb56a01..e90104abcb27 100644
 --- a/include/evl/file.h
 +++ b/include/evl/file.h
 @@ -7,6 +7,8 @@

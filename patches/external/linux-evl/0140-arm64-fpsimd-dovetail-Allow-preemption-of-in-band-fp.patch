@@ -1,8 +1,8 @@
 From 27f422eba5c11cca35932a3a71923ec70b14af00 Mon Sep 17 00:00:00 2001
 From: Florian Bezdeka <florian.bezdeka@siemens.com>
 Date: Mon, 17 Feb 2025 14:18:49 +0100
-Subject: [PATCH 140/985] arm64: fpsimd: dovetail: Allow preemption of in-band
- fpsimd kernel sections
+Subject: [PATCH 0140/1013] arm64: fpsimd: dovetail: Allow preemption of
+ in-band fpsimd kernel sections
 
 Preemption of in-band in-kernel fpsimd sections was not allowed /
 properly implemented in Dovetail up to now.
@@ -44,7 +44,7 @@ Acked-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 48 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm64/include/asm/dovetail.h b/arch/arm64/include/asm/dovetail.h
-index dc46f131e..8cd359710 100644
+index dc46f131e3eb..8cd359710353 100644
 --- a/arch/arm64/include/asm/dovetail.h
 +++ b/arch/arm64/include/asm/dovetail.h
 @@ -26,11 +26,17 @@ static inline void arch_dovetail_exec_prepare(void)
@@ -68,7 +68,7 @@ index dc46f131e..8cd359710 100644
  
  /*
 diff --git a/arch/arm64/include/asm/fpsimd.h b/arch/arm64/include/asm/fpsimd.h
-index c25fd6706..50bbfb385 100644
+index c25fd6706ed5..50bbfb385b94 100644
 --- a/arch/arm64/include/asm/fpsimd.h
 +++ b/arch/arm64/include/asm/fpsimd.h
 @@ -80,10 +80,15 @@ extern void fpsimd_flush_thread(void);
@@ -89,7 +89,7 @@ index c25fd6706..50bbfb385 100644
  	struct user_fpsimd_state *st;
  	void *sve_state;
 diff --git a/arch/arm64/include/asm/thread_info.h b/arch/arm64/include/asm/thread_info.h
-index 3028a8f29..8ee08fd30 100644
+index 3028a8f294c2..8ee08fd30d8c 100644
 --- a/arch/arm64/include/asm/thread_info.h
 +++ b/arch/arm64/include/asm/thread_info.h
 @@ -76,6 +76,7 @@ void arch_setup_new_exec(void);
@@ -101,7 +101,7 @@ index 3028a8f29..8ee08fd30 100644
  #define TIF_FREEZE		19
  #define TIF_RESTORE_SIGMASK	20
 diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
-index 0c4d99eb8..c10a9e981 100644
+index 0c4d99eb880e..c10a9e981a60 100644
 --- a/arch/arm64/kernel/fpsimd.c
 +++ b/arch/arm64/kernel/fpsimd.c
 @@ -2222,6 +2222,39 @@ void cpu_enable_fpsimd(const struct arm64_cpu_capabilities *__always_unused p)

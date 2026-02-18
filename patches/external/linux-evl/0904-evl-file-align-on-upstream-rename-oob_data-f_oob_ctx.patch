@@ -1,7 +1,7 @@
 From 0d9503d0e986a870eb26f393248ab5902e7ff8e7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 2 Jan 2025 18:18:52 +0100
-Subject: [PATCH 904/985] evl/file: align on upstream rename: oob_data ->
+Subject: [PATCH 0904/1013] evl/file: align on upstream rename: oob_data ->
  f_oob_ctx
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/kernel/evl/file.c b/kernel/evl/file.c
-index 93aa8aa3c..dcb369e21 100644
+index 93aa8aa3c2c6..dcb369e21c55 100644
 --- a/kernel/evl/file.c
 +++ b/kernel/evl/file.c
 @@ -113,14 +113,14 @@ void install_inband_fd(unsigned int fd, struct file *filp,
@@ -68,7 +68,7 @@ index 93aa8aa3c..dcb369e21 100644
  
  	return 0;
 diff --git a/kernel/evl/net/socket.c b/kernel/evl/net/socket.c
-index 7c68fd7bd..83dea0bae 100644
+index 7c68fd7bdf71..83dea0bae446 100644
 --- a/kernel/evl/net/socket.c
 +++ b/kernel/evl/net/socket.c
 @@ -62,8 +62,8 @@ struct domain_list_head {

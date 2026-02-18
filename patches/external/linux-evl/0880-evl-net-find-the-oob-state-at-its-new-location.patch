@@ -1,7 +1,7 @@
 From 7508f77e914dc7182ec5ed49c09dec0b444c5fd8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 1 Mar 2024 11:28:11 +0100
-Subject: [PATCH 880/985] evl/net: find the oob state at its new location
+Subject: [PATCH 0880/1013] evl/net: find the oob state at its new location
 
 oob_netdev_state is directly accessible from the device descriptor
 without going through the obsoleted oob_context_state struct anymore.
@@ -18,7 +18,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  7 files changed, 25 insertions(+), 25 deletions(-)
 
 diff --git a/include/evl/net/device.h b/include/evl/net/device.h
-index bd1b3ea81..b4abecd32 100644
+index bd1b3ea81e01..b4abecd32a6a 100644
 --- a/include/evl/net/device.h
 +++ b/include/evl/net/device.h
 @@ -44,7 +44,7 @@ __evl_net_filter_rx(struct evl_netdev_state *est, struct sk_buff *skb);
@@ -31,7 +31,7 @@ index bd1b3ea81..b4abecd32 100644
  	if (test_bit(EVL_NETDEV_RXFILTER_BIT, &est->flags))
  		return __evl_net_filter_rx(est, skb);
 diff --git a/kernel/evl/net/dev.c b/kernel/evl/net/dev.c
-index e5b98ab82..a3c01a57d 100644
+index e5b98ab827b1..a3c01a57dcd8 100644
 --- a/kernel/evl/net/dev.c
 +++ b/kernel/evl/net/dev.c
 @@ -121,7 +121,7 @@ static int enable_oob_port(struct net_device *dev,
@@ -124,7 +124,7 @@ index e5b98ab82..a3c01a57d 100644
  	struct bpf_prog *prog;
  	int ret, fd;
 diff --git a/kernel/evl/net/input.c b/kernel/evl/net/input.c
-index f9a37511a..e876ec4c1 100644
+index f9a37511a04e..e876ec4c1cb7 100644
 --- a/kernel/evl/net/input.c
 +++ b/kernel/evl/net/input.c
 @@ -31,7 +31,7 @@ void evl_net_do_rx(void *arg)
@@ -173,7 +173,7 @@ index f9a37511a..e876ec4c1 100644
  	evl_raise_flag(&est->rx_flag);
  }
 diff --git a/kernel/evl/net/output.c b/kernel/evl/net/output.c
-index eb8892fb1..849445e57 100644
+index eb8892fb1a55..849445e57bee 100644
 --- a/kernel/evl/net/output.c
 +++ b/kernel/evl/net/output.c
 @@ -62,7 +62,7 @@ void evl_net_do_tx(void *arg)
@@ -195,7 +195,7 @@ index eb8892fb1..849445e57 100644
  
  	ret = evl_net_sched_packet(dev, skb);
 diff --git a/kernel/evl/net/packet/packet.c b/kernel/evl/net/packet/packet.c
-index d664b014b..99a5f6d00 100644
+index d664b014b743..99a5f6d00bd2 100644
 --- a/kernel/evl/net/packet/packet.c
 +++ b/kernel/evl/net/packet/packet.c
 @@ -645,7 +645,7 @@ static __poll_t poll_packet(struct evl_socket *esk,
@@ -208,7 +208,7 @@ index d664b014b..99a5f6d00 100644
  		if (!list_empty(&est->free_skb_pool))
  			ret = POLLOUT|POLLWRNORM;
 diff --git a/kernel/evl/net/qdisc/core.c b/kernel/evl/net/qdisc/core.c
-index e10f3b8ab..ce8f2e8a9 100644
+index e10f3b8abfa1..ce8f2e8a9c7b 100644
 --- a/kernel/evl/net/qdisc/core.c
 +++ b/kernel/evl/net/qdisc/core.c
 @@ -77,7 +77,7 @@ EXPORT_SYMBOL_GPL(evl_net_free_qdisc);
@@ -221,7 +221,7 @@ index e10f3b8ab..ce8f2e8a9 100644
  	/*
  	 * Low-priority traffic sent by the sched_oob Qdisc goes to
 diff --git a/kernel/evl/net/skb.c b/kernel/evl/net/skb.c
-index 2c71fa205..3c2cfb89b 100644
+index 2c71fa205004..3c2cfb89b790 100644
 --- a/kernel/evl/net/skb.c
 +++ b/kernel/evl/net/skb.c
 @@ -137,7 +137,7 @@ static inline size_t get_headroom(struct net_device *dev)

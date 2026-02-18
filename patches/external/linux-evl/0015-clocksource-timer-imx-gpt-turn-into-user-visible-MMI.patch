@@ -1,7 +1,7 @@
 From d4949db4c63a955413cb81f6ba9ffa0d0a5152f8 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 22 Dec 2019 18:23:43 +0100
-Subject: [PATCH 015/985] clocksource/timer-imx-gpt: turn into user-visible
+Subject: [PATCH 0015/1013] clocksource/timer-imx-gpt: turn into user-visible
  MMIO clocksource
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -11,7 +11,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index 91bb3a838..e6c74ba7f 100644
+index 91bb3a8389be..e6c74ba7fbc3 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
 @@ -599,7 +599,7 @@ config CLKSRC_PXA
@@ -24,7 +24,7 @@ index 91bb3a838..e6c74ba7f 100644
  config CLKSRC_IMX_TPM
  	bool "Clocksource using i.MX TPM" if COMPILE_TEST
 diff --git a/drivers/clocksource/timer-imx-gpt.c b/drivers/clocksource/timer-imx-gpt.c
-index 489e69169..952cdeef8 100644
+index 489e69169ed4..952cdeef8c2c 100644
 --- a/drivers/clocksource/timer-imx-gpt.c
 +++ b/drivers/clocksource/timer-imx-gpt.c
 @@ -163,8 +163,8 @@ static int __init mxc_clocksource_init(struct imx_timer *imxtm)

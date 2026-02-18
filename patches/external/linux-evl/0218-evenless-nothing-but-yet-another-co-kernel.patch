@@ -1,7 +1,7 @@
 From a446ed9e56a9d41337f8b1c1406b1098ffc17206 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 23 Apr 2017 11:48:58 +0200
-Subject: [PATCH 218/985] evenless: nothing but yet another co-kernel
+Subject: [PATCH 0218/1013] evenless: nothing but yet another co-kernel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -196,7 +196,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  create mode 100644 kernel/evenless/xbuf.c
 
 diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index fc844ca67..03a9161a5 100644
+index fc844ca67ba2..03a9161a55b1 100644
 --- a/arch/arm/Kconfig
 +++ b/arch/arm/Kconfig
 @@ -315,6 +315,8 @@ config PGTABLE_LEVELS
@@ -209,7 +209,7 @@ index fc844ca67..03a9161a5 100644
  
  config MMU
 diff --git a/arch/arm/Kconfig.platforms b/arch/arm/Kconfig.platforms
-index 62d809f85..dd017a0f4 100644
+index 62d809f85ec9..dd017a0f4ca2 100644
 --- a/arch/arm/Kconfig.platforms
 +++ b/arch/arm/Kconfig.platforms
 @@ -51,6 +51,10 @@ config ARCH_MULTI_V6_V7
@@ -224,7 +224,7 @@ index 62d809f85..dd017a0f4 100644
  config ARCH_MULTI_CPU_AUTO
  	def_bool !(ARCH_MULTI_V4 || ARCH_MULTI_V4T || ARCH_MULTI_V6_V7)
 diff --git a/arch/arm/Makefile b/arch/arm/Makefile
-index dee8c9fe2..76b94ab37 100644
+index dee8c9fe25a2..76b94ab37104 100644
 --- a/arch/arm/Makefile
 +++ b/arch/arm/Makefile
 @@ -239,6 +239,10 @@ TEXT_OFFSET := $(textofs-y)
@@ -240,7 +240,7 @@ index dee8c9fe2..76b94ab37 100644
  # For cleaning
 diff --git a/arch/arm/include/asm/evenless/fptest.h b/arch/arm/include/asm/evenless/fptest.h
 new file mode 100644
-index 000000000..b1fb66f07
+index 000000000000..b1fb66f07195
 --- /dev/null
 +++ b/arch/arm/include/asm/evenless/fptest.h
 @@ -0,0 +1,25 @@
@@ -271,7 +271,7 @@ index 000000000..b1fb66f07
 +#endif /* _EVENLESS_ARM_ASM_FPTEST_H */
 diff --git a/arch/arm/include/asm/evenless/syscall.h b/arch/arm/include/asm/evenless/syscall.h
 new file mode 100644
-index 000000000..62d9ae76a
+index 000000000000..62d9ae76ab2c
 --- /dev/null
 +++ b/arch/arm/include/asm/evenless/syscall.h
 @@ -0,0 +1,46 @@
@@ -323,7 +323,7 @@ index 000000000..62d9ae76a
 +#endif /* !_EVENLESS_ARM_ASM_SYSCALL_H */
 diff --git a/arch/arm/include/asm/evenless/thread.h b/arch/arm/include/asm/evenless/thread.h
 new file mode 100644
-index 000000000..00a4649c2
+index 000000000000..00a4649c2885
 --- /dev/null
 +++ b/arch/arm/include/asm/evenless/thread.h
 @@ -0,0 +1,29 @@
@@ -358,7 +358,7 @@ index 000000000..00a4649c2
 +#endif /* !_EVENLESS_ARM_ASM_THREAD_H */
 diff --git a/arch/arm/include/dovetail/thread_info.h b/arch/arm/include/dovetail/thread_info.h
 new file mode 100644
-index 000000000..253e15ec9
+index 000000000000..253e15ec959c
 --- /dev/null
 +++ b/arch/arm/include/dovetail/thread_info.h
 @@ -0,0 +1,7 @@
@@ -371,7 +371,7 @@ index 000000000..253e15ec9
 +#endif /* !_EVENLESS_DOVETAIL_THREAD_INFO_H */
 diff --git a/arch/arm/include/uapi/asm/evenless/fptest.h b/arch/arm/include/uapi/asm/evenless/fptest.h
 new file mode 100644
-index 000000000..c1d7f3764
+index 000000000000..c1d7f37642fd
 --- /dev/null
 +++ b/arch/arm/include/uapi/asm/evenless/fptest.h
 @@ -0,0 +1,46 @@
@@ -422,7 +422,7 @@ index 000000000..c1d7f3764
 +
 +#endif /* !_EVENLESS_ARM_ASM_UAPI_FPTEST_H */
 diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index 94b7a7dd5..0d01b19d0 100644
+index 94b7a7dd5c07..0d01b19d0664 100644
 --- a/arch/arm64/Kconfig
 +++ b/arch/arm64/Kconfig
 @@ -189,6 +189,7 @@ config ARM64
@@ -443,7 +443,7 @@ index 94b7a7dd5..0d01b19d0 100644
  
  config ARM64_ACPI_PARKING_PROTOCOL
 diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
-index 88029d38b..ffe2a3ad4 100644
+index 88029d38b3c6..ffe2a3ad42ef 100644
 --- a/arch/arm64/Makefile
 +++ b/arch/arm64/Makefile
 @@ -158,6 +158,10 @@ else ifeq ($(CONFIG_KASAN_GENERIC), y)
@@ -459,7 +459,7 @@ index 88029d38b..ffe2a3ad4 100644
  KBUILD_AFLAGS += -DKASAN_SHADOW_SCALE_SHIFT=$(KASAN_SHADOW_SCALE_SHIFT)
 diff --git a/arch/arm64/include/asm/evenless/fptest.h b/arch/arm64/include/asm/evenless/fptest.h
 new file mode 100644
-index 000000000..dc4c65013
+index 000000000000..dc4c6501334f
 --- /dev/null
 +++ b/arch/arm64/include/asm/evenless/fptest.h
 @@ -0,0 +1,28 @@
@@ -493,7 +493,7 @@ index 000000000..dc4c65013
 +#endif /* _EVENLESS_ARM64_ASM_FPTEST_H */
 diff --git a/arch/arm64/include/asm/evenless/syscall.h b/arch/arm64/include/asm/evenless/syscall.h
 new file mode 100644
-index 000000000..29cea6da6
+index 000000000000..29cea6da6ea3
 --- /dev/null
 +++ b/arch/arm64/include/asm/evenless/syscall.h
 @@ -0,0 +1,45 @@
@@ -544,7 +544,7 @@ index 000000000..29cea6da6
 +#endif /* !_EVENLESS_ARM64_ASM_SYSCALL_H */
 diff --git a/arch/arm64/include/asm/evenless/thread.h b/arch/arm64/include/asm/evenless/thread.h
 new file mode 100644
-index 000000000..07157c43d
+index 000000000000..07157c43d586
 --- /dev/null
 +++ b/arch/arm64/include/asm/evenless/thread.h
 @@ -0,0 +1,12 @@
@@ -562,7 +562,7 @@ index 000000000..07157c43d
 +#endif /* !_EVENLESS_ARM64_ASM_THREAD_H */
 diff --git a/arch/arm64/include/dovetail/thread_info.h b/arch/arm64/include/dovetail/thread_info.h
 new file mode 100644
-index 000000000..253e15ec9
+index 000000000000..253e15ec959c
 --- /dev/null
 +++ b/arch/arm64/include/dovetail/thread_info.h
 @@ -0,0 +1,7 @@
@@ -575,7 +575,7 @@ index 000000000..253e15ec9
 +#endif /* !_EVENLESS_DOVETAIL_THREAD_INFO_H */
 diff --git a/arch/arm64/include/uapi/asm/evenless/fptest.h b/arch/arm64/include/uapi/asm/evenless/fptest.h
 new file mode 100644
-index 000000000..e78f79848
+index 000000000000..e78f7984838a
 --- /dev/null
 +++ b/arch/arm64/include/uapi/asm/evenless/fptest.h
 @@ -0,0 +1,91 @@
@@ -672,7 +672,7 @@ index 000000000..e78f79848
 +#endif /* !_EVENLESS_ARM64_ASM_UAPI_FPTEST_H */
 diff --git a/arch/arm64/include/uapi/asm/evenless/syscall.h b/arch/arm64/include/uapi/asm/evenless/syscall.h
 new file mode 100644
-index 000000000..bc7939255
+index 000000000000..bc79392559e2
 --- /dev/null
 +++ b/arch/arm64/include/uapi/asm/evenless/syscall.h
 @@ -0,0 +1,7 @@
@@ -684,7 +684,7 @@ index 000000000..bc7939255
 +
 +#endif /* !_EVENLESS_ARM64_ASM_UAPI_SYSCALL_H */
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 7bdad836f..db270785c 100644
+index 7bdad836fc62..db270785c30a 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
 @@ -35,6 +35,8 @@ source "drivers/block/Kconfig"
@@ -697,7 +697,7 @@ index 7bdad836f..db270785c 100644
  
  source "drivers/scsi/Kconfig"
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 45d1c3e63..0bee73d26 100644
+index 45d1c3e630f7..0bee73d26d42 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
 @@ -158,6 +158,8 @@ obj-$(CONFIG_REMOTEPROC)	+= remoteproc/
@@ -711,7 +711,7 @@ index 45d1c3e63..0bee73d26 100644
  obj-$(subst m,y,$(CONFIG_HYPERV))	+= hv/
 diff --git a/drivers/evenless/Kconfig b/drivers/evenless/Kconfig
 new file mode 100644
-index 000000000..a9c4248d8
+index 000000000000..a9c4248d8689
 --- /dev/null
 +++ b/drivers/evenless/Kconfig
 @@ -0,0 +1,13 @@
@@ -730,7 +730,7 @@ index 000000000..a9c4248d8
 +endmenu
 diff --git a/drivers/evenless/Makefile b/drivers/evenless/Makefile
 new file mode 100644
-index 000000000..05cf4f810
+index 000000000000..05cf4f8100a3
 --- /dev/null
 +++ b/drivers/evenless/Makefile
 @@ -0,0 +1,2 @@
@@ -738,7 +738,7 @@ index 000000000..05cf4f810
 +obj-$(CONFIG_EVENLESS_HECTIC)	+= hectic.o
 diff --git a/drivers/evenless/hectic.c b/drivers/evenless/hectic.c
 new file mode 100644
-index 000000000..8d20d98cf
+index 000000000000..8d20d98cff83
 --- /dev/null
 +++ b/drivers/evenless/hectic.c
 @@ -0,0 +1,691 @@
@@ -1435,7 +1435,7 @@ index 000000000..8d20d98cf
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/evenless/latmus.c b/drivers/evenless/latmus.c
 new file mode 100644
-index 000000000..de6e1dea8
+index 000000000000..de6e1dea8b4b
 --- /dev/null
 +++ b/drivers/evenless/latmus.c
 @@ -0,0 +1,1054 @@
@@ -2495,7 +2495,7 @@ index 000000000..de6e1dea8
 +MODULE_LICENSE("GPL");
 diff --git a/include/asm-generic/evenless/thread_info.h b/include/asm-generic/evenless/thread_info.h
 new file mode 100644
-index 000000000..233d737a3
+index 000000000000..233d737a3001
 --- /dev/null
 +++ b/include/asm-generic/evenless/thread_info.h
 @@ -0,0 +1,17 @@
@@ -2518,7 +2518,7 @@ index 000000000..233d737a3
 +#endif /* !_ASM_GENERIC_EVENLESS_THREAD_INFO_H */
 diff --git a/include/evenless/assert.h b/include/evenless/assert.h
 new file mode 100644
-index 000000000..af06494b8
+index 000000000000..af06494b8987
 --- /dev/null
 +++ b/include/evenless/assert.h
 @@ -0,0 +1,43 @@
@@ -2567,7 +2567,7 @@ index 000000000..af06494b8
 +#endif /* !_EVENLESS_ASSERT_H */
 diff --git a/include/evenless/clock.h b/include/evenless/clock.h
 new file mode 100644
-index 000000000..346c4d174
+index 000000000000..346c4d17423f
 --- /dev/null
 +++ b/include/evenless/clock.h
 @@ -0,0 +1,172 @@
@@ -2745,7 +2745,7 @@ index 000000000..346c4d174
 +#endif /* !_EVENLESS_CLOCK_H */
 diff --git a/include/evenless/control.h b/include/evenless/control.h
 new file mode 100644
-index 000000000..83cbdc0a4
+index 000000000000..83cbdc0a4e74
 --- /dev/null
 +++ b/include/evenless/control.h
 @@ -0,0 +1,60 @@
@@ -2811,7 +2811,7 @@ index 000000000..83cbdc0a4
 +#endif /* !_EVENLESS_CONTROL_H */
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
 new file mode 100644
-index 000000000..3a68a6c2e
+index 000000000000..3a68a6c2e076
 --- /dev/null
 +++ b/include/evenless/factory.h
 @@ -0,0 +1,151 @@
@@ -2968,7 +2968,7 @@ index 000000000..3a68a6c2e
 +#endif /* !_EVENLESS_FACTORY_H */
 diff --git a/include/evenless/file.h b/include/evenless/file.h
 new file mode 100644
-index 000000000..74755b135
+index 000000000000..74755b13505f
 --- /dev/null
 +++ b/include/evenless/file.h
 @@ -0,0 +1,65 @@
@@ -3039,7 +3039,7 @@ index 000000000..74755b135
 +#endif /* !_EVENLESS_FILE_H */
 diff --git a/include/evenless/init.h b/include/evenless/init.h
 new file mode 100644
-index 000000000..ff319a340
+index 000000000000..ff319a340069
 --- /dev/null
 +++ b/include/evenless/init.h
 @@ -0,0 +1,36 @@
@@ -3081,7 +3081,7 @@ index 000000000..ff319a340
 +#endif /* !_EVENLESS_INIT_H_ */
 diff --git a/include/evenless/list.h b/include/evenless/list.h
 new file mode 100644
-index 000000000..234272530
+index 000000000000..234272530dd2
 --- /dev/null
 +++ b/include/evenless/list.h
 @@ -0,0 +1,46 @@
@@ -3133,7 +3133,7 @@ index 000000000..234272530
 +#endif /* !_EVENLESS_LIST_H_ */
 diff --git a/include/evenless/lock.h b/include/evenless/lock.h
 new file mode 100644
-index 000000000..28825c887
+index 000000000000..28825c887e24
 --- /dev/null
 +++ b/include/evenless/lock.h
 @@ -0,0 +1,225 @@
@@ -3364,7 +3364,7 @@ index 000000000..28825c887
 +#endif /* !_EVENLESS_LOCK_H */
 diff --git a/include/evenless/memory.h b/include/evenless/memory.h
 new file mode 100644
-index 000000000..558904f72
+index 000000000000..558904f7251c
 --- /dev/null
 +++ b/include/evenless/memory.h
 @@ -0,0 +1,145 @@
@@ -3515,7 +3515,7 @@ index 000000000..558904f72
 +#endif /* !_EVENLESS_MEMORY_H */
 diff --git a/include/evenless/monitor.h b/include/evenless/monitor.h
 new file mode 100644
-index 000000000..c442df286
+index 000000000000..c442df28666c
 --- /dev/null
 +++ b/include/evenless/monitor.h
 @@ -0,0 +1,24 @@
@@ -3545,7 +3545,7 @@ index 000000000..c442df286
 +#endif /* !_EVENLESS_MONITOR_H */
 diff --git a/include/evenless/poller.h b/include/evenless/poller.h
 new file mode 100644
-index 000000000..5ca68e920
+index 000000000000..5ca68e9200c3
 --- /dev/null
 +++ b/include/evenless/poller.h
 @@ -0,0 +1,67 @@
@@ -3618,7 +3618,7 @@ index 000000000..5ca68e920
 +#endif /* !_EVENLESS_POLLER_H */
 diff --git a/include/evenless/sched.h b/include/evenless/sched.h
 new file mode 100644
-index 000000000..5c2e19b5f
+index 000000000000..5c2e19b5f31b
 --- /dev/null
 +++ b/include/evenless/sched.h
 @@ -0,0 +1,550 @@
@@ -4174,7 +4174,7 @@ index 000000000..5c2e19b5f
 +#endif /* !_EVENLESS_SCHED_H */
 diff --git a/include/evenless/sched/idle.h b/include/evenless/sched/idle.h
 new file mode 100644
-index 000000000..a7e6f006b
+index 000000000000..a7e6f006b1cd
 --- /dev/null
 +++ b/include/evenless/sched/idle.h
 @@ -0,0 +1,53 @@
@@ -4233,7 +4233,7 @@ index 000000000..a7e6f006b
 +#endif /* !_EVENLESS_SCHED_IDLE_H */
 diff --git a/include/evenless/sched/param.h b/include/evenless/sched/param.h
 new file mode 100644
-index 000000000..d11f874f2
+index 000000000000..d11f874f25ff
 --- /dev/null
 +++ b/include/evenless/sched/param.h
 @@ -0,0 +1,37 @@
@@ -4276,7 +4276,7 @@ index 000000000..d11f874f2
 +#endif /* !_EVENLESS_SCHED_PARAM_H */
 diff --git a/include/evenless/sched/queue.h b/include/evenless/sched/queue.h
 new file mode 100644
-index 000000000..d3763cbe3
+index 000000000000..d3763cbe37cf
 --- /dev/null
 +++ b/include/evenless/sched/queue.h
 @@ -0,0 +1,59 @@
@@ -4341,7 +4341,7 @@ index 000000000..d3763cbe3
 +#endif /* !_EVENLESS_SCHED_QUEUE_H */
 diff --git a/include/evenless/sched/quota.h b/include/evenless/sched/quota.h
 new file mode 100644
-index 000000000..601a6c9cc
+index 000000000000..601a6c9ccc67
 --- /dev/null
 +++ b/include/evenless/sched/quota.h
 @@ -0,0 +1,75 @@
@@ -4422,7 +4422,7 @@ index 000000000..601a6c9cc
 +#endif /* !_EVENLESS_SCHED_QUOTA_H */
 diff --git a/include/evenless/sched/rt.h b/include/evenless/sched/rt.h
 new file mode 100644
-index 000000000..da5ed06fa
+index 000000000000..da5ed06fa256
 --- /dev/null
 +++ b/include/evenless/sched/rt.h
 @@ -0,0 +1,117 @@
@@ -4545,7 +4545,7 @@ index 000000000..da5ed06fa
 +#endif /* !_EVENLESS_SCHED_RT_H */
 diff --git a/include/evenless/sched/weak.h b/include/evenless/sched/weak.h
 new file mode 100644
-index 000000000..2a38e3392
+index 000000000000..2a38e33927e4
 --- /dev/null
 +++ b/include/evenless/sched/weak.h
 @@ -0,0 +1,35 @@
@@ -4586,7 +4586,7 @@ index 000000000..2a38e3392
 +#endif /* !_EVENLESS_SCHED_WEAK_H */
 diff --git a/include/evenless/stat.h b/include/evenless/stat.h
 new file mode 100644
-index 000000000..6016242a6
+index 000000000000..6016242a6b43
 --- /dev/null
 +++ b/include/evenless/stat.h
 @@ -0,0 +1,139 @@
@@ -4731,7 +4731,7 @@ index 000000000..6016242a6
 +#endif /* !_EVENLESS_STAT_H */
 diff --git a/include/evenless/synch.h b/include/evenless/synch.h
 new file mode 100644
-index 000000000..452550186
+index 000000000000..45255018615f
 --- /dev/null
 +++ b/include/evenless/synch.h
 @@ -0,0 +1,116 @@
@@ -4853,7 +4853,7 @@ index 000000000..452550186
 +#endif /* !_EVENLESS_SYN_H_ */
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
 new file mode 100644
-index 000000000..34a32fc62
+index 000000000000..34a32fc629e0
 --- /dev/null
 +++ b/include/evenless/thread.h
 @@ -0,0 +1,350 @@
@@ -5209,7 +5209,7 @@ index 000000000..34a32fc62
 +#endif /* !_EVENLESS_THREAD_H */
 diff --git a/include/evenless/tick.h b/include/evenless/tick.h
 new file mode 100644
-index 000000000..c485ca2da
+index 000000000000..c485ca2da9e6
 --- /dev/null
 +++ b/include/evenless/tick.h
 @@ -0,0 +1,48 @@
@@ -5263,7 +5263,7 @@ index 000000000..c485ca2da
 +#endif /* !_EVENLESS_TICK_H */
 diff --git a/include/evenless/timer.h b/include/evenless/timer.h
 new file mode 100644
-index 000000000..87a3fd716
+index 000000000000..87a3fd7167ad
 --- /dev/null
 +++ b/include/evenless/timer.h
 @@ -0,0 +1,456 @@
@@ -5725,7 +5725,7 @@ index 000000000..87a3fd716
 +#endif /* !_EVENLESS_TIMER_H */
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
 new file mode 100644
-index 000000000..1fe8e5f86
+index 000000000000..1fe8e5f8655d
 --- /dev/null
 +++ b/include/evenless/wait.h
 @@ -0,0 +1,221 @@
@@ -5952,7 +5952,7 @@ index 000000000..1fe8e5f86
 +#endif /* _EVENLESS_WAIT_H */
 diff --git a/include/evenless/xbuf.h b/include/evenless/xbuf.h
 new file mode 100644
-index 000000000..0489594e2
+index 000000000000..0489594e237c
 --- /dev/null
 +++ b/include/evenless/xbuf.h
 @@ -0,0 +1,28 @@
@@ -5986,7 +5986,7 @@ index 000000000..0489594e2
 +#endif /* !_EVENLESS_XBUF_H */
 diff --git a/include/trace/events/evenless.h b/include/trace/events/evenless.h
 new file mode 100644
-index 000000000..c071e5854
+index 000000000000..c071e5854ad2
 --- /dev/null
 +++ b/include/trace/events/evenless.h
 @@ -0,0 +1,867 @@
@@ -6859,7 +6859,7 @@ index 000000000..c071e5854
 +#include <trace/define_trace.h>
 diff --git a/include/uapi/evenless/clock.h b/include/uapi/evenless/clock.h
 new file mode 100644
-index 000000000..7abf84b8e
+index 000000000000..7abf84b8ed0c
 --- /dev/null
 +++ b/include/uapi/evenless/clock.h
 @@ -0,0 +1,23 @@
@@ -6888,7 +6888,7 @@ index 000000000..7abf84b8e
 +#endif /* !_EVENLESS_UAPI_CLOCK_H */
 diff --git a/include/uapi/evenless/control.h b/include/uapi/evenless/control.h
 new file mode 100644
-index 000000000..9c00a4e5b
+index 000000000000..9c00a4e5bcf1
 --- /dev/null
 +++ b/include/uapi/evenless/control.h
 @@ -0,0 +1,23 @@
@@ -6917,7 +6917,7 @@ index 000000000..9c00a4e5b
 +#endif /* !_EVENLESS_UAPI_CONTROL_H */
 diff --git a/include/uapi/evenless/devices/hectic.h b/include/uapi/evenless/devices/hectic.h
 new file mode 100644
-index 000000000..051029da1
+index 000000000000..051029da1d6a
 --- /dev/null
 +++ b/include/uapi/evenless/devices/hectic.h
 @@ -0,0 +1,39 @@
@@ -6962,7 +6962,7 @@ index 000000000..051029da1
 +#endif /* !_EVENLESS_UAPI_DEVICES_HECTIC_H */
 diff --git a/include/uapi/evenless/devices/latmus.h b/include/uapi/evenless/devices/latmus.h
 new file mode 100644
-index 000000000..68718295b
+index 000000000000..68718295b71d
 --- /dev/null
 +++ b/include/uapi/evenless/devices/latmus.h
 @@ -0,0 +1,56 @@
@@ -7024,7 +7024,7 @@ index 000000000..68718295b
 +#endif /* !_EVENLESS_UAPI_DEVICES_LATMUS_H */
 diff --git a/include/uapi/evenless/factory.h b/include/uapi/evenless/factory.h
 new file mode 100644
-index 000000000..d7839aadf
+index 000000000000..d7839aadf710
 --- /dev/null
 +++ b/include/uapi/evenless/factory.h
 @@ -0,0 +1,26 @@
@@ -7056,7 +7056,7 @@ index 000000000..d7839aadf
 +#endif /* !_EVENLESS_UAPI_FACTORY_H */
 diff --git a/include/uapi/evenless/logger.h b/include/uapi/evenless/logger.h
 new file mode 100644
-index 000000000..3f23cebc2
+index 000000000000..3f23cebc27bf
 --- /dev/null
 +++ b/include/uapi/evenless/logger.h
 @@ -0,0 +1,15 @@
@@ -7077,7 +7077,7 @@ index 000000000..3f23cebc2
 +#endif /* !_EVENLESS_UAPI_LOGGER_H */
 diff --git a/include/uapi/evenless/monitor.h b/include/uapi/evenless/monitor.h
 new file mode 100644
-index 000000000..b4ace6058
+index 000000000000..b4ace6058054
 --- /dev/null
 +++ b/include/uapi/evenless/monitor.h
 @@ -0,0 +1,64 @@
@@ -7147,7 +7147,7 @@ index 000000000..b4ace6058
 +#endif /* !_EVENLESS_UAPI_MONITOR_H */
 diff --git a/include/uapi/evenless/poller.h b/include/uapi/evenless/poller.h
 new file mode 100644
-index 000000000..2263861f0
+index 000000000000..2263861f06f3
 --- /dev/null
 +++ b/include/uapi/evenless/poller.h
 @@ -0,0 +1,40 @@
@@ -7193,7 +7193,7 @@ index 000000000..2263861f0
 +#endif /* !_EVENLESS_UAPI_POLLER_H */
 diff --git a/include/uapi/evenless/sched.h b/include/uapi/evenless/sched.h
 new file mode 100644
-index 000000000..38a0e05a1
+index 000000000000..38a0e05a1bcd
 --- /dev/null
 +++ b/include/uapi/evenless/sched.h
 @@ -0,0 +1,36 @@
@@ -7235,7 +7235,7 @@ index 000000000..38a0e05a1
 +#endif /* !_EVENLESS_UAPI_SCHED_H */
 diff --git a/include/uapi/evenless/sem.h b/include/uapi/evenless/sem.h
 new file mode 100644
-index 000000000..a934db710
+index 000000000000..a934db71078c
 --- /dev/null
 +++ b/include/uapi/evenless/sem.h
 @@ -0,0 +1,45 @@
@@ -7286,7 +7286,7 @@ index 000000000..a934db710
 +#endif /* !_EVENLESS_UAPI_SEM_H */
 diff --git a/include/uapi/evenless/signal.h b/include/uapi/evenless/signal.h
 new file mode 100644
-index 000000000..c7aa01c12
+index 000000000000..c7aa01c12651
 --- /dev/null
 +++ b/include/uapi/evenless/signal.h
 @@ -0,0 +1,37 @@
@@ -7329,7 +7329,7 @@ index 000000000..c7aa01c12
 +#endif /* !_EVENLESS_UAPI_SIGNAL_H */
 diff --git a/include/uapi/evenless/synch.h b/include/uapi/evenless/synch.h
 new file mode 100644
-index 000000000..bebc076bf
+index 000000000000..bebc076bf31f
 --- /dev/null
 +++ b/include/uapi/evenless/synch.h
 @@ -0,0 +1,65 @@
@@ -7400,7 +7400,7 @@ index 000000000..bebc076bf
 +#endif /* !_EVENLESS_UAPI_SYNCH_H */
 diff --git a/include/uapi/evenless/syscall.h b/include/uapi/evenless/syscall.h
 new file mode 100644
-index 000000000..5bfc4e2a3
+index 000000000000..5bfc4e2a3830
 --- /dev/null
 +++ b/include/uapi/evenless/syscall.h
 @@ -0,0 +1,16 @@
@@ -7422,7 +7422,7 @@ index 000000000..5bfc4e2a3
 +#endif /* !_EVENLESS_UAPI_SYSCALL_H */
 diff --git a/include/uapi/evenless/thread.h b/include/uapi/evenless/thread.h
 new file mode 100644
-index 000000000..51c499b02
+index 000000000000..51c499b024c1
 --- /dev/null
 +++ b/include/uapi/evenless/thread.h
 @@ -0,0 +1,85 @@
@@ -7513,7 +7513,7 @@ index 000000000..51c499b02
 +#endif /* !_EVENLESS_UAPI_THREAD_H */
 diff --git a/include/uapi/evenless/timerfd.h b/include/uapi/evenless/timerfd.h
 new file mode 100644
-index 000000000..2018997b9
+index 000000000000..2018997b93f4
 --- /dev/null
 +++ b/include/uapi/evenless/timerfd.h
 @@ -0,0 +1,31 @@
@@ -7550,7 +7550,7 @@ index 000000000..2018997b9
 +#endif /* !_EVENLESS_UAPI_TIMERFD_H */
 diff --git a/include/uapi/evenless/trace.h b/include/uapi/evenless/trace.h
 new file mode 100644
-index 000000000..24fd0a1d3
+index 000000000000..24fd0a1d3d2f
 --- /dev/null
 +++ b/include/uapi/evenless/trace.h
 @@ -0,0 +1,14 @@
@@ -7570,7 +7570,7 @@ index 000000000..24fd0a1d3
 +#endif /* !_EVENLESS_UAPI_TRACE_H */
 diff --git a/include/uapi/evenless/types.h b/include/uapi/evenless/types.h
 new file mode 100644
-index 000000000..9e8b95389
+index 000000000000..9e8b9538905f
 --- /dev/null
 +++ b/include/uapi/evenless/types.h
 @@ -0,0 +1,29 @@
@@ -7605,7 +7605,7 @@ index 000000000..9e8b95389
 +#endif /* !_EVENLESS_UAPI_TYPES_H */
 diff --git a/include/uapi/evenless/xbuf.h b/include/uapi/evenless/xbuf.h
 new file mode 100644
-index 000000000..697463e99
+index 000000000000..697463e99cb3
 --- /dev/null
 +++ b/include/uapi/evenless/xbuf.h
 @@ -0,0 +1,17 @@
@@ -7628,7 +7628,7 @@ index 000000000..697463e99
 +#endif /* !_EVENLESS_UAPI_XBUF_H */
 diff --git a/kernel/Kconfig.evenless b/kernel/Kconfig.evenless
 new file mode 100644
-index 000000000..968b5efcc
+index 000000000000..968b5efccd90
 --- /dev/null
 +++ b/kernel/Kconfig.evenless
 @@ -0,0 +1,29 @@
@@ -7662,7 +7662,7 @@ index 000000000..968b5efcc
 +config WARN_CPUFREQ_GOVERNOR
 +       def_bool n
 diff --git a/kernel/Makefile b/kernel/Makefile
-index 766a30c6a..feb7d4aaa 100644
+index 766a30c6a82f..feb7d4aaa48b 100644
 --- a/kernel/Makefile
 +++ b/kernel/Makefile
 @@ -110,6 +110,7 @@ obj-$(CONFIG_TRACEPOINTS) += trace/
@@ -7675,14 +7675,14 @@ index 766a30c6a..feb7d4aaa 100644
  obj-$(CONFIG_KCSAN) += kcsan/
 diff --git a/kernel/evenless/.gitignore b/kernel/evenless/.gitignore
 new file mode 100644
-index 000000000..beea4d8a9
+index 000000000000..beea4d8a9c77
 --- /dev/null
 +++ b/kernel/evenless/.gitignore
 @@ -0,0 +1 @@
 +syscall_entries.h
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
 new file mode 100644
-index 000000000..b751624ce
+index 000000000000..b751624ce192
 --- /dev/null
 +++ b/kernel/evenless/Kconfig
 @@ -0,0 +1,300 @@
@@ -7988,7 +7988,7 @@ index 000000000..b751624ce
 +endif # EVENLESS_DEBUG
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
 new file mode 100644
-index 000000000..aeb57b959
+index 000000000000..aeb57b9599db
 --- /dev/null
 +++ b/kernel/evenless/Makefile
 @@ -0,0 +1,26 @@
@@ -8020,7 +8020,7 @@ index 000000000..aeb57b959
 +evenless-$(CONFIG_FTRACE) +=	trace.o
 diff --git a/kernel/evenless/clock.c b/kernel/evenless/clock.c
 new file mode 100644
-index 000000000..3bc1dc2d0
+index 000000000000..3bc1dc2d0327
 --- /dev/null
 +++ b/kernel/evenless/clock.c
 @@ -0,0 +1,825 @@
@@ -8851,7 +8851,7 @@ index 000000000..3bc1dc2d0
 +}
 diff --git a/kernel/evenless/control.c b/kernel/evenless/control.c
 new file mode 100644
-index 000000000..3e2620e47
+index 000000000000..3e2620e47737
 --- /dev/null
 +++ b/kernel/evenless/control.c
 @@ -0,0 +1,212 @@
@@ -9069,7 +9069,7 @@ index 000000000..3e2620e47
 +};
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
 new file mode 100644
-index 000000000..2512f2bc8
+index 000000000000..2512f2bc896d
 --- /dev/null
 +++ b/kernel/evenless/factory.c
 @@ -0,0 +1,673 @@
@@ -9748,7 +9748,7 @@ index 000000000..2512f2bc8
 +}
 diff --git a/kernel/evenless/file.c b/kernel/evenless/file.c
 new file mode 100644
-index 000000000..dff5dad18
+index 000000000000..dff5dad18f6d
 --- /dev/null
 +++ b/kernel/evenless/file.c
 @@ -0,0 +1,255 @@
@@ -10009,7 +10009,7 @@ index 000000000..dff5dad18
 +}
 diff --git a/kernel/evenless/init.c b/kernel/evenless/init.c
 new file mode 100644
-index 000000000..acf7533cf
+index 000000000000..acf7533cfac8
 --- /dev/null
 +++ b/kernel/evenless/init.c
 @@ -0,0 +1,200 @@
@@ -10215,7 +10215,7 @@ index 000000000..acf7533cf
 +device_initcall(evl_init);
 diff --git a/kernel/evenless/irq.c b/kernel/evenless/irq.c
 new file mode 100644
-index 000000000..becf7c939
+index 000000000000..becf7c9395c7
 --- /dev/null
 +++ b/kernel/evenless/irq.c
 @@ -0,0 +1,34 @@
@@ -10255,7 +10255,7 @@ index 000000000..becf7c939
 +}
 diff --git a/kernel/evenless/lock.c b/kernel/evenless/lock.c
 new file mode 100644
-index 000000000..14e81c743
+index 000000000000..14e81c7438b2
 --- /dev/null
 +++ b/kernel/evenless/lock.c
 @@ -0,0 +1,102 @@
@@ -10363,7 +10363,7 @@ index 000000000..14e81c743
 +#endif
 diff --git a/kernel/evenless/logger.c b/kernel/evenless/logger.c
 new file mode 100644
-index 000000000..db40f3ba3
+index 000000000000..db40f3ba3030
 --- /dev/null
 +++ b/kernel/evenless/logger.c
 @@ -0,0 +1,230 @@
@@ -10599,7 +10599,7 @@ index 000000000..db40f3ba3
 +};
 diff --git a/kernel/evenless/memory.c b/kernel/evenless/memory.c
 new file mode 100644
-index 000000000..96b48e5ad
+index 000000000000..96b48e5ad7ac
 --- /dev/null
 +++ b/kernel/evenless/memory.c
 @@ -0,0 +1,723 @@
@@ -11328,7 +11328,7 @@ index 000000000..96b48e5ad
 +}
 diff --git a/kernel/evenless/monitor.c b/kernel/evenless/monitor.c
 new file mode 100644
-index 000000000..ca65075ef
+index 000000000000..ca65075ef40d
 --- /dev/null
 +++ b/kernel/evenless/monitor.c
 @@ -0,0 +1,601 @@
@@ -11935,7 +11935,7 @@ index 000000000..ca65075ef
 +};
 diff --git a/kernel/evenless/poller.c b/kernel/evenless/poller.c
 new file mode 100644
-index 000000000..543282a92
+index 000000000000..543282a924ae
 --- /dev/null
 +++ b/kernel/evenless/poller.c
 @@ -0,0 +1,559 @@
@@ -12500,7 +12500,7 @@ index 000000000..543282a92
 +};
 diff --git a/kernel/evenless/sched/Makefile b/kernel/evenless/sched/Makefile
 new file mode 100644
-index 000000000..a54f368cf
+index 000000000000..a54f368cfa9c
 --- /dev/null
 +++ b/kernel/evenless/sched/Makefile
 @@ -0,0 +1,11 @@
@@ -12517,7 +12517,7 @@ index 000000000..a54f368cf
 +evenless-$(CONFIG_EVENLESS_SCHED_QUOTA) += quota.o
 diff --git a/kernel/evenless/sched/core.c b/kernel/evenless/sched/core.c
 new file mode 100644
-index 000000000..c1e08d9e1
+index 000000000000..c1e08d9e126d
 --- /dev/null
 +++ b/kernel/evenless/sched/core.c
 @@ -0,0 +1,1064 @@
@@ -13587,7 +13587,7 @@ index 000000000..c1e08d9e1
 +}
 diff --git a/kernel/evenless/sched/idle.c b/kernel/evenless/sched/idle.c
 new file mode 100644
-index 000000000..78e61db5d
+index 000000000000..78e61db5d634
 --- /dev/null
 +++ b/kernel/evenless/sched/idle.c
 @@ -0,0 +1,47 @@
@@ -13640,7 +13640,7 @@ index 000000000..78e61db5d
 +};
 diff --git a/kernel/evenless/sched/quota.c b/kernel/evenless/sched/quota.c
 new file mode 100644
-index 000000000..fff24cba7
+index 000000000000..fff24cba77cb
 --- /dev/null
 +++ b/kernel/evenless/sched/quota.c
 @@ -0,0 +1,660 @@
@@ -14306,7 +14306,7 @@ index 000000000..fff24cba7
 +EXPORT_SYMBOL_GPL(evl_sched_quota);
 diff --git a/kernel/evenless/sched/rt.c b/kernel/evenless/sched/rt.c
 new file mode 100644
-index 000000000..be2307dc0
+index 000000000000..be2307dc0005
 --- /dev/null
 +++ b/kernel/evenless/sched/rt.c
 @@ -0,0 +1,135 @@
@@ -14447,7 +14447,7 @@ index 000000000..be2307dc0
 +EXPORT_SYMBOL_GPL(evl_sched_rt);
 diff --git a/kernel/evenless/sched/weak.c b/kernel/evenless/sched/weak.c
 new file mode 100644
-index 000000000..a8d94daa8
+index 000000000000..a8d94daa8695
 --- /dev/null
 +++ b/kernel/evenless/sched/weak.c
 @@ -0,0 +1,104 @@
@@ -14557,7 +14557,7 @@ index 000000000..a8d94daa8
 +EXPORT_SYMBOL_GPL(evl_sched_weak);
 diff --git a/kernel/evenless/sem.c b/kernel/evenless/sem.c
 new file mode 100644
-index 000000000..53722c0ed
+index 000000000000..53722c0edca6
 --- /dev/null
 +++ b/kernel/evenless/sem.c
 @@ -0,0 +1,310 @@
@@ -14873,7 +14873,7 @@ index 000000000..53722c0ed
 +};
 diff --git a/kernel/evenless/synch.c b/kernel/evenless/synch.c
 new file mode 100644
-index 000000000..28513e2be
+index 000000000000..28513e2be87a
 --- /dev/null
 +++ b/kernel/evenless/synch.c
 @@ -0,0 +1,896 @@
@@ -15775,7 +15775,7 @@ index 000000000..28513e2be
 +EXPORT_SYMBOL_GPL(evl_forget_syn_waiter);
 diff --git a/kernel/evenless/syscall.c b/kernel/evenless/syscall.c
 new file mode 100644
-index 000000000..603bae6e9
+index 000000000000..603bae6e95e1
 --- /dev/null
 +++ b/kernel/evenless/syscall.c
 @@ -0,0 +1,341 @@
@@ -16122,7 +16122,7 @@ index 000000000..603bae6e9
 +};
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
 new file mode 100644
-index 000000000..53f00f922
+index 000000000000..53f00f922071
 --- /dev/null
 +++ b/kernel/evenless/thread.c
 @@ -0,0 +1,2643 @@
@@ -18771,7 +18771,7 @@ index 000000000..53f00f922
 +};
 diff --git a/kernel/evenless/tick.c b/kernel/evenless/tick.c
 new file mode 100644
-index 000000000..d79b7864a
+index 000000000000..d79b7864ac88
 --- /dev/null
 +++ b/kernel/evenless/tick.c
 @@ -0,0 +1,323 @@
@@ -19100,7 +19100,7 @@ index 000000000..d79b7864a
 +#endif
 diff --git a/kernel/evenless/timer.c b/kernel/evenless/timer.c
 new file mode 100644
-index 000000000..11727d465
+index 000000000000..11727d465f2e
 --- /dev/null
 +++ b/kernel/evenless/timer.c
 @@ -0,0 +1,471 @@
@@ -19577,7 +19577,7 @@ index 000000000..11727d465
 +}
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
 new file mode 100644
-index 000000000..262748cdf
+index 000000000000..262748cdf0c7
 --- /dev/null
 +++ b/kernel/evenless/timerfd.c
 @@ -0,0 +1,260 @@
@@ -19843,7 +19843,7 @@ index 000000000..262748cdf
 +};
 diff --git a/kernel/evenless/trace.c b/kernel/evenless/trace.c
 new file mode 100644
-index 000000000..8d798a74d
+index 000000000000..8d798a74d4a8
 --- /dev/null
 +++ b/kernel/evenless/trace.c
 @@ -0,0 +1,93 @@
@@ -19942,7 +19942,7 @@ index 000000000..8d798a74d
 +};
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
 new file mode 100644
-index 000000000..daf34018b
+index 000000000000..daf34018bbf0
 --- /dev/null
 +++ b/kernel/evenless/xbuf.c
 @@ -0,0 +1,774 @@

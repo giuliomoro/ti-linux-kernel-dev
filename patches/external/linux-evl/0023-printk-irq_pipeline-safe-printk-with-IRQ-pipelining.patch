@@ -1,7 +1,8 @@
 From 9abb18f4d596a05b00b326509a2f1c8d4327035d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 27 Jul 2016 21:27:59 +0200
-Subject: [PATCH 023/985] printk: irq_pipeline: safe printk with IRQ pipelining
+Subject: [PATCH 0023/1013] printk: irq_pipeline: safe printk with IRQ
+ pipelining
 
 Defer printk output not to wreck the hard interrupt state, cause
 unacceptable latency, or risk a deadlock, if either printk() is called
@@ -24,7 +25,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  6 files changed, 60 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/printk.h b/include/linux/printk.h
-index 712307033..96c5c03b9 100644
+index 712307033997..96c5c03b9084 100644
 --- a/include/linux/printk.h
 +++ b/include/linux/printk.h
 @@ -709,7 +709,7 @@ struct pi_entry {
@@ -37,7 +38,7 @@ index 712307033..96c5c03b9 100644
  })
  #else
 diff --git a/kernel/printk/internal.h b/kernel/printk/internal.h
-index 5eef70000..46fa47935 100644
+index 5eef70000b43..46fa479359b2 100644
 --- a/kernel/printk/internal.h
 +++ b/kernel/printk/internal.h
 @@ -169,6 +169,25 @@ static inline void nbcon_kthread_wake(struct console *con)
@@ -67,7 +68,7 @@ index 5eef70000..46fa47935 100644
  
  #define PRINTK_PREFIX_MAX	0
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index ab3473b31..6d1555caf 100644
+index ab3473b319e5..6d1555caf111 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
 @@ -2101,10 +2101,10 @@ static u8 *__printk_recursion_counter(void)
@@ -152,7 +153,7 @@ index ab3473b31..6d1555caf 100644
  
          touch_nmi_watchdog();
 diff --git a/kernel/printk/printk_ringbuffer.c b/kernel/printk/printk_ringbuffer.c
-index 88e8f3a61..6084b5f25 100644
+index 88e8f3a61922..6084b5f2592c 100644
 --- a/kernel/printk/printk_ringbuffer.c
 +++ b/kernel/printk/printk_ringbuffer.c
 @@ -1372,12 +1372,12 @@ bool prb_reserve_in_last(struct prb_reserved_entry *e, struct printk_ringbuffer
@@ -195,7 +196,7 @@ index 88e8f3a61..6084b5f25 100644
  
  /**
 diff --git a/kernel/printk/printk_ringbuffer.h b/kernel/printk/printk_ringbuffer.h
-index 4ef81349d..8ad684ebc 100644
+index 4ef81349d9fb..8ad684ebcc5f 100644
 --- a/kernel/printk/printk_ringbuffer.h
 +++ b/kernel/printk/printk_ringbuffer.h
 @@ -239,6 +239,18 @@ enum desc_state {
@@ -218,7 +219,7 @@ index 4ef81349d..8ad684ebc 100644
   * Define a ringbuffer with an external text data buffer. The same as
   * DEFINE_PRINTKRB() but requires specifying an external buffer for the
 diff --git a/kernel/printk/printk_safe.c b/kernel/printk/printk_safe.c
-index e6198da7c..374368ca3 100644
+index e6198da7c735..374368ca3dd2 100644
 --- a/kernel/printk/printk_safe.c
 +++ b/kernel/printk/printk_safe.c
 @@ -9,6 +9,7 @@

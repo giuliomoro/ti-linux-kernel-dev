@@ -1,7 +1,7 @@
 From 80d121da31353c3bdc8c0f663abf61fc6514e61b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 18 Aug 2019 16:35:51 +0200
-Subject: [PATCH 474/985] evl/monitor: add support for recursive gate locking
+Subject: [PATCH 0474/1013] evl/monitor: add support for recursive gate locking
 
 Managing recursive mutexes is fully performed from userland in
 libevl. However, by making the lock nesting count visible in the
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index ced92c0c0..9c59f62b0 100644
+index ced92c0c0f9b..9c59f62b0e17 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -10,7 +10,7 @@
@@ -29,7 +29,7 @@ index ced92c0c0..9c59f62b0 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/monitor.h b/include/uapi/evl/monitor.h
-index 577388d7a..1e27c2458 100644
+index 577388d7a4da..1e27c2458c8f 100644
 --- a/include/uapi/evl/monitor.h
 +++ b/include/uapi/evl/monitor.h
 @@ -41,6 +41,8 @@ struct evl_monitor_state {
@@ -42,7 +42,7 @@ index 577388d7a..1e27c2458 100644
  		struct {
  			atomic_t value;
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 737690a0d..6b00d7588 100644
+index 737690a0d33f..6b00d7588c73 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -896,9 +896,11 @@ static ssize_t state_show(struct device *dev,

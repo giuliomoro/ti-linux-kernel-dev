@@ -1,8 +1,8 @@
 From d9ee4ac2fa3a0d5f24dc96b325b146c204b21d79 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Mon, 20 Feb 2017 19:18:09 +0100
-Subject: [PATCH 028/985] irqchip/gic: irq_pipeline: enable pipelined interrupt
- control
+Subject: [PATCH 0028/1013] irqchip/gic: irq_pipeline: enable pipelined
+ interrupt control
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 5 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/irqchip/irq-gic.c b/drivers/irqchip/irq-gic.c
-index 32abc2916..1be0d6be6 100644
+index 32abc2916b40..1be0d6be6ce1 100644
 --- a/drivers/irqchip/irq-gic.c
 +++ b/drivers/irqchip/irq-gic.c
 @@ -88,7 +88,7 @@ struct gic_chip_data {

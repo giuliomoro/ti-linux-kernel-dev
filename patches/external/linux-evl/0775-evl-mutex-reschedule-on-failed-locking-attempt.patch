@@ -1,7 +1,7 @@
 From 2916a71ae95d5444d2c4769ea3792503ea98a410 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 2 Nov 2022 19:24:02 +0100
-Subject: [PATCH 775/985] evl/mutex: reschedule on failed locking attempt
+Subject: [PATCH 0775/1013] evl/mutex: reschedule on failed locking attempt
 
 Since the scheduler state might change as a result of undoing the PI
 walk after a failed blocking attempt to lock a mutex, we have to call
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 4b1212e8c..abbecb828 100644
+index 4b1212e8c972..abbecb828430 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -597,6 +597,8 @@ static int wait_mutex_schedule(struct evl_mutex *mutex)

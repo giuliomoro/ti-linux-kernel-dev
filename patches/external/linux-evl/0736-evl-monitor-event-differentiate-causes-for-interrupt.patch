@@ -1,7 +1,7 @@
 From c3e0384544780e98c852c8fddea18c4f5ce8cd8d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Jul 2022 17:21:32 +0200
-Subject: [PATCH 736/985] evl/monitor: event: differentiate causes for
+Subject: [PATCH 0736/1013] evl/monitor: event: differentiate causes for
  interrupted wait
 
 A wait operation can be interrupted for the following reasons:
@@ -31,7 +31,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 23 insertions(+), 10 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 58912a5f2..5e84f33d9 100644
+index 58912a5f2649..5e84f33d9837 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -44,7 +44,7 @@ index 58912a5f2..5e84f33d9 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 26486ead5..4def50d5a 100644
+index 26486ead5497..4def50d5a9cf 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -527,24 +527,37 @@ static int wait_monitor(struct file *filp,

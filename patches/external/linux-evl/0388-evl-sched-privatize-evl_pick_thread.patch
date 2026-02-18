@@ -1,7 +1,7 @@
 From 34ae5b472f952701ee4fbd5fce5e9713cb90acd7 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 31 May 2019 14:13:23 +0200
-Subject: [PATCH 388/985] evl/sched: privatize evl_pick_thread()
+Subject: [PATCH 0388/1013] evl/sched: privatize evl_pick_thread()
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 55 insertions(+), 58 deletions(-)
 
 diff --git a/include/evl/sched.h b/include/evl/sched.h
-index 20702df3d..8976abb6a 100644
+index 20702df3d745..8976abb6a353 100644
 --- a/include/evl/sched.h
 +++ b/include/evl/sched.h
 @@ -353,8 +353,6 @@ bool evl_set_effective_thread_priority(struct evl_thread *thread,
@@ -23,7 +23,7 @@ index 20702df3d..8976abb6a 100644
  
  int evl_set_thread_policy(struct evl_thread *thread,
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index a6710001f..6debabaf6 100644
+index a6710001f942..6debabaf6635 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -217,61 +217,6 @@ static void destroy_rq(struct evl_rq *rq) /* nklock held, irqs off */

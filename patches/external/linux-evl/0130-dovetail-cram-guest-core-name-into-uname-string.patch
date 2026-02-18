@@ -1,7 +1,7 @@
 From 80cf00f5f3af1842c2f42ac6a94e4842adea8bff Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 27 Oct 2024 16:15:56 +0100
-Subject: [PATCH 130/985] dovetail: cram guest core name into uname string
+Subject: [PATCH 0130/1013] dovetail: cram guest core name into uname string
 
 So far uname displayed "IRQ_PIPELINE" unconditionally. Allow for a
 companion core to override this information with its own nickname when
@@ -19,7 +19,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 11 insertions(+), 4 deletions(-)
 
 diff --git a/init/Makefile b/init/Makefile
-index 8f368386e..07a663ba8 100644
+index 8f368386ef42..07a663ba8757 100644
 --- a/init/Makefile
 +++ b/init/Makefile
 @@ -27,14 +27,14 @@ smp-flag-$(CONFIG_SMP)			:= SMP
@@ -40,7 +40,7 @@ index 8f368386e..07a663ba8 100644
  
  #
 diff --git a/kernel/Kconfig.dovetail b/kernel/Kconfig.dovetail
-index c9ec30d1b..325d3f943 100644
+index c9ec30d1b4a4..325d3f943ef5 100644
 --- a/kernel/Kconfig.dovetail
 +++ b/kernel/Kconfig.dovetail
 @@ -15,9 +15,16 @@ config DOVETAIL

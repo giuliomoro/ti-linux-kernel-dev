@@ -1,7 +1,7 @@
 From 54f9e41e820b706b36dcab015a98e60fdffa492a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 9 Oct 2019 10:33:34 +0200
-Subject: [PATCH 496/985] evl/monitor: do not send poll signals for gated
+Subject: [PATCH 0496/1013] evl/monitor: do not send poll signals for gated
  events
 
 Poll services are generally not available to gated events (evl_poll()
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 9 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index a1868e175..0083a0aa0 100644
+index a1868e175d18..0083a0aa0d93 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -260,7 +260,6 @@ static int exit_monitor(struct evl_monitor *gate)

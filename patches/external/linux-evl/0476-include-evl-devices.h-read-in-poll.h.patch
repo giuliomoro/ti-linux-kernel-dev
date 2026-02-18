@@ -1,7 +1,7 @@
 From 823e2dd345ad401834af09e0b5d4725676e40b1f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 21 Aug 2019 11:39:44 +0200
-Subject: [PATCH 476/985] include/evl: devices.h: read in poll.h
+Subject: [PATCH 0476/1013] include/evl: devices.h: read in poll.h
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+)
 
 diff --git a/include/evl/devices.h b/include/evl/devices.h
-index 3cd847d57..29b168dd0 100644
+index 3cd847d57355..29b168dd0f58 100644
 --- a/include/evl/devices.h
 +++ b/include/evl/devices.h
 @@ -13,6 +13,7 @@

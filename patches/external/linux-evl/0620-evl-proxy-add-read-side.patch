@@ -1,7 +1,7 @@
 From fed4b1b28ce1a48ae37b0a2b481f24f98d8d23a9 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 9 May 2020 15:38:00 +0200
-Subject: [PATCH 620/985] evl/proxy: add read side
+Subject: [PATCH 0620/1013] evl/proxy: add read side
 
 A proxy should be usable for reading from an in-band file without
 encurring a stage switch, just like it is for the output direction.
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  3 files changed, 432 insertions(+), 99 deletions(-)
 
 diff --git a/include/uapi/evl/control.h b/include/uapi/evl/control.h
-index 794f8137d..4cc2f871f 100644
+index 794f8137de50..4cc2f871f3c1 100644
 --- a/include/uapi/evl/control.h
 +++ b/include/uapi/evl/control.h
 @@ -18,7 +18,7 @@
@@ -34,7 +34,7 @@ index 794f8137d..4cc2f871f 100644
  #define EVL_CONTROL_DEV  "/dev/evl/control"
  
 diff --git a/include/uapi/evl/factory.h b/include/uapi/evl/factory.h
-index 3f255bcda..50bf50e97 100644
+index 3f255bcda79c..50bf50e97f8e 100644
 --- a/include/uapi/evl/factory.h
 +++ b/include/uapi/evl/factory.h
 @@ -23,6 +23,8 @@ struct evl_element_ids {
@@ -47,7 +47,7 @@ index 3f255bcda..50bf50e97 100644
  #define EVL_CLONE_MASK		(((__u32)-1 << 16) & ~EVL_CLONE_COREDEV)
  
 diff --git a/kernel/evl/proxy.c b/kernel/evl/proxy.c
-index b3f7250e5..fd0c31bc2 100644
+index b3f7250e53ca..fd0c31bc2357 100644
 --- a/kernel/evl/proxy.c
 +++ b/kernel/evl/proxy.c
 @@ -21,44 +21,64 @@

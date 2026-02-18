@@ -1,7 +1,7 @@
 From f9e09ce6f69ee56fb598a465a41eaf88a930d154 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 19 Jul 2025 16:26:47 +0200
-Subject: [PATCH 212/985] net: dovetail: switch RX relay work to inband
+Subject: [PATCH 0212/1013] net: dovetail: switch RX relay work to inband
  interrupt context
 
 We want kick_rx_inband() to run from inband interrupt context,
@@ -15,7 +15,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/net/core/dev.c b/net/core/dev.c
-index abd435945..6063e8d42 100644
+index abd435945fb1..6063e8d42fde 100644
 --- a/net/core/dev.c
 +++ b/net/core/dev.c
 @@ -12419,7 +12419,7 @@ static int __init net_dev_init(void)

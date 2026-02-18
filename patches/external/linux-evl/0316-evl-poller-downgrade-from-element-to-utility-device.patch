@@ -1,7 +1,8 @@
 From 57cb56f896441ebd05d8cf3d18890ccc3e7fffb0 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 23 Feb 2019 09:51:04 +0100
-Subject: [PATCH 316/985] evl/poller: downgrade from element to utility device
+Subject: [PATCH 0316/1013] evl/poller: downgrade from element to utility
+ device
 
 There is no upside in sharing pollers between application processes,
 since file descriptors are process-local handles in essence. Therefore
@@ -33,7 +34,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  rename kernel/evenless/{poller.c => poll.c} (83%)
 
 diff --git a/include/evenless/factory.h b/include/evenless/factory.h
-index 7b37ccc19..83782cde1 100644
+index 7b37ccc19db3..83782cde10f6 100644
 --- a/include/evenless/factory.h
 +++ b/include/evenless/factory.h
 @@ -151,7 +151,7 @@ extern struct evl_factory evl_clock_factory;
@@ -49,7 +50,7 @@ diff --git a/include/evenless/poller.h b/include/evenless/poll.h
 similarity index 92%
 rename from include/evenless/poller.h
 rename to include/evenless/poll.h
-index 38b5f10c6..3fbfd1a5b 100644
+index 38b5f10c6a23..3fbfd1a5b090 100644
 --- a/include/evenless/poller.h
 +++ b/include/evenless/poll.h
 @@ -4,8 +4,8 @@
@@ -80,7 +81,7 @@ index 38b5f10c6..3fbfd1a5b 100644
 +#endif /* !_EVENLESS_POLL_H */
 diff --git a/include/uapi/evenless/poll.h b/include/uapi/evenless/poll.h
 new file mode 100644
-index 000000000..485e7cadc
+index 000000000000..485e7cadcdd0
 --- /dev/null
 +++ b/include/uapi/evenless/poll.h
 @@ -0,0 +1,36 @@
@@ -122,7 +123,7 @@ index 000000000..485e7cadc
 +#endif /* !_EVENLESS_UAPI_POLL_H */
 diff --git a/include/uapi/evenless/poller.h b/include/uapi/evenless/poller.h
 deleted file mode 100644
-index 3217a8ad6..000000000
+index 3217a8ad6c3c..000000000000
 --- a/include/uapi/evenless/poller.h
 +++ /dev/null
 @@ -1,36 +0,0 @@
@@ -163,7 +164,7 @@ index 3217a8ad6..000000000
 -
 -#endif /* !_EVENLESS_UAPI_POLLER_H */
 diff --git a/kernel/evenless/Kconfig b/kernel/evenless/Kconfig
-index 349162f2d..9acba6237 100644
+index 349162f2da68..9acba62370df 100644
 --- a/kernel/evenless/Kconfig
 +++ b/kernel/evenless/Kconfig
 @@ -117,15 +117,6 @@ config EVENLESS_NR_TIMERFDS
@@ -183,7 +184,7 @@ index 349162f2d..9acba6237 100644
  	int "Maximum number of x-buffers"
  	range 1 16384
 diff --git a/kernel/evenless/Makefile b/kernel/evenless/Makefile
-index 6175d2a74..fad5e1720 100644
+index 6175d2a744e1..fad5e1720658 100644
 --- a/kernel/evenless/Makefile
 +++ b/kernel/evenless/Makefile
 @@ -16,7 +16,7 @@ evenless-y :=		\
@@ -196,7 +197,7 @@ index 6175d2a74..fad5e1720 100644
  	syscall.o	\
  	thread.o	\
 diff --git a/kernel/evenless/factory.c b/kernel/evenless/factory.c
-index 787367676..92feb4d97 100644
+index 787367676e7f..92feb4d97b15 100644
 --- a/kernel/evenless/factory.c
 +++ b/kernel/evenless/factory.c
 @@ -37,7 +37,7 @@ static struct evl_factory *factories[] = {
@@ -212,7 +213,7 @@ diff --git a/kernel/evenless/poller.c b/kernel/evenless/poll.c
 similarity index 83%
 rename from kernel/evenless/poller.c
 rename to kernel/evenless/poll.c
-index 5a1b8b329..adf0c5e7a 100644
+index 5a1b8b329b66..adf0c5e7a55d 100644
 --- a/kernel/evenless/poller.c
 +++ b/kernel/evenless/poll.c
 @@ -5,17 +5,15 @@
@@ -477,7 +478,7 @@ index 5a1b8b329..adf0c5e7a 100644
 +	.flags	=	EVL_FACTORY_SINGLE,
  };
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index e19bae57f..560ca2df8 100644
+index e19bae57fd7c..560ca2df8cfe 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -36,7 +36,7 @@
@@ -490,7 +491,7 @@ index e19bae57f..560ca2df8 100644
  #include <trace/events/evenless.h>
  
 diff --git a/kernel/evenless/timerfd.c b/kernel/evenless/timerfd.c
-index d8121fceb..339c32fa6 100644
+index d8121fceb4b6..339c32fa61f0 100644
 --- a/kernel/evenless/timerfd.c
 +++ b/kernel/evenless/timerfd.c
 @@ -13,7 +13,7 @@
@@ -503,7 +504,7 @@ index d8121fceb..339c32fa6 100644
  #include <evenless/factory.h>
  #include <asm/evenless/syscall.h>
 diff --git a/kernel/evenless/xbuf.c b/kernel/evenless/xbuf.c
-index 9e283ec22..86c244f46 100644
+index 9e283ec22a18..86c244f46701 100644
 --- a/kernel/evenless/xbuf.c
 +++ b/kernel/evenless/xbuf.c
 @@ -20,7 +20,7 @@

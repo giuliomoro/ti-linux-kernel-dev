@@ -1,7 +1,7 @@
 From 32f224908e3cf2f16060322771ad5ca618da1424 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Wed, 17 Jul 2019 10:56:40 +0200
-Subject: [PATCH 445/985] evl/irq: introduce evl_enter_irq(), evl_leave_irq()
+Subject: [PATCH 0445/1013] evl/irq: introduce evl_enter_irq(), evl_leave_irq()
 
 Since we want to be able to reschedule immediately from interrupt
 handlers, the pipeline no longer fires the {enter, exit}_oob_irq()
@@ -25,7 +25,7 @@ diff --git a/kernel/evl/irq.c b/include/evl/irq.h
 similarity index 84%
 rename from kernel/evl/irq.c
 rename to include/evl/irq.h
-index eba62d308..11b079e84 100644
+index eba62d308d59..11b079e84274 100644
 --- a/kernel/evl/irq.c
 +++ b/include/evl/irq.h
 @@ -4,12 +4,13 @@
@@ -61,7 +61,7 @@ index eba62d308..11b079e84 100644
 +
 +#endif /* !_EVL_IRQ_H */
 diff --git a/kernel/evl/Makefile b/kernel/evl/Makefile
-index d7248a6e6..35a2b38a1 100644
+index d7248a6e613c..35a2b38a186c 100644
 --- a/kernel/evl/Makefile
 +++ b/kernel/evl/Makefile
 @@ -8,7 +8,6 @@ evl-y :=		\
@@ -73,7 +73,7 @@ index d7248a6e6..35a2b38a1 100644
  	memory.o	\
  	monitor.o	\
 diff --git a/kernel/evl/clock.c b/kernel/evl/clock.c
-index d7411a52e..bd1fab485 100644
+index d7411a52ead0..bd1fab485d4c 100644
 --- a/kernel/evl/clock.c
 +++ b/kernel/evl/clock.c
 @@ -30,6 +30,7 @@
@@ -109,7 +109,7 @@ index d7411a52e..bd1fab485 100644
  
  void evl_announce_tick(struct evl_clock *clock) /* hard irqs off */
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index f5d366f85..f758bdcb9 100644
+index f5d366f85f4f..f758bdcb97db 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -190,7 +190,7 @@ static void init_rq(struct evl_rq *rq, int cpu)

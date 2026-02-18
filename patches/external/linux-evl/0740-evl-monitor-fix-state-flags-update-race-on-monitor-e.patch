@@ -1,7 +1,7 @@
 From 44aa7dea3791310132debdd5ebb5ee0b06457ad3 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 25 Sep 2022 11:45:13 +0200
-Subject: [PATCH 740/985] evl/monitor: fix state flags update race on monitor
+Subject: [PATCH 0740/1013] evl/monitor: fix state flags update race on monitor
  exit
 
 When waking up waiters upon exiting a monitor, we assume that
@@ -23,7 +23,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 4def50d5a..abfc96dad 100644
+index 4def50d5a9cf..abfc96dadcbb 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -260,13 +260,11 @@ static int exit_monitor(struct evl_monitor *gate)

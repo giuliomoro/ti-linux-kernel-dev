@@ -1,7 +1,7 @@
 From 60054f01c5c5126a89846b326e2fd351be9fc7d6 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Fri, 15 Mar 2024 15:38:12 +0100
-Subject: [PATCH 122/985] net: fec: add oob I/O capabilities
+Subject: [PATCH 0122/1013] net: fec: add oob I/O capabilities
 
 Adapt the FEC driver to the newly introduced oob I/O capabilities of
 the netstack. In a nutshell, this entails the following steps:
@@ -27,7 +27,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  3 files changed, 172 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/Kconfig b/drivers/net/ethernet/freescale/Kconfig
-index 75401d2a5..8b6285133 100644
+index 75401d2a5fb4..8b62851334ce 100644
 --- a/drivers/net/ethernet/freescale/Kconfig
 +++ b/drivers/net/ethernet/freescale/Kconfig
 @@ -35,6 +35,15 @@ config FEC
@@ -47,7 +47,7 @@ index 75401d2a5..8b6285133 100644
  	tristate "FEC MPC52xx driver"
  	depends on PPC_MPC52xx && PPC_BESTCOMM
 diff --git a/drivers/net/ethernet/freescale/fec.h b/drivers/net/ethernet/freescale/fec.h
-index 1cca0425d..27a3702cb 100644
+index 1cca0425d493..27a3702cbdcf 100644
 --- a/drivers/net/ethernet/freescale/fec.h
 +++ b/drivers/net/ethernet/freescale/fec.h
 @@ -701,6 +701,36 @@ struct fec_enet_private {
@@ -88,7 +88,7 @@ index 1cca0425d..27a3702cb 100644
  void fec_ptp_restore_state(struct fec_enet_private *fep);
  void fec_ptp_save_state(struct fec_enet_private *fep);
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 0bd814251..77f98f294 100644
+index 0bd814251d56..77f98f294da5 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -310,6 +310,50 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");

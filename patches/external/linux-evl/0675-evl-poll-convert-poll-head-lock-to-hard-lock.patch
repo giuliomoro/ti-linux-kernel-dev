@@ -1,7 +1,7 @@
 From 21154a12a407d8b41c9c123e3b0ce0d33e4c2470 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 675/985] evl/poll: convert poll head lock to hard lock
+Subject: [PATCH 0675/1013] evl/poll: convert poll head lock to hard lock
 
 Out-of-band IRQs and EVL thread contexts would usually compete for
 such lock, which would require hard irqs to be disabled while holding
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/include/evl/poll.h b/include/evl/poll.h
-index 42501e345..efa2b9535 100644
+index 42501e3458b3..efa2b9535197 100644
 --- a/include/evl/poll.h
 +++ b/include/evl/poll.h
 @@ -12,7 +12,6 @@
@@ -52,7 +52,7 @@ index 42501e345..efa2b9535 100644
  
  void evl_poll_watch(struct evl_poll_head *head,
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 9bc2a72fe..ede0d6ea1 100644
+index 9bc2a72fe698..ede0d6ea13cc 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -12,6 +12,7 @@

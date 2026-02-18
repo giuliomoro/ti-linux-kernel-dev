@@ -1,8 +1,8 @@
 From e48a30cd69f849bfb370d898d2c6097aedadd70b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Thu, 23 Nov 2023 19:54:15 +0100
-Subject: [PATCH 835/985] evl/monitor: fix cleanup work from in-band wait upon
- signal
+Subject: [PATCH 0835/1013] evl/monitor: fix cleanup work from in-band wait
+ upon signal
 
 The sleeper was left attached to the wait queue, causing a crash
 shortly after.
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 21 insertions(+), 15 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index 42ae97ca7..19cd6138b 100644
+index 42ae97ca74c4..19cd6138b99f 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -1001,6 +1001,7 @@ static ssize_t monitor_read(struct file *filp, char __user *u_buf,

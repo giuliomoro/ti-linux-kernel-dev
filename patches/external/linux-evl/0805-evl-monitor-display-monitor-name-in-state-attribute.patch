@@ -1,7 +1,8 @@
 From 7bd76315455d07e4f409d28441a1fde0fbeae293 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 4 Dec 2022 12:41:53 +0100
-Subject: [PATCH 805/985] evl/monitor: display monitor name in state attribute
+Subject: [PATCH 0805/1013] evl/monitor: display monitor name in state
+ attribute
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 13 insertions(+), 7 deletions(-)
 
 diff --git a/kernel/evl/monitor.c b/kernel/evl/monitor.c
-index c1abc2029..fd9841f69 100644
+index c1abc2029637..fd9841f69e5b 100644
 --- a/kernel/evl/monitor.c
 +++ b/kernel/evl/monitor.c
 @@ -968,17 +968,23 @@ static ssize_t state_show(struct device *dev,

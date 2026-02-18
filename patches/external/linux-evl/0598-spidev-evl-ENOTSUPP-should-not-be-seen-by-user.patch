@@ -1,7 +1,7 @@
 From 07bbf4563ac923ed3e635ff1cc599d9bd6a39922 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 12 Apr 2020 21:37:15 +0200
-Subject: [PATCH 598/985] spidev: evl: -ENOTSUPP should not be seen by user
+Subject: [PATCH 0598/1013] spidev: evl: -ENOTSUPP should not be seen by user
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
-index dae0be4b6..dfd6cb6ec 100644
+index dae0be4b67a2..dfd6cb6ec938 100644
 --- a/drivers/spi/spidev.c
 +++ b/drivers/spi/spidev.c
 @@ -413,7 +413,7 @@ static int enable_oob_mode(struct spidev_data *spidev,

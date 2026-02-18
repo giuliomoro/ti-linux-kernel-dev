@@ -1,7 +1,7 @@
 From d93701cfa97d14f1998b3312546282eddd1f1d4f Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 25 Dec 2020 18:46:05 +0100
-Subject: [PATCH 680/985] evl/mutex: convert mutex lock to hard lock
+Subject: [PATCH 0680/1013] evl/mutex: convert mutex lock to hard lock
 
 For the most part, a thread hard lock - which requires hard irqs to be
 off - is nested with the mutex lock to access the protected
@@ -16,7 +16,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 52 insertions(+), 52 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index 35ee0f1c7..de7bccd1a 100644
+index 35ee0f1c7fc7..de7bccd1ae18 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -31,7 +31,7 @@ struct evl_mutex {
@@ -66,7 +66,7 @@ index 35ee0f1c7..de7bccd1a 100644
  				.reorder_wait = evl_reorder_mutex_wait,	\
  				.follow_depend = evl_follow_mutex_depend, \
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index 0d996de4e..e0cf1ba21 100644
+index 0d996de4ed87..e0cf1ba21d5b 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -100,7 +100,7 @@ static int inherit_thread_priority(struct evl_thread *owner,

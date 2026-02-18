@@ -1,8 +1,8 @@
 From 9ab52a1680fe8e491b52003e7d99fc4770e67d4d Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 1 Feb 2019 18:34:21 +0100
-Subject: [PATCH 242/985] evl/wait, mutex: delegate wait channel unregistration
- to abort handler
+Subject: [PATCH 0242/1013] evl/wait, mutex: delegate wait channel
+ unregistration to abort handler
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -14,7 +14,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  5 files changed, 24 insertions(+), 16 deletions(-)
 
 diff --git a/include/evenless/mutex.h b/include/evenless/mutex.h
-index 79ee496ca..9253b47d7 100644
+index 79ee496ca155..9253b47d73ac 100644
 --- a/include/evenless/mutex.h
 +++ b/include/evenless/mutex.h
 @@ -73,7 +73,8 @@ static inline
@@ -28,7 +28,7 @@ index 79ee496ca..9253b47d7 100644
  void evl_reorder_mutex_wait(struct evl_thread *thread);
  
 diff --git a/include/evenless/thread.h b/include/evenless/thread.h
-index b34d183d2..37b7df966 100644
+index b34d183d25b7..37b7df966938 100644
 --- a/include/evenless/thread.h
 +++ b/include/evenless/thread.h
 @@ -41,7 +41,8 @@ struct evl_init_thread_attr {
@@ -42,7 +42,7 @@ index b34d183d2..37b7df966 100644
  	hard_spinlock_t lock;
  };
 diff --git a/include/evenless/wait.h b/include/evenless/wait.h
-index f4d9dabe6..b942f47b5 100644
+index f4d9dabe6b29..b942f47b5bde 100644
 --- a/include/evenless/wait.h
 +++ b/include/evenless/wait.h
 @@ -85,7 +85,8 @@ struct evl_thread *evl_wake_up_head(struct evl_wait_queue *wq)
@@ -56,7 +56,7 @@ index f4d9dabe6..b942f47b5 100644
  void evl_reorder_wait(struct evl_thread *thread);
  
 diff --git a/kernel/evenless/mutex.c b/kernel/evenless/mutex.c
-index d14a61123..ab0969d7e 100644
+index d14a611230a1..ab0969d7e7f2 100644
 --- a/kernel/evenless/mutex.c
 +++ b/kernel/evenless/mutex.c
 @@ -350,9 +350,7 @@ bool evl_destroy_mutex(struct evl_mutex *mutex)
@@ -111,7 +111,7 @@ index d14a61123..ab0969d7e 100644
  
  	/*
 diff --git a/kernel/evenless/wait.c b/kernel/evenless/wait.c
-index 22a41876d..af3b04939 100644
+index 22a41876dd10..af3b049398e5 100644
 --- a/kernel/evenless/wait.c
 +++ b/kernel/evenless/wait.c
 @@ -81,8 +81,6 @@ struct evl_thread *evl_wake_up(struct evl_wait_queue *wq,

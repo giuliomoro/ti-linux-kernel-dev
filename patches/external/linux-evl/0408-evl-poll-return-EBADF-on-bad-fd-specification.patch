@@ -1,7 +1,7 @@
 From 0f8e6724992631b5877528220335bcbae0978132 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 16 Jun 2019 18:40:14 +0200
-Subject: [PATCH 408/985] evl/poll: return -EBADF on bad fd specification
+Subject: [PATCH 0408/1013] evl/poll: return -EBADF on bad fd specification
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/poll.c b/kernel/evl/poll.c
-index 1b5009a9b..6bc459826 100644
+index 1b5009a9b266..6bc459826034 100644
 --- a/kernel/evl/poll.c
 +++ b/kernel/evl/poll.c
 @@ -206,7 +206,7 @@ static int add_item(struct file *filp, struct poll_group *group,

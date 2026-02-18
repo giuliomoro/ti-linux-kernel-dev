@@ -1,7 +1,7 @@
 From c572242ab5850f29f3e2a7a738e45a11a562ee93 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Fri, 14 Oct 2022 14:23:45 +0200
-Subject: [PATCH 750/985] evl/wait: track ownership directly from the wait
+Subject: [PATCH 0750/1013] evl/wait: track ownership directly from the wait
  channel
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
@@ -13,7 +13,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 26 insertions(+), 24 deletions(-)
 
 diff --git a/include/evl/mutex.h b/include/evl/mutex.h
-index db29f9dd8..4eb5eac5f 100644
+index db29f9dd8c6c..4eb5eac5f863 100644
 --- a/include/evl/mutex.h
 +++ b/include/evl/mutex.h
 @@ -27,7 +27,6 @@ struct evl_thread;
@@ -39,7 +39,7 @@ index db29f9dd8..4eb5eac5f 100644
  				.follow_depend = evl_follow_mutex_depend, \
  				.wait_list = LIST_HEAD_INIT((__name).mutex.wchan.wait_list), \
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 86b98d1fa..d7b2dee13 100644
+index 86b98d1fac16..d7b2dee13e0d 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -21,6 +21,7 @@ struct evl_thread;
@@ -59,7 +59,7 @@ index 86b98d1fa..d7b2dee13 100644
  			.follow_depend = NULL,				\
  			.wait_list = LIST_HEAD_INIT((__name).wchan.wait_list), \
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index a618f4f0f..a949988be 100644
+index a618f4f0f21e..a949988beeb7 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -122,12 +122,12 @@ static int inherit_thread_priority(struct evl_thread *owner,
@@ -248,7 +248,7 @@ index a618f4f0f..a949988be 100644
  		raw_spin_unlock(&mutex->wchan.lock);
  		return NULL;
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 6ed82402a..ed4869fec 100644
+index 6ed82402a34f..ed4869fec38a 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -20,6 +20,7 @@ void __evl_init_wait(struct evl_wait_queue *wq,

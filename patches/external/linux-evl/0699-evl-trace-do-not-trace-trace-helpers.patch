@@ -1,7 +1,7 @@
 From 0c2f8327d1e2743d360df23761f555dfd403432a Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sat, 12 Jun 2021 18:32:20 +0200
-Subject: [PATCH 699/985] evl/trace: do not trace trace helpers
+Subject: [PATCH 0699/1013] evl/trace: do not trace trace helpers
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  2 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/kernel/evl/sched/core.c b/kernel/evl/sched/core.c
-index 5b4720e0d..f3bba2e57 100644
+index 5b4720e0ded7..f3bba2e57286 100644
 --- a/kernel/evl/sched/core.c
 +++ b/kernel/evl/sched/core.c
 @@ -1294,8 +1294,8 @@ evl_find_sched_class(union evl_sched_param *param,
@@ -25,7 +25,7 @@ index 5b4720e0d..f3bba2e57 100644
  	const char *ret = trace_seq_buffer_ptr(p);
  
 diff --git a/kernel/evl/thread.c b/kernel/evl/thread.c
-index 950af5e87..75278b056 100644
+index 950af5e872fb..75278b056786 100644
 --- a/kernel/evl/thread.c
 +++ b/kernel/evl/thread.c
 @@ -1415,7 +1415,7 @@ int evl_killall(int mask)

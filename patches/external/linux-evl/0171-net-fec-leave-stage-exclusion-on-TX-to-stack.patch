@@ -1,7 +1,7 @@
 From 091308d27963bfd3c3fdba111b20423eeb550734 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <philippe.gerum@exail.com>
 Date: Sun, 27 Apr 2025 15:44:17 +0200
-Subject: [PATCH 171/985] net: fec: leave stage exclusion on TX to stack
+Subject: [PATCH 0171/1013] net: fec: leave stage exclusion on TX to stack
 
 Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
 ---
@@ -9,7 +9,7 @@ Signed-off-by: Philippe Gerum <philippe.gerum@exail.com>
  1 file changed, 13 deletions(-)
 
 diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 18cec43ab..e850edf80 100644
+index 18cec43ab518..e850edf80863 100644
 --- a/drivers/net/ethernet/freescale/fec_main.c
 +++ b/drivers/net/ethernet/freescale/fec_main.c
 @@ -1052,17 +1052,6 @@ fec_enet_start_xmit(struct sk_buff *skb, struct net_device *ndev)

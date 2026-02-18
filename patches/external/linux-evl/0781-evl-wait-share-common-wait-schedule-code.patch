@@ -1,7 +1,7 @@
 From 21d4e6c2a2944a42ad92dce691ee705cdbcd1c4b Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Sun, 13 Nov 2022 11:09:48 +0100
-Subject: [PATCH 781/985] evl/wait: share common wait-schedule code
+Subject: [PATCH 0781/1013] evl/wait: share common wait-schedule code
 
 Since we have all the needed information for maintaining a wait list
 into the wait channel descriptor embedded into the waitqueue, we may
@@ -21,7 +21,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  4 files changed, 35 insertions(+), 63 deletions(-)
 
 diff --git a/include/evl/wait.h b/include/evl/wait.h
-index 7f18c13d5..2c29c2102 100644
+index 7f18c13d5aa0..2c29c2102923 100644
 --- a/include/evl/wait.h
 +++ b/include/evl/wait.h
 @@ -113,7 +113,12 @@ void evl_add_wait_queue_unchecked(struct evl_wait_queue *wq,
@@ -39,7 +39,7 @@ index 7f18c13d5..2c29c2102 100644
  static inline bool evl_wait_active(struct evl_wait_queue *wq)
  {
 diff --git a/include/trace/events/evl.h b/include/trace/events/evl.h
-index e5894d044..8eb7dd714 100644
+index e5894d04405d..8eb7dd714704 100644
 --- a/include/trace/events/evl.h
 +++ b/include/trace/events/evl.h
 @@ -66,19 +66,19 @@ DECLARE_EVENT_CLASS(curr_thread_event,
@@ -106,7 +106,7 @@ index e5894d044..8eb7dd714 100644
  
  DEFINE_EVENT(mutex_event, evl_mutex_trylock,
 diff --git a/kernel/evl/mutex.c b/kernel/evl/mutex.c
-index abbecb828..5432694f7 100644
+index abbecb828430..5432694f7c72 100644
 --- a/kernel/evl/mutex.c
 +++ b/kernel/evl/mutex.c
 @@ -551,39 +551,6 @@ int evl_trylock_mutex(struct evl_mutex *mutex)
@@ -159,7 +159,7 @@ index abbecb828..5432694f7 100644
  	if (ret) {
  		raw_spin_lock_irqsave(&mutex->wchan.lock, flags);
 diff --git a/kernel/evl/wait.c b/kernel/evl/wait.c
-index 486ae38de..f135472e7 100644
+index 486ae38de5a1..f135472e73a5 100644
 --- a/kernel/evl/wait.c
 +++ b/kernel/evl/wait.c
 @@ -70,7 +70,7 @@ static void __evl_add_wait_queue(struct evl_thread *curr,

@@ -1,7 +1,8 @@
 From eb6d462dcf8cdad17ef8649d3bf51eb1867cf624 Mon Sep 17 00:00:00 2001
 From: Philippe Gerum <rpm@xenomai.org>
 Date: Tue, 5 Feb 2019 18:32:38 +0100
-Subject: [PATCH 265/985] evl/thread: remove more recursively (nk)locked paths
+Subject: [PATCH 0265/1013] evl/thread: remove more recursively (nk)locked
+ paths
 
 Signed-off-by: Philippe Gerum <rpm@xenomai.org>
 ---
@@ -9,7 +10,7 @@ Signed-off-by: Philippe Gerum <rpm@xenomai.org>
  1 file changed, 10 insertions(+), 13 deletions(-)
 
 diff --git a/kernel/evenless/thread.c b/kernel/evenless/thread.c
-index 8f383427e..a21f9eece 100644
+index 8f383427e7b4..a21f9eece0f0 100644
 --- a/kernel/evenless/thread.c
 +++ b/kernel/evenless/thread.c
 @@ -999,27 +999,27 @@ void evl_cancel_thread(struct evl_thread *thread)
