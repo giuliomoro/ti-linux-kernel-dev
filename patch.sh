@@ -22,7 +22,9 @@
 
 # Split out, so build_kernel.sh and build_deb.sh can share..
 
+exit
 shopt -s nullglob
+set -x
 
 . ${DIR}/version.sh
 if [ -f ${DIR}/system.sh ] ; then
@@ -100,9 +102,20 @@ cherrypick () {
 }
 
 external_git () {
+	echo DIR=$DIR
+	echo $PWD
 	git_tag="ti-linux-${KERNEL_REL}.y"
+	#git am --abort || true
+	#git checkout $sdk_git_new_release
+	#git branch -D $git_tag || true
+	##git branch -D v${KERNEL_TAG}${BUILD} || true
+	#${git_bin} checkout ${sdk_git_new_release} -b v${KERNEL_TAG}${BUILD} -f
+	#current_git=$(${git_bin} describe)
+	#echo "${current_git}"
+	#return
+
 	echo "pulling: [${git_patchset} ${git_tag}]"
-	${git_bin} pull --no-edit ${git_patchset} ${git_tag}
+	#${git_bin} pull --no-edit ${git_patchset} ${git_tag}
 	top_of_branch=$(${git_bin} describe)
 	if [ ! "x${sdk_git_new_release}" = "x" ] ; then
 		${git_bin} checkout master -f
@@ -633,7 +646,7 @@ readme () {
 readme
 
 xenomai4 () {
-	# xenomai4_enable="enable"
+	xenomai4_enable="enable"
 	if [ "x${xenomai4_enable}" = "xenable" ] ; then
 		#regenerate="enable"
 		if [ "x${regenerate}" = "xenable" ] ; then
@@ -643,11 +656,17 @@ xenomai4 () {
 			# more in chunks until the desired commit is found
 			cd "${DIR}/ignore"
 			if [ ! -d linux-evl ]; then
-				${git_bin} clone --depth 1 -b $BRANCH https://gitlab.com/Xenomai/xenomai4/linux-evl.git 
+				${git_bin} clone --depth 1 -b $BRANCH https://github.com/giuliomoro/linux.git
+			else
+				cd "${DIR}/ignore/linux-evl"
+				${git_bin} checkout $BRANCH || ${git_bin} fetch --depth=1 origin $BRANCH:$BRANCH
 			fi
 			cd "${DIR}/ignore/linux-evl"
 			${git_bin} checkout $BRANCH
-			i=1; while ! git show ${BASE}; do ${git_bin} fetch --depth=$((i+=100)); done
+			i=1
+			while ! ${git_bin} show ${BASE}; do
+				${git_bin} fetch --depth=$((i+=100)) origin $BRANCH
+			done
 			${git_bin} format-patch -o ${DIR}/patches/external/linux-evl ${BASE}
 			cd "${DIR}/KERNEL"
 		fi
